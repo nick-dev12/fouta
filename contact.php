@@ -43,9 +43,9 @@ if (!isset($_SESSION['contact_csrf'])) {
     $_SESSION['contact_csrf'] = bin2hex(random_bytes(32));
 }
 
-$email_contact = 'sugarpaper26@gmail.com';
-$telephones_contact = ['+221 77 416 12 12', '+221 77 32 92 123', '+221 33 823 35 14'];
-$adresse_contact = 'Hann Mariste 2 LOT R/01';
+$email_contact = 'info@foutapoidslourds.com';
+$telephones_contact = ['+221 33 870 00 70'];
+$adresse_contact = 'Rond point ZAC MBAO, Dakar';
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
@@ -263,26 +263,24 @@ $seo_canonical = $base . '/contact.php';
             <div class="contact-info">
                 <h3><i class="fas fa-info-circle"></i> Nos coordonnées</h3>
                 <div class="contact-item">
-                    <i class="fas fa-envelope"></i>
-                    <div>
-                        <strong>Email</strong><br>
-                        <a href="mailto:<?php echo htmlspecialchars($email_contact); ?>"><?php echo htmlspecialchars($email_contact); ?></a>
-                    </div>
-                </div>
-                <div class="contact-item">
                     <i class="fas fa-phone"></i>
                     <div>
-                        <strong>Téléphones</strong><br>
-                        <?php foreach ($telephones_contact as $tel): ?>
-                        <a href="tel:<?php echo preg_replace('/\s+/', '', $tel); ?>"><?php echo htmlspecialchars($tel); ?></a><br>
-                        <?php endforeach; ?>
+                        <strong>Téléphone</strong><br>
+                        <a href="tel:<?php echo preg_replace('/\s+/', '', $telephones_contact[0]); ?>"><?php echo htmlspecialchars($telephones_contact[0]); ?></a>
                     </div>
                 </div>
                 <div class="contact-item">
                     <i class="fas fa-map-marker-alt"></i>
                     <div>
-                        <strong>Adresse</strong><br>
+                        <strong>Localisation</strong><br>
                         <?php echo htmlspecialchars($adresse_contact); ?>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <strong>Courrier</strong><br>
+                        <a href="mailto:<?php echo htmlspecialchars($email_contact); ?>"><?php echo htmlspecialchars($email_contact); ?></a>
                     </div>
                 </div>
             </div>

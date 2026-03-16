@@ -145,17 +145,21 @@ $seo_canonical = $base . '/';
         .vitrine-hero {
             padding: 40px 16px 36px;
         }
+
         .vitrine-services-grid {
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
         }
+
         .vitrine-service-block {
             padding: 24px 16px;
             min-height: 120px;
         }
+
         .vitrine-service-icon {
             font-size: 28px;
         }
+
         .vitrine-service-label {
             font-size: 11px;
         }
@@ -209,16 +213,18 @@ $seo_canonical = $base . '/';
 
     /* Carrousel des catégories */
     .marques-section {
-        padding: 55px 0 65px;
+        padding: 20px 0 20px;
         background: var(--blanc);
         border-top: 1px solid var(--glass-border);
     }
+
     .marques-container {
         position: relative;
         max-width: 1280px;
         margin: 0 auto;
         padding: 0 60px;
     }
+
     .marques-nav {
         position: absolute;
         top: 50%;
@@ -237,17 +243,34 @@ $seo_canonical = $base . '/';
         transition: all 0.25s ease;
         box-shadow: var(--ombre-douce);
     }
+
     .marques-nav:hover {
         background: var(--couleur-dominante);
         color: var(--blanc);
         border-color: var(--couleur-dominante);
         box-shadow: var(--ombre-promo);
     }
-    .marques-nav-prev { left: 0; }
-    .marques-nav-next { right: 0; }
-    .marques-carousel.owl-carousel .owl-stage-outer { overflow: hidden; }
-    .marques-carousel.owl-carousel .owl-nav { display: none; }
-    .marques-carousel.owl-carousel .owl-dots { display: none; }
+
+    .marques-nav-prev {
+        left: 0;
+    }
+
+    .marques-nav-next {
+        right: 0;
+    }
+
+    .marques-carousel.owl-carousel .owl-stage-outer {
+        overflow: hidden;
+    }
+
+    .marques-carousel.owl-carousel .owl-nav {
+        display: none;
+    }
+
+    .marques-carousel.owl-carousel .owl-dots {
+        display: none;
+    }
+
     .marque-item {
         display: flex;
         flex-direction: column;
@@ -256,17 +279,21 @@ $seo_canonical = $base . '/';
         padding: 28px 20px;
         text-align: center;
     }
+
     .marque-item-link {
         text-decoration: none;
         color: inherit;
         transition: transform 0.2s ease;
     }
+
     .marque-item-link:hover {
         transform: translateY(-2px);
     }
+
     .marque-item-link:hover .marque-name {
         color: var(--couleur-dominante);
     }
+
     .marque-logo-wrap {
         width: 130px;
         height: 130px;
@@ -279,11 +306,13 @@ $seo_canonical = $base . '/';
         overflow: hidden;
         background: var(--blanc-casse);
     }
+
     .marque-logo-wrap img {
         width: 70%;
         height: 70%;
         object-fit: contain;
     }
+
     .marque-fallback {
         display: none;
         font-size: 26px;
@@ -291,6 +320,7 @@ $seo_canonical = $base . '/';
         color: var(--couleur-dominante);
         letter-spacing: 1px;
     }
+
     .marque-name {
         font-size: 13px;
         font-weight: 600;
@@ -299,14 +329,39 @@ $seo_canonical = $base . '/';
         text-transform: uppercase;
         line-height: 1.3;
     }
+
     @media (max-width: 768px) {
-        .marques-section { padding: 45px 0 55px; }
-        .marques-container { padding: 0 50px; }
-        .marques-nav { width: 44px; height: 44px; font-size: 14px; }
-        .marque-item { padding: 22px 16px; }
-        .marque-logo-wrap { width: 100px; height: 100px; margin-bottom: 14px; }
-        .marque-fallback { font-size: 22px; }
-        .marque-name { font-size: 11px; }
+        .marques-section {
+            padding: 45px 0 55px;
+        }
+
+        .marques-container {
+            padding: 0 50px;
+        }
+
+        .marques-nav {
+            width: 44px;
+            height: 44px;
+            font-size: 14px;
+        }
+
+        .marque-item {
+            padding: 22px 16px;
+        }
+
+        .marque-logo-wrap {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 14px;
+        }
+
+        .marque-fallback {
+            font-size: 22px;
+        }
+
+        .marque-name {
+            font-size: 11px;
+        }
     }
     </style>
 
@@ -368,8 +423,8 @@ $seo_canonical = $base . '/';
         <div class="vitrine-hero-content">
             <h1 class="vitrine-hero-title">CHEZ FOUTA POIDS LOURDS</h1>
             <p class="vitrine-hero-desc">
-                Opter pour les bonnes pièces de véhicule garantit un entretien efficace, une conduite plus sûre
-                et une expérience de conduite globalement plus agréable et sans soucis.
+                Spécialisée dans la vente de pièces détachées pour véhicules poids lourds (camions, bus et remorques)
+                et l'approvisionnement des professionnels du transport et de la mécanique en pièces de qualité.
             </p>
             <div class="vitrine-services-grid">
                 <a href="produits.php" class="vitrine-service-block">
@@ -401,7 +456,7 @@ $seo_canonical = $base . '/';
     }
     ?>
     <?php if (!empty($categories_carousel)): ?>
-    <section class="marques-section" data-aos="fade-up" data-aos-duration="600">
+    <!-- <section class="marques-section" data-aos="fade-up" data-aos-duration="600">
         <div class="marques-container">
             <button type="button" class="marques-nav marques-nav-prev" aria-label="Catégories précédentes">
                 <i class="fas fa-chevron-left"></i>
@@ -431,6 +486,48 @@ $seo_canonical = $base . '/';
                 <?php endforeach; ?>
             </div>
             <button type="button" class="marques-nav marques-nav-next" aria-label="Catégories suivantes">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </section> -->
+    <?php endif; ?>
+
+    <!-- Carrousel des logos partenaires -->
+    <?php
+    $logos_carousel = [];
+    if (file_exists(__DIR__ . '/models/model_logos.php')) {
+        require_once __DIR__ . '/models/model_logos.php';
+        $logos_carousel = get_all_logos('actif');
+    }
+    ?>
+    <?php if (!empty($logos_carousel)): ?>
+    <section class="marques-section logos-section" data-aos="fade-up" data-aos-duration="600">
+        <div class="marques-container">
+            <button type="button" class="marques-nav marques-nav-prev logos-nav-prev" aria-label="Logos précédents">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="marques-carousel owl-carousel logos-owl">
+                <?php foreach ($logos_carousel as $logo): ?>
+                <?php
+                    $logo_path = '/image/produit1.jpg';
+                    if (!empty($logo['image'])) {
+                        $upload_path = '/upload/' . htmlspecialchars($logo['image']);
+                        $file_path = __DIR__ . '/upload/' . $logo['image'];
+                        if (file_exists($file_path)) {
+                            $logo_path = $upload_path;
+                        }
+                    }
+                ?>
+                <div class="marque-item marque-item-logo">
+                    <div class="marque-logo-wrap">
+                        <img src="<?php echo $logo_path; ?>" alt="Logo partenaire"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <span class="marque-fallback" style="display: none;"><i class="fas fa-image"></i></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <button type="button" class="marques-nav marques-nav-next logos-nav-next" aria-label="Logos suivants">
                 <i class="fas fa-chevron-right"></i>
             </button>
         </div>
@@ -924,14 +1021,70 @@ $seo_canonical = $base . '/';
                 autoplayHoverPause: true,
                 smartSpeed: 500,
                 responsive: {
-                    0: { items: 2, margin: 16 },
-                    480: { items: 3, margin: 20 },
-                    768: { items: 4, margin: 28 },
-                    992: { items: 5, margin: 28 }
+                    0: {
+                        items: 2,
+                        margin: 16
+                    },
+                    480: {
+                        items: 3,
+                        margin: 20
+                    },
+                    768: {
+                        items: 4,
+                        margin: 28
+                    },
+                    992: {
+                        items: 5,
+                        margin: 28
+                    }
                 }
             });
-            $('.marques-nav-prev').on('click', function() { marquesCarousel.trigger('prev.owl.carousel'); });
-            $('.marques-nav-next').on('click', function() { marquesCarousel.trigger('next.owl.carousel'); });
+            $('.marques-nav-prev').on('click', function() {
+                marquesCarousel.trigger('prev.owl.carousel');
+            });
+            $('.marques-nav-next').on('click', function() {
+                marquesCarousel.trigger('next.owl.carousel');
+            });
+        }
+
+        // Carrousel des logos partenaires
+        if ($('.logos-owl').length && $('.logos-owl .marque-item').length) {
+            var logosCarousel = $('.logos-owl').owlCarousel({
+                items: 4,
+                loop: true,
+                dots: false,
+                nav: false,
+                margin: 28,
+                stagePadding: 15,
+                autoplay: true,
+                autoplayTimeout: 3000,
+                autoplayHoverPause: true,
+                smartSpeed: 500,
+                responsive: {
+                    0: {
+                        items: 2,
+                        margin: 16
+                    },
+                    480: {
+                        items: 3,
+                        margin: 20
+                    },
+                    768: {
+                        items: 4,
+                        margin: 28
+                    },
+                    992: {
+                        items: 5,
+                        margin: 28
+                    }
+                }
+            });
+            $('.logos-nav-prev').on('click', function() {
+                logosCarousel.trigger('prev.owl.carousel');
+            });
+            $('.logos-nav-next').on('click', function() {
+                logosCarousel.trigger('next.owl.carousel');
+            });
         }
 
         // Carrousel catégories : 1 item < 350px, 2 items >= 350px sur mobile

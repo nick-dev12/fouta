@@ -6,8 +6,8 @@
  */
 
 return [
-    // Numéro WhatsApp avec indicatif pays (sans + ni espaces) - ex: 221773292123 pour Sénégal
-    'whatsapp' => '221773292123',
+    // Numéro WhatsApp avec indicatif pays (sans + ni espaces) - ex: 221338700070 pour Sénégal
+    'whatsapp' => '221338700070',
 
     // URL du profil Instagram
     'instagram' => 'https://www.instagram.com/sugarpaper1/',

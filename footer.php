@@ -13,24 +13,16 @@
             <h3 class="footer_item_titl">Contact</h3>
             <ul class="footer_list">
                 <li class="li footer_list_item">
-                    <i class="fas fa-envelope"></i>
-                    <a href="mailto:sugarpaper26@gmail.com">sugarpaper26@gmail.com</a>
-                </li>
-                <li class="li footer_list_item">
                     <i class="fas fa-phone"></i>
-                    <a href="tel:+221774161212">+221 77 416 12 12</a>
-                </li>
-                <li class="li footer_list_item">
-                    <i class="fas fa-phone"></i>
-                    <a href="tel:+221773292123">+221 77 32 92 123</a>
-                </li>
-                <li class="li footer_list_item">
-                    <i class="fas fa-phone"></i>
-                    <a href="tel:+221338233514">+221 33 823 35 14</a>
+                    <a href="tel:+221338700070">+221 33 870 00 70</a>
                 </li>
                 <li class="li footer_list_item">
                     <i class="fas fa-map-marker-alt"></i>
-                    <span>Hann Mariste 2 LOT R/01 - Dakar</span>
+                    <span>Rond point ZAC MBAO, Dakar</span>
+                </li>
+                <li class="li footer_list_item">
+                    <i class="fas fa-envelope"></i>
+                    <a href="mailto:info@foutapoidslourds.com">info@foutapoidslourds.com</a>
                 </li>
             </ul>
         </div>

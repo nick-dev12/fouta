@@ -554,9 +554,9 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
                     <p><?php echo htmlspecialchars($entreprise_adresse); ?></p>
                     <div class="tel">
                         <i class="fas fa-phone"
-                            style="font-size:11px; margin-right:4px;"></i><?php echo htmlspecialchars($entreprise_tel1); ?><br>
+                            style="font-size:11px; margin-right:4px;"></i>+221 <?php echo htmlspecialchars($entreprise_tel1); ?><?php if (!empty($entreprise_tel2)): ?><br>
                         <i class="fas fa-phone"
-                            style="font-size:11px; margin-right:4px;"></i><?php echo htmlspecialchars($entreprise_tel2); ?>
+                            style="font-size:11px; margin-right:4px;"></i>+221 <?php echo htmlspecialchars($entreprise_tel2); ?><?php endif; ?>
                     </div>
                     <p style="margin-top:6px;">
                         <i class="fas fa-globe" style="font-size:11px; margin-right:4px;"></i>

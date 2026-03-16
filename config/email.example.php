@@ -27,7 +27,7 @@ return [
     ],
 
     // Email de contact (destinataire des messages du formulaire contact)
-    'contact_email' => 'sugarpaper26@gmail.com',
+    'contact_email' => 'info@foutapoidslourds.com',
 
     // Mode debug : true pour afficher les erreurs SMTP
     'debug' => false,

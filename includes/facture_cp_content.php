@@ -107,7 +107,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
                     <p>R.C : <?php echo htmlspecialchars($entreprise_rc); ?></p>
                     <p>N.I.N.E.A : <?php echo htmlspecialchars($entreprise_ninea); ?></p>
                     <p><?php echo htmlspecialchars($entreprise_adresse); ?></p>
-                    <p><i class="fas fa-phone" style="font-size:11px;"></i> <?php echo htmlspecialchars($entreprise_tel1); ?> / <?php echo htmlspecialchars($entreprise_tel2); ?></p>
+                    <p><i class="fas fa-phone" style="font-size:11px;"></i> +221 <?php echo htmlspecialchars($entreprise_tel1); ?><?php if (!empty($entreprise_tel2)): ?> / <?php echo htmlspecialchars($entreprise_tel2); ?><?php endif; ?></p>
                     <p><i class="fas fa-globe" style="font-size:11px;"></i> <?php echo htmlspecialchars($entreprise_site); ?></p>
                     <p><i class="fas fa-envelope" style="font-size:11px;"></i> <?php echo htmlspecialchars($entreprise_email); ?></p>
                 </div>

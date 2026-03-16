@@ -165,8 +165,8 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         <h2>10. Contact</h2>
         <p>
             Pour toute question concernant ces conditions d'utilisation, contactez-nous à : 
-            <a href="mailto:sugarpaper26@gmail.com">sugarpaper26@gmail.com</a> 
-            ou par téléphone au <a href="tel:+221773292123">+221 77 32 92 123</a>.
+<a href="mailto:info@foutapoidslourds.com">info@foutapoidslourds.com</a>
+            ou par téléphone au <a href="tel:+221338700070">+221 33 870 00 70</a>.
         </p>
         
         <a href="javascript:history.back()" class="back-link">

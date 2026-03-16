@@ -109,6 +109,20 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-edit"></i> Gérer les vidéos
                 </a>
             </div>
+
+            <!-- Logos Partenaires -->
+            <div class="parametre-card">
+                <div class="parametre-icon">
+                    <i class="fas fa-images"></i>
+                </div>
+                <h3 class="parametre-title">Logos Partenaires</h3>
+                <p class="parametre-description">
+                    Gérez les logos affichés en carrousel sur la page d'accueil : ajoutez, modifiez ou supprimez des logos.
+                </p>
+                <a href="parametres/logos.php" class="parametre-link">
+                    <i class="fas fa-edit"></i> Gérer les logos
+                </a>
+            </div>
         </div>
     </section>
 

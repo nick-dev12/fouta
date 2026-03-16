@@ -168,8 +168,8 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         <p>
             Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, 
             contactez-nous à : 
-            <a href="mailto:sugarpaper26@gmail.com">sugarpaper26@gmail.com</a> 
-            ou par téléphone au <a href="tel:+221773292123">+221 77 32 92 123</a>.
+<a href="mailto:info@foutapoidslourds.com">info@foutapoidslourds.com</a>
+            ou par téléphone au <a href="tel:+221338700070">+221 33 870 00 70</a>.
         </p>
         
         <a href="javascript:history.back()" class="back-link">
