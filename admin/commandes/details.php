@@ -44,18 +44,20 @@ $is_paye = $commande['statut'] === 'paye';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     $statut_mis_a_jour = null;
 
+    $admin_traitant = (int) ($_SESSION['admin_id'] ?? 0);
+
     if (isset($_POST['prendre_en_charge'])) {
-        if (update_commande_statut($commande_id, 'prise_en_charge')) {
+        if (update_commande_statut($commande_id, 'prise_en_charge', $admin_traitant)) {
             $statut_mis_a_jour = 'prise_en_charge';
         }
     } elseif (isset($_POST['expedier'])) {
-        if (update_commande_statut($commande_id, 'livraison_en_cours')) {
+        if (update_commande_statut($commande_id, 'livraison_en_cours', $admin_traitant)) {
             $statut_mis_a_jour = 'livraison_en_cours';
         }
     } elseif (isset($_POST['changer_statut'])) {
         $nouveau_statut = $_POST['statut'] ?? '';
         if (in_array($nouveau_statut, ['en_attente', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'paye', 'annulee'])) {
-            if (update_commande_statut($commande_id, $nouveau_statut)) {
+            if (update_commande_statut($commande_id, $nouveau_statut, $admin_traitant)) {
                 $statut_mis_a_jour = $nouveau_statut;
             } else {
                 $_SESSION['error_message'] = 'Impossible de mettre à jour le statut. Vérifiez que la migration "add_statut_paye_commandes" a été exécutée et que la commande contient des produits.';

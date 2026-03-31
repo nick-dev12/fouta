@@ -8,6 +8,7 @@
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/model_produits.php';
 require_once __DIR__ . '/model_commandes_admin.php'; // fournit get_commande_by_id()
+require_once __DIR__ . '/model_admin_activite.php'; // colonnes traçabilité admin (commandes)
 
 // Charger config debug si présente (affichage erreur détaillée sur la page)
 if (file_exists(__DIR__ . '/../config/config_debug.php')) {
@@ -240,9 +241,10 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
  * @param string|null $notes Notes optionnelles
  * @param int|null $zone_livraison_id ID zone de livraison (optionnel)
  * @param float $frais_livraison Frais de livraison en FCFA (défaut 0)
+ * @param int|null $admin_createur_id Compte admin ayant créé la commande manuelle
  * @return array|false ['success'=>true, 'commande_id'=>int, 'numero_commande'=>string] ou false
  */
-function create_commande_manuelle($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email = null, $notes = null, $zone_livraison_id = null, $frais_livraison = 0) {
+function create_commande_manuelle($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email = null, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $admin_createur_id = null) {
     global $db;
 
     if (empty($items) || empty(trim($client_nom)) || empty(trim($client_prenom)) || empty(trim($client_telephone)) || empty(trim($adresse_livraison))) {
@@ -305,6 +307,10 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
         }
 
         $has_zone = _commandes_has_zone_columns();
+        $has_admin_trace = admin_activite_column_exists('commandes', 'admin_createur_id')
+            && admin_activite_column_exists('commandes', 'admin_dernier_traitement_id');
+        $aid = $admin_createur_id !== null && (int) $admin_createur_id > 0 ? (int) $admin_createur_id : null;
+
         $params_exec = [
             'numero_commande' => $numero_commande,
             'montant_total' => $montant_total,
@@ -316,33 +322,69 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
             'client_email' => $client_email && trim($client_email) !== '' ? trim($client_email) : null,
             'client_telephone' => trim($client_telephone)
         ];
+        if ($has_admin_trace) {
+            $params_exec['admin_createur_id'] = $aid;
+            $params_exec['admin_dernier_traitement_id'] = $aid;
+        }
 
         if ($has_zone) {
             $params_exec['zone_livraison_id'] = $zone_livraison_id && (int) $zone_livraison_id > 0 ? (int) $zone_livraison_id : null;
             $params_exec['frais_livraison'] = $frais_livraison;
-            $stmt = $db->prepare("
-                INSERT INTO commandes (
-                    user_id, numero_commande, montant_total, adresse_livraison,
-                    zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes,
-                    client_nom, client_prenom, client_email, client_telephone
-                ) VALUES (
-                    NULL, :numero_commande, :montant_total, :adresse_livraison,
-                    :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes,
-                    :client_nom, :client_prenom, :client_email, :client_telephone
-                )
-            ");
+            if ($has_admin_trace) {
+                $stmt = $db->prepare("
+                    INSERT INTO commandes (
+                        user_id, numero_commande, montant_total, adresse_livraison,
+                        zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes,
+                        client_nom, client_prenom, client_email, client_telephone,
+                        admin_createur_id, admin_dernier_traitement_id
+                    ) VALUES (
+                        NULL, :numero_commande, :montant_total, :adresse_livraison,
+                        :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes,
+                        :client_nom, :client_prenom, :client_email, :client_telephone,
+                        :admin_createur_id, :admin_dernier_traitement_id
+                    )
+                ");
+            } else {
+                $stmt = $db->prepare("
+                    INSERT INTO commandes (
+                        user_id, numero_commande, montant_total, adresse_livraison,
+                        zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes,
+                        client_nom, client_prenom, client_email, client_telephone
+                    ) VALUES (
+                        NULL, :numero_commande, :montant_total, :adresse_livraison,
+                        :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes,
+                        :client_nom, :client_prenom, :client_email, :client_telephone
+                    )
+                ");
+            }
         } else {
-            $stmt = $db->prepare("
-                INSERT INTO commandes (
-                    user_id, numero_commande, montant_total, adresse_livraison,
-                    telephone_livraison, statut, date_commande, notes,
-                    client_nom, client_prenom, client_email, client_telephone
-                ) VALUES (
-                    NULL, :numero_commande, :montant_total, :adresse_livraison,
-                    :telephone_livraison, 'en_attente', NOW(), :notes,
-                    :client_nom, :client_prenom, :client_email, :client_telephone
-                )
-            ");
+            if ($has_admin_trace) {
+                $stmt = $db->prepare("
+                    INSERT INTO commandes (
+                        user_id, numero_commande, montant_total, adresse_livraison,
+                        telephone_livraison, statut, date_commande, notes,
+                        client_nom, client_prenom, client_email, client_telephone,
+                        admin_createur_id, admin_dernier_traitement_id
+                    ) VALUES (
+                        NULL, :numero_commande, :montant_total, :adresse_livraison,
+                        :telephone_livraison, 'en_attente', NOW(), :notes,
+                        :client_nom, :client_prenom, :client_email, :client_telephone,
+                        :admin_createur_id, :admin_dernier_traitement_id
+                    )
+                ");
+            } else {
+                $stmt = $db->prepare("
+                    INSERT INTO commandes (
+                        user_id, numero_commande, montant_total, adresse_livraison,
+                        telephone_livraison, statut, date_commande, notes,
+                        client_nom, client_prenom, client_email, client_telephone
+                    ) VALUES (
+                        NULL, :numero_commande, :montant_total, :adresse_livraison,
+                        :telephone_livraison, 'en_attente', NOW(), :notes,
+                        :client_nom, :client_prenom, :client_email, :client_telephone
+                    )
+                ");
+            }
         }
 
         $stmt->execute($params_exec);

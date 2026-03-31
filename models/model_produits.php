@@ -8,6 +8,57 @@
 require_once __DIR__ . '/../conn/conn.php';
 
 /**
+ * Indique si une colonne existe sur la table produits (cache SHOW COLUMNS)
+ */
+function produits_has_column($name) {
+    static $cols = null;
+    global $db;
+    if ($cols === null) {
+        $cols = [];
+        if (!$db) {
+            return false;
+        }
+        try {
+            $stmt = $db->query('SHOW COLUMNS FROM produits');
+            while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $cols[$r['Field']] = true;
+            }
+        } catch (PDOException $e) {
+            $cols = [];
+        }
+    }
+    return isset($cols[$name]);
+}
+
+/**
+ * Génère le prochain identifiant interne FPLXXXXXX (6 chiffres)
+ */
+function generate_next_identifiant_interne_produit() {
+    global $db;
+    if (!$db || !produits_has_column('identifiant_interne')) {
+        return null;
+    }
+    try {
+        $stmt = $db->query("
+            SELECT identifiant_interne FROM produits
+            WHERE identifiant_interne REGEXP '^FPL[0-9]{6}$'
+            ORDER BY identifiant_interne DESC LIMIT 1
+        ");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $next = 1;
+        if ($row && !empty($row['identifiant_interne']) && preg_match('/^FPL(\d{6})$/', $row['identifiant_interne'], $m)) {
+            $next = (int) $m[1] + 1;
+        }
+        if ($next > 999999) {
+            $next = 1;
+        }
+        return 'FPL' . str_pad((string) $next, 6, '0', STR_PAD_LEFT);
+    } catch (PDOException $e) {
+        return 'FPL' . str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
+    }
+}
+
+/**
  * Récupère tous les produits
  * @param string $statut Filtrer par statut (optionnel)
  * @return array|false Tableau des produits ou False en cas d'erreur
@@ -94,6 +145,192 @@ function get_produit_by_id($id)
 }
 
 /**
+ * Récupère un produit par son identifiant interne FPLxxxxxx (insensible à la casse)
+ * @param string $code Ex. FPL000042
+ * @param bool $only_actif Si true, uniquement les produits actifs ou en promo (exclut inactif)
+ * @return array|false
+ */
+function get_produit_by_identifiant_interne($code, $only_actif = false)
+{
+    global $db;
+
+    if (!produits_has_column('identifiant_interne')) {
+        return false;
+    }
+    $code = strtoupper(trim((string) $code));
+    if (!preg_match('/^FPL\d{6}$/', $code)) {
+        return false;
+    }
+
+    try {
+        $sql = "
+            SELECT p.*, c.nom as categorie_nom
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            WHERE UPPER(TRIM(p.identifiant_interne)) = :code
+        ";
+        if ($only_actif) {
+            $sql .= " AND p.statut IN ('actif', 'rupture_stock')";
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['code' => $code]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Extrait les 5 derniers chiffres de la partie numérique du code (style caisse : saisie rapide)
+ * Ex. FPL000151 → "00151", FPL100001 → "00001"
+ */
+function produit_identifiant_derniers_5_chiffres($identifiant_interne)
+{
+    $d = preg_replace('/\D/', '', (string) $identifiant_interne);
+    if (strlen($d) < 5) {
+        return '';
+    }
+
+    return substr($d, -5);
+}
+
+/**
+ * Expression SQL MySQL : les 5 derniers chiffres du numéro (après retrait du préfixe FPL)
+ * @param string $table_prefix Préfixe de table/colonne, ex. 'p' → p.identifiant_interne ; '' → identifiant_interne
+ */
+function produits_sql_identifiant_suffix_5_expr($table_prefix = 'p')
+{
+    $col = $table_prefix === '' ? 'identifiant_interne' : $table_prefix . '.identifiant_interne';
+
+    return "RIGHT(REPLACE(REPLACE(REPLACE(UPPER(TRIM($col)), 'F', ''), 'P', ''), 'L', ''), 5)";
+}
+
+/**
+ * Liste des produits dont le code se termine par ces 5 chiffres (recherche rapide)
+ */
+function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $limit = 20, $only_actif = true)
+{
+    global $db;
+
+    if (!produits_has_column('identifiant_interne')) {
+        return [];
+    }
+    $suffix5 = preg_replace('/\D/', '', (string) $suffix5);
+    if (strlen($suffix5) !== 5) {
+        return [];
+    }
+
+    $statut_sql = $only_actif ? "p.statut IN ('actif', 'rupture_stock')" : '1=1';
+    $sql = '
+        SELECT p.*, c.nom as categorie_nom
+        FROM produits p
+        LEFT JOIN categories c ON p.categorie_id = c.id
+        WHERE ' . $statut_sql . '
+        AND p.identifiant_interne IS NOT NULL AND TRIM(p.identifiant_interne) != \'\'
+        AND ' . produits_sql_identifiant_suffix_5_expr('p') . ' = :suf
+        ORDER BY p.date_creation DESC
+        LIMIT :limit OFFSET :offset
+    ';
+
+    try {
+        $stmt = $db->prepare($sql);
+        $stmt->bindValue(':suf', $suffix5, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $rows ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Compte les produits correspondant aux 5 derniers chiffres
+ */
+function count_produits_by_identifiant_suffix_5_chiffres($suffix5, $only_actif = true)
+{
+    global $db;
+
+    if (!produits_has_column('identifiant_interne')) {
+        return 0;
+    }
+    $suffix5 = preg_replace('/\D/', '', (string) $suffix5);
+    if (strlen($suffix5) !== 5) {
+        return 0;
+    }
+
+    $statut_sql = $only_actif ? "statut IN ('actif', 'rupture_stock')" : '1=1';
+    $sql = '
+        SELECT COUNT(*) FROM produits
+        WHERE ' . $statut_sql . '
+        AND identifiant_interne IS NOT NULL AND TRIM(identifiant_interne) != \'\'
+        AND ' . produits_sql_identifiant_suffix_5_expr('') . ' = :suf
+    ';
+
+    try {
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['suf' => $suffix5]);
+
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Attribue un identifiant FPLxxxxxx si absent (produits anciens)
+ * @return string|null Le code attribué ou existant
+ */
+function ensure_produit_identifiant_interne($produit_id)
+{
+    global $db;
+
+    $produit_id = (int) $produit_id;
+    if ($produit_id <= 0 || !produits_has_column('identifiant_interne')) {
+        return null;
+    }
+
+    $p = get_produit_by_id($produit_id);
+    if (!$p) {
+        return null;
+    }
+    if (!empty($p['identifiant_interne'])) {
+        return trim($p['identifiant_interne']);
+    }
+
+    for ($attempt = 0; $attempt < 8; $attempt++) {
+        $ident = generate_next_identifiant_interne_produit();
+        if (!$ident) {
+            return null;
+        }
+        try {
+            $stmt = $db->prepare('
+                UPDATE produits
+                SET identifiant_interne = :i
+                WHERE id = :id AND (identifiant_interne IS NULL OR identifiant_interne = \'\')
+            ');
+            $stmt->execute(['i' => $ident, 'id' => $produit_id]);
+            if ($stmt->rowCount() > 0) {
+                return $ident;
+            }
+            $p2 = get_produit_by_id($produit_id);
+            if ($p2 && !empty($p2['identifiant_interne'])) {
+                return trim($p2['identifiant_interne']);
+            }
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Duplicate') !== false || strpos($e->getMessage(), '1062') !== false) {
+                continue;
+            }
+            return null;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Récupère tous les produits actifs avec pagination
  * @param int $offset Nombre de produits à ignorer (pour pagination)
  * @param int $limit Nombre maximum de produits à retourner
@@ -139,6 +376,15 @@ function search_produits($recherche, $offset = 0, $limit = 20)
         return get_all_produits_paginated($offset, $limit);
     }
 
+    $t = trim($recherche);
+    if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $t)) {
+        return get_produits_by_identifiant_suffix_5_chiffres($t, $offset, $limit, true);
+    }
+    if (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $t)) {
+        $p = get_produit_by_identifiant_interne(strtoupper($t), true);
+        return $p ? [$p] : [];
+    }
+
     try {
         $term = '%' . trim($recherche) . '%';
         $stmt = $db->prepare("
@@ -175,6 +421,15 @@ function count_search_produits($recherche)
         return count_all_produits_actifs();
     }
 
+    $t = trim($recherche);
+    if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $t)) {
+        return count_produits_by_identifiant_suffix_5_chiffres($t, true);
+    }
+    if (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $t)) {
+        $p = get_produit_by_identifiant_interne(strtoupper($t), true);
+        return $p ? 1 : 0;
+    }
+
     try {
         $term = '%' . trim($recherche) . '%';
         $stmt = $db->prepare("
@@ -209,8 +464,17 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
         $params = [];
 
         if (!empty(trim($recherche))) {
-            $conditions[] = "(p.nom LIKE :term OR p.description LIKE :term)";
-            $params['term'] = '%' . trim($recherche) . '%';
+            $tr = trim($recherche);
+            if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $tr)) {
+                $conditions[] = 'p.identifiant_interne IS NOT NULL AND TRIM(p.identifiant_interne) != \'\' AND ' . produits_sql_identifiant_suffix_5_expr('p') . ' = :suffix5';
+                $params['suffix5'] = $tr;
+            } elseif (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $tr)) {
+                $conditions[] = 'UPPER(TRIM(p.identifiant_interne)) = :ident_exact';
+                $params['ident_exact'] = strtoupper($tr);
+            } else {
+                $conditions[] = '(p.nom LIKE :term OR p.description LIKE :term)';
+                $params['term'] = '%' . $tr . '%';
+            }
         }
 
         if ($prix_min !== null && $prix_min !== '') {
@@ -280,8 +544,17 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
         $params = [];
 
         if (!empty(trim($recherche))) {
-            $conditions[] = "(nom LIKE :term OR description LIKE :term)";
-            $params['term'] = '%' . trim($recherche) . '%';
+            $tr = trim($recherche);
+            if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $tr)) {
+                $conditions[] = 'identifiant_interne IS NOT NULL AND TRIM(identifiant_interne) != \'\' AND ' . produits_sql_identifiant_suffix_5_expr('') . ' = :suffix5';
+                $params['suffix5'] = $tr;
+            } elseif (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $tr)) {
+                $conditions[] = 'UPPER(TRIM(identifiant_interne)) = :ident_exact';
+                $params['ident_exact'] = strtoupper($tr);
+            } else {
+                $conditions[] = '(nom LIKE :term OR description LIKE :term)';
+                $params['term'] = '%' . $tr . '%';
+            }
         }
 
         if ($prix_min !== null && $prix_min !== '') {
@@ -536,6 +809,26 @@ function create_produit($data)
             'unite' => $data['unite'] ?? 'unité',
             'statut' => $data['statut'] ?? 'actif'
         ];
+        if (produits_has_column('identifiant_interne')) {
+            $ident = isset($data['identifiant_interne']) && $data['identifiant_interne'] !== ''
+                ? $data['identifiant_interne']
+                : generate_next_identifiant_interne_produit();
+            if ($ident) {
+                $cols = "identifiant_interne, " . $cols;
+                $vals = ":identifiant_interne, " . $vals;
+                $params['identifiant_interne'] = $ident;
+            }
+        }
+        if (produits_has_column('etage')) {
+            $cols .= ", etage";
+            $vals .= ", :etage";
+            $params['etage'] = isset($data['etage']) && $data['etage'] !== '' ? trim($data['etage']) : null;
+        }
+        if (produits_has_column('numero_rayon')) {
+            $cols .= ", numero_rayon";
+            $vals .= ", :numero_rayon";
+            $params['numero_rayon'] = isset($data['numero_rayon']) && $data['numero_rayon'] !== '' ? trim($data['numero_rayon']) : null;
+        }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {
             $cols .= ", couleurs, taille";
@@ -594,6 +887,14 @@ function update_produit($id, $data)
             'unite' => $data['unite'] ?? 'unité',
             'statut' => $data['statut'] ?? 'actif'
         ];
+        if (produits_has_column('etage')) {
+            $sets .= ", etage = :etage";
+            $params['etage'] = isset($data['etage']) && $data['etage'] !== '' ? trim($data['etage']) : null;
+        }
+        if (produits_has_column('numero_rayon')) {
+            $sets .= ", numero_rayon = :numero_rayon";
+            $params['numero_rayon'] = isset($data['numero_rayon']) && $data['numero_rayon'] !== '' ? trim($data['numero_rayon']) : null;
+        }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {
             $sets .= ", couleurs = :couleurs, taille = :taille";

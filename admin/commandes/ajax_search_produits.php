@@ -10,6 +10,9 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../../includes/admin_route_access.php';
+admin_route_enforce_json_empty();
+
 $recherche = isset($_GET['q']) ? trim($_GET['q']) : '';
 $limit = min(50, max(5, (int) ($_GET['limit'] ?? 30)));
 

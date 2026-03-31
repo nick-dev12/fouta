@@ -149,7 +149,8 @@ function get_all_users_with_stats() {
                 u.date_creation,
                 u.statut,
                 COUNT(DISTINCT c.id) as nb_commandes,
-                COUNT(DISTINCT CASE WHEN c.statut = 'livree' THEN c.id END) as nb_commandes_livrees
+                COUNT(DISTINCT CASE WHEN c.statut = 'livree' THEN c.id END) as nb_commandes_livrees,
+                COALESCE(SUM(CASE WHEN c.id IS NOT NULL AND c.statut <> 'annulee' THEN c.montant_total ELSE 0 END), 0) AS ca_total_ht
             FROM users u
             LEFT JOIN commandes c ON u.id = c.user_id
             GROUP BY u.id
@@ -283,6 +284,31 @@ function mark_user_reset_token_used($token) {
         return $stmt->execute(['token' => $token]);
     } catch (PDOException $e) {
         return false;
+    }
+}
+
+/**
+ * Totaux commandes boutique pour la fiche client (hors annulées pour le CA)
+ * @return array{nb_commandes: int, ca_total_ht: float}
+ */
+function get_user_stats_commandes_boutique($user_id) {
+    global $db;
+    try {
+        $stmt = $db->prepare("
+            SELECT 
+                COUNT(*) AS nb_commandes,
+                COALESCE(SUM(CASE WHEN statut <> 'annulee' THEN montant_total ELSE 0 END), 0) AS ca_total_ht
+            FROM commandes 
+            WHERE user_id = :uid
+        ");
+        $stmt->execute(['uid' => (int) $user_id]);
+        $r = $stmt->fetch(PDO::FETCH_ASSOC);
+        return [
+            'nb_commandes' => (int) ($r['nb_commandes'] ?? 0),
+            'ca_total_ht' => (float) ($r['ca_total_ht'] ?? 0),
+        ];
+    } catch (PDOException $e) {
+        return ['nb_commandes' => 0, 'ca_total_ht' => 0.0];
     }
 }
 

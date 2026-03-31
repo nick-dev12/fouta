@@ -8,8 +8,22 @@
  * $whatsapp_url (string, optionnel): URL WhatsApp pour le bouton
  * $facture_back_url (string, optionnel): URL du lien "Retour" (ex: details.php?id=5)
  * $facture_back_label (string, optionnel): Libellé du lien Retour (défaut: "Retour à la commande")
+ * $facture_bl_statut_libelle (string, optionnel): statut du BL (ex. facture BL)
+ * $facture_bl_statut_code (string, optionnel): brouillon | valide (ou ancien paye) — couleur du libellé
+ * $facture_show_client_zone (bool, optionnel): zone réservée au client en bas de page (signature)
  */
 $adresse_livraison = $adresse_livraison ?? '';
+$facture_bl_statut_libelle = isset($facture_bl_statut_libelle) ? (string) $facture_bl_statut_libelle : '';
+$facture_bl_statut_code = isset($facture_bl_statut_code) ? (string) $facture_bl_statut_code : '';
+$facture_show_client_zone = !empty($facture_show_client_zone);
+$facture_bl_meta_color = '#2d5690';
+if ($facture_bl_statut_libelle !== '') {
+    if (in_array($facture_bl_statut_code, ['valide', 'paye'], true)) {
+        $facture_bl_meta_color = '#1b5e20';
+    } elseif ($facture_bl_statut_code === 'brouillon') {
+        $facture_bl_meta_color = '#856404';
+    }
+}
 require_once __DIR__ . '/site_url.php';
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - FOUTA POIDS LOURDS';
 $facture_og_desc = 'Facture FOUTA POIDS LOURDS - ' . ($entreprise_nom ?? 'FOUTA POIDS LOURDS') . ' - Montant : ' . number_format($facture['montant_total'] ?? 0, 0, ',', ' ') . ' CFA';
@@ -51,7 +65,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
         }
 
         .facture-banner-top {
-            height: 60px;
+            height: 28px;
             background: linear-gradient(135deg, rgba(53, 100, 166, 0.25) 0%, rgba(45, 86, 144, 0.2) 50%, rgba(53, 100, 166, 0.2) 100%);
             background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(53, 100, 166, 0.15) 10px, rgba(53, 100, 166, 0.15) 20px);
         }
@@ -61,7 +75,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
             justify-content: space-between;
             align-items: flex-start;
             flex-direction: row;
-            padding: 30px 45px 25px;
+            padding: 18px 32px 16px;
             border-bottom: 1px solid #eee;
         }
 
@@ -126,6 +140,33 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
             color: #000;
         }
 
+        .facture-meta-kv {
+            margin-top: 6px;
+        }
+
+        .facture-meta-kv:first-of-type {
+            margin-top: 0;
+        }
+
+        .facture-meta-kv .label {
+            font-size: 9px;
+            margin-bottom: 2px;
+        }
+
+        .facture-meta-kv .value {
+            font-size: 13px;
+            line-height: 1.25;
+        }
+
+        .facture-meta-kv .value.facture-meta-bl-statut {
+            font-weight: 700;
+        }
+
+        .facture-meta-kv--total .label {
+            font-size: 9px;
+            margin-bottom: 2px;
+        }
+
         .facture-meta .solde {
             font-size: 16px;
             color: #3564a6;
@@ -133,7 +174,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
         }
 
         .facture-billing {
-            padding: 25px 45px;
+            padding: 14px 32px;
             border-bottom: 1px solid #eee;
         }
 
@@ -142,26 +183,27 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
             font-weight: 700;
             color: #888;
             text-transform: uppercase;
-            margin-bottom: 6px;
+            margin-bottom: 3px;
         }
 
         .facture-billing .client-name {
             font-size: 18px;
             font-weight: 700;
             color: #000;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .facture-billing .client-tel {
             font-size: 14px;
             color: #444;
+            margin-top: 0;
         }
 
         .facture-billing .adresse-livraison {
             font-size: 13px;
             color: #555;
-            margin-top: 8px;
-            line-height: 1.4;
+            margin-top: 4px;
+            line-height: 1.35;
         }
 
         .facture-table-wrapper {
@@ -177,10 +219,10 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
         .facture-table th {
             background: #3564a6;
             color: #fff;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            padding: 14px 20px;
+            padding: 6px 10px;
             text-align: left;
         }
 
@@ -195,8 +237,8 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
         }
 
         .facture-table td {
-            padding: 14px 20px;
-            font-size: 14px;
+            padding: 6px 10px;
+            font-size: 13px;
             border-bottom: 1px solid #f0f0f0;
         }
 
@@ -211,8 +253,8 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
         .facture-footer-section {
             display: flex;
             justify-content: space-between;
-            padding: 25px 45px 30px;
-            gap: 40px;
+            padding: 16px 32px 20px;
+            gap: 28px;
         }
 
         .facture-payment h3 {
@@ -248,15 +290,47 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
 
         .facture-summary .solde-row {
             background: rgba(53, 100, 166, 0.12);
-            padding: 12px 16px;
-            margin-top: 12px;
+            padding: 8px 12px;
+            margin-top: 8px;
             border-radius: 6px;
             font-weight: 700;
-            font-size: 16px;
+            font-size: 14px;
+        }
+
+        .facture-client-zone {
+            padding: 10px 32px 14px;
+            border-top: 1px solid #eee;
+            background: #fafafa;
+        }
+
+        .facture-client-zone .facture-client-zone__title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.06em;
+        }
+
+        .facture-reglement-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-top: 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .facture-reglement-row--paye {
+            background: rgba(46, 125, 50, 0.12);
+            color: #1b5e20;
+            border: 1px solid rgba(46, 125, 50, 0.35);
         }
 
         .facture-banner-bottom {
-            height: 40px;
+            height: 20px;
             background: linear-gradient(135deg, rgba(53, 100, 166, 0.3) 0%, rgba(45, 86, 144, 0.2) 50%, rgba(53, 100, 166, 0.25) 100%);
             background-image: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(53, 100, 166, 0.2) 10px, rgba(53, 100, 166, 0.2) 20px);
         }
@@ -330,8 +404,55 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
 
             .facture-container {
                 max-width: 100% !important;
+                width: 100% !important;
                 box-shadow: none !important;
                 margin: 0 !important;
+                overflow: visible !important;
+            }
+
+            .facture-table-wrapper {
+                overflow: visible !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                -webkit-overflow-scrolling: auto !important;
+            }
+
+            .facture-table {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+            }
+
+            .facture-table th,
+            .facture-table td {
+                padding: 4px 6px !important;
+                font-size: 10px !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                hyphens: auto !important;
+            }
+
+            .facture-table th:nth-child(1),
+            .facture-table td:nth-child(1) {
+                width: 36% !important;
+            }
+
+            .facture-table th:nth-child(2),
+            .facture-table td:nth-child(2) {
+                width: 22% !important;
+            }
+
+            .facture-table th:nth-child(3),
+            .facture-table td:nth-child(3) {
+                width: 12% !important;
+            }
+
+            .facture-table th:nth-child(4),
+            .facture-table td:nth-child(4) {
+                width: 30% !important;
             }
 
             .facture-banner-top,
@@ -360,42 +481,68 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
                 print-color-adjust: exact !important;
             }
 
-            /* Forcer le layout desktop (identique à l'écran) */
             .facture-header {
                 flex-direction: row !important;
-                padding: 30px 45px 25px !important;
+                padding: 10px 8px 10px !important;
+                box-sizing: border-box !important;
             }
 
             .facture-entreprise {
                 flex-direction: row !important;
+                min-width: 0 !important;
+                flex: 1 1 auto !important;
+            }
+
+            .facture-meta {
+                flex-shrink: 0 !important;
+                max-width: 42% !important;
             }
 
             .facture-footer-section {
                 flex-direction: row !important;
-                padding: 25px 45px 30px !important;
+                padding: 10px 8px 12px !important;
+                gap: 16px !important;
+                box-sizing: border-box !important;
+            }
+
+            .facture-summary {
+                min-width: 0 !important;
+                flex: 0 1 auto !important;
+                max-width: 48% !important;
             }
 
             .facture-billing {
-                padding: 25px 45px !important;
+                padding: 8px 8px !important;
+                box-sizing: border-box !important;
+            }
+
+            .facture-client-zone {
+                padding: 8px 8px 10px !important;
+            }
+
+            html, body {
+                overflow: visible !important;
+                width: 100% !important;
+                max-width: 100% !important;
             }
 
             @page {
-                size: A4;
-                margin: 15mm;
+                size: A4 portrait;
+                margin: 10mm;
             }
         }
 
         @media (max-width: 992px) {
             .facture-header {
-                padding: 24px 24px;
+                padding: 16px 20px;
             }
 
             .facture-billing {
-                padding: 20px 24px;
+                padding: 12px 20px;
             }
 
             .facture-footer-section {
-                padding: 24px;
+                padding: 14px 20px;
             }
         }
 
@@ -409,13 +556,13 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
             }
 
             .facture-banner-top {
-                height: 40px;
+                height: 24px;
             }
 
             .facture-header {
 
                 gap: 6px;
-                padding: 20px 8px;
+                padding: 14px 8px;
             }
 
             .facture-entreprise {
@@ -459,7 +606,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
 
             .facture-table th,
             .facture-table td {
-                padding: 10px 12px;
+                padding: 6px 8px;
             }
 
             .facture-footer-section {
@@ -473,7 +620,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
             }
 
             .facture-banner-bottom {
-                height: 30px;
+                height: 18px;
             }
 
             .facture-actions {
@@ -569,12 +716,24 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
                 </div>
             </div>
             <div class="facture-meta">
-                <div class="label">FACTURE</div>
-                <div class="value"><?php echo htmlspecialchars($facture['numero_facture']); ?></div>
-                <div class="label" style="margin-top:12px;">DATE</div>
-                <div class="value"><?php echo htmlspecialchars($date_facture_aff); ?></div>
-                <div class="label" style="margin-top:12px;">SOLDE DÛ</div>
-                <div class="solde">XOF <?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</div>
+                <div class="facture-meta-kv">
+                    <div class="label">FACTURE</div>
+                    <div class="value"><?php echo htmlspecialchars($facture['numero_facture']); ?></div>
+                </div>
+                <div class="facture-meta-kv">
+                    <div class="label">DATE</div>
+                    <div class="value"><?php echo htmlspecialchars($date_facture_aff); ?></div>
+                </div>
+                <?php if ($facture_bl_statut_libelle !== ''): ?>
+                <div class="facture-meta-kv">
+                    <div class="label">STATUT DU BL</div>
+                    <div class="value facture-meta-bl-statut" style="color:<?php echo htmlspecialchars($facture_bl_meta_color); ?>;"><?php echo htmlspecialchars($facture_bl_statut_libelle); ?></div>
+                </div>
+                <?php endif; ?>
+                <div class="facture-meta-kv facture-meta-kv--total">
+                    <div class="label">SOLDE DÛ</div>
+                    <div class="solde">XOF <?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</div>
+                </div>
             </div>
         </div>
 
@@ -605,9 +764,12 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
                     <?php foreach ($produits as $p): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($p['produit_nom'] ?? $p['nom'] ?? ''); ?></td>
-                            <td><?php echo number_format($p['prix_unitaire'], 2, ',', ' '); ?> CFA</td>
-                            <td><?php echo (int) $p['quantite']; ?></td>
-                            <td><?php echo number_format($p['prix_total'], 2, ',', ' '); ?> CFA</td>
+                            <td><?php echo number_format((float) ($p['prix_unitaire'] ?? 0), 2, ',', ' '); ?> CFA</td>
+                            <td><?php
+                            $qte_ent = (int) round((float) ($p['quantite'] ?? 0));
+                            echo number_format($qte_ent, 0, ',', ' ');
+                            ?></td>
+                            <td><?php echo number_format((float) ($p['prix_total'] ?? 0), 2, ',', ' '); ?> CFA</td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -646,8 +808,20 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
                     <span>SOLDE DÛ</span>
                     <span>XOF <?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</span>
                 </div>
+                <?php if ($facture_bl_statut_libelle !== '' && in_array($facture_bl_statut_code, ['valide', 'paye'], true)): ?>
+                <div class="facture-reglement-row facture-reglement-row--paye">
+                    <span>STATUT (BL)</span>
+                    <span>Validé (comptabilité)</span>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
+
+        <?php if ($facture_show_client_zone): ?>
+        <div class="facture-client-zone">
+            <div class="facture-client-zone__title">Client</div>
+        </div>
+        <?php endif; ?>
 
         <div class="facture-banner-bottom"></div>
     </div>

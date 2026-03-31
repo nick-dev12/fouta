@@ -29,20 +29,46 @@ function get_all_contacts($recherche = null) {
 }
 
 /**
- * Récupère un contact par téléphone (normalisé)
+ * Récupère un contact par téléphone (chiffres uniquement, comparaison stricte)
  */
 function get_contact_by_telephone($telephone) {
     global $db;
-    $tel = preg_replace('/\D/', '', $telephone);
-    if (empty($tel)) return false;
+    $tel = preg_replace('/\D+/', '', $telephone ?? '');
+    if ($tel === '') {
+        return false;
+    }
     try {
-        $stmt = $db->prepare("SELECT * FROM contacts WHERE REPLACE(REPLACE(REPLACE(telephone, ' ', ''), '-', ''), '+', '') LIKE :tel");
-        $stmt->execute(['tel' => '%' . $tel . '%']);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: false;
+        $stmt = $db->query('SELECT * FROM contacts');
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as $r) {
+            $t2 = preg_replace('/\D+/', '', $r['telephone'] ?? '');
+            if ($t2 !== '' && $t2 === $tel) {
+                return $r;
+            }
+        }
+        return false;
     } catch (PDOException $e) {
         return false;
     }
+}
+
+/**
+ * Carnet contacts : si aucune ligne avec ce numéro (normalisé), crée le contact.
+ * Utilisé lors de la création d'un bon de livraison.
+ *
+ * @return int|false id du contact existant ou créé
+ */
+function ensure_contact_from_bl($nom, $prenom, $telephone, $email = null) {
+    $telephone = trim($telephone ?? '');
+    if ($telephone === '') {
+        return false;
+    }
+    $existing = get_contact_by_telephone($telephone);
+    if ($existing) {
+        return (int) $existing['id'];
+    }
+    $id = create_contact(trim($nom ?? ''), trim($prenom ?? ''), $telephone, $email && trim($email) !== '' ? trim($email) : null);
+    return $id ? (int) $id : false;
 }
 
 /**

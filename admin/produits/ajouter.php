@@ -11,6 +11,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 require_once __DIR__ . '/../../controllers/controller_produits.php';
 $result = process_add_produit();
 
@@ -104,6 +106,25 @@ $categorie_id_prefill = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id
                             Aucune catégorie disponible. <a href="../categories/ajouter.php" class="link-accent">Créer une catégorie</a>
                         </small>
                     <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="form-add-block">
+                <h3 class="form-add-section-title"><i class="fas fa-warehouse"></i> Emplacement entrepôt</h3>
+                <p class="form-help" style="margin-bottom: 12px;">
+                    Un identifiant interne au format <strong>FPLxxxxxx</strong> sera attribué automatiquement à l’enregistrement.
+                </p>
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label for="etage">Étage</label>
+                        <input type="text" id="etage" name="etage" placeholder="Ex. RDC, 1, 2"
+                            value="<?php echo isset($_POST['etage']) ? htmlspecialchars($_POST['etage']) : ''; ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="numero_rayon">N° de rayon</label>
+                        <input type="text" id="numero_rayon" name="numero_rayon" placeholder="Ex. A12"
+                            value="<?php echo isset($_POST['numero_rayon']) ? htmlspecialchars($_POST['numero_rayon']) : ''; ?>">
+                    </div>
                 </div>
             </div>
 

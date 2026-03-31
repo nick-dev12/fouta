@@ -79,10 +79,10 @@ function process_admin_inscription() {
         $errors[] = 'Les mots de passe ne correspondent pas.';
     }
     
-    // Rôle : admin (accès complet) ou utilisateur (tout sauf gestion des comptes clients)
-    $role = isset($_POST['role']) ? trim($_POST['role']) : 'utilisateur';
-    if (!in_array($role, ['admin', 'utilisateur'])) {
-        $role = 'utilisateur';
+    // Rôle (voir model_admin admin_roles_valides())
+    $role = isset($_POST['role']) ? trim($_POST['role']) : 'gestion_stock';
+    if (!in_array($role, admin_roles_valides(), true)) {
+        $role = 'gestion_stock';
     }
 
     // Si un admin est connecté, il doit avoir le rôle admin pour ajouter des comptes
@@ -96,7 +96,7 @@ function process_admin_inscription() {
         // Hashage du mot de passe
         $password_hash = password_hash($password, PASSWORD_BCRYPT);
 
-        // Premier admin = rôle admin, sinon rôle du formulaire
+        // Premier compte = toujours administrateur ; sinon rôle choisi (comptes, commercial, compta, RH…)
         $role_final = $role;
         if (!admin_exists()) {
             $role_final = 'admin';

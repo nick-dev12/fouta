@@ -8,6 +8,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');
     exit;
 }
+require_once __DIR__ . '/../includes/require_access.php';
+
 
 $devis_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($devis_id <= 0) {
@@ -30,7 +32,10 @@ if ($existant) {
     exit;
 }
 
-$result = create_facture_devis($devis_id);
+$result = create_facture_devis(
+    $devis_id,
+    (int) ($_SESSION['admin_id'] ?? 0) > 0 ? (int) $_SESSION['admin_id'] : null
+);
 if ($result && $result['success']) {
     $_SESSION['success_message'] = 'Facture #' . $result['numero_facture'] . ' générée avec succès.';
     header('Location: facture.php?id=' . $result['facture_id']);

@@ -8,9 +8,17 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');
     exit;
 }
+require_once __DIR__ . '/../includes/require_access.php';
+
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
+    exit;
+}
+
+require_once __DIR__ . '/../../includes/admin_permissions.php';
+if (!admin_can_devis_bl()) {
+    header('Location: ../dashboard.php');
     exit;
 }
 
@@ -58,7 +66,19 @@ if ($erreur) {
     exit;
 }
 
-$result = create_devis($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email ?: null, $notes ?: null, $zone_livraison_id, $frais_livraison, $user_id);
+$result = create_devis(
+    $items,
+    $client_nom,
+    $client_prenom,
+    $client_telephone,
+    $adresse_livraison,
+    $client_email ?: null,
+    $notes ?: null,
+    $zone_livraison_id,
+    $frais_livraison,
+    $user_id,
+    (int) ($_SESSION['admin_id'] ?? 0) > 0 ? (int) $_SESSION['admin_id'] : null
+);
 
 if ($result && $result['success']) {
     $_SESSION['success_message'] = 'Devis #' . $result['numero_devis'] . ' créé avec succès.';

@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 // Récupérer l'ID du produit
 $produit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -613,6 +615,36 @@ $categories = get_all_categories();
                             une catégorie</a>
                     </small>
                     <?php endif; ?>
+                </div>
+            </div>
+
+            <?php
+            $identifiant_ro = $produit['identifiant_interne'] ?? '';
+            $etage_val = isset($_POST['etage']) ? $_POST['etage'] : ($produit['etage'] ?? '');
+            $rayon_val = isset($_POST['numero_rayon']) ? $_POST['numero_rayon'] : ($produit['numero_rayon'] ?? '');
+            ?>
+            <?php if ($identifiant_ro !== ''): ?>
+            <div class="form-group">
+                <label>Identifiant interne (FPL)</label>
+                <input type="text" readonly value="<?php echo htmlspecialchars($identifiant_ro); ?>"
+                    style="background: #f0f0f0; cursor: default;">
+                <small style="color: #666; font-size: 12px;">Référence interne unique, non modifiable.</small>
+            </div>
+            <?php else: ?>
+            <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
+                <i class="fas fa-info-circle"></i> L’identifiant <strong>FPLxxxxxx</strong> sera généré après migration base de données si absent.
+            </p>
+            <?php endif; ?>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="etage"><i class="fas fa-warehouse"></i> Étage (entrepôt)</label>
+                    <input type="text" id="etage" name="etage" placeholder="Ex. RDC, 1, 2"
+                        value="<?php echo htmlspecialchars((string) $etage_val); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="numero_rayon">N° de rayon</label>
+                    <input type="text" id="numero_rayon" name="numero_rayon" placeholder="Ex. A12"
+                        value="<?php echo htmlspecialchars((string) $rayon_val); ?>">
                 </div>
             </div>
 

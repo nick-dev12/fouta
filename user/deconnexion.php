@@ -28,8 +28,8 @@ if (ini_get("session.use_cookies")) {
 // Finalement, détruire la session
 session_destroy();
 
-// Rediriger vers la page d'accueil
-header('Location: ../index.php');
+// Rediriger vers la page d'accueil du site
+header('Location: /index.php');
 exit;
 
 ?>

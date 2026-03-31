@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 // Récupérer l'ID du produit
 $produit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 

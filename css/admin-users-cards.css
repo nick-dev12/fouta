@@ -1,6 +1,6 @@
 /**
  * Redesign des cartes - Comptes & Utilisateurs
- * Respecte le code couleur : variables.css (couleur-dominante, boutons-secondaires, accent-promo, titres)
+ * Couleurs : variables.css (importée via admin-dashboard.css)
  */
 
 /* ===== Header ===== */
@@ -104,7 +104,7 @@
 .page-users .user-card:hover {
   box-shadow: var(--ombre-gourmande);
   transform: translateY(-4px);
-  border-color: rgba(229, 72, 138, 0.3);
+  border-color: rgba(53, 100, 166, 0.28);
 }
 
 .page-comptes .user-card.inactive,
@@ -119,6 +119,11 @@
   background: var(--couleur-dominante);
   padding: 24px 20px;
   color: var(--texte-clair);
+}
+
+/* Fiches employé : dégradé bleu (variables.css) */
+.page-comptes .user-card-employe .card-header-wrap {
+  background: linear-gradient(145deg, var(--bleu-fonce) 0%, var(--couleur-dominante) 50%, var(--bleu-clair) 100%);
 }
 
 .page-comptes .user-card .card-badges,
@@ -168,8 +173,10 @@
 }
 
 .page-comptes .user-card .card-badges .role-badge.role-utilisateur,
-.page-users .user-card .card-badges .role-badge.role-utilisateur {
-  background: rgba(247, 127, 0, 0.4);
+.page-users .user-card .card-badges .role-badge.role-utilisateur,
+.page-comptes .user-card .card-badges .role-badge.role-gestion_stock,
+.page-users .user-card .card-badges .role-badge.role-gestion_stock {
+  background: rgba(255, 107, 53, 0.45);
   color: var(--texte-clair);
 }
 
@@ -354,7 +361,7 @@
 .page-comptes .user-card .btn-activate:hover,
 .page-users .user-card .btn-activate:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(32, 197, 199, 0.4);
+  box-shadow: 0 4px 15px rgba(53, 100, 166, 0.4);
 }
 
 .page-comptes .user-card .btn-deactivate,
@@ -376,11 +383,11 @@
 
 .page-comptes .user-card .btn-role:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(247, 127, 0, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
 }
 
 .page-comptes .user-card .btn-self {
-  background: rgba(229, 72, 138, 0.15);
+  background: var(--bleu-pale);
   color: var(--titres);
   cursor: default;
   opacity: 0.9;
@@ -413,7 +420,7 @@
   text-align: center;
   background: var(--glass-bg);
   border-radius: 16px;
-  border: 2px dashed rgba(229, 72, 138, 0.3);
+  border: 2px dashed rgba(53, 100, 166, 0.28);
 }
 
 .page-comptes .empty-state i,
@@ -422,6 +429,10 @@
   color: var(--couleur-dominante);
   margin-bottom: 16px;
   opacity: 0.6;
+}
+
+.page-comptes .hub-section-title {
+  border-bottom-color: rgba(53, 100, 166, 0.28) !important;
 }
 
 /* Responsive */

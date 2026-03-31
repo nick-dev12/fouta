@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 // Afficher le message de succès s'il existe
 $success_message = '';
 if (isset($_SESSION['success_message'])) {
@@ -37,12 +39,27 @@ if (!empty($produits)) {
             return true;
         }
 
+        // Code interne FPLxxxxxx (exact, insensible à la casse)
+        if (preg_match('/^FPL\d{6}$/i', $recherche)) {
+            $code = strtoupper($recherche);
+            $ident = strtoupper(trim((string) ($produit['identifiant_interne'] ?? '')));
+            return $ident !== '' && $ident === $code;
+        }
+
+        // 5 derniers chiffres du numéro (saisie rapide, type caisse supermarché)
+        if (preg_match('/^\d{5}$/', $recherche)) {
+            $ident = $produit['identifiant_interne'] ?? '';
+
+            return produit_identifiant_derniers_5_chiffres($ident) === $recherche;
+        }
+
         $needle = function_exists('mb_strtolower') ? mb_strtolower($recherche) : strtolower($recherche);
         $haystacks = [
             $produit['nom'] ?? '',
             $produit['description'] ?? '',
             $produit['categorie_nom'] ?? '',
-            $produit['statut'] ?? ''
+            $produit['statut'] ?? '',
+            (string) ($produit['identifiant_interne'] ?? ''),
         ];
 
         foreach ($haystacks as $value) {
@@ -156,8 +173,10 @@ if (!empty($produits)) {
         <form method="GET" action="" class="admin-filters-bar">
             <div class="admin-filter-field">
                 <label for="recherche">Recherche</label>
-                <input type="text" id="recherche" name="recherche" placeholder="Nom, description, statut..."
-                    value="<?php echo htmlspecialchars($recherche); ?>">
+                <input type="text" id="recherche" name="recherche" placeholder="Nom, FPL000151 ou 5 chiffres (ex. 00151)…"
+                    value="<?php echo htmlspecialchars($recherche); ?>"
+                    autocomplete="off"
+                    inputmode="search">
             </div>
             <div class="admin-filter-field">
                 <label for="categorie_id">Catégorie</label>

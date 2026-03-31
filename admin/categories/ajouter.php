@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 // Traiter le formulaire
 require_once __DIR__ . '/../../controllers/controller_categories.php';
 $result = process_add_categorie();

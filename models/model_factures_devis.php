@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/model_admin_activite.php';
 
 /**
  * Génère un numéro de facture devis (format INV-DEV + 5 chiffres)
@@ -24,9 +25,10 @@ function generate_numero_facture_devis() {
 /**
  * Crée une facture pour un devis
  * @param int $devis_id
+ * @param int|null $admin_createur_id Admin ayant généré la facture
  * @return array|false ['success'=>true, 'facture_id'=>int, 'numero_facture'=>string] ou false
  */
-function create_facture_devis($devis_id) {
+function create_facture_devis($devis_id, $admin_createur_id = null) {
     global $db;
 
     $devis_id = (int) $devis_id;
@@ -51,16 +53,33 @@ function create_facture_devis($devis_id) {
 
         $token = bin2hex(random_bytes(32));
 
-        $stmt = $db->prepare("
-            INSERT INTO factures_devis (devis_id, numero_facture, date_facture, montant_total, token)
-            VALUES (:devis_id, :numero_facture, CURDATE(), :montant_total, :token)
-        ");
-        $stmt->execute([
-            'devis_id' => $devis_id,
-            'numero_facture' => $numero,
-            'montant_total' => (float) $devis['montant_total'],
-            'token' => $token
-        ]);
+        $has_admin = admin_activite_column_exists('factures_devis', 'admin_createur_id');
+        $aid = $has_admin && $admin_createur_id !== null && (int) $admin_createur_id > 0 ? (int) $admin_createur_id : null;
+
+        if ($has_admin) {
+            $stmt = $db->prepare("
+                INSERT INTO factures_devis (devis_id, numero_facture, date_facture, montant_total, token, admin_createur_id)
+                VALUES (:devis_id, :numero_facture, CURDATE(), :montant_total, :token, :admin_createur_id)
+            ");
+            $stmt->execute([
+                'devis_id' => $devis_id,
+                'numero_facture' => $numero,
+                'montant_total' => (float) $devis['montant_total'],
+                'token' => $token,
+                'admin_createur_id' => $aid,
+            ]);
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO factures_devis (devis_id, numero_facture, date_facture, montant_total, token)
+                VALUES (:devis_id, :numero_facture, CURDATE(), :montant_total, :token)
+            ");
+            $stmt->execute([
+                'devis_id' => $devis_id,
+                'numero_facture' => $numero,
+                'montant_total' => (float) $devis['montant_total'],
+                'token' => $token
+            ]);
+        }
         $facture_id = (int) $db->lastInsertId();
         return ['success' => true, 'facture_id' => $facture_id, 'numero_facture' => $numero];
     } catch (PDOException $e) {

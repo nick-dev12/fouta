@@ -11,6 +11,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 $produit_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($produit_id <= 0) {
     header('Location: index.php');
@@ -35,6 +37,16 @@ if (!$produit) {
     header('Location: index.php');
     exit;
 }
+
+require_once __DIR__ . '/../../includes/barcode_fpl.php';
+$code_fpl_live = ensure_produit_identifiant_interne($produit_id);
+if ($code_fpl_live !== null && $code_fpl_live !== '') {
+    $produit['identifiant_interne'] = $code_fpl_live;
+}
+if (get_barcode_produit_web_path($produit_id) === '') {
+    generer_barcode_produit_fpl($produit_id);
+}
+$barcode_url = get_barcode_produit_web_path($produit_id);
 
 $quantite_vendue = get_quantite_vendue_produit($produit_id);
 $stock_actuel = (int) ($produit['stock'] ?? 0);
@@ -354,6 +366,84 @@ if (isset($_SESSION['success_message'])) {
             color: #918a44;
             font-weight: 600;
         }
+
+        .produit-preview-meta {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+            color: #444;
+        }
+
+        .produit-preview-meta span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .produit-preview-meta i {
+            color: #918a44;
+            width: 18px;
+            text-align: center;
+        }
+
+        .produit-preview-meta strong {
+            color: #6b2f20;
+            font-weight: 700;
+        }
+
+        .barcode-fpl-block {
+            margin-top: 24px;
+        }
+
+        .barcode-fpl-block h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #6b2f20;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .barcode-fpl-block h3 i {
+            color: #918a44;
+        }
+
+        .barcode-fpl-desc {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 14px;
+        }
+
+        .barcode-fpl-wrap {
+            background: #fff;
+            padding: 16px 20px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            border: 2px solid #e5e3d8;
+            text-align: center;
+        }
+
+        .barcode-fpl-img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+        }
+
+        .barcode-fpl-code {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: #000;
+            margin-top: 10px;
+            font-family: ui-monospace, Consolas, monospace;
+        }
+
+        .barcode-fpl-actions {
+            margin-top: 12px;
+        }
         /* Responsive: cartes mouvements sur mobile */
         .mouvements-produit-cards { display: none; }
         .mouvement-produit-card {
@@ -402,8 +492,9 @@ if (isset($_SESSION['success_message'])) {
 
         @media print {
             .content-header, .message, .produit-preview, .ajuster-stock-layout,
-            .mouvements-section, .btn-back, nav, footer, .qr-code-actions { display: none !important; }
+            .mouvements-section, .btn-back, nav, footer, .qr-code-actions, .barcode-fpl-actions { display: none !important; }
             .qr-code-block { box-shadow: none; border: 1px solid #ccc; }
+            .barcode-fpl-block { box-shadow: none; border: 1px solid #ccc; }
         }
     </style>
 </head>
@@ -440,6 +531,17 @@ if (isset($_SESSION['success_message'])) {
         <div class="produit-preview-info">
             <h3><?php echo htmlspecialchars($produit['nom']); ?></h3>
             <span class="prix"><?php echo number_format($prix_produit, 0, ',', ' '); ?> FCFA / unité</span>
+            <div class="produit-preview-meta">
+                <?php if (!empty($produit['identifiant_interne'])): ?>
+                <span><i class="fas fa-barcode" aria-hidden="true"></i> Réf. <strong><?php echo htmlspecialchars($produit['identifiant_interne']); ?></strong></span>
+                <?php endif; ?>
+                <?php if (isset($produit['etage']) && (string) $produit['etage'] !== ''): ?>
+                <span><i class="fas fa-layer-group" aria-hidden="true"></i> Étage <strong><?php echo htmlspecialchars((string) $produit['etage']); ?></strong></span>
+                <?php endif; ?>
+                <?php if (isset($produit['numero_rayon']) && (string) $produit['numero_rayon'] !== ''): ?>
+                <span><i class="fas fa-th-large" aria-hidden="true"></i> N° rayon <strong><?php echo htmlspecialchars((string) $produit['numero_rayon']); ?></strong></span>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
@@ -450,7 +552,6 @@ if (isset($_SESSION['success_message'])) {
                 <div class="stock-stat-card stock-total">
                     <h4>Nombre total</h4>
                     <div class="value"><?php echo $nombre_total; ?></div>
-                    <small style="font-size: 11px; color: #888;">Stock initial + entrées</small>
                 </div>
                 <div class="stock-stat-card stock-vendu">
                     <h4>Quantité vendue</h4>
@@ -459,7 +560,6 @@ if (isset($_SESSION['success_message'])) {
                 <div class="stock-stat-card stock-restant">
                     <h4>Stock restant</h4>
                     <div class="value"><?php echo $stock_restant; ?></div>
-                    <small style="font-size: 11px; color: #888;">Total − Vendu</small>
                 </div>
             </div>
 
@@ -495,6 +595,29 @@ if (isset($_SESSION['success_message'])) {
                     </button>
                 </form>
             </div>
+
+            <?php if (!empty($barcode_url) && !empty($produit['identifiant_interne'])): ?>
+            <div class="stock-form-block barcode-fpl-block" id="barcode-fpl-print-area"
+                data-barcode-src="<?php echo htmlspecialchars($barcode_url); ?>"
+                data-code="<?php echo htmlspecialchars($produit['identifiant_interne']); ?>"
+                data-nom="<?php echo htmlspecialchars($produit['nom']); ?>">
+                <h3><i class="fas fa-barcode"></i> Code-barres (réf. FPL)</h3>
+                <p class="barcode-fpl-desc">Code <strong>Code 128</strong> : même référence que sur l’étiquette produit. Utilisable avec un scanner ou l’API <code>/api/produit_par_code_fpl.php</code>.</p>
+                <div class="barcode-fpl-wrap">
+                    <?php
+                    $barcode_fs = __DIR__ . '/../../upload/barcodes/produit_' . $produit_id . '.png';
+                    $barcode_ver = is_file($barcode_fs) ? (int) filemtime($barcode_fs) : 1;
+                    ?>
+                    <img src="<?php echo htmlspecialchars($barcode_url); ?>?v=<?php echo $barcode_ver; ?>" alt="Code-barres <?php echo htmlspecialchars($produit['identifiant_interne']); ?>" class="barcode-fpl-img" style="max-width:100%;height:auto;">
+                    <div class="barcode-fpl-code"><?php echo htmlspecialchars($produit['identifiant_interne']); ?></div>
+                </div>
+                <div class="barcode-fpl-actions">
+                    <button type="button" class="btn-primary btn-print-barcode" onclick="imprimerCodeBarresFPL()">
+                        <i class="fas fa-print"></i> Imprimer le code-barres
+                    </button>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <?php if (!empty($qr_code_data_uri)): ?>
             <div class="stock-form-block qr-code-block" id="qr-code-print-area" data-qr="<?php echo htmlspecialchars($qr_code_data_uri); ?>" data-nom="<?php echo htmlspecialchars($produit['nom']); ?>">
@@ -595,6 +718,19 @@ if (isset($_SESSION['success_message'])) {
     <?php include '../includes/footer.php'; ?>
 
     <script>
+    function imprimerCodeBarresFPL() {
+        var block = document.getElementById('barcode-fpl-print-area');
+        if (!block) return;
+        var src = block.getAttribute('data-barcode-src');
+        var code = block.getAttribute('data-code') || '';
+        var nom = block.getAttribute('data-nom') || 'Produit';
+        if (!src) return;
+        var w = window.open('', '_blank', 'width=420,height=360');
+        w.document.write('<!DOCTYPE html><html><head><title>Code-barres ' + code + '</title><style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;} img{max-width:100%;height:auto;} .code{font-size:18px;font-weight:700;margin-top:12px;letter-spacing:0.08em;font-family:monospace;} h2{font-size:15px;margin:0 0 8px;text-align:center;color:#333;}</style></head><body><h2>' + nom.replace(/</g,'&lt;') + '</h2><img src="' + src + '" alt="Code-barres"><div class="code">' + code.replace(/</g,'&lt;') + '</div><p style="font-size:12px;color:#666;">Référence FPL</p></body></html>');
+        w.document.close();
+        w.focus();
+        setTimeout(function() { w.print(); w.close(); }, 300);
+    }
     function imprimerQRCode() {
         var block = document.getElementById('qr-code-print-area');
         if (!block) return;

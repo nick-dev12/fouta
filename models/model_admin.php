@@ -8,6 +8,44 @@
 require_once __DIR__ . '/../conn/conn.php';
 
 /**
+ * Rôles autorisés pour les comptes admin (alignés sur ENUM MySQL après migration B2B)
+ */
+function admin_roles_valides() {
+    return ['admin', 'gestion_stock', 'commercial', 'comptabilite', 'rh', 'caissier'];
+}
+
+/**
+ * Libellé affichage d'un rôle
+ */
+function admin_role_label($role) {
+    $labels = [
+        'admin' => 'Administrateur',
+        'gestion_stock' => 'Gestion des stocks',
+        'utilisateur' => 'Gestion des stocks',
+        'commercial' => 'Commercial',
+        'comptabilite' => 'Comptabilité',
+        'rh' => 'Ressources humaines',
+        'caissier' => 'Caissier (caissière)',
+    ];
+    $r = (string) $role;
+    if ($r === 'utilisateur') {
+        $r = 'gestion_stock';
+    }
+    return isset($labels[$r]) ? $labels[$r] : $r;
+}
+
+/**
+ * Normalise un rôle (legacy utilisateur → gestion_stock)
+ */
+function normalize_admin_role($role) {
+    $r = (string) $role;
+    if ($r === 'utilisateur') {
+        return 'gestion_stock';
+    }
+    return in_array($r, admin_roles_valides(), true) ? $r : 'gestion_stock';
+}
+
+/**
  * Vérifie si un administrateur existe déjà avec cet email
  * @param string $email L'email à vérifier
  * @return bool True si l'email existe, False sinon
@@ -52,14 +90,14 @@ function admin_exists()
  * @param string $prenom Le prénom de l'administrateur
  * @param string $email L'email de l'administrateur
  * @param string $password_hash Le mot de passe hashé
- * @param string $role Rôle : 'admin' ou 'utilisateur' (défaut: 'utilisateur')
+ * @param string $role Voir admin_roles_valides() (défaut: gestion_stock)
  * @return bool|int L'ID de l'admin créé en cas de succès, False en cas d'échec
  */
-function create_admin($nom, $prenom, $email, $password_hash, $role = 'utilisateur')
+function create_admin($nom, $prenom, $email, $password_hash, $role = 'gestion_stock')
 {
     global $db;
 
-    $role = in_array($role, ['admin', 'utilisateur']) ? $role : 'utilisateur';
+    $role = normalize_admin_role($role);
 
     try {
         $stmt = $db->prepare("
@@ -302,14 +340,14 @@ function get_all_admins()
 /**
  * Met à jour le rôle d'un administrateur
  * @param int $id ID de l'admin
- * @param string $role 'admin' ou 'utilisateur'
+ * @param string $role Voir admin_roles_valides()
  * @return bool
  */
 function update_admin_role($id, $role)
 {
     global $db;
 
-    if (!in_array($role, ['admin', 'utilisateur'])) {
+    if (!in_array($role, admin_roles_valides(), true)) {
         return false;
     }
 

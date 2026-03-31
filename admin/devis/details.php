@@ -9,6 +9,12 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../../includes/admin_permissions.php';
+if (!admin_can_devis_bl()) {
+    header('Location: ../dashboard.php');
+    exit;
+}
+
 $devis_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($devis_id <= 0) {
     header('Location: index.php');

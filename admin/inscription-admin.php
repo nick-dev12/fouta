@@ -446,12 +446,21 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
                 <div class="form-group form-group-role">
                     <label for="role"><i class="fas fa-user-tag"></i> Rôle *</label>
                     <select id="role" name="role" required class="select-role">
-                        <option value="admin" <?php echo (isset($_POST['role']) && $_POST['role'] === 'admin') ? 'selected' : ''; ?>>Administrateur (accès complet)</option>
-                        <option value="utilisateur" <?php echo (!isset($_POST['role']) || $_POST['role'] === 'utilisateur') ? 'selected' : ''; ?>>Utilisateur (tout sauf gestion des comptes clients)</option>
+                        <?php
+                        $role_post = $_POST['role'] ?? 'gestion_stock';
+                        foreach (admin_roles_valides() as $r):
+                        ?>
+                        <option value="<?php echo htmlspecialchars($r); ?>" <?php echo ($role_post === $r) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars(admin_role_label($r)); ?>
+                        </option>
+                        <?php endforeach; ?>
                     </select>
                     <p class="role-help">
-                        <strong>Administrateur :</strong> accès à tout (comptes, utilisateurs clients, produits, commandes...).<br>
-                        <strong>Utilisateur :</strong> accès à tout sauf la gestion des comptes utilisateurs clients.
+                        <strong>Administrateur :</strong> tout l’espace admin.<br>
+                        <strong>Gestion des stocks :</strong> produits, catégories et stock uniquement.<br>
+                        <strong>Commercial :</strong> devis, commandes et caisse.<br>
+                        <strong>Comptabilité :</strong> comptabilité et historique des ventes.<br>
+                        <strong>RH :</strong> contacts, clients (comptes site), comptes d’accès internes.
                     </p>
                 </div>
                 <?php endif; ?>

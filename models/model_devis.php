@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/model_admin_activite.php';
 
 /**
  * Génère un numéro de devis unique (format DEV + 5 chiffres)
@@ -33,9 +34,10 @@ function generate_numero_devis() {
  * @param int|null $zone_livraison_id
  * @param float $frais_livraison
  * @param int|null $user_id
+ * @param int|null $admin_createur_id Admin ayant créé le devis (traçabilité)
  * @return array|false ['success'=>true, 'devis_id'=>int, 'numero_devis'=>string] ou false
  */
-function create_devis($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email = null, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $user_id = null) {
+function create_devis($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email = null, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $user_id = null, $admin_createur_id = null) {
     global $db;
 
     if (empty($items) || empty(trim($client_nom)) || empty(trim($client_prenom)) || empty(trim($client_telephone)) || empty(trim($adresse_livraison))) {
@@ -59,30 +61,61 @@ function create_devis($items, $client_nom, $client_prenom, $client_telephone, $a
             $numero = generate_numero_devis() . '-' . substr(uniqid(), -3);
         }
 
-        $stmt = $db->prepare("
-            INSERT INTO devis (
-                numero_devis, client_nom, client_prenom, client_telephone, client_email,
-                adresse_livraison, zone_livraison_id, frais_livraison, user_id,
-                montant_total, notes, statut
-            ) VALUES (
-                :numero_devis, :client_nom, :client_prenom, :client_telephone, :client_email,
-                :adresse_livraison, :zone_livraison_id, :frais_livraison, :user_id,
-                :montant_total, :notes, 'brouillon'
-            )
-        ");
-        $stmt->execute([
-            'numero_devis' => $numero,
-            'client_nom' => trim($client_nom),
-            'client_prenom' => trim($client_prenom),
-            'client_telephone' => trim($client_telephone),
-            'client_email' => $client_email && trim($client_email) !== '' ? trim($client_email) : null,
-            'adresse_livraison' => trim($adresse_livraison),
-            'zone_livraison_id' => $zone_livraison_id && (int) $zone_livraison_id > 0 ? (int) $zone_livraison_id : null,
-            'frais_livraison' => $frais_livraison,
-            'user_id' => $user_id && (int) $user_id > 0 ? (int) $user_id : null,
-            'montant_total' => $montant_total,
-            'notes' => $notes ? trim($notes) : null
-        ]);
+        $has_admin = admin_activite_column_exists('devis', 'admin_createur_id');
+        $aid = $has_admin && $admin_createur_id !== null && (int) $admin_createur_id > 0 ? (int) $admin_createur_id : null;
+
+        if ($has_admin) {
+            $stmt = $db->prepare("
+                INSERT INTO devis (
+                    numero_devis, client_nom, client_prenom, client_telephone, client_email,
+                    adresse_livraison, zone_livraison_id, frais_livraison, user_id, admin_createur_id,
+                    montant_total, notes, statut
+                ) VALUES (
+                    :numero_devis, :client_nom, :client_prenom, :client_telephone, :client_email,
+                    :adresse_livraison, :zone_livraison_id, :frais_livraison, :user_id, :admin_createur_id,
+                    :montant_total, :notes, 'brouillon'
+                )
+            ");
+            $stmt->execute([
+                'numero_devis' => $numero,
+                'client_nom' => trim($client_nom),
+                'client_prenom' => trim($client_prenom),
+                'client_telephone' => trim($client_telephone),
+                'client_email' => $client_email && trim($client_email) !== '' ? trim($client_email) : null,
+                'adresse_livraison' => trim($adresse_livraison),
+                'zone_livraison_id' => $zone_livraison_id && (int) $zone_livraison_id > 0 ? (int) $zone_livraison_id : null,
+                'frais_livraison' => $frais_livraison,
+                'user_id' => $user_id && (int) $user_id > 0 ? (int) $user_id : null,
+                'admin_createur_id' => $aid,
+                'montant_total' => $montant_total,
+                'notes' => $notes ? trim($notes) : null
+            ]);
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO devis (
+                    numero_devis, client_nom, client_prenom, client_telephone, client_email,
+                    adresse_livraison, zone_livraison_id, frais_livraison, user_id,
+                    montant_total, notes, statut
+                ) VALUES (
+                    :numero_devis, :client_nom, :client_prenom, :client_telephone, :client_email,
+                    :adresse_livraison, :zone_livraison_id, :frais_livraison, :user_id,
+                    :montant_total, :notes, 'brouillon'
+                )
+            ");
+            $stmt->execute([
+                'numero_devis' => $numero,
+                'client_nom' => trim($client_nom),
+                'client_prenom' => trim($client_prenom),
+                'client_telephone' => trim($client_telephone),
+                'client_email' => $client_email && trim($client_email) !== '' ? trim($client_email) : null,
+                'adresse_livraison' => trim($adresse_livraison),
+                'zone_livraison_id' => $zone_livraison_id && (int) $zone_livraison_id > 0 ? (int) $zone_livraison_id : null,
+                'frais_livraison' => $frais_livraison,
+                'user_id' => $user_id && (int) $user_id > 0 ? (int) $user_id : null,
+                'montant_total' => $montant_total,
+                'notes' => $notes ? trim($notes) : null
+            ]);
+        }
         $devis_id = (int) $db->lastInsertId();
         if ($devis_id <= 0) return false;
 
@@ -192,7 +225,13 @@ function get_produits_by_devis($devis_id) {
 function update_devis($devis_id, $items, $infos) {
     global $db;
     $devis_id = (int) $devis_id;
-    if ($devis_id <= 0) return false;
+    if ($devis_id <= 0) {
+        return false;
+    }
+    $ex = get_devis_by_id($devis_id);
+    if (!$ex || ($ex['statut'] ?? '') !== 'brouillon') {
+        return false;
+    }
 
     try {
         $db->beginTransaction();
@@ -255,6 +294,38 @@ function update_devis($devis_id, $items, $infos) {
     } catch (PDOException $e) {
         $db->rollBack();
         error_log('[update_devis] ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Supprime un devis (uniquement si statut brouillon)
+ * @param int $devis_id
+ * @return bool
+ */
+function delete_devis($devis_id) {
+    global $db;
+    $devis_id = (int) $devis_id;
+    if ($devis_id <= 0) {
+        return false;
+    }
+    $d = get_devis_by_id($devis_id);
+    if (!$d || ($d['statut'] ?? '') !== 'brouillon') {
+        return false;
+    }
+    require_once __DIR__ . '/model_factures_devis.php';
+    if (function_exists('get_facture_devis_by_devis') && get_facture_devis_by_devis($devis_id)) {
+        return false;
+    }
+    try {
+        $db->beginTransaction();
+        $db->prepare('DELETE FROM devis_produits WHERE devis_id = :id')->execute(['id' => $devis_id]);
+        $db->prepare('DELETE FROM devis WHERE id = :id')->execute(['id' => $devis_id]);
+        $db->commit();
+        return true;
+    } catch (PDOException $e) {
+        $db->rollBack();
+        error_log('[delete_devis] ' . $e->getMessage());
         return false;
     }
 }

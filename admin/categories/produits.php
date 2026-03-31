@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 // Récupérer l'ID de la catégorie
 $categorie_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -35,6 +37,7 @@ $produits = get_produits_by_categorie($categorie_id);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
@@ -44,9 +47,10 @@ $produits = get_produits_by_categorie($categorie_id);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../css/admin-dashboard.css<?php echo asset_version_query(); ?>">
 </head>
+
 <body>
     <?php include '../includes/nav.php'; ?>
-    
+
     <div class="content-header">
         <h1>
             <i class="fas fa-box"></i> Produits de la catégorie: <?php echo htmlspecialchars($categorie['nom']); ?>
@@ -64,8 +68,8 @@ $produits = get_produits_by_categorie($categorie_id);
     <section class="produits-section">
         <div class="section-title">
             <h2>
-                <i class="fas fa-box"></i> 
-                Produits de "<?php echo htmlspecialchars($categorie['nom']); ?>" 
+                <i class="fas fa-box"></i>
+                Produits de "<?php echo htmlspecialchars($categorie['nom']); ?>"
                 (<?php echo count($produits); ?>)
             </h2>
         </div>
@@ -74,7 +78,8 @@ $produits = get_produits_by_categorie($categorie_id);
             <div style="text-align: center; padding: 40px; color: #666;">
                 <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
                 <p>Aucun produit dans cette catégorie pour le moment.</p>
-                <a href="../produits/ajouter.php?categorie_id=<?php echo (int) $categorie_id; ?>" class="btn-primary" style="margin-top: 20px; display: inline-block;">
+                <a href="../produits/ajouter.php?categorie_id=<?php echo (int) $categorie_id; ?>" class="btn-primary"
+                    style="margin-top: 20px; display: inline-block;">
                     <i class="fas fa-plus"></i> Ajouter un produit à cette catégorie
                 </a>
             </div>
@@ -92,15 +97,16 @@ $produits = get_produits_by_categorie($categorie_id);
                         $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
                         ?>
                         <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
-                        <img src="../../upload/<?php echo htmlspecialchars($produit['image_principale']); ?>" 
-                             alt="<?php echo htmlspecialchars($produit['nom']); ?>" 
-                             class="produit-card-image"
-                             onerror="this.src='../../image/produit1.jpg'">
+                        <img src="../../upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                            alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
+                            onerror="this.src='../../image/produit1.jpg'">
                         <div class="produit-card-body">
                             <h3 class="produit-card-nom"><?php echo htmlspecialchars($produit['nom']); ?></h3>
-                            <p class="produit-card-categorie"><?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie'); ?></p>
+                            <p class="produit-card-categorie">
+                                <?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie'); ?>
+                            </p>
                             <p class="produit-card-prix">
-                                <?php echo number_format($produit['prix'], 0, ',', ' '); ?> 
+                                <?php echo number_format($produit['prix'], 0, ',', ' '); ?>
                                 <span class="prix-unite">FCFA</span>
                                 <?php if ($produit['prix_promotion']): ?>
                                     <span style="color: #c26638; font-size: 12px; margin-left: 5px;">
@@ -109,21 +115,19 @@ $produits = get_produits_by_categorie($categorie_id);
                                 <?php endif; ?>
                             </p>
                             <p class="produit-card-stock">
-                                Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span> 
-                                <?php if ($produit['poids']): ?>
-                                    (<?php echo htmlspecialchars($produit['poids']); ?>)
-                                <?php endif; ?>
+                                Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span>
+
                             </p>
                             <div class="produit-card-actions">
-                                <a href="../produits/ajuster-stock.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-stock" title="Ajuster le stock">
+                                <a href="../produits/ajuster-stock.php?id=<?php echo $produit['id']; ?>"
+                                    class="btn-card btn-stock" title="Ajuster le stock">
                                     <i class="fas fa-boxes-stacked"></i> Stock
                                 </a>
                                 <a href="../produits/modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
                                     <i class="fas fa-edit"></i> Modifier
                                 </a>
-                                <a href="../produits/supprimer.php?id=<?php echo $produit['id']; ?>" 
-                                   class="btn-card btn-delete"
-                                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
+                                <a href="../produits/supprimer.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-delete"
+                                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
                                     <i class="fas fa-trash"></i> Supprimer
                                 </a>
                             </div>
@@ -135,4 +139,3 @@ $produits = get_produits_by_categorie($categorie_id);
     </section>
 
     <?php include '../includes/footer.php'; ?>
-

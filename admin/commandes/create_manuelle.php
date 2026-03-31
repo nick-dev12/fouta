@@ -8,6 +8,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');
     exit;
 }
+require_once __DIR__ . '/../includes/require_access.php';
+
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
@@ -60,7 +62,18 @@ if ($erreur) {
 
 require_once __DIR__ . '/../../models/model_contacts.php';
 
-$result = create_commande_manuelle($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email ?: null, $notes ?: null, $zone_livraison_id, $frais_livraison);
+$result = create_commande_manuelle(
+    $items,
+    $client_nom,
+    $client_prenom,
+    $client_telephone,
+    $adresse_livraison,
+    $client_email ?: null,
+    $notes ?: null,
+    $zone_livraison_id,
+    $frais_livraison,
+    (int) ($_SESSION['admin_id'] ?? 0) > 0 ? (int) $_SESSION['admin_id'] : null
+);
 
 if ($result && isset($result['success']) && $result['success']) {
     // Si le téléphone n'existe pas en base (users ou contacts), enregistrer le contact

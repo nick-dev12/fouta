@@ -37,7 +37,7 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
     $_SESSION['admin_email'] = $result['admin']['email'];
     $_SESSION['admin_statut'] = $result['admin']['statut'];
-    $_SESSION['admin_role'] = $result['admin']['role'] ?? 'admin';
+    $_SESSION['admin_role'] = normalize_admin_role($result['admin']['role'] ?? 'admin');
 
     // Redirection vers l'espace admin. Si l'admin utilise "retour", connexion.php le redirigera à nouveau.
     header('Location: /admin/dashboard.php');

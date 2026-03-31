@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../models/model_produits.php';
+require_once __DIR__ . '/../includes/barcode_fpl.php';
 
 /**
  * Génère et sauvegarde le QR code d'un produit (pointant vers stock-info.php)
@@ -227,6 +228,8 @@ function process_add_produit() {
     
     // Si aucune erreur, créer le produit
     if (empty($errors)) {
+        $etage = isset($_POST['etage']) ? trim($_POST['etage']) : '';
+        $numero_rayon = isset($_POST['numero_rayon']) ? trim($_POST['numero_rayon']) : '';
         $data = [
             'nom' => $nom,
             'description' => $description,
@@ -240,7 +243,9 @@ function process_add_produit() {
             'unite' => $unite,
             'couleurs' => $couleurs,
             'taille' => $taille,
-            'statut' => $stock > 0 ? $statut : 'rupture_stock'
+            'statut' => $stock > 0 ? $statut : 'rupture_stock',
+            'etage' => $etage !== '' ? $etage : null,
+            'numero_rayon' => $numero_rayon !== '' ? $numero_rayon : null
         ];
         
         $produit_id = create_produit($data);
@@ -250,6 +255,7 @@ function process_add_produit() {
             $message = 'Produit ajouté avec succès !';
             // Générer et sauvegarder le QR code du produit
             generer_qrcode_produit($produit_id);
+            generer_barcode_produit_fpl($produit_id);
             // Créer les variantes
             $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? array_values($_POST['variantes_nom']) : [];
             $variantes_prix = isset($_POST['variantes_prix']) && is_array($_POST['variantes_prix']) ? array_values($_POST['variantes_prix']) : [];
@@ -430,6 +436,8 @@ function process_update_produit($produit_id) {
     
     // Si aucune erreur, mettre à jour le produit
     if (empty($errors)) {
+        $etage = isset($_POST['etage']) ? trim($_POST['etage']) : '';
+        $numero_rayon = isset($_POST['numero_rayon']) ? trim($_POST['numero_rayon']) : '';
         $data = [
             'nom' => $nom,
             'description' => $description,
@@ -444,7 +452,9 @@ function process_update_produit($produit_id) {
             'couleurs' => $couleurs,
             'taille' => $taille,
             'statut' => $stock > 0 ? $statut : 'rupture_stock',
-            'stock_article_id' => null
+            'stock_article_id' => null,
+            'etage' => $etage !== '' ? $etage : null,
+            'numero_rayon' => $numero_rayon !== '' ? $numero_rayon : null
         ];
 
         if (update_produit($produit_id, $data)) {
