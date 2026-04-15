@@ -7,12 +7,13 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../models/model_categories.php';
 
 // Traiter le formulaire
 require_once __DIR__ . '/../../controllers/controller_categories.php';
@@ -58,7 +59,8 @@ if (isset($result['success']) && $result['success']) {
         }
 
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e8e8e8;
@@ -71,7 +73,8 @@ if (isset($result['success']) && $result['success']) {
         }
 
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #918a44;
             box-shadow: 0 0 0 3px rgba(145, 138, 68, 0.1);

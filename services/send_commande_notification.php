@@ -52,7 +52,7 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
         }
         if (function_exists('mail_send')) {
             $sujet = "[FOUTA POIDS LOURDS] Mise à jour de votre commande #{$numero_commande}";
-            $body_html = '<div style="font-family: Arial, sans-serif; max-width: 600px;">';
+            $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
             $body_html .= '<h2 style="color: #918a44;">Mise à jour de votre commande</h2>';
             $body_html .= '<p>Bonjour,</p>';
             $body_html .= '<p>Le statut de votre commande <strong>#' . htmlspecialchars($numero_commande) . '</strong> a été mis à jour.</p>';

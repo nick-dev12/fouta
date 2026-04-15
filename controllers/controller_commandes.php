@@ -6,7 +6,54 @@
 
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_panier.php';
-require_once __DIR__ . '/../models/model_zones_livraison.php';
+require_once __DIR__ . '/../models/model_admin.php';
+require_once __DIR__ . '/../includes/db_schema_helpers.php';
+
+/**
+ * Construit la liste produits pour e-mail / notification (sous-ensemble panier).
+ */
+function commandes_controller_produits_email_for_items(array $panier_items, array $choix) {
+    $produits_email = [];
+    foreach ($panier_items as $item) {
+        $prix_unitaire = (!empty($item['panier_prix_unitaire']) && $item['panier_prix_unitaire'] > 0)
+            ? (float) $item['panier_prix_unitaire']
+            : (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] ? $item['prix_promotion'] : $item['prix']);
+        $prix_total_ligne = $prix_unitaire * $item['quantite'];
+        $panier_id = isset($item['panier_id']) ? (int) $item['panier_id'] : 0;
+        $c = isset($choix[$panier_id]) ? $choix[$panier_id] : [];
+        $nom_affichage = $item['nom'];
+        if (!empty($item['panier_variante_nom'])) {
+            $nom_affichage .= ' → ' . $item['panier_variante_nom'];
+        }
+        $produits_email[] = [
+            'nom' => $nom_affichage,
+            'quantite' => $item['quantite'],
+            'prix_unitaire' => $prix_unitaire,
+            'prix_total' => $prix_total_ligne,
+            'variante_nom' => $item['panier_variante_nom'] ?? '',
+            'couleur' => isset($c['couleur']) ? $c['couleur'] : ($item['panier_couleur'] ?? ''),
+            'poids' => isset($c['poids']) ? $c['poids'] : ($item['panier_poids'] ?? ''),
+            'taille' => isset($c['taille']) ? $c['taille'] : ($item['panier_taille'] ?? ''),
+            'surcout_poids' => isset($item['panier_surcout_poids']) ? (float) $item['panier_surcout_poids'] : 0,
+            'surcout_taille' => isset($item['panier_surcout_taille']) ? (float) $item['panier_surcout_taille'] : 0,
+            'boutique' => isset($item['vendeur_boutique_nom']) ? (string) $item['vendeur_boutique_nom'] : '',
+        ];
+    }
+    return $produits_email;
+}
+
+function commandes_controller_totaux_for_items(array $panier_items) {
+    $sous_total = 0;
+    $nombre_articles = 0;
+    foreach ($panier_items as $item) {
+        $prix_unitaire = (!empty($item['panier_prix_unitaire']) && $item['panier_prix_unitaire'] > 0)
+            ? (float) $item['panier_prix_unitaire']
+            : (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] ? $item['prix_promotion'] : $item['prix']);
+        $sous_total += $prix_unitaire * $item['quantite'];
+        $nombre_articles += $item['quantite'];
+    }
+    return [$sous_total, $nombre_articles];
+}
 
 $autoload = __DIR__ . '/../vendor/autoload.php';
 if (file_exists($autoload)) {
@@ -26,6 +73,15 @@ function process_create_commande() {
     }
     
     $user_id = $_SESSION['user_id'];
+
+    $limit_vendeur_id = null;
+    $boutique_slug_post = trim((string) ($_POST['boutique_slug'] ?? ''));
+    if ($boutique_slug_post !== '') {
+        $adm_b = get_admin_by_boutique_slug($boutique_slug_post);
+        if ($adm_b) {
+            $limit_vendeur_id = (int) $adm_b['id'];
+        }
+    }
     
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return [
@@ -34,50 +90,37 @@ function process_create_commande() {
         ];
     }
     
-    $zone_livraison_id = isset($_POST['zone_livraison_id']) ? (int) $_POST['zone_livraison_id'] : 0;
     $telephone_livraison = trim($_POST['telephone_livraison'] ?? '');
-    $notes = trim($_POST['notes'] ?? '');
-    
+
     if (empty($telephone_livraison)) {
         return [
             'success' => false,
             'message' => 'Le téléphone de livraison est obligatoire.'
         ];
     }
-    
+
     if (!preg_match('/^[0-9+\s\-()]+$/', $telephone_livraison)) {
         return [
             'success' => false,
             'message' => 'Le format du téléphone n\'est pas valide.'
         ];
     }
-    
-    $adresse_livraison = 'À définir';
+
+    /* Pas de zone / frais port : livraison gérée avec le client par téléphone */
+    $adresse_livraison = 'Coordonnées de livraison communiquées au client par téléphone.';
+    $zone_livraison_id = null;
     $frais_livraison = 0;
-    
-    if ($zone_livraison_id > 0) {
-        $zone = get_zone_livraison_by_id($zone_livraison_id);
-        if (!$zone || $zone['statut'] !== 'actif') {
-            return [
-                'success' => false,
-                'message' => 'La zone de livraison sélectionnée n\'est pas valide.'
-            ];
-        }
-        $adresse_livraison = $zone['ville'] . ' - ' . $zone['quartier'];
-        $frais_livraison = (float) $zone['prix_livraison'];
-    } else {
-        return [
-            'success' => false,
-            'message' => 'Veuillez sélectionner une zone de livraison.'
-        ];
-    }
+    $notes = null;
     
     $panier_items = get_panier_by_user($user_id);
+    if ($limit_vendeur_id !== null) {
+        $panier_items = filter_panier_items_by_vendeur($panier_items, $limit_vendeur_id);
+    }
     
     if (empty($panier_items)) {
         return [
             'success' => false,
-            'message' => 'Votre panier est vide. Ajoutez des produits avant de passer une commande.'
+            'message' => 'Votre panier est vide pour cette boutique. Ajoutez des produits avant de passer une commande.'
         ];
     }
     
@@ -120,12 +163,12 @@ function process_create_commande() {
         $choix[$panier_id] = ['couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
     }
     
-    $result = create_commande(
+    $result = create_marketplace_commandes_from_panier(
         $user_id,
         $panier_items,
         $adresse_livraison,
         $telephone_livraison,
-        $notes ?: null,
+        $notes,
         $zone_livraison_id,
         $frais_livraison,
         $choix
@@ -139,48 +182,62 @@ function process_create_commande() {
     }
     
     if ($result['success']) {
-        // Vider le panier après création de la commande
-        clear_panier($user_id);
+        if ($limit_vendeur_id !== null) {
+            delete_panier_lines_for_vendeur($user_id, $limit_vendeur_id);
+        } else {
+            clear_panier($user_id);
+        }
 
-        // Préparer les données pour la notification/email (envoi asynchrone dans commande.php)
-        $sous_total = 0;
-        $nombre_articles = 0;
-        $produits_email = [];
-        foreach ($panier_items as $item) {
-            $prix_unitaire = (!empty($item['panier_prix_unitaire']) && $item['panier_prix_unitaire'] > 0)
-                ? (float) $item['panier_prix_unitaire']
-                : (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] ? $item['prix_promotion'] : $item['prix']);
-            $prix_total_ligne = $prix_unitaire * $item['quantite'];
-            $sous_total += $prix_total_ligne;
-            $nombre_articles += $item['quantite'];
-            $panier_id = isset($item['panier_id']) ? (int) $item['panier_id'] : 0;
-            $c = isset($choix[$panier_id]) ? $choix[$panier_id] : [];
-            $nom_affichage = $item['nom'];
-            if (!empty($item['panier_variante_nom'])) {
-                $nom_affichage .= ' → ' . $item['panier_variante_nom'];
+        /* Une notification par boutique (même ordre que create_marketplace_commandes_from_panier) */
+        $notifications = [];
+        $groups = group_panier_items_by_vendeur($panier_items);
+        $idx_cr = 0;
+        $commandes_creees = isset($result['commandes']) && is_array($result['commandes']) ? $result['commandes'] : [];
+        if (empty($commandes_creees) && !empty($result['numero_commande'])) {
+            $commandes_creees = [[
+                'commande_id' => isset($result['commande_id']) ? $result['commande_id'] : null,
+                'numero_commande' => $result['numero_commande'],
+            ]];
+        }
+        foreach ($groups as $vid => $ginfo) {
+            $cr = $commandes_creees[$idx_cr] ?? null;
+            if (!$cr || empty($cr['numero_commande'])) {
+                break;
             }
-            $produits_email[] = [
-                'nom' => $nom_affichage,
-                'quantite' => $item['quantite'],
-                'prix_unitaire' => $prix_unitaire,
-                'prix_total' => $prix_total_ligne,
-                'variante_nom' => $item['panier_variante_nom'] ?? '',
-                'couleur' => isset($c['couleur']) ? $c['couleur'] : ($item['panier_couleur'] ?? ''),
-                'poids' => isset($c['poids']) ? $c['poids'] : ($item['panier_poids'] ?? ''),
-                'taille' => isset($c['taille']) ? $c['taille'] : ($item['panier_taille'] ?? ''),
-                'surcout_poids' => isset($item['panier_surcout_poids']) ? (float) $item['panier_surcout_poids'] : 0,
-                'surcout_taille' => isset($item['panier_surcout_taille']) ? (float) $item['panier_surcout_taille'] : 0
+            $idx_cr++;
+            $subset = $ginfo['items'];
+            list($sous_cmd, $nb_art_cmd) = commandes_controller_totaux_for_items($subset);
+            /* Les frais sont sur la 1re commande en base ; ici tout est 0 côté port */
+            $notifications[] = [
+                'vendeur_id' => (int) $vid,
+                'commande_id' => isset($cr['commande_id']) ? (int) $cr['commande_id'] : 0,
+                'numero_commande' => $cr['numero_commande'],
+                'montant_total' => $sous_cmd,
+                'nombre_articles' => $nb_art_cmd,
+                'telephone_livraison' => $telephone_livraison,
+                'adresse_livraison' => $adresse_livraison,
+                'produits' => commandes_controller_produits_email_for_items($subset, $choix),
             ];
         }
+
+        list($sous_total, $nombre_articles) = commandes_controller_totaux_for_items($panier_items);
         $montant_total = $sous_total + $frais_livraison;
+        $produits_email = commandes_controller_produits_email_for_items($panier_items, $choix);
+        $nums = !empty($result['numeros_commandes']) ? $result['numeros_commandes'] : [$result['numero_commande']];
+        $numero_affichage = implode(', ', $nums);
+        $msg_multi = count($nums) > 1
+            ? 'Vos commandes ont été créées avec succès ! Numéros : ' . $numero_affichage
+            : 'Votre commande a été créée avec succès ! Numéro de commande: ' . $result['numero_commande'];
 
         return [
             'success' => true,
-            'message' => 'Votre commande a été créée avec succès ! Numéro de commande: ' . $result['numero_commande'],
+            'message' => $msg_multi,
             'commande_id' => $result['commande_id'],
             'numero_commande' => $result['numero_commande'],
+            'numeros_commandes' => $nums,
+            'notifications' => $notifications,
             'email_data' => [
-                'numero_commande' => $result['numero_commande'],
+                'numero_commande' => $numero_affichage,
                 'montant_total' => $montant_total,
                 'nombre_articles' => $nombre_articles,
                 'telephone_livraison' => $telephone_livraison,

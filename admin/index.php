@@ -8,7 +8,7 @@
 session_start();
 
 // Si l'admin est connecté, rediriger vers le dashboard
-if (isset($_SESSION['admin_id']) && isset($_SESSION['admin_email'])) {
+if (isset($_SESSION['admin_id'])) {
     header('Location: dashboard.php');
     exit;
 }

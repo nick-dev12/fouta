@@ -8,6 +8,71 @@
 require_once __DIR__ . '/../conn/conn.php';
 
 /**
+ * La table slider possède une colonne admin_id (vendeur propriétaire du slide).
+ */
+function slider_table_has_admin_id_column() {
+    static $has = null;
+    if ($has !== null) {
+        return $has;
+    }
+    global $db;
+    if (!$db) {
+        $has = false;
+        return false;
+    }
+    try {
+        $r = $db->query("SHOW COLUMNS FROM slider LIKE 'admin_id'");
+        $has = $r && $r->rowCount() > 0;
+    } catch (PDOException $e) {
+        $has = false;
+    }
+    return $has;
+}
+
+/**
+ * Slides actifs pour une vitrine boutique (admin_id = vendeur).
+ * Si la colonne admin_id n'existe pas encore, retourne [] (aucun hero dédié).
+ */
+function get_slides_for_boutique($admin_id) {
+    global $db;
+    $aid = (int) $admin_id;
+    if ($aid <= 0 || !$db || !slider_table_has_admin_id_column()) {
+        return [];
+    }
+    try {
+        $stmt = $db->prepare("
+            SELECT * FROM slider
+            WHERE statut = 'actif' AND admin_id = :aid
+            ORDER BY ordre ASC, date_creation DESC
+        ");
+        $stmt->execute(['aid' => $aid]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ? filter_slides_with_existing_upload_files($rows) : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Ne garde que les slides dont le fichier image existe sous upload/slider/.
+ */
+function filter_slides_with_existing_upload_files(array $slides) {
+    $base = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'upload' . DIRECTORY_SEPARATOR . 'slider' . DIRECTORY_SEPARATOR;
+    $out = [];
+    foreach ($slides as $s) {
+        $img = trim((string) ($s['image'] ?? ''));
+        if ($img === '') {
+            continue;
+        }
+        $path = $base . str_replace(['/', '\\'], '', $img);
+        if (is_file($path)) {
+            $out[] = $s;
+        }
+    }
+    return $out;
+}
+
+/**
  * Récupère tous les slides actifs
  * @param string|null $statut Filtrer par statut ('actif', 'inactif' ou null pour tous)
  * @return array Tableau des slides (vide si aucun ou en cas d'erreur)
@@ -68,18 +133,14 @@ function get_slide_by_id($id) {
  * @param string $bouton_lien Le lien du bouton (optionnel)
  * @param int $ordre L'ordre d'affichage
  * @param string $statut Le statut (actif/inactif)
+ * @param int|null $admin_id Propriétaire vendeur (vitrine) ; null = slide plateforme / général
  * @return int|false L'ID du slide créé ou False en cas d'erreur
  */
-function add_slide($titre, $paragraphe, $image, $bouton_texte = null, $bouton_lien = null, $ordre = 0, $statut = 'actif') {
+function add_slide($titre, $paragraphe, $image, $bouton_texte = null, $bouton_lien = null, $ordre = 0, $statut = 'actif', $admin_id = null) {
     global $db;
     
     try {
-        $stmt = $db->prepare("
-            INSERT INTO slider (titre, paragraphe, image, bouton_texte, bouton_lien, ordre, statut, date_creation) 
-            VALUES (:titre, :paragraphe, :image, :bouton_texte, :bouton_lien, :ordre, :statut, NOW())
-        ");
-        
-        $result = $stmt->execute([
+        $params = [
             'titre' => $titre,
             'paragraphe' => $paragraphe,
             'image' => $image,
@@ -87,7 +148,22 @@ function add_slide($titre, $paragraphe, $image, $bouton_texte = null, $bouton_li
             'bouton_lien' => $bouton_lien,
             'ordre' => $ordre,
             'statut' => $statut
-        ]);
+        ];
+        if (slider_table_has_admin_id_column()) {
+            $aid = ($admin_id !== null && (int) $admin_id > 0) ? (int) $admin_id : null;
+            $params['admin_id'] = $aid;
+            $stmt = $db->prepare("
+                INSERT INTO slider (titre, paragraphe, image, bouton_texte, bouton_lien, ordre, statut, date_creation, admin_id)
+                VALUES (:titre, :paragraphe, :image, :bouton_texte, :bouton_lien, :ordre, :statut, NOW(), :admin_id)
+            ");
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO slider (titre, paragraphe, image, bouton_texte, bouton_lien, ordre, statut, date_creation)
+                VALUES (:titre, :paragraphe, :image, :bouton_texte, :bouton_lien, :ordre, :statut, NOW())
+            ");
+        }
+        
+        $result = $stmt->execute($params);
         
         if ($result) {
             return $db->lastInsertId();

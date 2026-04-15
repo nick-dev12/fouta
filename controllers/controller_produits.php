@@ -194,12 +194,37 @@ function process_add_produit() {
     if ($stock < 0) {
         $errors[] = 'Le stock ne peut pas être négatif.';
     }
-    
-    if ($categorie_id <= 0) {
-        $errors[] = 'Veuillez sélectionner une catégorie.';
+
+    require_once __DIR__ . '/../models/model_categories.php';
+    $role_admin = $_SESSION['admin_role'] ?? 'admin';
+    $admin_id_sess = (int) ($_SESSION['admin_id'] ?? 0);
+    $categorie_generale_id_val = null;
+    if ($role_admin === 'vendeur' && function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()) {
+        $categorie_id = isset($_POST['categorie_id']) ? (int) $_POST['categorie_id'] : 0;
+        if ($categorie_id <= 0) {
+            $errors[] = 'Choisissez une sous-catégorie.';
+        } elseif (!function_exists('categorie_est_utilisable_par_vendeur')
+            || !categorie_est_utilisable_par_vendeur($categorie_id, $admin_id_sess)) {
+            $errors[] = 'Sous-catégorie invalide ou non autorisée pour votre compte.';
+            $categorie_id = 0;
+        }
+        $generales_rayons = (function_exists('categories_generales_table_exists') && categories_generales_table_exists())
+            ? get_general_categories_ordered() : [];
+        if (!empty($generales_rayons)) {
+            $categorie_generale_id_val = isset($_POST['categorie_generale_id']) ? (int) $_POST['categorie_generale_id'] : 0;
+            if ($categorie_generale_id_val <= 0) {
+                $errors[] = 'Choisissez une catégorie générale (rayon).';
+            } elseif (!get_categorie_generale_by_id($categorie_generale_id_val)) {
+                $errors[] = 'Catégorie générale invalide.';
+                $categorie_generale_id_val = 0;
+            }
+        }
+    } else {
+        if ($categorie_id <= 0) {
+            $errors[] = 'Veuillez sélectionner une catégorie.';
+        }
     }
-    
-    // Vérifier que la catégorie existe
+
     if ($categorie_id > 0 && !get_categorie_by_id($categorie_id)) {
         $errors[] = 'La catégorie sélectionnée n\'existe pas.';
     }
@@ -230,68 +255,82 @@ function process_add_produit() {
     if (empty($errors)) {
         $etage = isset($_POST['etage']) ? trim($_POST['etage']) : '';
         $numero_rayon = isset($_POST['numero_rayon']) ? trim($_POST['numero_rayon']) : '';
-        $data = [
-            'nom' => $nom,
-            'description' => $description,
-            'prix' => $prix,
-            'prix_promotion' => $prix_promotion,
-            'stock' => $stock,
-            'categorie_id' => $categorie_id,
-            'image_principale' => $image_principale,
-            'images' => $images_json,
-            'poids' => $poids,
-            'unite' => $unite,
-            'couleurs' => $couleurs,
-            'taille' => $taille,
-            'statut' => $stock > 0 ? $statut : 'rupture_stock',
-            'etage' => $etage !== '' ? $etage : null,
-            'numero_rayon' => $numero_rayon !== '' ? $numero_rayon : null
-        ];
-        
-        $produit_id = create_produit($data);
-        
-        if ($produit_id) {
-            $success = true;
-            $message = 'Produit ajouté avec succès !';
-            // Générer et sauvegarder le QR code du produit
-            generer_qrcode_produit($produit_id);
-            generer_barcode_produit_fpl($produit_id);
-            // Créer les variantes
-            $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? array_values($_POST['variantes_nom']) : [];
-            $variantes_prix = isset($_POST['variantes_prix']) && is_array($_POST['variantes_prix']) ? array_values($_POST['variantes_prix']) : [];
-            $variantes_prix_promo = isset($_POST['variantes_prix_promo']) && is_array($_POST['variantes_prix_promo']) ? array_values($_POST['variantes_prix_promo']) : [];
-            $variantes_files = (isset($_FILES['variantes_image']) && is_array($_FILES['variantes_image']['name'])) ? $_FILES['variantes_image'] : null;
-            $nb_variantes = count($variantes_nom);
-            for ($i = 0; $i < $nb_variantes; $i++) {
-                $vn = trim($variantes_nom[$i] ?? '');
-                $vp = isset($variantes_prix[$i]) && is_numeric($variantes_prix[$i]) ? (float)$variantes_prix[$i] : 0;
-                if ($vn !== '' && $vp > 0) {
-                    $vimg = null;
-                    if ($variantes_files && isset($variantes_files['name'][$i]) && (int)($variantes_files['error'][$i] ?? 4) === UPLOAD_ERR_OK) {
-                        $f = [
-                            'name' => $variantes_files['name'][$i],
-                            'type' => $variantes_files['type'][$i] ?? '',
-                            'tmp_name' => $variantes_files['tmp_name'][$i] ?? '',
-                            'error' => $variantes_files['error'][$i] ?? 4,
-                            'size' => $variantes_files['size'][$i] ?? 0
-                        ];
-                        $fake = ['image' => $f];
-                        $vimg = upload_produit_image($fake, 'image');
-                    }
-                    $vpromo = isset($variantes_prix_promo[$i]) && is_numeric($variantes_prix_promo[$i]) && (float)$variantes_prix_promo[$i] > 0 ? (float)$variantes_prix_promo[$i] : null;
-                    if ($vpromo !== null && $vpromo >= $vp) $vpromo = null;
-                    create_variante([
-                        'produit_id' => $produit_id,
-                        'nom' => $vn,
-                        'prix' => $vp,
-                        'prix_promotion' => $vpromo,
-                        'image' => $vimg ?: null,
-                        'ordre' => $i
-                    ]);
-                }
+        $owner_admin = (int) ($_SESSION['admin_id'] ?? 0);
+        if (produits_has_column('admin_id') && $owner_admin <= 0) {
+            $errors[] = 'Session administrateur invalide.';
+        }
+
+        if (empty($errors)) {
+            $data = [
+                'nom' => $nom,
+                'description' => $description,
+                'prix' => $prix,
+                'prix_promotion' => $prix_promotion,
+                'stock' => $stock,
+                'categorie_id' => $categorie_id,
+                'image_principale' => $image_principale,
+                'images' => $images_json,
+                'poids' => $poids,
+                'unite' => $unite,
+                'couleurs' => $couleurs,
+                'taille' => $taille,
+                'statut' => $stock > 0 ? $statut : 'rupture_stock',
+                'etage' => $etage !== '' ? $etage : null,
+                'numero_rayon' => $numero_rayon !== '' ? $numero_rayon : null,
+                'admin_id' => $owner_admin,
+            ];
+            if (produits_has_column('categorie_generale_id') && $categorie_generale_id_val !== null && $categorie_generale_id_val > 0) {
+                $data['categorie_generale_id'] = $categorie_generale_id_val;
             }
-        } else {
-            $errors[] = 'Une erreur est survenue lors de l\'ajout du produit.';
+
+            $produit_id = create_produit($data);
+
+            if ($produit_id) {
+                if ($categorie_generale_id_val !== null && $categorie_generale_id_val > 0 && function_exists('vendeur_align_subcategorie_generale')) {
+                    vendeur_align_subcategorie_generale($categorie_id, $categorie_generale_id_val, $owner_admin);
+                }
+                $success = true;
+                $message = 'Produit ajouté avec succès !';
+                generer_qrcode_produit($produit_id);
+                generer_barcode_produit_fpl($produit_id);
+                $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? array_values($_POST['variantes_nom']) : [];
+                $variantes_prix = isset($_POST['variantes_prix']) && is_array($_POST['variantes_prix']) ? array_values($_POST['variantes_prix']) : [];
+                $variantes_prix_promo = isset($_POST['variantes_prix_promo']) && is_array($_POST['variantes_prix_promo']) ? array_values($_POST['variantes_prix_promo']) : [];
+                $variantes_files = (isset($_FILES['variantes_image']) && is_array($_FILES['variantes_image']['name'])) ? $_FILES['variantes_image'] : null;
+                $nb_variantes = count($variantes_nom);
+                for ($i = 0; $i < $nb_variantes; $i++) {
+                    $vn = trim($variantes_nom[$i] ?? '');
+                    $vp = isset($variantes_prix[$i]) && is_numeric($variantes_prix[$i]) ? (float)$variantes_prix[$i] : 0;
+                    if ($vn !== '' && $vp > 0) {
+                        $vimg = null;
+                        if ($variantes_files && isset($variantes_files['name'][$i]) && (int)($variantes_files['error'][$i] ?? 4) === UPLOAD_ERR_OK) {
+                            $f = [
+                                'name' => $variantes_files['name'][$i],
+                                'type' => $variantes_files['type'][$i] ?? '',
+                                'tmp_name' => $variantes_files['tmp_name'][$i] ?? '',
+                                'error' => $variantes_files['error'][$i] ?? 4,
+                                'size' => $variantes_files['size'][$i] ?? 0
+                            ];
+                            $fake = ['image' => $f];
+                            $vimg = upload_produit_image($fake, 'image');
+                        }
+                        $vpromo = isset($variantes_prix_promo[$i]) && is_numeric($variantes_prix_promo[$i]) && (float)$variantes_prix_promo[$i] > 0 ? (float)$variantes_prix_promo[$i] : null;
+                        if ($vpromo !== null && $vpromo >= $vp) {
+                            $vpromo = null;
+                        }
+                        create_variante([
+                            'produit_id' => $produit_id,
+                            'nom' => $vn,
+                            'prix' => $vp,
+                            'prix_promotion' => $vpromo,
+                            'image' => $vimg ?: null,
+                            'ordre' => $i
+                        ]);
+                    }
+                }
+            } else {
+                $errors[] = 'Une erreur est survenue lors de l\'ajout du produit.';
+            }
         }
     }
     
@@ -322,7 +361,14 @@ function process_update_produit($produit_id) {
     if (!$produit) {
         return ['success' => false, 'message' => 'Produit introuvable.'];
     }
-    
+
+    if (($_SESSION['admin_role'] ?? '') === 'vendeur') {
+        $aid = (int) ($produit['admin_id'] ?? 0);
+        if ($aid !== (int) ($_SESSION['admin_id'] ?? 0)) {
+            return ['success' => false, 'message' => 'Accès non autorisé à ce produit.'];
+        }
+    }
+
     // Récupération et validation des données (stock géré via produits.stock)
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
@@ -392,9 +438,39 @@ function process_update_produit($produit_id) {
     if ($stock < 0) {
         $errors[] = 'Le stock ne peut pas être négatif.';
     }
-    
-    if ($categorie_id <= 0) {
-        $errors[] = 'Veuillez sélectionner une catégorie.';
+
+    require_once __DIR__ . '/../models/model_categories.php';
+    $role_admin = $_SESSION['admin_role'] ?? 'admin';
+    $admin_id_sess = (int) ($_SESSION['admin_id'] ?? 0);
+    $categorie_generale_id_val = null;
+    if ($role_admin === 'vendeur' && function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()) {
+        $categorie_id = isset($_POST['categorie_id']) ? (int) $_POST['categorie_id'] : 0;
+        if ($categorie_id <= 0) {
+            $errors[] = 'Choisissez une sous-catégorie.';
+        } elseif (!function_exists('categorie_est_utilisable_par_vendeur')
+            || !categorie_est_utilisable_par_vendeur($categorie_id, $admin_id_sess)) {
+            $errors[] = 'Sous-catégorie invalide ou non autorisée pour votre compte.';
+            $categorie_id = 0;
+        }
+        $generales_rayons = (function_exists('categories_generales_table_exists') && categories_generales_table_exists())
+            ? get_general_categories_ordered() : [];
+        if (!empty($generales_rayons)) {
+            $categorie_generale_id_val = isset($_POST['categorie_generale_id']) ? (int) $_POST['categorie_generale_id'] : 0;
+            if ($categorie_generale_id_val <= 0) {
+                $errors[] = 'Choisissez une catégorie générale (rayon).';
+            } elseif (!get_categorie_generale_by_id($categorie_generale_id_val)) {
+                $errors[] = 'Catégorie générale invalide.';
+                $categorie_generale_id_val = 0;
+            }
+        }
+    } else {
+        if ($categorie_id <= 0) {
+            $errors[] = 'Veuillez sélectionner une catégorie.';
+        }
+    }
+
+    if ($categorie_id > 0 && !get_categorie_by_id($categorie_id)) {
+        $errors[] = 'La catégorie sélectionnée n\'existe pas.';
     }
     
     // Récupérer les images existantes
@@ -436,8 +512,9 @@ function process_update_produit($produit_id) {
     
     // Si aucune erreur, mettre à jour le produit
     if (empty($errors)) {
-        $etage = isset($_POST['etage']) ? trim($_POST['etage']) : '';
-        $numero_rayon = isset($_POST['numero_rayon']) ? trim($_POST['numero_rayon']) : '';
+        /* Étage / rayon : absents du formulaire admin — conserver les valeurs en base */
+        $etage = isset($_POST['etage']) ? trim((string) $_POST['etage']) : trim((string) ($produit['etage'] ?? ''));
+        $numero_rayon = isset($_POST['numero_rayon']) ? trim((string) $_POST['numero_rayon']) : trim((string) ($produit['numero_rayon'] ?? ''));
         $data = [
             'nom' => $nom,
             'description' => $description,
@@ -456,8 +533,14 @@ function process_update_produit($produit_id) {
             'etage' => $etage !== '' ? $etage : null,
             'numero_rayon' => $numero_rayon !== '' ? $numero_rayon : null
         ];
+        if (produits_has_column('categorie_generale_id') && $categorie_generale_id_val !== null && $categorie_generale_id_val > 0) {
+            $data['categorie_generale_id'] = $categorie_generale_id_val;
+        }
 
         if (update_produit($produit_id, $data)) {
+            if ($categorie_generale_id_val !== null && $categorie_generale_id_val > 0 && function_exists('vendeur_align_subcategorie_generale')) {
+                vendeur_align_subcategorie_generale($categorie_id, $categorie_generale_id_val, $admin_id_sess);
+            }
             $success = true;
             $message = 'Produit modifié avec succès !';
             // Supprimer du disque les images retirées par l'utilisateur
@@ -548,7 +631,14 @@ function process_delete_produit($produit_id) {
     if (!$produit) {
         return ['success' => false, 'message' => 'Produit introuvable.'];
     }
-    
+
+    if (($_SESSION['admin_role'] ?? '') === 'vendeur') {
+        $aid = (int) ($produit['admin_id'] ?? 0);
+        if ($aid !== (int) ($_SESSION['admin_id'] ?? 0)) {
+            return ['success' => false, 'message' => 'Accès non autorisé à ce produit.'];
+        }
+    }
+
     // Supprimer l'image si elle existe
     if ($produit['image_principale'] && file_exists(__DIR__ . '/../upload/' . $produit['image_principale'])) {
         @unlink(__DIR__ . '/../upload/' . $produit['image_principale']);
@@ -575,6 +665,13 @@ function process_ajuster_stock_produit($produit_id) {
     $produit = get_produit_by_id($produit_id);
     if (!$produit) {
         return ['success' => false, 'message' => 'Produit introuvable.'];
+    }
+
+    if (($_SESSION['admin_role'] ?? '') === 'vendeur') {
+        $aid = (int) ($produit['admin_id'] ?? 0);
+        if ($aid !== (int) ($_SESSION['admin_id'] ?? 0)) {
+            return ['success' => false, 'message' => 'Accès non autorisé à ce produit.'];
+        }
     }
 
     $nouveau_stock = isset($_POST['nouveau_stock']) ? (int) $_POST['nouveau_stock'] : -1;

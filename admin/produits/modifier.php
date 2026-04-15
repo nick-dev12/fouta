@@ -7,7 +7,7 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -25,6 +25,7 @@ if ($produit_id <= 0) {
 // Récupérer le produit et ses variantes
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_variantes.php';
+require_once __DIR__ . '/../../includes/admin_route_access.php';
 $produit = get_produit_by_id($produit_id);
 $variantes = $produit ? get_variantes_by_produit($produit_id) : [];
 
@@ -32,6 +33,7 @@ if (!$produit) {
     header('Location: index.php');
     exit;
 }
+admin_vendeur_assert_produit_owned($produit);
 
 // Traiter le formulaire
 require_once __DIR__ . '/../../controllers/controller_produits.php';
@@ -46,7 +48,25 @@ if (isset($result['success']) && $result['success']) {
 
 // Récupérer les catégories (stock géré via produits.stock)
 require_once __DIR__ . '/../../models/model_categories.php';
-$categories = get_all_categories();
+$categories = admin_categories_list_for_session();
+$__role_mod = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+$fap_use_category_hierarchy = categories_hierarchy_enabled() && ($__role_mod === 'vendeur');
+$vcat_prefill_sub = 0;
+$vcat_prefill_generale = 0;
+if ($fap_use_category_hierarchy) {
+    $pcat = get_categorie_by_id((int) ($produit['categorie_id'] ?? 0));
+    if ($pcat) {
+        $vcat_prefill_sub = (int) $pcat['id'];
+    }
+    if (produits_has_column('categorie_generale_id')) {
+        $pg = (int) ($produit['categorie_generale_id'] ?? 0);
+        if ($pg > 0) {
+            $vcat_prefill_generale = $pg;
+        } elseif ($pcat && function_exists('categories_has_categorie_generale_id_column') && categories_has_categorie_generale_id_column()) {
+            $vcat_prefill_generale = (int) ($pcat['categorie_generale_id'] ?? 0);
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -593,6 +613,20 @@ $categories = get_all_categories();
                         value="<?php echo $produit['stock']; ?>">
                 </div>
 
+                <?php if ($fap_use_category_hierarchy): ?>
+                <div class="form-group cat-hierarchy-vendeur">
+                    <?php require __DIR__ . '/inc_vendeur_category_fields.php'; ?>
+                </div>
+                <style>
+                .cat-hierarchy-vendeur .fap-field { margin-bottom: 16px; }
+                .cat-hierarchy-vendeur .fap-field label { display: block; font-weight: 600; margin-bottom: 6px; }
+                .cat-hierarchy-vendeur .fap-field select,
+                .cat-hierarchy-vendeur .fap-field input[type=text] {
+                    width: 100%; max-width: 520px; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px;
+                }
+                .cat-hierarchy-vendeur .fap-hint { display: block; font-size: 12px; color: #666; margin-top: 6px; }
+                </style>
+                <?php else: ?>
                 <div class="form-group">
                     <label for="categorie_id">Catégorie *</label>
                     <select id="categorie_id" name="categorie_id" required>
@@ -616,12 +650,11 @@ $categories = get_all_categories();
                     </small>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
             </div>
 
             <?php
             $identifiant_ro = $produit['identifiant_interne'] ?? '';
-            $etage_val = isset($_POST['etage']) ? $_POST['etage'] : ($produit['etage'] ?? '');
-            $rayon_val = isset($_POST['numero_rayon']) ? $_POST['numero_rayon'] : ($produit['numero_rayon'] ?? '');
             ?>
             <?php if ($identifiant_ro !== ''): ?>
             <div class="form-group">
@@ -635,18 +668,6 @@ $categories = get_all_categories();
                 <i class="fas fa-info-circle"></i> L’identifiant <strong>FPLxxxxxx</strong> sera généré après migration base de données si absent.
             </p>
             <?php endif; ?>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="etage"><i class="fas fa-warehouse"></i> Étage (entrepôt)</label>
-                    <input type="text" id="etage" name="etage" placeholder="Ex. RDC, 1, 2"
-                        value="<?php echo htmlspecialchars((string) $etage_val); ?>">
-                </div>
-                <div class="form-group">
-                    <label for="numero_rayon">N° de rayon</label>
-                    <input type="text" id="numero_rayon" name="numero_rayon" placeholder="Ex. A12"
-                        value="<?php echo htmlspecialchars((string) $rayon_val); ?>">
-                </div>
-            </div>
 
             <div class="form-group">
                 <label><i class="fas fa-layer-group"></i> Variantes du produit (optionnel)</label>

@@ -103,9 +103,13 @@ function process_add_slide() {
         }
     }
     
-    // Si aucune erreur, créer le slide
+    // Si aucune erreur, créer le slide (vendeur : rattaché à sa boutique pour la vitrine)
     if (empty($errors)) {
-        $slide_id = add_slide($titre, $paragraphe, $image, $bouton_texte, $bouton_lien, $ordre, $statut);
+        $admin_id_slide = null;
+        if (isset($_SESSION['admin_role']) && ($_SESSION['admin_role'] ?? '') === 'vendeur' && !empty($_SESSION['admin_id'])) {
+            $admin_id_slide = (int) $_SESSION['admin_id'];
+        }
+        $slide_id = add_slide($titre, $paragraphe, $image, $bouton_texte, $bouton_lien, $ordre, $statut, $admin_id_slide);
         
         if ($slide_id) {
             $success = true;

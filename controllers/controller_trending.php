@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../models/model_trending.php';
+require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
 
 /**
  * Traite le formulaire de modification de la section trending
@@ -14,6 +15,8 @@ function process_update_trending() {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return ['success' => false, 'message' => 'Méthode non autorisée'];
     }
+    $boutique_scope = admin_param_boutique_scope_id();
+    $scope_id = $boutique_scope !== null ? (int) $boutique_scope : null;
     
     // Validation des données
     $label = isset($_POST['label']) ? trim($_POST['label']) : '';
@@ -52,7 +55,7 @@ function process_update_trending() {
         }
     } else {
         // Garder l'image existante si aucune nouvelle image n'est uploadée
-        $current_config = get_trending_config();
+        $current_config = get_trending_config($scope_id);
         if ($current_config && !empty($current_config['image'])) {
             $image = $current_config['image'];
         } else {
@@ -69,7 +72,7 @@ function process_update_trending() {
         'image' => $image
     ];
     
-    if (update_trending_config($data)) {
+    if (update_trending_config($data, $scope_id)) {
         return ['success' => true, 'message' => 'Configuration de la section trending mise à jour avec succès'];
     } else {
         return ['success' => false, 'message' => 'Erreur lors de la mise à jour de la configuration'];

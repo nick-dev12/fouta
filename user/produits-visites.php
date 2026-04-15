@@ -13,6 +13,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 }
 
 require_once __DIR__ . '/../models/model_visites.php';
+require_once __DIR__ . '/../includes/produit_boutique_line.php';
 $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
 ?>
 <!DOCTYPE html>
@@ -64,10 +65,12 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
             position: relative;
         }
 
+        /* Date en haut-gauche : laisse la pastille « boutique » en haut-droite */
         .produits-visites .date-visite-badge {
             position: absolute;
             top: 10px;
-            right: 10px;
+            left: 10px;
+            right: auto;
             background: rgba(0, 0, 0, 0.6);
             color: #fff;
             padding: 5px 10px;
@@ -136,6 +139,7 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
                                     </div>
                                     <div class="produit-content">
                                         <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                                        <?php echo produit_card_boutique_line_html($produit); ?>
                                         <?php if (!empty($produit['categorie_nom'])): ?>
                                             <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                                         <?php endif; ?>

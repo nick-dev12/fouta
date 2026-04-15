@@ -46,6 +46,35 @@ function get_user_by_email($email) {
 }
 
 /**
+ * Récupère un utilisateur par téléphone (chiffres uniquement, format libre en saisie)
+ * @param string $telephone
+ * @return array|false
+ */
+function get_user_by_telephone($telephone) {
+    global $db;
+
+    $digits = preg_replace('/\D/', '', (string) $telephone);
+    if ($digits === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT * FROM users
+            WHERE telephone IS NOT NULL AND TRIM(telephone) != ''
+              AND REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(telephone,''), ' ', ''), '-', ''), '+', ''), '.', '') = :d
+            LIMIT 1
+        ");
+        $stmt->execute(['d' => $digits]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $user ? $user : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Récupère un utilisateur par son ID
  * @param int $id L'ID de l'utilisateur
  * @return array|false Les données de l'utilisateur ou False si non trouvé
@@ -132,33 +161,103 @@ function update_user($id, $data) {
 }
 
 /**
- * Récupère tous les utilisateurs avec leurs statistiques de commandes
- * @return array Tableau des utilisateurs avec leurs statistiques
+ * Indique si le client a au moins une commande contenant un produit publié par cette boutique (admin_id).
  */
-function get_all_users_with_stats() {
+function user_a_commande_chez_boutique($user_id, $boutique_admin_id) {
     global $db;
-    
+    $uid = (int) $user_id;
+    $vid = (int) $boutique_admin_id;
+    if ($uid <= 0 || $vid <= 0) {
+        return false;
+    }
+    require_once __DIR__ . '/model_produits.php';
+    if (!produits_has_column('admin_id')) {
+        return false;
+    }
     try {
         $stmt = $db->prepare("
-            SELECT 
-                u.id,
-                u.nom,
-                u.prenom,
-                u.email,
-                u.telephone,
-                u.date_creation,
-                u.statut,
-                COUNT(DISTINCT c.id) as nb_commandes,
-                COUNT(DISTINCT CASE WHEN c.statut = 'livree' THEN c.id END) as nb_commandes_livrees,
-                COALESCE(SUM(CASE WHEN c.id IS NOT NULL AND c.statut <> 'annulee' THEN c.montant_total ELSE 0 END), 0) AS ca_total_ht
-            FROM users u
-            LEFT JOIN commandes c ON u.id = c.user_id
-            GROUP BY u.id
-            ORDER BY nb_commandes DESC, nb_commandes_livrees DESC, u.date_creation DESC
+            SELECT 1
+            FROM commandes c
+            INNER JOIN commande_produits cp ON cp.commande_id = c.id
+            INNER JOIN produits p ON p.id = cp.produit_id AND p.admin_id = :vid
+            WHERE c.user_id = :uid
+            LIMIT 1
         ");
-        $stmt->execute();
+        $stmt->execute(['uid' => $uid, 'vid' => $vid]);
+        return (bool) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Récupère tous les utilisateurs avec leurs statistiques de commandes.
+ *
+ * @param int|null $boutique_admin_id Si défini (ex. vendeur marketplace), uniquement les clients ayant
+ *                                    commandé au moins un produit dont produits.admin_id = cet ID.
+ *                                    Les compteurs et le CA ne portent que sur ces commandes / lignes.
+ * @return array Tableau des utilisateurs avec leurs statistiques
+ */
+function get_all_users_with_stats($boutique_admin_id = null) {
+    global $db;
+
+    $boutique_admin_id = $boutique_admin_id !== null ? (int) $boutique_admin_id : null;
+    if ($boutique_admin_id !== null && $boutique_admin_id <= 0) {
+        $boutique_admin_id = null;
+    }
+
+    try {
+        if ($boutique_admin_id !== null) {
+            require_once __DIR__ . '/model_produits.php';
+            if (!produits_has_column('admin_id')) {
+                return [];
+            }
+            $stmt = $db->prepare("
+                SELECT
+                    u.id,
+                    u.nom,
+                    u.prenom,
+                    u.email,
+                    u.telephone,
+                    u.date_creation,
+                    u.statut,
+                    COUNT(DISTINCT c.id) AS nb_commandes,
+                    COUNT(DISTINCT CASE WHEN c.statut = 'livree' THEN c.id END) AS nb_commandes_livrees,
+                    COALESCE(SUM(CASE WHEN c.statut <> 'annulee' THEN vend_scope.vendor_ca ELSE 0 END), 0) AS ca_total_ht
+                FROM users u
+                INNER JOIN commandes c ON c.user_id = u.id
+                INNER JOIN (
+                    SELECT cp.commande_id, SUM(cp.prix_total) AS vendor_ca
+                    FROM commande_produits cp
+                    INNER JOIN produits p ON p.id = cp.produit_id AND p.admin_id = :boutique_admin_id
+                    GROUP BY cp.commande_id
+                ) vend_scope ON vend_scope.commande_id = c.id
+                GROUP BY u.id
+                ORDER BY nb_commandes DESC, nb_commandes_livrees DESC, u.date_creation DESC
+            ");
+            $stmt->execute(['boutique_admin_id' => $boutique_admin_id]);
+        } else {
+            $stmt = $db->prepare("
+                SELECT
+                    u.id,
+                    u.nom,
+                    u.prenom,
+                    u.email,
+                    u.telephone,
+                    u.date_creation,
+                    u.statut,
+                    COUNT(DISTINCT c.id) as nb_commandes,
+                    COUNT(DISTINCT CASE WHEN c.statut = 'livree' THEN c.id END) as nb_commandes_livrees,
+                    COALESCE(SUM(CASE WHEN c.id IS NOT NULL AND c.statut <> 'annulee' THEN c.montant_total ELSE 0 END), 0) AS ca_total_ht
+                FROM users u
+                LEFT JOIN commandes c ON u.id = c.user_id
+                GROUP BY u.id
+                ORDER BY nb_commandes DESC, nb_commandes_livrees DESC, u.date_creation DESC
+            ");
+            $stmt->execute();
+        }
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         return $users ? $users : [];
     } catch (PDOException $e) {
         return [];
@@ -288,20 +387,50 @@ function mark_user_reset_token_used($token) {
 }
 
 /**
- * Totaux commandes boutique pour la fiche client (hors annulées pour le CA)
+ * Totaux commandes boutique pour la fiche client (hors annulées pour le CA).
+ *
+ * @param int|null $boutique_admin_id Si défini, uniquement les commandes qui contiennent au moins une ligne
+ *                                    de produits de cette boutique ; le CA est la somme des prix_total de ces lignes.
  * @return array{nb_commandes: int, ca_total_ht: float}
  */
-function get_user_stats_commandes_boutique($user_id) {
+function get_user_stats_commandes_boutique($user_id, $boutique_admin_id = null) {
     global $db;
+    $uid = (int) $user_id;
+    $boutique_admin_id = $boutique_admin_id !== null ? (int) $boutique_admin_id : null;
+    if ($boutique_admin_id !== null && $boutique_admin_id <= 0) {
+        $boutique_admin_id = null;
+    }
+
     try {
-        $stmt = $db->prepare("
-            SELECT 
-                COUNT(*) AS nb_commandes,
-                COALESCE(SUM(CASE WHEN statut <> 'annulee' THEN montant_total ELSE 0 END), 0) AS ca_total_ht
-            FROM commandes 
-            WHERE user_id = :uid
-        ");
-        $stmt->execute(['uid' => (int) $user_id]);
+        if ($boutique_admin_id !== null) {
+            require_once __DIR__ . '/model_produits.php';
+            if (!produits_has_column('admin_id')) {
+                return ['nb_commandes' => 0, 'ca_total_ht' => 0.0];
+            }
+            $stmt = $db->prepare("
+                SELECT
+                    COUNT(DISTINCT c.id) AS nb_commandes,
+                    COALESCE(SUM(CASE WHEN c.statut <> 'annulee' THEN vs.vendor_ca ELSE 0 END), 0) AS ca_total_ht
+                FROM commandes c
+                INNER JOIN (
+                    SELECT cp.commande_id, SUM(cp.prix_total) AS vendor_ca
+                    FROM commande_produits cp
+                    INNER JOIN produits p ON p.id = cp.produit_id AND p.admin_id = :boutique_admin_id
+                    GROUP BY cp.commande_id
+                ) vs ON vs.commande_id = c.id
+                WHERE c.user_id = :uid
+            ");
+            $stmt->execute(['uid' => $uid, 'boutique_admin_id' => $boutique_admin_id]);
+        } else {
+            $stmt = $db->prepare("
+                SELECT
+                    COUNT(*) AS nb_commandes,
+                    COALESCE(SUM(CASE WHEN statut <> 'annulee' THEN montant_total ELSE 0 END), 0) AS ca_total_ht
+                FROM commandes
+                WHERE user_id = :uid
+            ");
+            $stmt->execute(['uid' => $uid]);
+        }
         $r = $stmt->fetch(PDO::FETCH_ASSOC);
         return [
             'nb_commandes' => (int) ($r['nb_commandes'] ?? 0),

@@ -4,18 +4,15 @@
  */
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../includes/admin_permissions.php';
 
-$__ar = $_SESSION['admin_role'] ?? '';
-if ($__ar === 'utilisateur') {
-    $__ar = 'gestion_stock';
-}
-if (!in_array($__ar, ['admin', 'rh'], true)) {
+if (!admin_can_gestion_clients_comptes()) {
     header('Location: ../dashboard.php');
     exit;
 }
@@ -30,15 +27,24 @@ require_once __DIR__ . '/../../models/model_users.php';
 require_once __DIR__ . '/../../models/model_commandes.php';
 require_once __DIR__ . '/../../models/model_commandes_personnalisees.php';
 
+$vf_clients = admin_vendeur_filter_id();
+
 $user = get_user_by_id($user_id);
 if (!$user) {
     header('Location: index.php');
     exit;
 }
 
-$stats = get_user_stats_commandes_boutique($user_id);
-$commandes = get_commandes_by_user($user_id);
-$commandes_perso = get_commandes_personnalisees_by_user($user_id);
+if ($vf_clients !== null && $vf_clients > 0 && !user_a_commande_chez_boutique($user_id, $vf_clients)) {
+    header('Location: index.php');
+    exit;
+}
+
+$stats = get_user_stats_commandes_boutique($user_id, $vf_clients);
+$commandes = get_commandes_by_user($user_id, $vf_clients);
+$commandes_perso = ($vf_clients !== null && $vf_clients > 0)
+    ? []
+    : get_commandes_personnalisees_by_user($user_id);
 
 function statut_commande_libelle($s)
 {
@@ -100,14 +106,14 @@ $nom_complet = trim(($user['prenom'] ?? '') . ' ' . ($user['nom'] ?? ''));
             <div class="admin-clients-kpi">
                 <div class="admin-clients-kpi__icon" aria-hidden="true"><i class="fas fa-shopping-bag"></i></div>
                 <div>
-                    <div class="admin-clients-kpi__label">Commandes boutique</div>
+                    <div class="admin-clients-kpi__label"><?php echo $vf_clients ? 'Commandes (vos produits)' : 'Commandes boutique'; ?></div>
                     <div class="admin-clients-kpi__value"><?php echo (int) ($stats['nb_commandes'] ?? 0); ?></div>
                 </div>
             </div>
             <div class="admin-clients-kpi">
                 <div class="admin-clients-kpi__icon" aria-hidden="true"><i class="fas fa-coins"></i></div>
                 <div>
-                    <div class="admin-clients-kpi__label">CA HT (non annulées)</div>
+                    <div class="admin-clients-kpi__label"><?php echo $vf_clients ? 'CA HT — vos lignes' : 'CA HT (non annulées)'; ?></div>
                     <div class="admin-clients-kpi__value" style="font-size: 1.35rem;">
                         <?php echo number_format((float) ($stats['ca_total_ht'] ?? 0), 0, ',', ' '); ?>
                     </div>
@@ -151,10 +157,12 @@ $nom_complet = trim(($user['prenom'] ?? '') . ' ' . ($user['nom'] ?? ''));
 
             <section class="admin-detail-panel" aria-labelledby="client-commandes">
                 <div class="admin-detail-panel__head">
-                    <h2 id="client-commandes"><i class="fas fa-shopping-cart" aria-hidden="true"></i> Commandes enregistrées sur le site</h2>
+                    <h2 id="client-commandes"><i class="fas fa-shopping-cart" aria-hidden="true"></i> <?php echo $vf_clients ? 'Commandes contenant vos produits' : 'Commandes enregistrées sur le site'; ?></h2>
                 </div>
                 <?php if (empty($commandes)): ?>
-                <p class="admin-detail-empty">Aucune commande boutique pour ce client.</p>
+                <p class="admin-detail-empty"><?php echo $vf_clients
+                    ? 'Ce client n’a pas encore commandé vos produits.'
+                    : 'Aucune commande boutique pour ce client.'; ?></p>
                 <?php else: ?>
                 <div class="admin-detail-table-wrap">
                     <table class="admin-detail-table">
@@ -162,7 +170,7 @@ $nom_complet = trim(($user['prenom'] ?? '') . ' ' . ($user['nom'] ?? ''));
                             <tr>
                                 <th>N°</th>
                                 <th>Date</th>
-                                <th>Montant</th>
+                                <th><?php echo $vf_clients ? 'Montant (vos lignes)' : 'Montant'; ?></th>
                                 <th>Statut</th>
                                 <th></th>
                             </tr>
@@ -172,7 +180,12 @@ $nom_complet = trim(($user['prenom'] ?? '') . ' ' . ($user['nom'] ?? ''));
                             <tr>
                                 <td><strong><?php echo htmlspecialchars($cmd['numero_commande'] ?? '#' . $cmd['id']); ?></strong></td>
                                 <td><?php echo isset($cmd['date_commande']) ? date('d/m/Y H:i', strtotime($cmd['date_commande'])) : '—'; ?></td>
-                                <td><?php echo number_format((float) ($cmd['montant_total'] ?? 0), 0, ',', ' '); ?> FCFA</td>
+                                <td><?php
+                                    $mont_aff = ($vf_clients && array_key_exists('montant_lignes_boutique', $cmd))
+                                        ? (float) $cmd['montant_lignes_boutique']
+                                        : (float) ($cmd['montant_total'] ?? 0);
+                                    echo number_format($mont_aff, 0, ',', ' ');
+                                ?> FCFA</td>
                                 <td>
                                     <span class="admin-detail-badge badge-statut statut-<?php echo htmlspecialchars(preg_replace('/[^a-z0-9_]/i', '', (string) ($cmd['statut'] ?? ''))); ?>">
                                         <?php echo htmlspecialchars(statut_commande_libelle($cmd['statut'] ?? '')); ?>

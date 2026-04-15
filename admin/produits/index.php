@@ -7,12 +7,13 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+$__role_produits_nav = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
 
 // Afficher le message de succès s'il existe
 $success_message = '';
@@ -21,17 +22,50 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
-// Récupérer tous les produits
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_categories.php';
-$produits = get_all_produits();
-$categories = get_all_categories();
+$categories = admin_categories_list_for_session();
+$fap_use_category_hierarchy = categories_hierarchy_enabled() && ($__role_produits_nav === 'vendeur');
+$vcat_prefill_sub = 0;
+$vcat_prefill_generale = 0;
+
+$add_produit_error_message = '';
+$add_produit_post_error = false;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_add_produit'])) {
+    require_once __DIR__ . '/../../controllers/controller_produits.php';
+    $add_result = process_add_produit();
+    if (!empty($add_result['success'])) {
+        $_SESSION['success_message'] = $add_result['message'];
+        header('Location: index.php');
+        exit;
+    }
+    $add_produit_error_message = $add_result['message'] ?? 'Erreur lors de l’ajout.';
+    $add_produit_post_error = true;
+}
+
+$produits = get_all_produits(null, admin_vendeur_filter_id());
 $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
+$open_add_modal = isset($_GET['open_add']) && $_GET['open_add'] === '1';
+$categorie_id_prefill_modal = isset($_GET['prefill_categorie']) ? (int) $_GET['prefill_categorie'] : 0;
+
+if ($fap_use_category_hierarchy && $categorie_id_prefill_modal > 0) {
+    $cp = get_categorie_by_id($categorie_id_prefill_modal);
+    if ($cp && function_exists('categorie_est_utilisable_par_vendeur')
+        && categorie_est_utilisable_par_vendeur((int) $cp['id'], (int) $_SESSION['admin_id'])) {
+        $vcat_prefill_sub = (int) $cp['id'];
+        if (function_exists('categories_has_categorie_generale_id_column') && categories_has_categorie_generale_id_column()) {
+            $vcat_prefill_generale = (int) ($cp['categorie_generale_id'] ?? 0);
+        }
+    }
+}
 
 if (!empty($produits)) {
-    $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id) {
-        if ($categorie_id > 0 && (int) ($produit['categorie_id'] ?? 0) !== $categorie_id) {
+    $expanded_filter_ids = ($categorie_id > 0 && function_exists('category_expanded_ids_for_products'))
+        ? category_expanded_ids_for_products($categorie_id)
+        : ($categorie_id > 0 ? [$categorie_id] : []);
+    $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id, $expanded_filter_ids) {
+        if ($categorie_id > 0 && !in_array((int) ($produit['categorie_id'] ?? 0), $expanded_filter_ids, true)) {
             return false;
         }
 
@@ -144,6 +178,93 @@ if (!empty($produits)) {
         .produit-card-linkable:hover .produit-card-nom {
             color: #c26638;
         }
+
+        /* Modal plein écran — ajout produit */
+        .adm-modal-add-produit[hidden] {
+            display: none !important;
+        }
+        .adm-modal-add-produit {
+            position: fixed;
+            inset: 0;
+            z-index: 9990;
+            display: flex;
+            flex-direction: column;
+            background: rgba(13, 13, 13, 0.52);
+            backdrop-filter: blur(6px);
+        }
+        .adm-modal-add-produit-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            margin: 0;
+            max-width: none;
+            width: 100%;
+            align-self: stretch;
+            background: linear-gradient(165deg, var(--fond-secondaire, #fafafa) 0%, var(--blanc, #fff) 42%, rgba(53, 100, 166, 0.04) 100%);
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            border-top: 3px solid var(--couleur-dominante, #3564a6);
+            overflow: hidden;
+        }
+        .adm-modal-add-head {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 22px;
+            background: var(--blanc, #fff);
+            border-bottom: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
+        }
+        .adm-modal-add-head h2 {
+            margin: 0;
+            font-size: 1.28rem;
+            font-family: var(--font-titres, inherit);
+            color: var(--titres, #0d0d0d);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .adm-modal-add-head h2 i {
+            color: var(--couleur-dominante, #3564a6);
+        }
+        .adm-modal-add-head-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .adm-modal-add-close {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(53, 100, 166, 0.1);
+            color: var(--couleur-dominante, #3564a6);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+        .adm-modal-add-close:hover {
+            background: var(--couleur-dominante, #3564a6);
+            color: var(--texte-clair, #fff);
+        }
+        .adm-modal-add-body {
+            flex: 1;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 22px 24px 40px;
+        }
+        .adm-modal-add-body .form-add-container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 
@@ -153,9 +274,14 @@ if (!empty($produits)) {
     <div class="content-header">
         <h1><i class="fas fa-box"></i> Liste des Produits</h1>
         <div class="header-actions">
-            <a href="ajouter.php" class="btn-primary">
-                <i class="fas fa-upload"></i> Publier un produit
+            <?php if ($__role_produits_nav === 'vendeur'): ?>
+            <a href="../stock/index.php" class="btn-secondary-style" title="Gestion du stock">
+                <i class="fas fa-boxes-stacked"></i> Stock
             </a>
+            <?php endif; ?>
+            <button type="button" class="btn-primary" id="btnOpenAddProduitModal">
+                <i class="fas fa-upload"></i> Publier un produit
+            </button>
         </div>
     </div>
 
@@ -204,9 +330,9 @@ if (!empty($produits)) {
             <div class="empty-state">
                 <i class="fas fa-box-open"></i>
                 <p>Aucun produit enregistré pour le moment.</p>
-                <a href="ajouter.php" class="btn-primary">
+                <button type="button" class="btn-primary" id="btnOpenAddProduitModalEmpty">
                     <i class="fas fa-upload"></i> Publier le premier produit
-                </a>
+                </button>
             </div>
         <?php else: ?>
             <div class="produits-grid">
@@ -263,9 +389,79 @@ if (!empty($produits)) {
         <?php endif; ?>
     </section>
 
+    <?php
+    $add_produit_modal = true;
+    $add_produit_form_action = 'index.php';
+    $categorie_id_prefill = $categorie_id_prefill_modal;
+    $modal_should_show = $add_produit_post_error || $open_add_modal;
+    ?>
+    <div id="modalAddProduit" class="adm-modal-add-produit" <?php echo $modal_should_show ? '' : 'hidden'; ?> aria-hidden="<?php echo $modal_should_show ? 'false' : 'true'; ?>">
+        <div class="adm-modal-add-produit-inner">
+            <div class="adm-modal-add-head">
+                <h2><i class="fas fa-plus-circle"></i> Publier un produit</h2>
+                <div class="adm-modal-add-head-actions">
+                    <button type="button" class="adm-modal-add-close" id="btnCloseAddProduitModal" title="Fermer" aria-label="Fermer">&times;</button>
+                </div>
+            </div>
+            <div class="adm-modal-add-body">
+                <div class="form-add-container">
+                    <?php require __DIR__ . '/inc_form_ajouter_produit.php'; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <?php include '../includes/footer.php'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            var modal = document.getElementById('modalAddProduit');
+            var btnOpen = document.getElementById('btnOpenAddProduitModal');
+            var btnOpenEmpty = document.getElementById('btnOpenAddProduitModalEmpty');
+            var btnClose = document.getElementById('btnCloseAddProduitModal');
+            var btnCancelModal = document.getElementById('btn-fap-cancel-modal');
+            function openAddModal() {
+                if (!modal) return;
+                modal.removeAttribute('hidden');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeAddModal() {
+                if (!modal) return;
+                modal.setAttribute('hidden', '');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+            if (btnOpen) btnOpen.addEventListener('click', openAddModal);
+            if (btnOpenEmpty) btnOpenEmpty.addEventListener('click', openAddModal);
+            if (btnClose) btnClose.addEventListener('click', closeAddModal);
+            if (btnCancelModal) btnCancelModal.addEventListener('click', closeAddModal);
+            modal && modal.addEventListener('click', function (ev) {
+                if (ev.target === modal) closeAddModal();
+            });
+            document.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Escape' && modal && !modal.hasAttribute('hidden')) {
+                    var vm = document.getElementById('fapVarianteModal');
+                    if (vm && !vm.hidden) return;
+                    closeAddModal();
+                }
+            });
+            if (modal && !modal.hasAttribute('hidden')) {
+                document.body.style.overflow = 'hidden';
+            }
+
+            try {
+                var q = new URLSearchParams(window.location.search);
+                if (q.get('open_add') === '1') {
+                    openAddModal();
+                    if (window.history && window.history.replaceState) {
+                        var u = new URL(window.location.href);
+                        u.searchParams.delete('open_add');
+                        u.searchParams.delete('prefill_categorie');
+                        window.history.replaceState({}, '', u.pathname + u.search + u.hash);
+                    }
+                }
+            } catch (e) {}
+
             document.querySelectorAll('.produit-card-linkable').forEach(function(card) {
                 card.addEventListener('click', function(event) {
                     if (event.target.closest('a, button, input, select, textarea, form')) {

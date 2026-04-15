@@ -1,6 +1,7 @@
 <?php
 session_start();
 
+require_once __DIR__ . '/includes/produit_boutique_line.php';
 
 // Inclusion du fichier de connexion à la BDD
 
@@ -23,7 +24,7 @@ $seo_canonical = $base . '/';
 
 
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="aos-not-ready">
 
 <head>
     <meta charset="UTF-8">
@@ -36,13 +37,19 @@ $seo_canonical = $base . '/';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+    <style>
+    /* AOS masque [data-aos] dans sa feuille CSS avant que le JS n’ajoute .aos-animate — affichage immédiat jusqu’à init */
+    html.aos-not-ready [data-aos] {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+        pointer-events: auto !important;
+    }
+    </style>
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
@@ -60,7 +67,7 @@ $seo_canonical = $base . '/';
     .vitrine-hero-bg {
         position: absolute;
         inset: 0;
-        background: linear-gradient(135deg, var(--blanc-casse) 0%, var(--blanc-neige) 50%, rgba(53, 100, 166, 0.04) 100%);
+        background: var(--fond-page);
         z-index: 0;
     }
 
@@ -363,6 +370,1111 @@ $seo_canonical = $base . '/';
             font-size: 11px;
         }
     }
+
+    /* —— Accueil marketplace (grilles type vitrine B2B, ex. Alibaba) —— */
+    .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .mp-main {
+        background: var(--blanc-neige);
+        padding-bottom: 48px;
+        font-family: var(--font-corps);
+    }
+
+    .mp-shell {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 0 16px;
+    }
+
+    .mp-slider-wrap {
+        max-width: 1320px;
+        margin: 0 auto 12px;
+        padding: 12px 16px 0;
+    }
+
+    .mp-slider-wrap .slider-area.owl-carousel {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        max-height: 320px;
+    }
+
+    .mp-slider-wrap .slider-item img {
+        width: 100%;
+        max-height: 320px;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* Bandeau recherche */
+    .mp-hero {
+        background: linear-gradient(180deg, var(--blanc-casse) 0%, var(--blanc-neige) 100%);
+        border-bottom: 1px solid var(--glass-border);
+        padding: 28px 16px 32px;
+        margin-bottom: 8px;
+    }
+
+    .mp-hero-inner {
+        max-width: 920px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .mp-hero h1 {
+        font-size: clamp(20px, 3vw, 28px);
+        font-weight: 700;
+        color: var(--titres);
+        font-family: var(--font-titres);
+        margin: 0 0 8px;
+        letter-spacing: -0.02em;
+    }
+
+    .mp-hero .mp-hero-sub {
+        font-size: 14px;
+        color: var(--gris-fonce);
+        margin: 0 0 20px;
+        line-height: 1.5;
+    }
+
+    .mp-search {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0;
+        max-width: 720px;
+        margin: 0 auto;
+        background: var(--blanc);
+        border: 2px solid var(--couleur-dominante);
+        border-radius: 32px;
+        overflow: hidden;
+        box-shadow: var(--glass-shadow);
+    }
+
+    .mp-search-input {
+        flex: 1 1 200px;
+        border: none;
+        padding: 14px 20px;
+        font-size: 15px;
+        outline: none;
+        min-width: 0;
+    }
+
+    .mp-search-btn {
+        border: none;
+        background: var(--couleur-dominante);
+        color: var(--texte-clair);
+        font-weight: 600;
+        padding: 14px 24px;
+        cursor: pointer;
+        font-size: 15px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s ease;
+    }
+
+    .mp-search-btn:hover {
+        background: var(--couleur-dominante-hover);
+    }
+
+    .mp-trust-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px 28px;
+        max-width: 920px;
+        margin: 20px auto 0;
+    }
+
+    .mp-trust-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--gris-fonce);
+    }
+
+    .mp-trust-item i {
+        color: var(--bleu-clair);
+        font-size: 16px;
+    }
+
+    /* (Grille catégories pleine largeur retirée : voir vitrine mp-showcase) */
+
+    /* Sections produits */
+    .mp-block {
+        margin: 22px 0 0;
+    }
+
+    .mp-block-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        padding: 0 2px;
+    }
+
+    .mp-block-head h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--titres);
+        font-family: var(--font-titres);
+    }
+
+    .mp-block-more {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--couleur-dominante);
+        text-decoration: none;
+    }
+
+    .mp-block-more:hover {
+        text-decoration: underline;
+    }
+
+    .mp-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+    }
+
+    @media (min-width: 1400px) {
+        .mp-grid {
+            grid-template-columns: repeat(6, 1fr);
+        }
+    }
+
+    .mp-card {
+        background: var(--blanc);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .mp-card:hover {
+        box-shadow: var(--ombre-douce);
+        border-color: var(--bleu-pale);
+    }
+
+    .mp-card-link {
+        text-decoration: none;
+        color: inherit;
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mp-card-img {
+        aspect-ratio: 1 / 1;
+        background: var(--blanc-casse);
+        overflow: hidden;
+    }
+
+    .mp-card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .mp-card-body {
+        padding: 10px 12px 8px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mp-card-title {
+        margin: 0 0 6px;
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.35;
+        color: var(--noir-clair);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.7em;
+    }
+
+    .mp-card .produit-card-boutique {
+        font-size: 11px;
+        margin: 0 0 4px;
+        color: var(--gris-moyen);
+        line-height: 1.3;
+    }
+
+    .mp-card .produit-card-boutique-link {
+        color: var(--bleu-clair);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .mp-card .produit-card-boutique-link:hover {
+        text-decoration: underline;
+    }
+
+    .mp-card-meta {
+        margin: 0 0 8px;
+        font-size: 11px;
+        color: var(--gris-clair);
+    }
+
+    .mp-card-price-row {
+        margin-top: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 10px;
+    }
+
+    .mp-card-price {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent-promo);
+    }
+
+    .mp-card-price-old {
+        font-size: 12px;
+        color: var(--gris-clair);
+        text-decoration: line-through;
+    }
+
+    .mp-card-cart {
+        padding: 0 10px 10px;
+        margin: 0;
+    }
+
+    .mp-card-btn {
+        width: 100%;
+        border: 1px solid var(--couleur-dominante);
+        background: var(--blanc);
+        color: var(--couleur-dominante);
+        font-weight: 600;
+        font-size: 13px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .mp-card-btn:hover {
+        background: var(--couleur-dominante);
+        color: var(--texte-clair);
+    }
+
+    .mp-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 36px 16px;
+        color: var(--gris-moyen);
+        background: var(--blanc);
+        border: 1px dashed var(--glass-border);
+        border-radius: 10px;
+    }
+
+    .mp-footer-cta {
+        text-align: center;
+        margin: 28px 0 8px;
+    }
+
+    .mp-footer-cta a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 28px;
+        background: var(--couleur-dominante);
+        color: var(--texte-clair);
+        font-weight: 600;
+        text-decoration: none;
+        border-radius: 24px;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+
+    .mp-footer-cta a:hover {
+        background: var(--couleur-dominante-hover);
+    }
+
+    /* —— Vitrine 3 colonnes (catégories + tendances + coups de cœur) —— */
+    .mp-showcase {
+        padding: 20px 0 8px;
+    }
+
+    .mp-showcase-inner {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr) minmax(260px, 320px);
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    @media (max-width: 1100px) {
+        .mp-showcase-inner {
+            grid-template-columns: 1fr;
+        }
+
+        .mp-showcase-spotlight {
+            min-height: 220px;
+        }
+    }
+
+    .mp-showcase-inner.mp-showcase-inner--no-nav {
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+    }
+
+    @media (max-width: 1100px) {
+        .mp-showcase-inner.mp-showcase-inner--no-nav {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .mp-showcase-nav {
+        background: var(--blanc);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        box-shadow: var(--glass-shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: 420px;
+    }
+
+    .mp-showcase-nav-head {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--titres);
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--glass-border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-titres);
+    }
+
+    .mp-showcase-nav-head i {
+        color: var(--accent-promo);
+    }
+
+    .mp-showcase-nav-list {
+        list-style: none;
+        margin: 0;
+        padding: 8px 0;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .mp-showcase-nav-list li {
+        margin: 0;
+    }
+
+    .mp-showcase-nav-list a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        color: var(--gris-fonce);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.15s, color 0.15s;
+        border-bottom: 1px solid var(--blanc-casse);
+    }
+
+    .mp-showcase-nav-list a:hover {
+        background: var(--bleu-pale);
+        color: var(--couleur-dominante);
+    }
+
+    .mp-showcase-nav-list .mp-sn-ico {
+        width: 28px;
+        text-align: center;
+        color: var(--bleu-clair);
+        font-size: 15px;
+    }
+
+    .mp-showcase-nav-list .mp-sn-chev {
+        margin-left: auto;
+        color: var(--gris-clair);
+        font-size: 11px;
+    }
+
+    .mp-showcase-nav-foot {
+        padding: 10px 12px;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .mp-showcase-nav-foot a {
+        display: block;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--couleur-dominante);
+        text-decoration: none;
+    }
+
+    .mp-showcase-center {
+        background: var(--blanc);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 16px 14px 18px;
+        box-shadow: var(--glass-shadow);
+        position: relative;
+    }
+
+    .mp-showcase-center-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .mp-showcase-center-top h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--titres);
+        font-family: var(--font-titres);
+    }
+
+    .mp-showcase-center-top p {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: var(--gris-moyen);
+    }
+
+    .mp-trend-nav {
+        display: flex;
+        gap: 6px;
+    }
+
+    .mp-trend-nav button {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid var(--glass-border);
+        background: var(--blanc);
+        color: var(--titres);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--ombre-douce);
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .mp-trend-nav button:hover {
+        background: var(--couleur-dominante);
+        color: var(--texte-clair);
+        border-color: var(--couleur-dominante);
+    }
+
+    .mp-trend-scroll {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        padding-bottom: 6px;
+        margin: 0 -4px;
+        padding-left: 4px;
+        padding-right: 4px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .mp-trend-scroll::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .mp-trend-scroll::-webkit-scrollbar-thumb {
+        background: var(--bleu-pale);
+        border-radius: 4px;
+    }
+
+    .mp-trend-card {
+        flex: 0 0 168px;
+        scroll-snap-align: start;
+        background: var(--blanc-casse);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 12px 10px;
+        text-align: center;
+    }
+
+    .mp-trend-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--couleur-dominante);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+
+    .mp-trend-sub {
+        display: block;
+        font-size: 12px;
+        color: var(--gris-fonce);
+        margin-bottom: 10px;
+        line-height: 1.3;
+        min-height: 2.6em;
+    }
+
+    .mp-trend-card a.mp-trend-img-link {
+        display: block;
+        aspect-ratio: 1 / 1;
+        background: var(--blanc);
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--glass-border);
+    }
+
+    .mp-trend-card a.mp-trend-img-link img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Coups de cœur */
+    .mp-showcase-spotlight {
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        background: linear-gradient(145deg, var(--bleu-pale) 0%, var(--blanc) 55%, var(--bleu-pale) 100%);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        padding: 22px 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 360px;
+    }
+
+    .mp-showcase-spotlight::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle at 20% 80%, rgba(53, 100, 166, 0.08) 0%, transparent 45%),
+            radial-gradient(circle at 80% 20%, rgba(255, 107, 53, 0.06) 0%, transparent 40%);
+        pointer-events: none;
+    }
+
+    .mp-sp-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .mp-sp-content h2 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--bleu-fonce);
+        font-family: var(--font-titres);
+        letter-spacing: -0.02em;
+    }
+
+    .mp-sp-content p {
+        margin: 0 0 16px;
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--gris-fonce);
+    }
+
+    .mp-sp-visual {
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 8px 0;
+    }
+
+    .mp-sp-visual img {
+        max-width: 100%;
+        max-height: 140px;
+        object-fit: contain;
+        border-radius: 12px;
+    }
+
+    .mp-sp-dots {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        position: relative;
+        z-index: 1;
+        padding-top: 10px;
+    }
+
+    .mp-sp-dots span {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--gris-clair);
+        opacity: 0.6;
+    }
+
+    .mp-sp-dots span.is-active {
+        background: var(--couleur-dominante);
+        opacity: 1;
+        transform: scale(1.15);
+    }
+
+    .mp-sp-cta {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--couleur-dominante);
+        color: var(--texte-clair) !important;
+        font-weight: 600;
+        font-size: 14px;
+        border-radius: 999px;
+        text-decoration: none;
+        transition: background 0.2s;
+        margin-top: 8px;
+    }
+
+    .mp-sp-cta:hover {
+        background: var(--couleur-dominante-hover);
+    }
+
+    /* Bandeau « commande / personnalisation » */
+    .mp-promo-b2b {
+        margin: 22px 0;
+        border-radius: 16px;
+        overflow: hidden;
+        background: linear-gradient(115deg, var(--bleu-fonce) 0%, var(--couleur-dominante) 42%, var(--bleu-clair) 100%);
+        box-shadow: var(--ombre-promo);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .mp-promo-b2b-inner {
+        display: grid;
+        grid-template-columns: minmax(260px, 380px) 1fr;
+        gap: 24px;
+        align-items: center;
+        padding: 32px 28px 32px 32px;
+    }
+
+    @media (max-width: 900px) {
+        .mp-promo-b2b-inner {
+            grid-template-columns: 1fr;
+            padding: 24px 18px;
+        }
+    }
+
+    .mp-promo-copy {
+        color: var(--texte-clair);
+    }
+
+    .mp-promo-copy .mp-promo-ico {
+        font-size: 22px;
+        opacity: 0.95;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .mp-promo-copy h2 {
+        margin: 0 0 10px;
+        font-size: clamp(20px, 3vw, 26px);
+        font-weight: 700;
+        font-family: var(--font-titres);
+        line-height: 1.2;
+    }
+
+    .mp-promo-copy > p {
+        margin: 0 0 18px;
+        font-size: 14px;
+        line-height: 1.55;
+        opacity: 0.94;
+    }
+
+    .mp-promo-list {
+        list-style: none;
+        margin: 0 0 22px;
+        padding: 0;
+    }
+
+    .mp-promo-list li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .mp-promo-list i {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+    }
+
+    .mp-promo-cta {
+        display: inline-flex;
+        padding: 12px 26px;
+        background: var(--blanc);
+        color: var(--bleu-fonce) !important;
+        font-weight: 700;
+        border-radius: 999px;
+        text-decoration: none;
+        font-size: 14px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .mp-promo-cta:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .mp-strip-scroll {
+        display: flex;
+        gap: 14px;
+        overflow-x: auto;
+        padding: 4px 2px 10px;
+        scroll-snap-type: x mandatory;
+    }
+
+    .mp-strip-card {
+        flex: 0 0 148px;
+        scroll-snap-align: start;
+        background: var(--blanc);
+        border-radius: 12px;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .mp-strip-card-img {
+        aspect-ratio: 1 / 1;
+        background: var(--blanc-casse);
+    }
+
+    .mp-strip-card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .mp-strip-pill {
+        margin: -14px 8px 8px;
+        position: relative;
+        z-index: 1;
+        background: rgba(13, 13, 13, 0.82);
+        color: var(--texte-clair);
+        font-size: 10px;
+        font-weight: 600;
+        padding: 5px 8px;
+        border-radius: 999px;
+        text-align: center;
+        line-height: 1.2;
+    }
+
+    .mp-strip-body {
+        padding: 0 10px 12px;
+    }
+
+    .mp-strip-price {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--titres);
+        margin: 0 0 4px;
+    }
+
+    .mp-strip-moq {
+        margin: 0;
+        font-size: 11px;
+        color: var(--gris-moyen);
+    }
+
+    /* Deux panneaux : Top + Nouveautés */
+    .mp-pair {
+        margin: 8px 0 24px;
+    }
+
+    .mp-pair-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    @media (max-width: 900px) {
+        .mp-pair-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .mp-panel {
+        background: var(--blanc);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 20px 18px 22px;
+        box-shadow: var(--glass-shadow);
+    }
+
+    .mp-panel-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .mp-panel-head h2 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--titres);
+        font-family: var(--font-titres);
+    }
+
+    .mp-panel-head p {
+        margin: 6px 0 0;
+        font-size: 13px;
+        color: var(--gris-moyen);
+        line-height: 1.4;
+    }
+
+    .mp-panel-more {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--couleur-dominante);
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .mp-panel-more:hover {
+        text-decoration: underline;
+    }
+
+    .mp-panel-products {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+    }
+
+    @media (max-width: 576px) {
+        .mp-panel-products {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Carte TOP */
+    .mp-top-card {
+        text-align: center;
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 12px 10px 14px;
+        background: var(--blanc-casse);
+    }
+
+    .mp-top-card-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .mp-top-card-img-wrap {
+        position: relative;
+        margin: 0 auto 12px;
+        max-width: 120px;
+    }
+
+    .mp-top-card-img {
+        aspect-ratio: 1 / 1;
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--blanc);
+        border: 1px solid var(--glass-border);
+    }
+
+    .mp-top-card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .mp-top-badge {
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, var(--bleu-fonce), var(--couleur-dominante));
+        color: var(--texte-clair);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        padding: 6px 14px;
+        clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
+        box-shadow: var(--ombre-douce);
+    }
+
+    .mp-top-title {
+        margin: 14px 0 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--titres);
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .mp-top-sub {
+        margin: 0;
+        font-size: 11px;
+        color: var(--gris-moyen);
+    }
+
+    .mp-top-cart {
+        margin: 12px 0 0;
+    }
+
+    .mp-top-cart-btn {
+        width: 100%;
+        border: none;
+        background: var(--couleur-dominante);
+        color: var(--texte-clair);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .mp-top-cart-btn:hover {
+        background: var(--couleur-dominante-hover);
+    }
+
+    /* Cartes nouveautés compactes */
+    .mp-new-card {
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 12px;
+        background: var(--blanc-casse);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mp-new-card-link {
+        text-decoration: none;
+        color: inherit;
+        flex: 1;
+    }
+
+    .mp-new-card-img {
+        aspect-ratio: 1 / 1;
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--blanc);
+        margin-bottom: 10px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .mp-new-card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .mp-new-promo {
+        margin: 0 0 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--accent-promo);
+    }
+
+    .mp-new-price {
+        margin: 0 0 4px;
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--titres);
+    }
+
+    .mp-new-price span {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gris-moyen);
+    }
+
+    .mp-new-moq {
+        margin: 0;
+        font-size: 11px;
+        color: var(--gris-moyen);
+    }
+
+    .mp-new-cart {
+        margin: 10px 0 0;
+    }
+
+    .mp-new-cart-btn {
+        width: 100%;
+        border: 1px solid var(--couleur-dominante);
+        background: var(--blanc);
+        color: var(--couleur-dominante);
+        border-radius: 8px;
+        padding: 8px;
+        cursor: pointer;
+        font-size: 15px;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .mp-new-cart-btn:hover {
+        background: var(--couleur-dominante);
+        color: var(--texte-clair);
+    }
+
+    .mp-logos-wrap {
+        margin: 20px 0 8px;
+    }
+
+    @media (max-width: 576px) {
+        .mp-search {
+            border-radius: 8px;
+            flex-direction: column;
+        }
+
+        .mp-search-btn {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .mp-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+    }
     </style>
 
 </head>
@@ -371,31 +1483,6 @@ $seo_canonical = $base . '/';
 <body>
 
     <?php include('nav_bar.php') ?>
-
-
-    <?php
-    // Récupérer les slides depuis la base de données
-    $slides = [];
-    if (file_exists(__DIR__ . '/models/model_slider.php')) {
-        require_once __DIR__ . '/models/model_slider.php';
-        $slides_result = get_all_slides('actif'); // Récupérer uniquement les slides actifs
-        $slides = is_array($slides_result) ? $slides_result : [];
-    }
-    ?>
-
-    <div class="slider-area owl-carousel">
-        <?php if (empty($slides)): ?>
-
-        <?php else: ?>
-        <?php foreach ($slides as $slide): ?>
-        <div class="slider-item">
-            <img src="/upload/slider/<?php echo htmlspecialchars($slide['image']); ?>"
-                alt="<?php echo htmlspecialchars($slide['titre']); ?>" onerror="this.src='/image/produit1.jpg'">
-
-        </div>
-        <?php endforeach; ?>
-        <?php endif; ?>
-    </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
     <div class="commande-perso-success"
@@ -417,538 +1504,466 @@ $seo_canonical = $base . '/';
     </div>
     <?php endif; ?>
 
-    <!-- Bannière vitrine - Présentation des services FOUTA POIDS LOURDS -->
-    <section class="vitrine-hero" data-aos="fade-up" data-aos-duration="800">
-        <div class="vitrine-hero-bg"></div>
-        <div class="vitrine-hero-content">
-            <h1 class="vitrine-hero-title">CHEZ FOUTA POIDS LOURDS</h1>
-            <p class="vitrine-hero-desc">
-                Spécialisée dans la vente de pièces détachées pour véhicules poids lourds (camions, bus et remorques)
-                et l'approvisionnement des professionnels du transport et de la mécanique en pièces de qualité.
-            </p>
-            <div class="vitrine-services-grid">
-                <a href="produits.php" class="vitrine-service-block">
-                    <i class="fas fa-bus vitrine-service-icon"></i>
-                    <span class="vitrine-service-label">BUS</span>
-                </a>
-                <a href="produits.php" class="vitrine-service-block">
-                    <i class="fas fa-tractor vitrine-service-icon"></i>
-                    <span class="vitrine-service-label">TRACTEUR</span>
-                </a>
-                <a href="produits.php" class="vitrine-service-block">
-                    <i class="fas fa-truck vitrine-service-icon"></i>
-                    <span class="vitrine-service-label">CAMION</span>
-                </a>
-                <a href="produits.php" class="vitrine-service-block">
-                    <i class="fas fa-trailer vitrine-service-icon"></i>
-                    <span class="vitrine-service-label">REMORQUE</span>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Carrousel des catégories enregistrées en base de données -->
     <?php
-    $categories_carousel = [];
+    $return_url_mp = (string) ($_SERVER['REQUEST_URI'] ?? '/index.php');
+
+    $slides = [];
+    if (file_exists(__DIR__ . '/models/model_slider.php')) {
+        require_once __DIR__ . '/models/model_slider.php';
+        $slides_result = get_all_slides('actif');
+        $slides = is_array($slides_result) ? $slides_result : [];
+    }
+
+    $mp_categories = [];
     if (file_exists(__DIR__ . '/models/model_categories.php')) {
         require_once __DIR__ . '/models/model_categories.php';
-        $categories_carousel = get_all_categories();
+        $mp_categories = get_all_categories();
+        if (is_array($mp_categories) && count($mp_categories) > 24) {
+            $mp_categories = array_slice($mp_categories, 0, 24);
+        }
     }
-    ?>
-    <?php if (!empty($categories_carousel)): ?>
-    <!-- <section class="marques-section" data-aos="fade-up" data-aos-duration="600">
-        <div class="marques-container">
-            <button type="button" class="marques-nav marques-nav-prev" aria-label="Catégories précédentes">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <div class="marques-carousel owl-carousel marques-owl">
-                <?php foreach ($categories_carousel as $cat): ?>
-                <?php
-                    $cat_image_path = '/image/produit1.jpg';
-                    if (!empty($cat['image'])) {
-                        $upload_path = '/upload/' . htmlspecialchars($cat['image']);
-                        $file_path = __DIR__ . '/upload/' . $cat['image'];
-                        if (file_exists($file_path)) {
-                            $cat_image_path = $upload_path;
-                        }
-                    }
-                    $cat_init = mb_substr($cat['nom'], 0, 2);
-                ?>
-                <a href="categorie.php?id=<?php echo (int)$cat['id']; ?>" class="marque-item marque-item-link">
-                    <div class="marque-logo-wrap">
-                        <img src="<?php echo $cat_image_path; ?>" 
-                             alt="<?php echo htmlspecialchars($cat['nom']); ?>" 
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <span class="marque-fallback"><?php echo htmlspecialchars(strtoupper($cat_init)); ?></span>
-                    </div>
-                    <span class="marque-name"><?php echo htmlspecialchars(strtoupper($cat['nom'])); ?></span>
-                </a>
-                <?php endforeach; ?>
-            </div>
-            <button type="button" class="marques-nav marques-nav-next" aria-label="Catégories suivantes">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-    </section> -->
-    <?php endif; ?>
+    if (!is_array($mp_categories)) {
+        $mp_categories = [];
+    }
 
-    <!-- Carrousel des logos partenaires -->
-    <?php
     $logos_carousel = [];
     if (file_exists(__DIR__ . '/models/model_logos.php')) {
         require_once __DIR__ . '/models/model_logos.php';
-        $logos_carousel = get_all_logos('actif');
+        $logos_carousel = get_all_logos('actif', null);
     }
-    ?>
-    <?php if (!empty($logos_carousel)): ?>
-    <section class="marques-section logos-section" data-aos="fade-up" data-aos-duration="600">
-        <div class="marques-container">
-            <button type="button" class="marques-nav marques-nav-prev logos-nav-prev" aria-label="Logos précédents">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <div class="marques-carousel owl-carousel logos-owl">
-                <?php foreach ($logos_carousel as $logo): ?>
-                <?php
-                    $logo_path = '/image/produit1.jpg';
-                    if (!empty($logo['image'])) {
-                        $upload_path = '/upload/' . htmlspecialchars($logo['image']);
-                        $file_path = __DIR__ . '/upload/' . $logo['image'];
-                        if (file_exists($file_path)) {
-                            $logo_path = $upload_path;
-                        }
-                    }
-                ?>
-                <div class="marque-item marque-item-logo">
-                    <div class="marque-logo-wrap">
-                        <img src="<?php echo $logo_path; ?>" alt="Logo partenaire"
-                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <span class="marque-fallback" style="display: none;"><i class="fas fa-image"></i></span>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <button type="button" class="marques-nav marques-nav-next logos-nav-next" aria-label="Logos suivants">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-    </section>
-    <?php endif; ?>
+    if (!is_array($logos_carousel)) {
+        $logos_carousel = [];
+    }
 
-    <?php
-    // Récupérer les 10 derniers produits publiés (nouveautés)
     $produits_nouveaux = [];
-    if (file_exists(__DIR__ . '/models/model_produits.php')) {
-        require_once __DIR__ . '/models/model_produits.php';
-        $produits_nouveaux = get_all_produits_paginated(0, 10);
-    }
-    ?>
-
-    <section class="produit_vedete">
-        <div class="box1">
-            <span></span>
-            <h1>NOUVEAUX PRODUITS</h1>
-            <span></span>
-        </div>
-
-
-
-        <div class="carousel-produits-outer">
-            <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-                class="articles carousel1 carousel1-flex-mode" id="carousel-nouveaux">
-                <?php if (empty($produits_nouveaux)): ?>
-                <!-- Message si aucun produit -->
-                <div class="carousel message-vide" style="text-align: center; padding: 40px; width: 100%;">
-                    <p style="color: var(--texte-fonce); font-size: 16px;">Aucun produit publié pour le moment.</p>
-                </div>
-                <?php else: ?>
-                <?php foreach ($produits_nouveaux as $produit): ?>
-                <?php
-                    // Calculer le prix à afficher
-                    $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                        ? $produit['prix_promotion']
-                        : $produit['prix'];
-                    $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                    $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                    ?>
-                <div class="carousel">
-                    <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
-                        <div class="image-wrapper">
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                                alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                onerror="this.src='/image/produit1.jpg'">
-                        </div>
-                        <div class="produit-content">
-                            <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                            <?php if (!empty($produit['categorie_nom'])): ?>
-                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                            <?php endif; ?>
-                            <p class="prix">
-                                <?php if ($has_promotion): ?>
-                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                    FCFA</span>
-                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                    FCFA</span>
-                                <?php else: ?>
-                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                    FCFA</span>
-                                <?php endif; ?>
-                            </p>
-                        </div>
-                    </a>
-                    <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                        <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                        <input type="hidden" name="quantite" value="1">
-                        <input type="hidden" name="return_url"
-                            value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
-                        <button type="submit" class="btn-add-cart">
-                            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                        </button>
-                    </form>
-                </div>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </article>
-        </div>
-    </section>
-
-
-    <?php
-    // Récupérer la configuration de la section4
-    $section4_config = [
-        'titre' => 'Bienvenue chez FOUTA POIDS LOURDS',
-        'texte' => 'Tous les produits a petit prix',
-        'image_fond' => 'market.png',
-        'statut' => 'actif'
-    ];
-
-    if (file_exists(__DIR__ . '/models/model_section4.php')) {
-        require_once __DIR__ . '/models/model_section4.php';
-        $config_result = get_section4_config();
-        if ($config_result) {
-            $section4_config = $config_result;
-        }
-    }
-
-    // Afficher la section4 uniquement si statut = actif
-    $section4_actif = ($section4_config['statut'] ?? 'actif') === 'actif';
-    $section4_titre = trim($section4_config['titre'] ?? '');
-    $section4_texte = trim($section4_config['texte'] ?? '');
-
-    // Chemin de l'image de fond
-    $image_fond_path = '/image/market.png';
-    if (!empty($section4_config['image_fond'])) {
-        $upload_path = '/upload/section4/' . htmlspecialchars($section4_config['image_fond']);
-        $file_path = __DIR__ . '/upload/section4/' . $section4_config['image_fond'];
-        if (file_exists($file_path)) {
-            $image_fond_path = $upload_path;
-        }
-    }
-    ?>
-    <?php if ($section4_actif): ?>
-    <section class="section4">
-        <div class="slider" style="background-image: url('<?php echo $image_fond_path; ?>');">
-            <?php if ($section4_titre !== ''): ?>
-            <div class="box">
-                <div class="text">
-                    <h1><?php echo htmlspecialchars($section4_titre); ?></h1>
-                </div>
-            </div>
-            <?php endif; ?>
-            <?php if ($section4_texte !== ''): ?>
-            <p><?php echo htmlspecialchars($section4_texte); ?></p>
-            <?php endif; ?>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <?php
-    // Récupérer les vidéos pour le carrousel
-    $videos = [];
-    if (file_exists(__DIR__ . '/models/model_videos.php')) {
-        require_once __DIR__ . '/models/model_videos.php';
-        $videos = get_all_videos('actif');
-    }
-    
-    // Afficher la section seulement s'il y a des vidéos
-    if (!empty($videos)):
-    ?>
-    <section class="galerie-creations">
-        <div class="galerie-creations-container">
-            <header class="galerie-header">
-                <span class="galerie-surtitre">Découvrez</span>
-                <h2 class="galerie-titre">Nos créations</h2>
-                <p class="galerie-sous-titre">Une sélection de nos réalisations en vidéo</p>
-            </header>
-
-            <div class="galerie-grid" id="videosSlider">
-                <?php foreach ($videos as $index => $video): ?>
-                <article class="galerie-item">
-                    <div class="galerie-card">
-                        <div class="galerie-video-wrapper">
-                            <video class="galerie-video" controls preload="metadata" playsinline
-                                <?php if (!empty($video['image_preview'])): ?>
-                                poster="/upload/videos/thumbnails/<?php echo htmlspecialchars($video['image_preview']); ?>"
-                                <?php endif; ?>>
-                                <source src="/upload/videos/<?php echo htmlspecialchars($video['fichier_video']); ?>">
-                                Votre navigateur ne supporte pas la lecture de vidéos.
-                            </video>
-                            <div class="galerie-play-overlay">
-                                <i class="fa-solid fa-play"></i>
-                            </div>
-                        </div>
-                        <?php if (!empty($video['titre'])): ?>
-                        <div class="galerie-caption">
-                            <h3><?php echo htmlspecialchars($video['titre']); ?></h3>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </article>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.galerie-video').forEach(function(video) {
-            var overlay = video.nextElementSibling;
-            if (overlay && overlay.classList.contains('galerie-play-overlay')) {
-                video.addEventListener('play', function() {
-                    video.classList.add('playing');
-                    overlay.style.opacity = '0';
-                });
-                video.addEventListener('pause', function() {
-                    video.classList.remove('playing');
-                    overlay.style.opacity = '1';
-                });
-            }
-        });
-    });
-    </script>
-
-    <?php
-    // Récupérer les produits les plus visités
     $produits_populaires = [];
-    if (file_exists(__DIR__ . '/models/model_visites.php')) {
-        require_once __DIR__ . '/models/model_visites.php';
-        $produits_populaires = get_produits_plus_visites(10);
-    }
-    ?>
-
-    <section class="produit_vedete">
-        <div class="box1">
-            <span></span>
-            <h1>PRODUITS POPULAIRES</h1>
-            <span></span>
-        </div>
-
-
-
-        <div class="carousel-produits-outer">
-            <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-                class="articles carousel1 carousel1-flex-mode" id="carousel-populaires">
-                <?php if (empty($produits_populaires)): ?>
-                <!-- Message si aucun produit -->
-                <div class="carousel message-vide" style="text-align: center; padding: 40px; width: 100%;">
-                    <p style="color: var(--texte-fonce); font-size: 16px;">Aucun produit publié pour le moment.</p>
-                </div>
-                <?php else: ?>
-                <?php foreach ($produits_populaires as $produit): ?>
-                <?php
-                    // Calculer le prix à afficher
-                    $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                        ? $produit['prix_promotion']
-                        : $produit['prix'];
-                    $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                    $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                    ?>
-                <div class="carousel">
-                    <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
-                        <div class="image-wrapper">
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                                alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                onerror="this.src='/image/produit1.jpg'">
-                        </div>
-                        <div class="produit-content">
-                            <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                            <?php if (!empty($produit['categorie_nom'])): ?>
-                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                            <?php endif; ?>
-                            <p class="prix">
-                                <?php if ($has_promotion): ?>
-                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                    FCFA</span>
-                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                    FCFA</span>
-
-                                <?php else: ?>
-                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                    FCFA</span>
-                                <?php endif; ?>
-                            </p>
-
-                        </div>
-                    </a>
-                    <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                        <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                        <input type="hidden" name="quantite" value="1">
-                        <input type="hidden" name="return_url"
-                            value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
-                        <button type="submit" class="btn-add-cart">
-                            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                        </button>
-                    </form>
-                </div>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </article>
-        </div>
-    </section>
-
-
-
-
-    <?php
-    // Récupérer les catégories les plus populaires (visites + commandes) - Maximum 2
-    $top_categories = [];
-    if (file_exists(__DIR__ . '/models/model_categories.php')) {
-        require_once __DIR__ . '/models/model_categories.php';
-        $top_categories = get_top_categories(2);
-    }
-    ?>
-
-    <section class="section5">
-        <h1>Top Categorie</h1>
-        <div class="container">
-            <?php if (empty($top_categories)): ?>
-            <!-- Message si aucune catégorie -->
-            <div class="message-vide" style="text-align: center; padding: 40px; color: var(--texte-fonce);">
-                <p>Aucune catégorie disponible pour le moment.</p>
-            </div>
-            <?php else: ?>
-            <?php foreach ($top_categories as $categorie): ?>
-            <?php
-                    // Déterminer le chemin de l'image
-                    $categorie_image_path = '/image/produit1.jpg'; // Par défaut
-                    if (!empty($categorie['image'])) {
-                        $upload_path = '/upload/' . htmlspecialchars($categorie['image']);
-                        $file_path = __DIR__ . '/upload/' . $categorie['image'];
-                        if (file_exists($file_path)) {
-                            $categorie_image_path = $upload_path;
-                        }
-                    }
-                    ?>
-            <div class="slider">
-                <img src="<?php echo $categorie_image_path; ?>" alt="<?php echo htmlspecialchars($categorie['nom']); ?>"
-                    onerror="this.src='/image/produit1.jpg'">
-                <div class="box">
-                    <h4><?php echo htmlspecialchars(strtoupper($categorie['nom'])); ?></h4>
-                    <a href="categorie.php?id=<?php echo $categorie['id']; ?>">Voir cette categorie ></a>
-                </div>
-            </div>
-            <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </section>
-
-
-
-    <?php
-    // Récupérer les 20 premiers produits
     $produits_tous = [];
     $total_produits = 0;
     if (file_exists(__DIR__ . '/models/model_produits.php')) {
         require_once __DIR__ . '/models/model_produits.php';
-        $produits_tous = get_all_produits_paginated(0, 20);
+        $produits_nouveaux = get_all_produits_paginated(0, 12);
+        $produits_tous = get_all_produits_paginated(0, 24);
         $total_produits = count_all_produits_actifs();
+    }
+    if (file_exists(__DIR__ . '/models/model_visites.php')) {
+        require_once __DIR__ . '/models/model_visites.php';
+        $produits_populaires = get_produits_plus_visites(12);
+    }
+    if (!is_array($produits_nouveaux)) {
+        $produits_nouveaux = [];
+    }
+    if (!is_array($produits_populaires)) {
+        $produits_populaires = [];
+    }
+    if (!is_array($produits_tous)) {
+        $produits_tous = [];
+    }
+
+    $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
+    $partial_top = __DIR__ . '/includes/partials/home_mp_top_product.php';
+    $partial_newc = __DIR__ . '/includes/partials/home_mp_new_compact.php';
+
+    $mp_nav_cats = [];
+    $mp_nav_is_generale = false;
+    if (function_exists('categories_generales_table_exists') && categories_generales_table_exists()) {
+        $mp_nav_generales = get_general_categories_ordered();
+        if (is_array($mp_nav_generales) && !empty($mp_nav_generales)) {
+            $mp_nav_cats = array_slice($mp_nav_generales, 0, 14);
+            $mp_nav_is_generale = true;
+        }
+    }
+    if (empty($mp_nav_cats) && !empty($mp_categories)) {
+        $mp_nav_cats = array_slice($mp_categories, 0, 14);
+        $mp_nav_is_generale = false;
+    }
+
+    $mp_nav_sidebar_icons = ['fa-star', 'fa-tshirt', 'fa-headphones', 'fa-futbol', 'fa-spray-can', 'fa-gem', 'fa-laptop', 'fa-couch', 'fa-car', 'fa-mobile-alt', 'fa-heart', 'fa-cube', 'fa-tag', 'fa-th'];
+
+    $produits_tendance = [];
+    if (!empty($produits_populaires)) {
+        $produits_tendance = array_slice($produits_populaires, 0, 8);
+    } elseif (!empty($produits_nouveaux)) {
+        $produits_tendance = array_slice($produits_nouveaux, 0, 8);
+    } else {
+        $produits_tendance = array_slice($produits_tous, 0, 8);
+    }
+
+    $produits_top_trois = !empty($produits_populaires)
+        ? array_slice($produits_populaires, 0, 3)
+        : array_slice($produits_nouveaux, 0, 3);
+    $produits_new_trois = array_slice($produits_nouveaux, 0, 3);
+
+    $produits_strip = [];
+    if (!empty($produits_populaires)) {
+        $produits_strip = array_slice($produits_populaires, 0, 4);
+    } else {
+        $produits_strip = array_slice($produits_tous, 0, 4);
+    }
+
+    $mp_spotlight_img = null;
+    if (!empty($slides[0]['image'])) {
+        $mp_spotlight_img = '/upload/slider/' . htmlspecialchars((string) $slides[0]['image'], ENT_QUOTES, 'UTF-8');
     }
     ?>
 
-    <section class="section00">
-        <section class="produit_vedetes">
-            <div class="box1">
-                <h1>Tous nos produits</h1>
-            </div>
+    <main class="mp-main">
 
-            <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-                class="articles carousel11" id="produits-container">
-                <?php if (empty($produits_tous)): ?>
-                <!-- Message si aucun produit -->
-                <div class="message-vide"
-                    style="text-align: center; padding: 40px; color: var(--texte-fonce); width: 100%;">
-                    <p style="font-size: 16px;">Aucun produit publié pour le moment.</p>
-                </div>
-                <?php else: ?>
-                <?php foreach ($produits_tous as $produit): ?>
-                <?php
-                        // Calculer le prix à afficher
-                        $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                            ? $produit['prix_promotion']
-                            : $produit['prix'];
-                        $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                        $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                        ?>
-                <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
-                    <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
-                        <div class="image-wrapper">
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                                alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                onerror="this.src='/image/produit1.jpg'">
-                        </div>
-                        <div class="produit-content">
-                            <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                            <?php if (!empty($produit['categorie_nom'])): ?>
-                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                            <?php endif; ?>
-                            <p class="prix">
-                                <?php if ($has_promotion): ?>
-                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                    FCFA</span>
-                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                    FCFA</span>
-
-                                <?php else: ?>
-                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                    FCFA</span>
-                                <?php endif; ?>
-                            </p>
-
-                        </div>
-                    </a>
-                    <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                        <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                        <input type="hidden" name="quantite" value="1">
-                        <input type="hidden" name="return_url"
-                            value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
-                        <button type="submit" class="btn-add-cart">
-                            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                        </button>
-                    </form>
+        <?php if (!empty($slides)): ?>
+        <div class="mp-slider-wrap">
+            <div class="slider-area owl-carousel">
+                <?php foreach ($slides as $slide): ?>
+                <div class="slider-item">
+                    <img src="/upload/slider/<?php echo htmlspecialchars($slide['image']); ?>"
+                        alt="<?php echo htmlspecialchars($slide['titre'] ?? ''); ?>"
+                        onerror="this.src='/image/produit1.jpg'">
                 </div>
                 <?php endforeach; ?>
-                <?php endif; ?>
-            </article>
+            </div>
+        </div>
+        <?php endif; ?>
 
-            <?php if (!empty($produits_tous) && $total_produits > 20): ?>
-            <div class="voir-tous-produits-wrapper">
-                <a href="produits.php" class="btn-voir-tous-produits">
-                    <i class="fas fa-arrow-right"></i> Voir tous les produits (<?php echo $total_produits; ?>)
-                </a>
+        <section class="mp-hero" aria-label="Recherche marketplace">
+            <div class="mp-hero-inner">
+                <h1>Marketplace — multi-boutiques</h1>
+                <p class="mp-hero-sub">Pièces et équipements proposés par plusieurs vendeurs sur la plateforme — recherchez
+                    un article ou parcourez les catégories.</p>
+                <form class="mp-search" method="get" action="produits.php" role="search">
+                    <label for="mp-search-q" class="visually-hidden">Recherche produits</label>
+                    <input id="mp-search-q" class="mp-search-input" type="search" name="recherche" value=""
+                        placeholder="Que recherchez-vous ?" autocomplete="off">
+                    <button type="submit" class="mp-search-btn">
+                        <i class="fas fa-search" aria-hidden="true"></i> Rechercher
+                    </button>
+                </form>
+                <div class="mp-trust-row">
+                    <span class="mp-trust-item"><i class="fas fa-store" aria-hidden="true"></i> Multi-boutiques</span>
+                    <span class="mp-trust-item"><i class="fas fa-shield-alt" aria-hidden="true"></i> Commande sécurisée</span>
+                    <span class="mp-trust-item"><i class="fas fa-truck" aria-hidden="true"></i> Livraison</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="mp-shell">
+            <section class="mp-showcase" aria-label="Catégories et tendances">
+                <div
+                    class="mp-showcase-inner<?php echo empty($mp_nav_cats) ? ' mp-showcase-inner--no-nav' : ''; ?>">
+                    <?php if (!empty($mp_nav_cats)): ?>
+                    <aside class="mp-showcase-nav">
+                        <div class="mp-showcase-nav-head">
+                            <i class="fas fa-star" aria-hidden="true"></i> Catégories pour vous
+                        </div>
+                        <ul class="mp-showcase-nav-list">
+                            <?php foreach ($mp_nav_cats as $ni => $nrow): ?>
+                            <?php
+                                $nlabel = (string) ($nrow['nom'] ?? '');
+                                if ($nlabel === '') {
+                                    continue;
+                                }
+                                $sn_ico = $mp_nav_sidebar_icons[$ni % count($mp_nav_sidebar_icons)];
+                                if ($mp_nav_is_generale) {
+                                    $nhref = 'produits.php?recherche=' . rawurlencode($nlabel);
+                                } else {
+                                    $nid = (int) ($nrow['id'] ?? 0);
+                                    $nhref = $nid > 0 ? 'categorie.php?id=' . $nid : 'produits.php';
+                                }
+                                ?>
+                            <li>
+                                <a href="<?php echo htmlspecialchars($nhref); ?>">
+                                    <span class="mp-sn-ico"><i class="fas <?php echo htmlspecialchars($sn_ico); ?>"
+                                            aria-hidden="true"></i></span>
+                                    <?php echo htmlspecialchars($nlabel); ?>
+                                    <span class="mp-sn-chev" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
+                                </a>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <div class="mp-showcase-nav-foot">
+                            <a href="produits.php">Tout le catalogue</a>
+                        </div>
+                    </aside>
+                    <?php endif; ?>
+
+                    <div class="mp-showcase-center">
+                        <div class="mp-showcase-center-top">
+                            <div>
+                                <h2>Recherches fréquentes</h2>
+                                <p>Sélection liée aux visites et aux rayons les plus consultés</p>
+                            </div>
+                            <div class="mp-trend-nav">
+                                <button type="button" class="mp-trend-prev" aria-label="Faire défiler vers la gauche">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button type="button" class="mp-trend-next" aria-label="Faire défiler vers la droite">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mp-trend-scroll" id="mpTrendScroll">
+                            <?php if (empty($produits_tendance)): ?>
+                            <p class="mp-empty" style="min-width:100%;margin:0;">Aucun produit à afficher.</p>
+                            <?php else: ?>
+                            <?php foreach ($produits_tendance as $produit): ?>
+                            <?php
+                                $tid = (int) ($produit['id'] ?? 0);
+                                if ($tid <= 0) {
+                                    continue;
+                                }
+                                $_nom_raw = (string) ($produit['nom'] ?? '');
+                                $tsub = !empty($produit['categorie_nom'])
+                                    ? (string) $produit['categorie_nom']
+                                    : (function_exists('mb_substr') ? mb_substr($_nom_raw, 0, 32) : substr($_nom_raw, 0, 32));
+                                ?>
+                            <div class="mp-trend-card">
+                                <span class="mp-trend-label">Tendances</span>
+                                <span class="mp-trend-sub"><?php echo htmlspecialchars($tsub); ?></span>
+                                <a class="mp-trend-img-link" href="produit.php?id=<?php echo $tid; ?>">
+                                    <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                        alt=""
+                                        loading="lazy"
+                                        onerror="this.src='/image/produit1.jpg'">
+                                </a>
+                            </div>
+                            <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <aside class="mp-showcase-spotlight">
+                        <div class="mp-sp-content">
+                            <h2>Coups de cœur</h2>
+                            <p>Une sélection d’articles phares de la plateforme, proposés par nos vendeurs partenaires.</p>
+                        </div>
+                        <div class="mp-sp-visual">
+                            <?php if ($mp_spotlight_img): ?>
+                            <img src="<?php echo $mp_spotlight_img; ?>" alt="Sélection" onerror="this.style.display='none'">
+                            <?php else: ?>
+                            <span style="font-size:56px;color:var(--bleu-clair);opacity:.35;"><i class="fas fa-store"></i></span>
+                            <?php endif; ?>
+                        </div>
+                        <a class="mp-sp-cta" href="produits.php">En savoir plus</a>
+                        <div class="mp-sp-dots" aria-hidden="true">
+                            <span class="is-active"></span><span></span><span></span>
+                        </div>
+                    </aside>
+                </div>
+            </section>
+        </div>
+
+        <div class="mp-shell">
+            <section class="mp-promo-b2b" aria-labelledby="mp-b2b-title">
+                <div class="mp-promo-b2b-inner">
+                    <div class="mp-promo-copy">
+                        <span class="mp-promo-ico" aria-hidden="true"><i class="fas fa-pencil-ruler"></i></span>
+                        <h2 id="mp-b2b-title">Commande pro &amp; réassort</h2>
+                        <p>Pièces poids lourds, bus, tracteurs et remorques : centralisez vos achats auprès de plusieurs
+                            boutiques vérifiées.</p>
+                        <ul class="mp-promo-list">
+                            <li><i class="fas fa-check" aria-hidden="true"></i> Devis et commandes simplifiés</li>
+                            <li><i class="fas fa-check" aria-hidden="true"></i> Suivi des stocks en temps réel</li>
+                            <li><i class="fas fa-check" aria-hidden="true"></i> Multi-vendeurs sur un seul panier</li>
+                        </ul>
+                        <a class="mp-promo-cta" href="produits.php">Découvrir dès maintenant</a>
+                    </div>
+                    <div class="mp-strip-scroll" id="mpStripScroll">
+                        <?php foreach ($produits_strip as $sproduit): ?>
+                        <?php
+                            $sid = (int) ($sproduit['id'] ?? 0);
+                            if ($sid <= 0) {
+                                continue;
+                            }
+                            $slabel = !empty($sproduit['categorie_nom'])
+                                ? (string) $sproduit['categorie_nom']
+                                : 'Pièce détachée';
+                            $spx = !empty($sproduit['prix_promotion']) && $sproduit['prix_promotion'] < $sproduit['prix']
+                                ? (float) $sproduit['prix_promotion'] : (float) ($sproduit['prix'] ?? 0);
+                            $sstock = isset($sproduit['stock']) ? (int) $sproduit['stock'] : null;
+                            ?>
+                        <a class="mp-strip-card" href="produit.php?id=<?php echo $sid; ?>">
+                            <div class="mp-strip-card-img">
+                                <img src="/upload/<?php echo htmlspecialchars($sproduit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                    alt="" loading="lazy" onerror="this.src='/image/produit1.jpg'">
+                            </div>
+                            <div class="mp-strip-pill"><?php
+                            $sl_short = function_exists('mb_substr') ? mb_substr($slabel, 0, 22) : substr($slabel, 0, 22);
+                                echo htmlspecialchars($sl_short);
+                                ?></div>
+                            <div class="mp-strip-body">
+                                <p class="mp-strip-price"><?php echo number_format($spx, 0, ',', ' '); ?> FCFA</p>
+                                <p class="mp-strip-moq"><?php echo ($sstock !== null && $sstock >= 0) ? 'Stock : ' . $sstock : 'Marketplace'; ?></p>
+                            </div>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="mp-shell">
+
+            <?php if (!empty($logos_carousel)): ?>
+            <div class="mp-logos-wrap">
+                <section class="marques-section logos-section" data-aos="fade-up" data-aos-duration="600">
+                    <div class="marques-container">
+                        <button type="button" class="marques-nav marques-nav-prev logos-nav-prev" aria-label="Logos précédents">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div class="marques-carousel owl-carousel logos-owl">
+                            <?php foreach ($logos_carousel as $logo): ?>
+                            <?php
+                                $logo_path = '/image/produit1.jpg';
+                                if (!empty($logo['image'])) {
+                                    $upload_path = '/upload/' . htmlspecialchars($logo['image']);
+                                    $file_path = __DIR__ . '/upload/' . $logo['image'];
+                                    if (file_exists($file_path)) {
+                                        $logo_path = $upload_path;
+                                    }
+                                }
+                                ?>
+                            <div class="marque-item marque-item-logo">
+                                <div class="marque-logo-wrap">
+                                    <img src="<?php echo $logo_path; ?>" alt="Logo partenaire"
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <span class="marque-fallback" style="display: none;"><i class="fas fa-image"></i></span>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <button type="button" class="marques-nav marques-nav-next logos-nav-next" aria-label="Logos suivants">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </section>
             </div>
             <?php endif; ?>
-        </section>
-    </section>
 
+            <section class="mp-pair" aria-label="Classements et nouveautés">
+                <div class="mp-pair-grid">
+                    <article class="mp-panel">
+                        <header class="mp-panel-head">
+                            <div>
+                                <h2>Produits au top du classement</h2>
+                                <p>Suivez les tendances grâce aux articles les plus consultés sur la plateforme.</p>
+                            </div>
+                            <a class="mp-panel-more" href="produits.php">En savoir plus &gt;</a>
+                        </header>
+                        <div class="mp-panel-products">
+                            <?php if (empty($produits_top_trois)): ?>
+                            <p class="mp-empty" style="grid-column:1/-1;">Aucun produit à mettre en avant pour le moment.</p>
+                            <?php else: ?>
+                            <?php
+                            foreach ($produits_top_trois as $produit) {
+                                $return_url = $return_url_mp;
+                                require $partial_top;
+                            }
+                            ?>
+                            <?php endif; ?>
+                        </div>
+                    </article>
+                    <article class="mp-panel">
+                        <header class="mp-panel-head">
+                            <div>
+                                <h2>Nouveautés</h2>
+                                <p>Les derniers articles publiés par les vendeurs — restez en avance sur les arrivages.</p>
+                            </div>
+                            <a class="mp-panel-more" href="produits.php?tri=date">En savoir plus &gt;</a>
+                        </header>
+                        <div class="mp-panel-products">
+                            <?php if (empty($produits_new_trois)): ?>
+                            <p class="mp-empty" style="grid-column:1/-1;">Pas de nouveautés pour le moment.</p>
+                            <?php else: ?>
+                            <?php
+                            foreach ($produits_new_trois as $produit) {
+                                $return_url = $return_url_mp;
+                                require $partial_newc;
+                            }
+                            ?>
+                            <?php endif; ?>
+                        </div>
+                    </article>
+                </div>
+            </section>
 
+            <section class="mp-block" aria-labelledby="mp-all-heading">
+                <header class="mp-block-head">
+                    <h2 id="mp-all-heading">Tous les produits sur la plateforme</h2>
+                    <?php if ($total_produits > 0): ?>
+                    <a class="mp-block-more" href="produits.php">Catalogue (<?php echo (int) $total_produits; ?>)</a>
+                    <?php endif; ?>
+                </header>
+                <div class="mp-grid" id="produits-container">
+                    <?php if (empty($produits_tous)): ?>
+                    <p class="mp-empty">Aucun produit publié pour le moment.</p>
+                    <?php else: ?>
+                    <?php
+                    foreach ($produits_tous as $produit) {
+                        $return_url = $return_url_mp;
+                        require $card_partial;
+                    }
+                    ?>
+                    <?php endif; ?>
+                </div>
+                <?php if (!empty($produits_tous) && $total_produits > count($produits_tous)): ?>
+                <div class="mp-footer-cta">
+                    <a href="produits.php"><i class="fas fa-th" aria-hidden="true"></i> Afficher tous les produits</a>
+                </div>
+                <?php endif; ?>
+            </section>
 
-
+        </div>
+    </main>
     <?php include('footer.php') ?>
 
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+    <script>
+    (function() {
+        function finishAos() {
+            document.documentElement.classList.remove('aos-not-ready');
+        }
+
+        function runAos() {
+            if (typeof AOS === 'undefined') {
+                finishAos();
+                return;
+            }
+            AOS.init({
+                duration: 800,
+                once: true,
+                offset: 24,
+                disable: function() {
+                    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                }
+            });
+            requestAnimationFrame(function() {
+                requestAnimationFrame(finishAos);
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runAos);
+        } else {
+            runAos();
+        }
+    })();
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var el = document.getElementById('mpTrendScroll');
+        var prev = document.querySelector('.mp-trend-prev');
+        var next = document.querySelector('.mp-trend-next');
+        if (!el) return;
+        var step = 220;
+        if (prev) {
+            prev.addEventListener('click', function() {
+                el.scrollBy({ left: -step, behavior: 'smooth' });
+            });
+        }
+        if (next) {
+            next.addEventListener('click', function() {
+                el.scrollBy({ left: step, behavior: 'smooth' });
+            });
+        }
+    });
+    </script>
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/owl.carousel.js"></script>
     <script src="/js/owl.animate.js"></script>
@@ -982,7 +1997,7 @@ $seo_canonical = $base . '/';
 
         // Nouveaux produits et Produits populaires : Owl désactivé, toujours en mode flex-wrap
 
-
+        if ($('.slider-area').length && $('.slider-area .slider-item').length) {
         $('.slider-area').owlCarousel({
             items: 1,
             loop: true,
@@ -998,6 +2013,7 @@ $seo_canonical = $base . '/';
                 '<i class="fa-solid fa-chevron-right"></i>'
             ]
         });
+        }
         var carousel2 = $('.carousel2').owlCarousel();
         $('.owl-next2').click(function() {
             carousel2.trigger('next.owl.carousel');
@@ -1159,11 +2175,6 @@ $seo_canonical = $base . '/';
 
 
     });
-    </script>
-
-    <script>
-    // ..
-    AOS.init();
     </script>
 
     <script>

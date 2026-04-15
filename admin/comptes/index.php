@@ -4,19 +4,16 @@
  */
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../includes/admin_permissions.php';
 
-$role = $_SESSION['admin_role'] ?? '';
-if ($role === 'utilisateur') {
-    $role = 'gestion_stock';
-}
-if (!in_array($role, ['admin', 'rh'], true)) {
-    $_SESSION['error_message'] = 'Accès réservé aux administrateurs ou aux RH.';
+if (!admin_can_gestion_clients_comptes()) {
+    $_SESSION['error_message'] = 'Accès réservé aux administrateurs, à la plateforme, aux vendeurs ou aux RH.';
     header('Location: ../dashboard.php');
     exit;
 }

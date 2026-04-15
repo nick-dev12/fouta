@@ -4,7 +4,7 @@
  */
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -212,8 +212,8 @@ if ($action === 'generer_ticket') {
 }
 
 if ($action === 'encaisser') {
-    if (admin_current_role() !== 'admin') {
-        $_SESSION['caisse_flash_error'] = 'L’encaissement depuis le bureau vendeur est réservé aux administrateurs. Les commerciaux génèrent un ticket ; le caissier l’encaisse.';
+    if (!admin_can_encaisser_ticket()) {
+        $_SESSION['caisse_flash_error'] = 'Vous n’avez pas les droits pour enregistrer cet encaissement.';
         caisse_cart_save($cart);
         caisse_redirect_ok();
     }

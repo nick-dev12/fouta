@@ -86,7 +86,8 @@ function process_add_to_panier()
     }
 
     // Vérifier le stock disponible
-    $item_panier = is_in_panier($user_id, $produit_id);
+    $vid_line = (!empty($produit['admin_id']) && produits_has_column('admin_id')) ? (int) $produit['admin_id'] : null;
+    $item_panier = is_in_panier($user_id, $produit_id, $vid_line);
     $quantite_actuelle = $item_panier ? $item_panier['quantite'] : 0;
     $quantite_totale = $quantite_actuelle + $quantite;
 

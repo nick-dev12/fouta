@@ -6,7 +6,7 @@
 
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -18,10 +18,26 @@ if ($zone_id <= 0) {
 }
 
 require_once __DIR__ . '/../../models/model_zones_livraison.php';
+require_once __DIR__ . '/../../includes/db_schema_helpers.php';
+require_once __DIR__ . '/../../includes/admin_param_boutique_scope.php';
 $zone = get_zone_livraison_by_id($zone_id);
 if (!$zone) {
     header('Location: index.php');
     exit;
+}
+$scope = admin_param_boutique_scope_id();
+if ($scope !== null) {
+    $zaid = isset($zone['admin_id']) && $zone['admin_id'] !== null && $zone['admin_id'] !== '' ? (int) $zone['admin_id'] : null;
+    if ($zaid !== (int) $scope) {
+        header('Location: index.php');
+        exit;
+    }
+} elseif (db_table_has_column('zones_livraison', 'admin_id')) {
+    $zaid = isset($zone['admin_id']) && $zone['admin_id'] !== null && $zone['admin_id'] !== '' ? (int) $zone['admin_id'] : null;
+    if ($zaid !== null) {
+        header('Location: index.php');
+        exit;
+    }
 }
 
 require_once __DIR__ . '/../../controllers/controller_zones_livraison.php';

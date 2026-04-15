@@ -7,12 +7,13 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../includes/admin_route_access.php';
 
 // Récupérer l'ID de la catégorie
 $categorie_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -30,6 +31,7 @@ if (!$categorie) {
     header('Location: index.php');
     exit;
 }
+admin_vendeur_assert_categorie_allowed($categorie_id);
 
 // Traiter le formulaire
 require_once __DIR__ . '/../../controllers/controller_categories.php';

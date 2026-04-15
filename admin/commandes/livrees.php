@@ -7,14 +7,18 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 // Récupérer uniquement les commandes avec le statut "livree"
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
-$toutes_commandes = get_all_commandes();
+require_once __DIR__ . '/../../includes/admin_route_access.php';
+$vf_cmd = admin_vendeur_filter_id();
+$toutes_commandes = get_all_commandes(null, $vf_cmd);
 
 // Filtrer pour ne garder que les commandes avec le statut "livree" ou "paye"
 $commandes_livrees = array_filter($toutes_commandes, function ($commande) {
@@ -33,11 +37,11 @@ if (!$jours_precedents) {
 }
 
 // Statistiques
-$total_commandes = count_commandes_by_statut();
-$livrees = count_commandes_by_statut('livree') + count_commandes_by_statut('paye');
+$total_commandes = count_commandes_by_statut(null, $vf_cmd);
+$livrees = count_commandes_by_statut('livree', $vf_cmd) + count_commandes_by_statut('paye', $vf_cmd);
 
 // Comptabilité : montant total des commandes livrées
-$montant_total_livrees = get_montant_total_commandes('livree') + get_montant_total_commandes('paye');
+$montant_total_livrees = get_montant_total_commandes('livree', $vf_cmd) + get_montant_total_commandes('paye', $vf_cmd);
 ?>
 <!DOCTYPE html>
 <html lang="fr">

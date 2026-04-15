@@ -5,6 +5,9 @@
  */
 
 require_once __DIR__ . '/../models/model_categories.php';
+if (file_exists(__DIR__ . '/../includes/admin_route_access.php')) {
+    require_once __DIR__ . '/../includes/admin_route_access.php';
+}
 
 /**
  * Upload une image de catégorie
@@ -63,7 +66,11 @@ function process_add_categorie() {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return ['success' => false, 'message' => ''];
     }
-    
+
+    $is_vendeur = function_exists('admin_normalize_role_for_route')
+        && admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin') === 'vendeur';
+    $admin_id_sess = isset($_SESSION['admin_id']) ? (int) $_SESSION['admin_id'] : 0;
+
     // Récupération et validation des données
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
@@ -74,7 +81,7 @@ function process_add_categorie() {
     } elseif (strlen($nom) < 2) {
         $errors[] = 'Le nom doit contenir au moins 2 caractères.';
     }
-    
+
     // Vérifier si le nom existe déjà
     if (!empty($nom)) {
         $existing = get_categorie_by_nom($nom);
@@ -92,9 +99,13 @@ function process_add_categorie() {
         }
     }
     
-    // Si aucune erreur, créer la catégorie
+    // Si aucune erreur, créer la catégorie (vendeur : pas de lien avec categories_generales)
     if (empty($errors)) {
-        $categorie_id = create_categorie($nom, $description, $image);
+        if ($is_vendeur && $admin_id_sess > 0) {
+            $categorie_id = create_categorie($nom, $description, $image, $admin_id_sess, null);
+        } else {
+            $categorie_id = create_categorie($nom, $description, $image);
+        }
         
         if ($categorie_id) {
             $success = true;
@@ -130,6 +141,12 @@ function process_update_categorie($categorie_id) {
     $categorie = get_categorie_by_id($categorie_id);
     if (!$categorie) {
         return ['success' => false, 'message' => 'Catégorie introuvable.'];
+    }
+
+    $role_upd = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+    $vid_upd = (int) ($_SESSION['admin_id'] ?? 0);
+    if ($role_upd === 'vendeur' && $vid_upd > 0 && !categorie_est_utilisable_par_vendeur((int) $categorie_id, $vid_upd)) {
+        return ['success' => false, 'message' => 'Accès non autorisé à cette catégorie.'];
     }
     
     // Récupération et validation des données
@@ -192,6 +209,12 @@ function process_delete_categorie($categorie_id) {
     $categorie = get_categorie_by_id($categorie_id);
     if (!$categorie) {
         return ['success' => false, 'message' => 'Catégorie introuvable.'];
+    }
+
+    $role_del = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+    $vid_del = (int) ($_SESSION['admin_id'] ?? 0);
+    if ($role_del === 'vendeur' && $vid_del > 0 && !categorie_est_utilisable_par_vendeur((int) $categorie_id, $vid_del)) {
+        return ['success' => false, 'message' => 'Accès non autorisé à cette catégorie.'];
     }
     
     // Vérifier si des produits utilisent cette catégorie

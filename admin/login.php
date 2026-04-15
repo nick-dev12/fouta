@@ -7,7 +7,7 @@
 session_start();
 
 // Si l'admin est déjà connecté, rediriger vers le dashboard
-if (isset($_SESSION['admin_id']) && isset($_SESSION['admin_email'])) {
+if (isset($_SESSION['admin_id'])) {
     header('Location: dashboard.php');
     exit;
 }
@@ -28,9 +28,11 @@ if (isset($result['success']) && $result['success'] && $result['admin']) {
     $_SESSION['admin_id'] = $result['admin']['id'];
     $_SESSION['admin_nom'] = $result['admin']['nom'];
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
-    $_SESSION['admin_email'] = $result['admin']['email'];
+    $_SESSION['admin_email'] = $result['admin']['email'] ?? '';
     $_SESSION['admin_statut'] = $result['admin']['statut'];
     $_SESSION['admin_role'] = normalize_admin_role($result['admin']['role'] ?? 'admin');
+    $_SESSION['admin_boutique_nom'] = trim((string) ($result['admin']['boutique_nom'] ?? ''));
+    $_SESSION['admin_boutique_slug'] = trim((string) ($result['admin']['boutique_slug'] ?? ''));
 
     header('Location: dashboard.php');
     exit;
@@ -54,9 +56,6 @@ if (isset($_SESSION['inscription_success'])) {
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -73,25 +72,7 @@ if (isset($_SESSION['inscription_success'])) {
             justify-content: center;
             padding: 20px;
             position: relative;
-        }
-
-        body::before {
-            content: "";
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background:
-                radial-gradient(ellipse 80% 50% at 30% 20%, rgba(229, 72, 138, 0.4) 0%, transparent 50%),
-                radial-gradient(ellipse 60% 40% at 70% 10%, rgba(244, 211, 94, 0.35) 0%, transparent 45%),
-                radial-gradient(ellipse 70% 50% at 50% 80%, rgba(32, 197, 199, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse 50% 60% at 10% 70%, rgba(255, 255, 255, 0.95) 0%, transparent 45%),
-                radial-gradient(ellipse 60% 50% at 80% 60%, rgba(247, 127, 0, 0.25) 0%, transparent 45%),
-                linear-gradient(135deg, #ffffff 0%, rgba(229, 72, 138, 0.15) 50%, rgba(32, 197, 199, 0.1) 100%);
-            filter: blur(60px);
-            pointer-events: none;
-            z-index: -1;
+            background-color: var(--fond-page);
         }
 
         .auth-header {
@@ -198,7 +179,7 @@ if (isset($_SESSION['inscription_success'])) {
         .form-group input {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid rgba(229, 72, 138, 0.2);
+            border: 2px solid rgba(53, 100, 166, 0.2);
             border-radius: 8px;
             font-size: 15px;
             transition: all 0.3s ease;
@@ -209,7 +190,7 @@ if (isset($_SESSION['inscription_success'])) {
         .form-group input:focus {
             outline: none;
             border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
+            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.15);
         }
 
         .form-group input::placeholder {
@@ -258,7 +239,7 @@ if (isset($_SESSION['inscription_success'])) {
         }
 
         .error-message {
-            background: rgba(229, 72, 138, 0.1);
+            background: rgba(53, 100, 166, 0.1);
             border-left: 4px solid var(--couleur-dominante);
             color: var(--titres);
             padding: 12px 15px;
@@ -295,7 +276,7 @@ if (isset($_SESSION['inscription_success'])) {
         }
 
         .btn-submit:hover {
-            background: rgba(229, 72, 138, 0.9);
+            background: rgba(53, 100, 166, 0.9);
             transform: translateY(-2px);
             box-shadow: var(--ombre-promo);
             color: var(--texte-clair);
@@ -375,9 +356,41 @@ if (isset($_SESSION['inscription_success'])) {
                 </div>
             <?php endif; ?>
 
+            <p class="footer-text" style="margin-bottom: 20px;">
+                <strong>Téléphone + code</strong> : vendeurs, équipe ou tout compte admin disposant d’un numéro enregistré.
+                Sinon utilisez le formulaire email ci-dessous.
+                <a href="/admin/inscription-vendeur.php">Créer ma boutique</a> · <a href="/choix-connexion.php">Connexion publique (client)</a>
+            </p>
+
+            <form method="POST" action="" id="vendeurForm">
+                <input type="hidden" name="vendeur_login" value="1">
+                <div class="form-group">
+                    <label for="telephone"><i class="fas fa-phone"></i> Téléphone *</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="telephone" name="telephone" placeholder="+221…" autocomplete="tel"
+                            value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pin"><i class="fas fa-key"></i> Code PIN ou mot de passe *</label>
+                    <div class="input-wrapper password-wrapper">
+                        <input type="password" id="pin" name="pin" placeholder="PIN (ex. 6 chiffres) ou mot de passe" autocomplete="current-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword('pin', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" style="background: #c26638;">
+                    <i class="fas fa-store"></i> Connexion par téléphone
+                </button>
+            </form>
+
+            <hr style="margin: 28px 0; border: none; border-top: 1px solid rgba(0,0,0,.12);">
+
             <form method="POST" action="" id="loginForm">
                 <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email *</label>
+                    <label for="email"><i class="fas fa-envelope"></i> Email (équipe / plateforme) *</label>
                     <div class="input-wrapper">
                         <input type="email" id="email" name="email" placeholder="votre@email.com" required
                             value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">

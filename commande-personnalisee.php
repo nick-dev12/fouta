@@ -9,7 +9,7 @@ session_start();
 require_once __DIR__ . '/controllers/controller_commandes_personnalisees.php';
 require_once __DIR__ . '/models/model_zones_livraison.php';
 $result = process_commande_personnalisee();
-$zones_livraison = get_all_zones_livraison('actif');
+$zones_livraison = get_all_zones_livraison('actif', null);
 
 if ($result['success']) {
     $_SESSION['commande_perso_success'] = $result['message'];
@@ -49,9 +49,6 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     <?php include __DIR__ . '/includes/seo_meta.php'; ?>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <style>
     .page-commande-perso {

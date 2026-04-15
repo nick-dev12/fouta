@@ -7,12 +7,13 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../includes/admin_route_access.php';
 
 // Récupérer l'ID de la catégorie
 $categorie_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -30,10 +31,12 @@ if (!$categorie) {
     header('Location: index.php');
     exit;
 }
+admin_vendeur_assert_categorie_allowed($categorie_id);
 
 // Récupérer les produits de cette catégorie
 require_once __DIR__ . '/../../models/model_produits.php';
-$produits = get_produits_by_categorie($categorie_id);
+$vf_catprod = admin_vendeur_filter_id();
+$produits = get_produits_by_categorie($categorie_id, $vf_catprod);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -59,7 +62,7 @@ $produits = get_produits_by_categorie($categorie_id);
             <a href="../stock/index.php" class="btn-back" style="margin-right: 10px;">
                 <i class="fas fa-arrow-left"></i> Retour au stock
             </a>
-            <a href="../produits/ajouter.php?categorie_id=<?php echo (int) $categorie_id; ?>" class="btn-primary">
+            <a href="../produits/index.php?open_add=1&amp;prefill_categorie=<?php echo (int) $categorie_id; ?>" class="btn-primary">
                 <i class="fas fa-plus"></i> Ajouter un produit
             </a>
         </div>
@@ -78,7 +81,7 @@ $produits = get_produits_by_categorie($categorie_id);
             <div style="text-align: center; padding: 40px; color: #666;">
                 <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
                 <p>Aucun produit dans cette catégorie pour le moment.</p>
-                <a href="../produits/ajouter.php?categorie_id=<?php echo (int) $categorie_id; ?>" class="btn-primary"
+                <a href="../produits/index.php?open_add=1&amp;prefill_categorie=<?php echo (int) $categorie_id; ?>" class="btn-primary"
                     style="margin-top: 20px; display: inline-block;">
                     <i class="fas fa-plus"></i> Ajouter un produit à cette catégorie
                 </a>

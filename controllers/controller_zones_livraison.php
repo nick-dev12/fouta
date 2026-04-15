@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../models/model_zones_livraison.php';
+require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
 
 /**
  * Traite l'ajout d'une zone de livraison
@@ -18,7 +19,9 @@ function process_add_zone_livraison() {
     $quartier = isset($_POST['quartier']) ? trim($_POST['quartier']) : '';
     $prix_livraison = isset($_POST['prix_livraison']) ? (float) $_POST['prix_livraison'] : 0;
     $description = isset($_POST['description']) ? trim($_POST['description']) : null;
-    return create_zone_livraison($ville, $quartier, $prix_livraison, $description);
+    $scope = admin_param_boutique_scope_id();
+    $owner = $scope !== null ? (int) $scope : null;
+    return create_zone_livraison($ville, $quartier, $prix_livraison, $description, $owner);
 }
 
 /**
@@ -35,5 +38,7 @@ function process_update_zone_livraison($id) {
     $prix_livraison = isset($_POST['prix_livraison']) ? (float) $_POST['prix_livraison'] : 0;
     $description = isset($_POST['description']) ? trim($_POST['description']) : null;
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
-    return update_zone_livraison($id, $ville, $quartier, $prix_livraison, $description, $statut);
+    $scope = admin_param_boutique_scope_id();
+    $scope_for = $scope !== null ? (int) $scope : null;
+    return update_zone_livraison($id, $ville, $quartier, $prix_livraison, $description, $statut, $scope_for);
 }

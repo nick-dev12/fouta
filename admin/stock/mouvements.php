@@ -6,12 +6,15 @@
 
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+if (file_exists(__DIR__ . '/../includes/admin_route_access.php')) {
+    require_once __DIR__ . '/../includes/admin_route_access.php';
+}
 
 require_once __DIR__ . '/../../models/model_mouvements_stock.php';
 require_once __DIR__ . '/../../models/model_categories.php';
@@ -21,13 +24,16 @@ $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : nul
 $produit_id = isset($_GET['produit_id']) ? (int) $_GET['produit_id'] : null;
 $type_filter = isset($_GET['type']) && in_array($_GET['type'], ['entree', 'sortie', 'inventaire']) ? $_GET['type'] : null;
 
-$mouvements = get_stock_mouvements(null, $produit_id, $categorie_id, $type_filter, 200);
-$categories = get_all_categories();
+$__mvt_vf = function_exists('admin_vendeur_filter_id') ? admin_vendeur_filter_id() : null;
+$mouvements = get_stock_mouvements(null, $produit_id, $categorie_id, $type_filter, 200, $__mvt_vf);
+$categories = function_exists('admin_categories_list_for_session')
+    ? admin_categories_list_for_session()
+    : get_all_categories();
 
 if ($categorie_id > 0) {
-    $produits = get_produits_by_categorie($categorie_id);
+    $produits = get_produits_by_categorie($categorie_id, $__mvt_vf);
 } else {
-    $produits = get_all_produits();
+    $produits = get_all_produits(null, $__mvt_vf);
 }
 ?>
 <!DOCTYPE html>

@@ -6,14 +6,17 @@
  */
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../includes/admin_route_access.php';
 
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
+
+$vf_hist = admin_vendeur_filter_id();
 
 $periode = isset($_GET['periode']) ? $_GET['periode'] : 'jour';
 if (!in_array($periode, ['jour', 'plage', 'annee'])) {
@@ -41,17 +44,20 @@ if (!empty($_GET['date_jour'])) {
     }
 }
 
-$commandes = get_commandes_by_periode($periode, $annee, $mois, $date_debut, $date_fin, $jour);
+$commandes = get_commandes_by_periode($periode, $annee, $mois, $date_debut, $date_fin, $jour, false, $vf_hist);
 $stats = get_stats_comptabilite_periode($commandes);
 
 // Stats globales (toutes les commandes, tous statuts)
+$mt_all = get_montant_total_commandes(null, $vf_hist);
+$mt_liv = get_montant_total_commandes('livree', $vf_hist);
+$mt_ann = get_montant_total_commandes('annulee', $vf_hist);
 $stats_globales = [
-    'montant_total' => get_montant_total_commandes(),
-    'montant_livrees' => get_montant_total_commandes('livree'),
-    'montant_non_traitees' => get_montant_total_commandes() - get_montant_total_commandes('livree') - get_montant_total_commandes('annulee'),
-    'nb_total' => count_commandes_by_statut(),
-    'nb_livrees' => count_commandes_by_statut('livree'),
-    'nb_annulees' => count_commandes_by_statut('annulee')
+    'montant_total' => $mt_all,
+    'montant_livrees' => $mt_liv,
+    'montant_non_traitees' => $mt_all - $mt_liv - $mt_ann,
+    'nb_total' => count_commandes_by_statut(null, $vf_hist),
+    'nb_livrees' => count_commandes_by_statut('livree', $vf_hist),
+    'nb_annulees' => count_commandes_by_statut('annulee', $vf_hist)
 ];
 
 $libelle_periode = '';
@@ -95,10 +101,10 @@ switch ($periode) {
             align-items: flex-end;
             margin-bottom: 28px;
             padding: 24px 28px;
-            background: linear-gradient(135deg, var(--beige-creme) 0%, #fef5f9 100%);
+            background: var(--fond-secondaire);
             border-radius: 16px;
             box-shadow: var(--ombre-douce);
-            border: 1px solid rgba(229, 72, 138, 0.2);
+            border: 1px solid rgba(53, 100, 166, 0.2);
         }
 
         .historique-filtres .form-group {
@@ -120,7 +126,7 @@ switch ($periode) {
         .historique-filtres input[type="date"] {
             padding: 14px 18px;
             min-height: 48px;
-            border: 2px solid rgba(229, 72, 138, 0.2);
+            border: 2px solid rgba(53, 100, 166, 0.2);
             border-radius: 12px;
             font-size: 16px;
             min-width: 140px;
@@ -133,18 +139,18 @@ switch ($periode) {
         .historique-filtres input:focus {
             outline: none;
             border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.2);
+            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.2);
         }
 
         .historique-filtres select:hover,
         .historique-filtres input:hover {
-            border-color: rgba(229, 72, 138, 0.5);
+            border-color: rgba(53, 100, 166, 0.5);
         }
 
         .historique-filtres .btn-apply {
             padding: 14px 28px;
             min-height: 48px;
-            background: linear-gradient(135deg, var(--couleur-dominante) 0%, #c91f6e 100%);
+            background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
             color: var(--texte-clair);
             border: none;
             border-radius: 12px;
@@ -157,7 +163,7 @@ switch ($periode) {
 
         .historique-filtres .btn-apply:hover {
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(229, 72, 138, 0.35);
+            box-shadow: 0 6px 20px rgba(53, 100, 166, 0.35);
         }
 
         .historique-filtres .btn-apply:active {
@@ -187,8 +193,8 @@ switch ($periode) {
         }
 
         .stat-globale-card {
-            background: linear-gradient(135deg, rgba(229, 72, 138, 0.08) 0%, rgba(32, 197, 199, 0.06) 100%);
-            border: 1px solid rgba(229, 72, 138, 0.25);
+            background: var(--fond-secondaire);
+            border: 1px solid rgba(53, 100, 166, 0.25);
             border-radius: 12px;
             padding: 16px;
         }
@@ -215,7 +221,7 @@ switch ($periode) {
 
         .stat-periode-card {
             background: var(--fond-principal);
-            border: 1px solid rgba(229, 72, 138, 0.15);
+            border: 1px solid rgba(53, 100, 166, 0.15);
             border-radius: 12px;
             padding: 16px;
             box-shadow: var(--ombre-douce);
@@ -223,7 +229,7 @@ switch ($periode) {
 
         .stat-periode-card.highlight {
             border-color: var(--couleur-dominante);
-            background: linear-gradient(135deg, rgba(229, 72, 138, 0.1) 0%, rgba(244, 211, 94, 0.08) 100%);
+            background: var(--bleu-pale);
         }
 
         .stat-periode-card .value {
@@ -240,17 +246,17 @@ switch ($periode) {
         .historique-table td {
             padding: 12px 16px;
             text-align: left;
-            border-bottom: 1px solid rgba(229, 72, 138, 0.1);
+            border-bottom: 1px solid rgba(53, 100, 166, 0.1);
         }
 
         .historique-table th {
-            background: linear-gradient(135deg, var(--couleur-dominante) 0%, #c91f6e 100%);
+            background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
             font-weight: 600;
             color: var(--texte-clair);
         }
 
         .historique-table tr:hover td {
-            background: rgba(229, 72, 138, 0.04);
+            background: rgba(53, 100, 166, 0.04);
         }
 
         .historique-table .montant {

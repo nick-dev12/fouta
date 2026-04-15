@@ -5,6 +5,23 @@
  */
 
 require_once __DIR__ . '/../models/model_videos.php';
+require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
+require_once __DIR__ . '/../includes/db_schema_helpers.php';
+
+/**
+ * Vendeur : uniquement ses lignes ; plateforme : lignes sans admin_id.
+ */
+function admin_video_row_allowed(array $row) {
+    $scope = admin_param_boutique_scope_id();
+    if ($scope !== null) {
+        return isset($row['admin_id']) && (int) $row['admin_id'] === (int) $scope;
+    }
+    if (db_table_has_column('videos', 'admin_id')) {
+        $aid = $row['admin_id'] ?? null;
+        return $aid === null || $aid === '';
+    }
+    return true;
+}
 
 /**
  * Traite le formulaire d'ajout/modification de vidéo
@@ -27,6 +44,15 @@ function process_video_form()
     $titre = isset($_POST['titre']) ? trim($_POST['titre']) : '';
     $statut = isset($_POST['statut']) ? trim($_POST['statut']) : 'actif';
     $video_id = isset($_POST['video_id']) ? (int) $_POST['video_id'] : 0;
+
+    if ($video_id > 0) {
+        $row_chk = get_video_by_id($video_id);
+        if (!$row_chk || !admin_video_row_allowed($row_chk)) {
+            return ['success' => false, 'message' => 'Vidéo introuvable ou accès refusé.'];
+        }
+    }
+
+    $boutique_scope = admin_param_boutique_scope_id();
 
     // Si le titre est vide, générer un titre par défaut
     if (empty($titre)) {
@@ -125,6 +151,12 @@ function process_video_form()
         $data['image_preview'] = $image_preview;
     }
 
+    if ($boutique_scope !== null) {
+        $data['admin_id'] = (int) $boutique_scope;
+    } else {
+        $data['admin_id'] = null;
+    }
+
     // Créer ou mettre à jour
     if ($video_id > 0) {
         // Mise à jour
@@ -158,6 +190,11 @@ function process_delete_video()
 
     if ($video_id <= 0) {
         return ['success' => false, 'message' => 'ID de vidéo invalide'];
+    }
+
+    $row = get_video_by_id($video_id);
+    if (!$row || !admin_video_row_allowed($row)) {
+        return ['success' => false, 'message' => 'Vidéo introuvable ou accès refusé.'];
     }
 
     if (delete_video($video_id)) {

@@ -43,6 +43,9 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="FOUTA POIDS LOURDS">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -51,7 +54,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
             color: #444;
             background: #f5f5f5;
             padding: 20px;
@@ -692,7 +695,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
             <div class="facture-entreprise">
                 <div class="facture-logo">
                     <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS"
-                        onerror="this.style.background='#fef5f9';this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext x=%2250%22 y=%2255%22 text-anchor=%22middle%22 font-size=%2240%22%3E🍰%3C/text%3E%3C/svg%3E'">
+                        onerror="this.style.background='#fafafa';this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext x=%2250%22 y=%2255%22 text-anchor=%22middle%22 font-size=%2240%22%3E🍰%3C/text%3E%3C/svg%3E'">
                 </div>
                 <div class="facture-entreprise-info">
                     <h1><?php echo htmlspecialchars($entreprise_nom); ?></h1>

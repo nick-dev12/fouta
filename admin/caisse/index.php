@@ -4,7 +4,7 @@
  */
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -29,6 +29,7 @@ require_once __DIR__ . '/../../models/model_caisse.php';
 require_once __DIR__ . '/../../includes/barcode_caisse_ticket.php';
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../includes/admin_route_access.php';
 
 $cart = caisse_cart_get();
 $totals = caisse_compute_totals($cart);
@@ -59,8 +60,9 @@ $cat = isset($_GET['cat']) ? (int) $_GET['cat'] : 0;
 $cat = $cat > 0 ? $cat : null;
 
 $show_catalogue = ($q !== '' || $cat !== null);
-$produits_liste = $show_catalogue ? search_produits_with_filters($q, null, null, $cat, 'nom', 0, 60) : [];
-$categories = get_all_categories();
+$__vf_caisse = admin_vendeur_filter_id();
+$produits_liste = $show_catalogue ? search_produits_with_filters($q, null, null, $cat, 'nom', 0, 60, $__vf_caisse) : [];
+$categories = admin_categories_list_for_session();
 
 $has_ident = function_exists('produits_has_column') && produits_has_column('identifiant_interne');
 

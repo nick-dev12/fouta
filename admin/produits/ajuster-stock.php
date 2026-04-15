@@ -6,12 +6,13 @@
 
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../includes/admin_route_access.php';
 
 $produit_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($produit_id <= 0) {
@@ -37,6 +38,7 @@ if (!$produit) {
     header('Location: index.php');
     exit;
 }
+admin_vendeur_assert_produit_owned($produit);
 
 require_once __DIR__ . '/../../includes/barcode_fpl.php';
 $code_fpl_live = ensure_produit_identifiant_interne($produit_id);

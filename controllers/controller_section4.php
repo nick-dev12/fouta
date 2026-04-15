@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../models/model_section4.php';
+require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
 
 /**
  * Traite le formulaire de modification de la section4
@@ -14,6 +15,8 @@ function process_update_section4() {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return ['success' => false, 'message' => 'Méthode non autorisée'];
     }
+    $boutique_scope = admin_param_boutique_scope_id();
+    $scope_id = $boutique_scope !== null ? (int) $boutique_scope : null;
     
     // Données optionnelles (titre et texte peuvent être vides)
     $titre = isset($_POST['titre']) ? trim($_POST['titre']) : '';
@@ -30,7 +33,7 @@ function process_update_section4() {
             $image_fond = $upload_result['filename'];
             
             // Supprimer l'ancienne image si elle existe
-            $current_config = get_section4_config();
+            $current_config = get_section4_config($scope_id);
             if ($current_config && !empty($current_config['image_fond']) && $current_config['image_fond'] !== $image_fond) {
                 delete_section4_image($current_config['image_fond']);
             }
@@ -39,7 +42,7 @@ function process_update_section4() {
         }
     } else {
         // Garder l'image existante si aucune nouvelle image n'est uploadée
-        $current_config = get_section4_config();
+        $current_config = get_section4_config($scope_id);
         if ($current_config && !empty($current_config['image_fond'])) {
             $image_fond = $current_config['image_fond'];
         }
@@ -52,7 +55,7 @@ function process_update_section4() {
         'statut' => $statut
     ];
     
-    $result = update_section4_config($data);
+    $result = update_section4_config($data, $scope_id);
     if ($result['success']) {
         return ['success' => true, 'message' => 'Configuration de la section4 mise à jour avec succès'];
     }

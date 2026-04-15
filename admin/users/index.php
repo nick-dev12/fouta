@@ -7,19 +7,15 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../includes/admin_permissions.php';
 
-// Administrateur ou RH
-$__ar = $_SESSION['admin_role'] ?? '';
-if ($__ar === 'utilisateur') {
-    $__ar = 'gestion_stock';
-}
-if (!in_array($__ar, ['admin', 'rh'], true)) {
+if (!admin_can_gestion_clients_comptes()) {
     header('Location: ../dashboard.php');
     exit;
 }
@@ -34,7 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_statut'])) {
 
     if ($user_id > 0 && in_array($nouveau_statut, ['actif', 'inactif'], true)) {
         require_once __DIR__ . '/../../models/model_users.php';
-        if (update_user_statut($user_id, $nouveau_statut)) {
+        $vf_toggle = admin_vendeur_filter_id();
+        if ($vf_toggle !== null && $vf_toggle > 0 && !user_a_commande_chez_boutique($user_id, $vf_toggle)) {
+            $error_message = 'Vous ne pouvez pas modifier le statut de ce client (aucune commande de vos produits).';
+        } elseif (update_user_statut($user_id, $nouveau_statut)) {
             $success_message = $nouveau_statut === 'actif'
                 ? 'Utilisateur activé avec succès !'
                 : 'Utilisateur désactivé avec succès !';
@@ -44,9 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_statut'])) {
     }
 }
 
-// Récupérer tous les utilisateurs avec leurs statistiques
+// Récupérer tous les utilisateurs avec leurs statistiques (périmètre boutique pour les vendeurs)
 require_once __DIR__ . '/../../models/model_users.php';
-$users = get_all_users_with_stats();
+$vf_clients = admin_vendeur_filter_id();
+$users = get_all_users_with_stats($vf_clients);
 
 // Statistiques globales
 $total_users = count($users);
@@ -73,9 +73,13 @@ $users_inactifs = count(array_filter($users, function ($u) { return $u['statut']
     <div class="admin-clients-shell">
         <header class="admin-clients-hero">
             <div class="admin-clients-hero__text">
-                <h1><i class="fas fa-store" aria-hidden="true"></i> Clients du site</h1>
+                <h1><i class="fas fa-store" aria-hidden="true"></i> <?php echo $vf_clients ? 'Clients de votre boutique' : 'Clients du site'; ?></h1>
                 <p class="admin-clients-hero__lead">
+                    <?php if ($vf_clients): ?>
+                    Comptes clients ayant passé au moins une commande contenant <strong>vos produits</strong> — commandes, livraisons et CA (hors annulées) sont limités à ces ventes. Ouvrez la fiche pour le détail.
+                    <?php else: ?>
                     Comptes clients inscrits sur la boutique — statistiques de commandes et chiffre d’affaires (hors commandes annulées). Accédez à la fiche détail pour l’historique complet.
+                    <?php endif; ?>
                 </p>
             </div>
             <div class="admin-clients-hero__actions">
@@ -125,15 +129,19 @@ $users_inactifs = count(array_filter($users, function ($u) { return $u['statut']
             <div class="admin-clients-panel__head">
                 <h2 id="clients-list-title"><i class="fas fa-list" aria-hidden="true"></i> Liste des clients (<?php echo count($users); ?>)</h2>
                 <p class="admin-clients-panel__sub">
-                    Tri par nombre de commandes boutique. Chaque carte résume les commandes, livraisons et CA HT.
+                    <?php echo $vf_clients
+                        ? 'Tri par nombre de commandes concernant vos produits. CA = somme des lignes de vos articles (hors commandes annulées).'
+                        : 'Tri par nombre de commandes boutique. Chaque carte résume les commandes, livraisons et CA HT.'; ?>
                 </p>
             </div>
 
             <?php if (empty($users)): ?>
             <div class="admin-clients-empty">
                 <i class="fas fa-users" aria-hidden="true"></i>
-                <h3>Aucun utilisateur</h3>
-                <p>Aucun compte client n’est encore enregistré.</p>
+                <h3><?php echo $vf_clients ? 'Aucun client pour votre boutique' : 'Aucun utilisateur'; ?></h3>
+                <p><?php echo $vf_clients
+                    ? 'Aucun client n’a encore commandé un produit publié par votre boutique.'
+                    : 'Aucun compte client n’est encore enregistré.'; ?></p>
             </div>
             <?php else: ?>
             <div class="admin-clients-grid">

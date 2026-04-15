@@ -5,7 +5,7 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     echo json_encode(['error' => 'Non autorisé', 'items' => []]);
     exit;
 }

@@ -19,6 +19,18 @@ function _panier_has_variante_columns() {
     return $has;
 }
 
+function _panier_has_vendeur_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM panier LIKE 'vendeur_id'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) { $has = false; }
+    }
+    return $has;
+}
+
 /**
  * Ajoute un produit au panier ou met à jour la quantité
  * @param int $user_id L'ID de l'utilisateur
@@ -33,20 +45,44 @@ function _panier_has_variante_columns() {
  * @param float $surcout_poids Surcoût poids (optionnel)
  * @param float $surcout_taille Surcoût taille (optionnel)
  * @param float|null $prix_unitaire Prix unitaire final (optionnel, pour variante + surcoûts)
+ * @param int|null $vendeur_id ID vendeur (admin). Si null, dérivé du produit (admin_id).
  * @return bool True en cas de succès, False sinon
  */
-function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $poids = null, $taille = null, $variante_id = null, $variante_nom = null, $variante_image = null, $surcout_poids = 0, $surcout_taille = 0, $prix_unitaire = null)
+function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $poids = null, $taille = null, $variante_id = null, $variante_nom = null, $variante_image = null, $surcout_poids = 0, $surcout_taille = 0, $prix_unitaire = null, $vendeur_id = null)
 {
     global $db;
 
     try {
+        require_once __DIR__ . '/model_produits.php';
+        if ($vendeur_id === null || $vendeur_id === '') {
+            $pr = get_produit_by_id((int) $produit_id);
+            $vendeur_id = ($pr && !empty($pr['admin_id'])) ? (int) $pr['admin_id'] : 0;
+        } else {
+            $vendeur_id = (int) $vendeur_id;
+        }
+        if ($vendeur_id <= 0 && _panier_has_vendeur_column()) {
+            return false;
+        }
+
         $has_cols = _panier_has_variante_columns();
+        $has_vend = _panier_has_vendeur_column();
         $vid = $variante_id ? (int)$variante_id : 0;
         $match_sql = "user_id = :user_id AND produit_id = :produit_id AND COALESCE(couleur,'') = COALESCE(:couleur,'') AND COALESCE(poids,'') = COALESCE(:poids,'') AND COALESCE(taille,'') = COALESCE(:taille,'')";
         $params = ['user_id' => $user_id, 'produit_id' => $produit_id, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
+        if ($has_vend) {
+            $match_sql .= ' AND vendeur_id = :vendeur_id';
+            $params['vendeur_id'] = $vendeur_id;
+        }
         if ($has_cols) {
             $match_sql = "user_id = :user_id AND produit_id = :produit_id AND COALESCE(variante_id, 0) = :vid AND COALESCE(couleur,'') = COALESCE(:couleur,'') AND COALESCE(poids,'') = COALESCE(:poids,'') AND COALESCE(taille,'') = COALESCE(:taille,'')";
+            if ($has_vend) {
+                $match_sql .= ' AND vendeur_id = :vendeur_id';
+            }
+            $params = ['user_id' => $user_id, 'produit_id' => $produit_id, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
             $params['vid'] = $vid;
+            if ($has_vend) {
+                $params['vendeur_id'] = $vendeur_id;
+            }
         }
 
         $stmt = $db->prepare("SELECT id, quantite FROM panier WHERE $match_sql");
@@ -73,6 +109,11 @@ function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $p
             $ins_cols = "user_id, produit_id, quantite, couleur, poids, taille";
             $ins_vals = ":user_id, :produit_id, :quantite, :couleur, :poids, :taille";
             $ins_params = ['user_id' => $user_id, 'produit_id' => $produit_id, 'quantite' => $quantite, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
+            if (_panier_has_vendeur_column()) {
+                $ins_cols = "user_id, vendeur_id, produit_id, quantite, couleur, poids, taille";
+                $ins_vals = ":user_id, :vendeur_id, :produit_id, :quantite, :couleur, :poids, :taille";
+                $ins_params = ['user_id' => $user_id, 'vendeur_id' => $vendeur_id, 'produit_id' => $produit_id, 'quantite' => $quantite, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
+            }
             if (_panier_has_variante_columns()) {
                 $ins_cols .= ", variante_id, variante_nom, variante_image, surcout_poids, surcout_taille, prix_unitaire";
                 $ins_vals .= ", :variante_id, :variante_nom, :variante_image, :surcout_poids, :surcout_taille, :prix_unitaire";
@@ -154,6 +195,122 @@ function delete_from_panier($panier_id)
  * @param int $user_id L'ID de l'utilisateur
  * @return array Tableau des produits du panier avec leurs détails
  */
+/**
+ * Regroupe les lignes panier par vendeur_id (affichage marketplace).
+ * @return array<int, array{items: array, label: string, slug: string}>
+ */
+/**
+ * ID vendeur effectif pour une ligne panier (panier.vendeur_id ou produits.admin_id).
+ */
+function panier_item_effective_vendeur_id(array $item)
+{
+    $vid = isset($item['vendeur_id']) ? (int) $item['vendeur_id'] : 0;
+    if ($vid <= 0 && !empty($item['admin_id'])) {
+        $vid = (int) $item['admin_id'];
+    }
+    return $vid;
+}
+
+/**
+ * Ne garde que les lignes dont le vendeur correspond (vitrine boutique).
+ */
+function filter_panier_items_by_vendeur(array $panier_items, $vendeur_id)
+{
+    $vid = (int) $vendeur_id;
+    if ($vid <= 0) {
+        return $panier_items;
+    }
+    $out = [];
+    foreach ($panier_items as $item) {
+        if (panier_item_effective_vendeur_id($item) === $vid) {
+            $out[] = $item;
+        }
+    }
+    return $out;
+}
+
+/**
+ * Somme des quantités (lignes du tableau passé).
+ */
+function panier_items_count_quantites(array $items)
+{
+    $n = 0;
+    foreach ($items as $item) {
+        $n += (int) ($item['quantite'] ?? 0);
+    }
+    return $n;
+}
+
+/**
+ * Sous-total FCFA pour un ensemble de lignes panier déjà enrichies (prix promo / panier_prix_unitaire).
+ */
+function panier_items_sous_total(array $items)
+{
+    $total = 0.0;
+    foreach ($items as $item) {
+        $pu = (!empty($item['panier_prix_unitaire']) && (float) $item['panier_prix_unitaire'] > 0)
+            ? (float) $item['panier_prix_unitaire']
+            : (!empty($item['prix_promotion']) && (float) $item['prix_promotion'] < (float) $item['prix']
+                ? (float) $item['prix_promotion']
+                : (float) $item['prix']);
+        $total += $pu * (int) ($item['quantite'] ?? 0);
+    }
+    return $total;
+}
+
+/**
+ * Supprime du panier toutes les lignes rattachées à un vendeur (admin id).
+ */
+function delete_panier_lines_for_vendeur($user_id, $vendeur_id)
+{
+    global $db;
+    $uid = (int) $user_id;
+    $vid = (int) $vendeur_id;
+    if ($uid <= 0 || $vid <= 0 || !$db) {
+        return false;
+    }
+    try {
+        if (_panier_has_vendeur_column()) {
+            $sql = "DELETE pan FROM panier pan
+                INNER JOIN produits p ON pan.produit_id = p.id
+                WHERE pan.user_id = :uid AND (
+                    (pan.vendeur_id IS NOT NULL AND pan.vendeur_id > 0 AND pan.vendeur_id = :vid)
+                    OR ((pan.vendeur_id IS NULL OR pan.vendeur_id = 0) AND p.admin_id = :vid2)
+                )";
+            $stmt = $db->prepare($sql);
+            return $stmt->execute(['uid' => $uid, 'vid' => $vid, 'vid2' => $vid]);
+        }
+        $stmt = $db->prepare(
+            "DELETE pan FROM panier pan
+            INNER JOIN produits p ON pan.produit_id = p.id
+            WHERE pan.user_id = :uid AND p.admin_id = :vid"
+        );
+        return $stmt->execute(['uid' => $uid, 'vid' => $vid]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function group_panier_items_by_vendeur(array $panier_items) {
+    $groups = [];
+    foreach ($panier_items as $item) {
+        $vid = isset($item['vendeur_id']) ? (int) $item['vendeur_id'] : 0;
+        if ($vid <= 0 && !empty($item['admin_id'])) {
+            $vid = (int) $item['admin_id'];
+        }
+        if (!isset($groups[$vid])) {
+            $groups[$vid] = [
+                'items' => [],
+                'label' => isset($item['vendeur_boutique_nom']) ? (string) $item['vendeur_boutique_nom'] : 'Boutique',
+                'slug' => isset($item['vendeur_boutique_slug']) ? (string) $item['vendeur_boutique_slug'] : '',
+            ];
+        }
+        $groups[$vid]['items'][] = $item;
+    }
+    ksort($groups, SORT_NUMERIC);
+    return $groups;
+}
+
 function get_panier_by_user($user_id)
 {
     global $db;
@@ -163,13 +320,20 @@ function get_panier_by_user($user_id)
         if (_panier_has_variante_columns()) {
             $cols .= ", pan.variante_id as panier_variante_id, pan.variante_nom as panier_variante_nom, pan.variante_image as panier_variante_image, pan.surcout_poids as panier_surcout_poids, pan.surcout_taille as panier_surcout_taille, pan.prix_unitaire as panier_prix_unitaire";
         }
+        $join_v = '';
+        $sel_v = '';
+        if (_panier_has_vendeur_column()) {
+            $join_v = ' LEFT JOIN admin vend ON pan.vendeur_id = vend.id ';
+            $sel_v = ', pan.vendeur_id, vend.boutique_nom as vendeur_boutique_nom, vend.boutique_slug as vendeur_boutique_slug';
+        }
         $stmt = $db->prepare("
-            SELECT $cols, c.nom as categorie_nom
+            SELECT $cols$sel_v, c.nom as categorie_nom
             FROM panier pan
             INNER JOIN produits p ON pan.produit_id = p.id
             LEFT JOIN categories c ON p.categorie_id = c.id
+            $join_v
             WHERE pan.user_id = :user_id
-            ORDER BY pan.date_ajout DESC
+            ORDER BY pan.vendeur_id ASC, pan.date_ajout DESC
         ");
         $stmt->execute(['user_id' => $user_id]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -229,13 +393,19 @@ function get_panier_total($user_id)
  * @param int $produit_id L'ID du produit
  * @return array|false Les données du panier ou False
  */
-function is_in_panier($user_id, $produit_id)
+function is_in_panier($user_id, $produit_id, $vendeur_id = null)
 {
     global $db;
 
     try {
-        $stmt = $db->prepare("SELECT * FROM panier WHERE user_id = :user_id AND produit_id = :produit_id");
-        $stmt->execute(['user_id' => $user_id, 'produit_id' => $produit_id]);
+        $sql = "SELECT * FROM panier WHERE user_id = :user_id AND produit_id = :produit_id";
+        $params = ['user_id' => $user_id, 'produit_id' => $produit_id];
+        if (_panier_has_vendeur_column() && $vendeur_id !== null && $vendeur_id !== '') {
+            $sql .= " AND vendeur_id = :vendeur_id";
+            $params['vendeur_id'] = (int) $vendeur_id;
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $item ? $item : false;
@@ -261,6 +431,43 @@ function count_panier_items($user_id)
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $result && $result['total'] ? (int) $result['total'] : 0;
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Somme des quantités du panier pour un vendeur (vitrine boutique).
+ */
+function count_panier_items_for_vendeur($user_id, $vendeur_id)
+{
+    global $db;
+    $uid = (int) $user_id;
+    $vid = (int) $vendeur_id;
+    if ($uid <= 0 || $vid <= 0 || !$db) {
+        return 0;
+    }
+    try {
+        if (_panier_has_vendeur_column()) {
+            $stmt = $db->prepare(
+                "SELECT SUM(pan.quantite) as total FROM panier pan
+                INNER JOIN produits p ON pan.produit_id = p.id
+                WHERE pan.user_id = :uid AND (
+                    (pan.vendeur_id IS NOT NULL AND pan.vendeur_id > 0 AND pan.vendeur_id = :vid)
+                    OR ((pan.vendeur_id IS NULL OR pan.vendeur_id = 0) AND p.admin_id = :vid2)
+                )"
+            );
+            $stmt->execute(['uid' => $uid, 'vid' => $vid, 'vid2' => $vid]);
+        } else {
+            $stmt = $db->prepare(
+                "SELECT SUM(pan.quantite) as total FROM panier pan
+                INNER JOIN produits p ON pan.produit_id = p.id
+                WHERE pan.user_id = :uid AND p.admin_id = :vid"
+            );
+            $stmt->execute(['uid' => $uid, 'vid' => $vid]);
+        }
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result && $result['total'] !== null ? (int) $result['total'] : 0;
     } catch (PDOException $e) {
         return 0;
     }

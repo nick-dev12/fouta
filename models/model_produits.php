@@ -31,6 +31,29 @@ function produits_has_column($name) {
 }
 
 /**
+ * Fragment SQL : jointure admin (boutique) pour enrichir les listes produits marketplace
+ * @return array{join: string, select: string}
+ */
+function produits_sql_vendeur_fragment() {
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    if (!produits_has_column('admin_id')) {
+        $cached = [
+            'join' => '',
+            'select' => ', NULL AS vendeur_boutique_nom, NULL AS vendeur_boutique_slug',
+        ];
+    } else {
+        $cached = [
+            'join' => ' LEFT JOIN admin vend ON p.admin_id = vend.id ',
+            'select' => ', vend.boutique_nom AS vendeur_boutique_nom, vend.boutique_slug AS vendeur_boutique_slug',
+        ];
+    }
+    return $cached;
+}
+
+/**
  * Génère le prochain identifiant interne FPLXXXXXX (6 chiffres)
  */
 function generate_next_identifiant_interne_produit() {
@@ -61,31 +84,34 @@ function generate_next_identifiant_interne_produit() {
 /**
  * Récupère tous les produits
  * @param string $statut Filtrer par statut (optionnel)
+ * @param int|null $boutique_admin_id Limiter au vendeur (marketplace)
  * @return array|false Tableau des produits ou False en cas d'erreur
  */
-function get_all_produits($statut = null)
+function get_all_produits($statut = null, $boutique_admin_id = null)
 {
     global $db;
 
     try {
+        $vj = produits_sql_vendeur_fragment();
+        $sql = "
+                SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
+                FROM produits p 
+                LEFT JOIN categories c ON p.categorie_id = c.id 
+                " . $vj['join'] . "
+                WHERE 1=1
+            ";
+        $params = [];
         if ($statut) {
-            $stmt = $db->prepare("
-                SELECT p.*, c.nom as categorie_nom
-                FROM produits p 
-                LEFT JOIN categories c ON p.categorie_id = c.id 
-                WHERE p.statut = :statut 
-                ORDER BY p.date_creation DESC
-            ");
-            $stmt->execute(['statut' => $statut]);
-        } else {
-            $stmt = $db->prepare("
-                SELECT p.*, c.nom as categorie_nom
-                FROM produits p 
-                LEFT JOIN categories c ON p.categorie_id = c.id 
-                ORDER BY p.date_creation DESC
-            ");
-            $stmt->execute();
+            $sql .= ' AND p.statut = :statut';
+            $params['statut'] = $statut;
         }
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $sql .= ' AND p.admin_id = :boutique_admin_id';
+            $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
+        $sql .= ' ORDER BY p.date_creation DESC';
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
 
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -100,21 +126,175 @@ function get_all_produits($statut = null)
  * @param int $categorie_id L'ID de la catégorie
  * @return array|false Tableau des produits ou False en cas d'erreur
  */
-function get_produits_by_categorie($categorie_id)
+function get_produits_by_categorie($categorie_id, $boutique_admin_id = null)
 {
     global $db;
 
     try {
+        require_once __DIR__ . '/model_categories.php';
+        $catIds = function_exists('category_expanded_ids_for_products')
+            ? category_expanded_ids_for_products((int) $categorie_id)
+            : [(int) $categorie_id];
+        if (empty($catIds)) {
+            return [];
+        }
+        $vj = produits_sql_vendeur_fragment();
+        $placeholders = implode(', ', array_fill(0, count($catIds), '?'));
+        $where = 'p.categorie_id IN (' . $placeholders . ') AND p.statut = \'actif\'';
+        $execParams = array_values($catIds);
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND p.admin_id = ?';
+            $execParams[] = (int) $boutique_admin_id;
+        }
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
-            WHERE p.categorie_id = :categorie_id AND p.statut = 'actif'
+            " . $vj['join'] . "
+            WHERE $where
             ORDER BY p.date_creation DESC
         ");
-        $stmt->execute(['categorie_id' => $categorie_id]);
+        $stmt->execute($execParams);
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        return $produits ? $produits : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Produits actifs rattachés à un rayon plateforme (categories_generales).
+ * Utilise produits.categorie_generale_id si présent, et/ou les catégories feuilles liées au rayon.
+ *
+ * @param int $generale_id ID categories_generales
+ * @param int|null $boutique_admin_id Filtre vendeur (boutique) ou null = marketplace
+ * @return array
+ */
+function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = null) {
+    global $db;
+    $generale_id = (int) $generale_id;
+    if ($generale_id <= 0) {
+        return [];
+    }
+    require_once __DIR__ . '/model_categories.php';
+    if (!function_exists('categories_generales_table_exists') || !categories_generales_table_exists()) {
+        return [];
+    }
+    $gen_row = get_categorie_generale_by_id($generale_id);
+    if (!$gen_row) {
+        return [];
+    }
+
+    $leaf_ids = [];
+    if (function_exists('categories_has_categorie_generale_id_column') && categories_has_categorie_generale_id_column()) {
+        $leaf_ids = categorie_generale_leaf_category_ids($generale_id);
+    }
+
+    $conds = [];
+    $exec_params = [];
+    if (produits_has_column('categorie_generale_id')) {
+        $conds[] = 'p.categorie_generale_id = ?';
+        $exec_params[] = $generale_id;
+    }
+    if (!empty($leaf_ids)) {
+        $ph = implode(',', array_fill(0, count($leaf_ids), '?'));
+        $conds[] = "p.categorie_id IN ($ph)";
+        foreach ($leaf_ids as $lid) {
+            $exec_params[] = (int) $lid;
+        }
+    }
+    if (empty($conds)) {
+        return [];
+    }
+
+    $where_or = '(' . implode(' OR ', $conds) . ')';
+    $vj = produits_sql_vendeur_fragment();
+    $where = "p.statut = 'actif' AND $where_or";
+    if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+        $where .= ' AND p.admin_id = ?';
+        $exec_params[] = (int) $boutique_admin_id;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $vj['join'] . "
+            WHERE $where
+            ORDER BY p.date_creation DESC
+        ");
+        $stmt->execute($exec_params);
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $produits ? $produits : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Produits similaires marketplace : même rayon (categories_generales), toutes boutiques, hors l’article courant.
+ *
+ * @param int $exclude_produit_id Produit à exclure
+ * @param int $generale_id ID categories_generales
+ * @param int $limit Nombre max (défaut 8)
+ * @return array
+ */
+function get_produits_similaires_rayon_generale($exclude_produit_id, $generale_id, $limit = 8) {
+    global $db;
+    $exclude_produit_id = (int) $exclude_produit_id;
+    $generale_id = (int) $generale_id;
+    $limit = max(1, min(24, (int) $limit));
+    if ($generale_id <= 0 || $exclude_produit_id <= 0) {
+        return [];
+    }
+    require_once __DIR__ . '/model_categories.php';
+    if (!function_exists('categories_generales_table_exists') || !categories_generales_table_exists()) {
+        return [];
+    }
+    if (!get_categorie_generale_by_id($generale_id)) {
+        return [];
+    }
+
+    $leaf_ids = [];
+    if (function_exists('categories_has_categorie_generale_id_column') && categories_has_categorie_generale_id_column()) {
+        $leaf_ids = categorie_generale_leaf_category_ids($generale_id);
+    }
+
+    $conds = [];
+    $exec_params = [$exclude_produit_id];
+    if (produits_has_column('categorie_generale_id')) {
+        $conds[] = 'p.categorie_generale_id = ?';
+        $exec_params[] = $generale_id;
+    }
+    if (!empty($leaf_ids)) {
+        $ph = implode(',', array_fill(0, count($leaf_ids), '?'));
+        $conds[] = "p.categorie_id IN ($ph)";
+        foreach ($leaf_ids as $lid) {
+            $exec_params[] = (int) $lid;
+        }
+    }
+    if (empty($conds)) {
+        return [];
+    }
+
+    $where_or = '(' . implode(' OR ', $conds) . ')';
+    $vj = produits_sql_vendeur_fragment();
+    $where = "p.statut = 'actif' AND p.id != ? AND $where_or";
+
+    try {
+        $sql = "
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $vj['join'] . "
+            WHERE $where
+            ORDER BY p.date_creation DESC
+            LIMIT " . $limit;
+        $stmt = $db->prepare($sql);
+        $stmt->execute($exec_params);
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $produits ? $produits : [];
     } catch (PDOException $e) {
         return [];
@@ -131,10 +311,12 @@ function get_produit_by_id($id)
     global $db;
 
     try {
+        $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
+            " . $vj['join'] . "
             WHERE p.id = :id
         ");
         $stmt->execute(['id' => $id]);
@@ -163,10 +345,12 @@ function get_produit_by_identifiant_interne($code, $only_actif = false)
     }
 
     try {
+        $vj = produits_sql_vendeur_fragment();
         $sql = "
-            SELECT p.*, c.nom as categorie_nom
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $vj['join'] . "
             WHERE UPPER(TRIM(p.identifiant_interne)) = :code
         ";
         if ($only_actif) {
@@ -208,7 +392,7 @@ function produits_sql_identifiant_suffix_5_expr($table_prefix = 'p')
 /**
  * Liste des produits dont le code se termine par ces 5 chiffres (recherche rapide)
  */
-function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $limit = 20, $only_actif = true)
+function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $limit = 20, $only_actif = true, $boutique_admin_id = null)
 {
     global $db;
 
@@ -221,13 +405,20 @@ function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $l
     }
 
     $statut_sql = $only_actif ? "p.statut IN ('actif', 'rupture_stock')" : '1=1';
+    $extra = '';
+    if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+        $extra = ' AND p.admin_id = :boutique_admin_id';
+    }
+    $vj = produits_sql_vendeur_fragment();
     $sql = '
-        SELECT p.*, c.nom as categorie_nom
+        SELECT p.*, c.nom as categorie_nom ' . $vj['select'] . '
         FROM produits p
         LEFT JOIN categories c ON p.categorie_id = c.id
+        ' . $vj['join'] . '
         WHERE ' . $statut_sql . '
         AND p.identifiant_interne IS NOT NULL AND TRIM(p.identifiant_interne) != \'\'
         AND ' . produits_sql_identifiant_suffix_5_expr('p') . ' = :suf
+        ' . $extra . '
         ORDER BY p.date_creation DESC
         LIMIT :limit OFFSET :offset
     ';
@@ -235,6 +426,9 @@ function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $l
     try {
         $stmt = $db->prepare($sql);
         $stmt->bindValue(':suf', $suffix5, PDO::PARAM_STR);
+        if ($extra !== '') {
+            $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -249,7 +443,7 @@ function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $l
 /**
  * Compte les produits correspondant aux 5 derniers chiffres
  */
-function count_produits_by_identifiant_suffix_5_chiffres($suffix5, $only_actif = true)
+function count_produits_by_identifiant_suffix_5_chiffres($suffix5, $only_actif = true, $boutique_admin_id = null)
 {
     global $db;
 
@@ -268,10 +462,15 @@ function count_produits_by_identifiant_suffix_5_chiffres($suffix5, $only_actif =
         AND identifiant_interne IS NOT NULL AND TRIM(identifiant_interne) != \'\'
         AND ' . produits_sql_identifiant_suffix_5_expr('') . ' = :suf
     ';
+    $params = ['suf' => $suffix5];
+    if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+        $sql .= ' AND admin_id = :boutique_admin_id';
+        $params['boutique_admin_id'] = (int) $boutique_admin_id;
+    }
 
     try {
         $stmt = $db->prepare($sql);
-        $stmt->execute(['suf' => $suffix5]);
+        $stmt->execute($params);
 
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
@@ -336,20 +535,29 @@ function ensure_produit_identifiant_interne($produit_id)
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits
  */
-function get_all_produits_paginated($offset = 0, $limit = 20)
+function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id = null)
 {
     global $db;
 
     try {
+        $vj = produits_sql_vendeur_fragment();
+        $where = "p.statut = 'actif'";
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND p.admin_id = :boutique_admin_id';
+        }
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
-            WHERE p.statut = 'actif'
+            " . $vj['join'] . "
+            WHERE $where
             ORDER BY p.date_creation DESC
             LIMIT :limit OFFSET :offset
         ");
 
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -368,17 +576,17 @@ function get_all_produits_paginated($offset = 0, $limit = 20)
  * @param int $limit Nombre max de résultats
  * @return array Tableau des produits trouvés
  */
-function search_produits($recherche, $offset = 0, $limit = 20)
+function search_produits($recherche, $offset = 0, $limit = 20, $boutique_admin_id = null)
 {
     global $db;
 
     if (empty(trim($recherche))) {
-        return get_all_produits_paginated($offset, $limit);
+        return get_all_produits_paginated($offset, $limit, $boutique_admin_id);
     }
 
     $t = trim($recherche);
     if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $t)) {
-        return get_produits_by_identifiant_suffix_5_chiffres($t, $offset, $limit, true);
+        return get_produits_by_identifiant_suffix_5_chiffres($t, $offset, $limit, true, $boutique_admin_id);
     }
     if (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $t)) {
         $p = get_produit_by_identifiant_interne(strtoupper($t), true);
@@ -387,16 +595,24 @@ function search_produits($recherche, $offset = 0, $limit = 20)
 
     try {
         $term = '%' . trim($recherche) . '%';
+        $where = "p.statut = 'actif' AND (p.nom LIKE :term OR p.description LIKE :term)";
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND p.admin_id = :boutique_admin_id';
+        }
+        $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
-            WHERE p.statut = 'actif' 
-            AND (p.nom LIKE :term OR p.description LIKE :term)
+            " . $vj['join'] . "
+            WHERE $where
             ORDER BY p.date_creation DESC
             LIMIT :limit OFFSET :offset
         ");
         $stmt->bindValue(':term', $term, PDO::PARAM_STR);
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -413,31 +629,39 @@ function search_produits($recherche, $offset = 0, $limit = 20)
  * @param string $recherche Terme de recherche
  * @return int Nombre de produits
  */
-function count_search_produits($recherche)
+function count_search_produits($recherche, $boutique_admin_id = null)
 {
     global $db;
 
     if (empty(trim($recherche))) {
-        return count_all_produits_actifs();
+        return count_all_produits_actifs($boutique_admin_id);
     }
 
     $t = trim($recherche);
     if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $t)) {
-        return count_produits_by_identifiant_suffix_5_chiffres($t, true);
+        return count_produits_by_identifiant_suffix_5_chiffres($t, true, $boutique_admin_id);
     }
     if (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $t)) {
         $p = get_produit_by_identifiant_interne(strtoupper($t), true);
-        return $p ? 1 : 0;
+        if (!$p) {
+            return 0;
+        }
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            return ((int) $p['admin_id'] === (int) $boutique_admin_id) ? 1 : 0;
+        }
+        return 1;
     }
 
     try {
         $term = '%' . trim($recherche) . '%';
-        $stmt = $db->prepare("
-            SELECT COUNT(*) FROM produits 
-            WHERE statut = 'actif' 
-            AND (nom LIKE :term OR description LIKE :term)
-        ");
-        $stmt->execute(['term' => $term]);
+        $where = "statut = 'actif' AND (nom LIKE :term OR description LIKE :term)";
+        $params = ['term' => $term];
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND admin_id = :boutique_admin_id';
+            $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
+        $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
+        $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
         return 0;
@@ -455,13 +679,18 @@ function count_search_produits($recherche)
  * @param int $limit Nombre max de résultats
  * @return array Tableau des produits trouvés
  */
-function search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $tri = 'date', $offset = 0, $limit = 50)
+function search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $tri = 'date', $offset = 0, $limit = 50, $boutique_admin_id = null)
 {
     global $db;
 
     try {
         $conditions = ["p.statut = 'actif'"];
         $params = [];
+
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $conditions[] = 'p.admin_id = :boutique_admin_id';
+            $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
 
         if (!empty(trim($recherche))) {
             $tr = trim($recherche);
@@ -490,9 +719,19 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
         }
 
         if ($categorie_id !== null && $categorie_id !== '') {
-            $categorie_id = (int) $categorie_id;
-            $conditions[] = "p.categorie_id = :categorie_id";
-            $params['categorie_id'] = $categorie_id;
+            require_once __DIR__ . '/model_categories.php';
+            $catIds = function_exists('category_expanded_ids_for_products')
+                ? category_expanded_ids_for_products((int) $categorie_id)
+                : [(int) $categorie_id];
+            if (!empty($catIds)) {
+                $ph = [];
+                foreach (array_values($catIds) as $ci => $cid) {
+                    $key = 'catf_' . $ci;
+                    $ph[] = ':' . $key;
+                    $params[$key] = (int) $cid;
+                }
+                $conditions[] = 'p.categorie_id IN (' . implode(', ', $ph) . ')';
+            }
         }
 
         $order = "p.date_creation DESC";
@@ -508,10 +747,12 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
         $params['limit'] = $limit;
         $params['offset'] = $offset;
 
+        $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
+            " . $vj['join'] . "
             WHERE $where
             ORDER BY $order
             LIMIT :limit OFFSET :offset
@@ -535,13 +776,18 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
 /**
  * Compte les produits avec les mêmes filtres que search_produits_with_filters
  */
-function count_search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null)
+function count_search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $boutique_admin_id = null)
 {
     global $db;
 
     try {
         $conditions = ["statut = 'actif'"];
         $params = [];
+
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $conditions[] = 'admin_id = :boutique_admin_id';
+            $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
 
         if (!empty(trim($recherche))) {
             $tr = trim($recherche);
@@ -570,9 +816,19 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
         }
 
         if ($categorie_id !== null && $categorie_id !== '') {
-            $categorie_id = (int) $categorie_id;
-            $conditions[] = "categorie_id = :categorie_id";
-            $params['categorie_id'] = $categorie_id;
+            require_once __DIR__ . '/model_categories.php';
+            $catIds = function_exists('category_expanded_ids_for_products')
+                ? category_expanded_ids_for_products((int) $categorie_id)
+                : [(int) $categorie_id];
+            if (!empty($catIds)) {
+                $ph = [];
+                foreach (array_values($catIds) as $ci => $cid) {
+                    $key = 'catc_' . $ci;
+                    $ph[] = ':' . $key;
+                    $params[$key] = (int) $cid;
+                }
+                $conditions[] = 'categorie_id IN (' . implode(', ', $ph) . ')';
+            }
         }
 
         $where = implode(' AND ', $conditions);
@@ -591,13 +847,19 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
  * Compte le nombre total de produits actifs
  * @return int Nombre total de produits actifs
  */
-function count_all_produits_actifs()
+function count_all_produits_actifs($boutique_admin_id = null)
 {
     global $db;
 
     try {
-        $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE statut = 'actif'");
-        $stmt->execute();
+        $where = "statut = 'actif'";
+        $params = [];
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND admin_id = :boutique_admin_id';
+            $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
+        $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
+        $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
         return 0;
@@ -610,22 +872,31 @@ function count_all_produits_actifs()
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits en promo
  */
-function get_produits_en_promo($offset = 0, $limit = 50)
+function get_produits_en_promo($offset = 0, $limit = 50, $boutique_admin_id = null)
 {
     global $db;
 
     try {
-        $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
-            FROM produits p 
-            LEFT JOIN categories c ON p.categorie_id = c.id 
-            WHERE p.statut = 'actif' 
+        $where = "p.statut = 'actif' 
             AND p.prix_promotion IS NOT NULL 
             AND p.prix_promotion > 0 
-            AND p.prix_promotion < p.prix
+            AND p.prix_promotion < p.prix";
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND p.admin_id = :boutique_admin_id';
+        }
+        $vj = produits_sql_vendeur_fragment();
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
+            FROM produits p 
+            LEFT JOIN categories c ON p.categorie_id = c.id 
+            " . $vj['join'] . "
+            WHERE $where
             ORDER BY (p.prix - p.prix_promotion) DESC, p.date_creation DESC
             LIMIT :limit OFFSET :offset
         ");
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -640,19 +911,22 @@ function get_produits_en_promo($offset = 0, $limit = 50)
  * Compte les produits en promotion
  * @return int Nombre de produits en promo
  */
-function count_produits_en_promo()
+function count_produits_en_promo($boutique_admin_id = null)
 {
     global $db;
 
     try {
-        $stmt = $db->prepare("
-            SELECT COUNT(*) FROM produits 
-            WHERE statut = 'actif' 
+        $where = "statut = 'actif' 
             AND prix_promotion IS NOT NULL 
             AND prix_promotion > 0 
-            AND prix_promotion < prix
-        ");
-        $stmt->execute();
+            AND prix_promotion < prix";
+        $params = [];
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND admin_id = :boutique_admin_id';
+            $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
+        $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
+        $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
         return 0;
@@ -664,20 +938,29 @@ function count_produits_en_promo()
  * @param int $limit Nombre maximum de produits à retourner (par défaut 4)
  * @return array Tableau des produits les plus récents
  */
-function get_produits_nouveautes($limit = 4)
+function get_produits_nouveautes($limit = 4, $boutique_admin_id = null)
 {
     global $db;
 
     try {
+        $where = "p.statut = 'actif'";
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND p.admin_id = :boutique_admin_id';
+        }
+        $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
-            WHERE p.statut = 'actif'
+            " . $vj['join'] . "
+            WHERE $where
             ORDER BY p.date_creation DESC, p.date_modification DESC
             LIMIT :limit
         ");
 
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -694,19 +977,28 @@ function get_produits_nouveautes($limit = 4)
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits les plus récents
  */
-function get_produits_nouveautes_paginated($offset = 0, $limit = 20)
+function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_admin_id = null)
 {
     global $db;
 
     try {
+        $where = "p.statut = 'actif'";
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where .= ' AND p.admin_id = :boutique_admin_id';
+        }
+        $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
+            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
-            WHERE p.statut = 'actif'
+            " . $vj['join'] . "
+            WHERE $where
             ORDER BY p.date_creation DESC, p.date_modification DESC
             LIMIT :limit OFFSET :offset
         ");
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -722,21 +1014,28 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20)
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits vedettes mélangés aléatoirement
  */
-function get_produits_vedettes($limit = 20)
+function get_produits_vedettes($limit = 20, $boutique_admin_id = null)
 {
     global $db;
 
     try {
+        $where_extra = '';
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $where_extra = ' AND p.admin_id = :boutique_admin_id';
+        }
         // Récupérer les produits les plus ajoutés au panier et les plus commandés
-        $stmt = $db->prepare("
+        $vj = produits_sql_vendeur_fragment();
+        $sql = "
             SELECT DISTINCT
                 p.*,
                 c.nom as categorie_nom,
                 COALESCE(panier_stats.nb_ajouts_panier, 0) as nb_ajouts_panier,
                 COALESCE(commande_stats.nb_commandes, 0) as nb_commandes,
                 (COALESCE(panier_stats.nb_ajouts_panier, 0) + COALESCE(commande_stats.nb_commandes, 0)) as score_popularite
+                " . $vj['select'] . "
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $vj['join'] . "
             LEFT JOIN (
                 SELECT produit_id, COUNT(*) as nb_ajouts_panier
                 FROM panier
@@ -747,11 +1046,15 @@ function get_produits_vedettes($limit = 20)
                 FROM commande_produits
                 GROUP BY produit_id
             ) commande_stats ON p.id = commande_stats.produit_id
-            WHERE p.statut = 'actif'
+            WHERE p.statut = 'actif' $where_extra
             HAVING score_popularite > 0
             ORDER BY score_popularite DESC, p.date_creation DESC
             LIMIT :limit
-        ");
+        ";
+        $stmt = $db->prepare($sql);
+        if ($where_extra !== '') {
+            $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
+        }
 
         $stmt->bindValue(':limit', $limit * 2, PDO::PARAM_INT); // Récupérer plus pour avoir de la variété
         $stmt->execute();
@@ -759,7 +1062,7 @@ function get_produits_vedettes($limit = 20)
 
         // Si aucun produit vedette (pas encore de statistiques), récupérer tous les produits actifs
         if (empty($produits)) {
-            $produits = get_all_produits('actif');
+            $produits = get_all_produits_paginated(0, max($limit * 2, 50), $boutique_admin_id);
         }
 
         // Mélanger aléatoirement les produits à chaque appel
@@ -774,7 +1077,7 @@ function get_produits_vedettes($limit = 20)
         return $produits ? $produits : [];
     } catch (PDOException $e) {
         // En cas d'erreur, retourner tous les produits actifs mélangés
-        $produits = get_all_produits('actif');
+        $produits = get_all_produits_paginated(0, max($limit * 2, 50), $boutique_admin_id);
         if (!empty($produits)) {
             mt_srand(time() + (int) (microtime(true) * 1000000));
             shuffle($produits);
@@ -796,6 +1099,10 @@ function create_produit($data)
     try {
         $cols = "nom, description, prix, prix_promotion, stock, categorie_id, image_principale, images, poids, unite, date_creation, statut";
         $vals = ":nom, :description, :prix, :prix_promotion, :stock, :categorie_id, :image_principale, :images, :poids, :unite, NOW(), :statut";
+        if (produits_has_column('admin_id') && isset($data['admin_id'])) {
+            $cols = "admin_id, " . $cols;
+            $vals = ":admin_id, " . $vals;
+        }
         $params = [
             'nom' => $data['nom'],
             'description' => $data['description'],
@@ -809,6 +1116,9 @@ function create_produit($data)
             'unite' => $data['unite'] ?? 'unité',
             'statut' => $data['statut'] ?? 'actif'
         ];
+        if (produits_has_column('admin_id') && isset($data['admin_id'])) {
+            $params['admin_id'] = (int) $data['admin_id'];
+        }
         if (produits_has_column('identifiant_interne')) {
             $ident = isset($data['identifiant_interne']) && $data['identifiant_interne'] !== ''
                 ? $data['identifiant_interne']
@@ -828,6 +1138,12 @@ function create_produit($data)
             $cols .= ", numero_rayon";
             $vals .= ", :numero_rayon";
             $params['numero_rayon'] = isset($data['numero_rayon']) && $data['numero_rayon'] !== '' ? trim($data['numero_rayon']) : null;
+        }
+        if (produits_has_column('categorie_generale_id')) {
+            $cols .= ", categorie_generale_id";
+            $vals .= ", :categorie_generale_id";
+            $cg = $data['categorie_generale_id'] ?? null;
+            $params['categorie_generale_id'] = ($cg !== null && $cg !== '') ? (int) $cg : null;
         }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {
@@ -894,6 +1210,11 @@ function update_produit($id, $data)
         if (produits_has_column('numero_rayon')) {
             $sets .= ", numero_rayon = :numero_rayon";
             $params['numero_rayon'] = isset($data['numero_rayon']) && $data['numero_rayon'] !== '' ? trim($data['numero_rayon']) : null;
+        }
+        if (produits_has_column('categorie_generale_id') && array_key_exists('categorie_generale_id', $data)) {
+            $sets .= ", categorie_generale_id = :categorie_generale_id";
+            $cg = $data['categorie_generale_id'];
+            $params['categorie_generale_id'] = ($cg !== null && $cg !== '') ? (int) $cg : null;
         }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {

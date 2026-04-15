@@ -5,7 +5,7 @@ require_once __DIR__ . '/../models/model_admin.php';
 
 // Si des admins existent : seul un admin connecté avec rôle admin peut ajouter des comptes
 if (admin_exists()) {
-    if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+    if (!isset($_SESSION['admin_id'])) {
         header('Location: login.php');
         exit;
     }
@@ -44,9 +44,6 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -63,25 +60,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
             justify-content: center;
             padding: 20px;
             position: relative;
-        }
-
-        body::before {
-            content: "";
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background:
-                radial-gradient(ellipse 80% 50% at 30% 20%, rgba(229, 72, 138, 0.4) 0%, transparent 50%),
-                radial-gradient(ellipse 60% 40% at 70% 10%, rgba(244, 211, 94, 0.35) 0%, transparent 45%),
-                radial-gradient(ellipse 70% 50% at 50% 80%, rgba(32, 197, 199, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse 50% 60% at 10% 70%, rgba(255, 255, 255, 0.95) 0%, transparent 45%),
-                radial-gradient(ellipse 60% 50% at 80% 60%, rgba(247, 127, 0, 0.25) 0%, transparent 45%),
-                linear-gradient(135deg, #ffffff 0%, rgba(229, 72, 138, 0.15) 50%, rgba(32, 197, 199, 0.1) 100%);
-            filter: blur(60px);
-            pointer-events: none;
-            z-index: -1;
+            background-color: var(--fond-page);
         }
 
         .auth-header {
@@ -188,7 +167,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
         .form-group input {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid rgba(229, 72, 138, 0.2);
+            border: 2px solid rgba(53, 100, 166, 0.2);
             border-radius: 8px;
             font-size: 15px;
             transition: all 0.3s ease;
@@ -199,7 +178,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
         .form-group input:focus {
             outline: none;
             border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
+            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.15);
         }
 
         .form-group input::placeholder {
@@ -248,7 +227,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
         }
 
         .error-message {
-            background: rgba(229, 72, 138, 0.1);
+            background: rgba(53, 100, 166, 0.1);
             border-left: 4px solid var(--couleur-dominante);
             color: var(--titres);
             padding: 12px 15px;
@@ -285,7 +264,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
         }
 
         .btn-submit:hover {
-            background: rgba(229, 72, 138, 0.9);
+            background: rgba(53, 100, 166, 0.9);
             transform: translateY(-2px);
             box-shadow: var(--ombre-promo);
             color: var(--texte-clair);
@@ -302,7 +281,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
             margin-top: 8px;
             font-size: 12px;
             color: var(--titres);
-            border: 1px solid rgba(229, 72, 138, 0.2);
+            border: 1px solid rgba(53, 100, 166, 0.2);
         }
 
         .password-requirements ul {
@@ -343,16 +322,16 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
         }
 
         .form-group-role {
-            background: rgba(229, 72, 138, 0.06);
+            background: rgba(53, 100, 166, 0.06);
             padding: 15px;
             border-radius: 8px;
-            border: 1px solid rgba(229, 72, 138, 0.2);
+            border: 1px solid rgba(53, 100, 166, 0.2);
         }
 
         .select-role {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid rgba(229, 72, 138, 0.2);
+            border: 2px solid rgba(53, 100, 166, 0.2);
             border-radius: 8px;
             font-size: 15px;
             background: rgba(255, 255, 255, 0.9);

@@ -44,6 +44,8 @@ if (!function_exists('admin_route_relative_path')) {
                 return 'contacts/index.php';
             case 'gestion_stock':
                 return 'stock/index.php';
+            case 'vendeur':
+                return 'dashboard.php';
             default:
                 return 'dashboard.php';
         }
@@ -54,7 +56,8 @@ if (!function_exists('admin_route_relative_path')) {
      */
     function admin_route_is_allowed($role, $relativePath) {
         $r = admin_normalize_role_for_route($role);
-        if ($r === 'admin') {
+        // Admin, plateforme et vendeur marketplace : même arborescence d’écrans que l’admin
+        if ($r === 'admin' || $r === 'plateforme' || $r === 'vendeur') {
             return true;
         }
 
@@ -63,8 +66,8 @@ if (!function_exists('admin_route_relative_path')) {
             return false;
         }
 
-        // Pages communes à tous les comptes connectés
-        if ($p === 'profil.php') {
+        // Pages communes à tous les comptes connectés (hub compte + raccourcis)
+        if ($p === 'profil.php' || $p === 'parametres.php') {
             return true;
         }
 
@@ -137,7 +140,7 @@ if (!function_exists('admin_route_relative_path')) {
      * Applique le contrôle d'accès (à apporter après vérification de session admin).
      */
     function admin_route_enforce() {
-        if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+        if (!isset($_SESSION['admin_id'])) {
             return;
         }
 
@@ -158,7 +161,7 @@ if (!function_exists('admin_route_relative_path')) {
      * Pour scripts AJAX (JSON) : réponse vide / 403 sans redirection HTML.
      */
     function admin_route_enforce_json_empty() {
-        if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+        if (!isset($_SESSION['admin_id'])) {
             header('Content-Type: application/json; charset=utf-8');
             http_response_code(401);
             echo json_encode([]);
@@ -167,12 +170,96 @@ if (!function_exists('admin_route_relative_path')) {
         $role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
         $_SESSION['admin_role'] = $role;
         $rel = admin_route_relative_path();
-        if ($role === 'admin' || admin_route_is_allowed($role, $rel)) {
+        if ($role === 'admin' || $role === 'plateforme' || admin_route_is_allowed($role, $rel)) {
             return;
         }
         header('Content-Type: application/json; charset=utf-8');
         http_response_code(403);
         echo json_encode([]);
         exit;
+    }
+}
+
+if (!function_exists('admin_vendeur_filter_id')) {
+    /**
+     * ID vendeur pour filtrer commandes / stats (null = pas de filtre).
+     */
+    function admin_vendeur_filter_id() {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return null;
+        }
+        if (($_SESSION['admin_role'] ?? '') === 'vendeur') {
+            return (int) ($_SESSION['admin_id'] ?? 0);
+        }
+        return null;
+    }
+}
+
+if (!function_exists('admin_categories_list_for_session')) {
+    /**
+     * Catégories pour filtres et formulaires admin : tout pour la plateforme,
+     * uniquement les rayons de la boutique pour le rôle vendeur.
+     */
+    function admin_categories_list_for_session() {
+        if (session_status() !== PHP_SESSION_ACTIVE || !isset($_SESSION['admin_id'])) {
+            return [];
+        }
+        require_once dirname(__DIR__) . '/models/model_categories.php';
+        $role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+        if ($role === 'vendeur') {
+            return get_categories_for_vendeur_stock((int) $_SESSION['admin_id']);
+        }
+        return get_all_categories();
+    }
+}
+
+if (!function_exists('admin_vendeur_assert_categorie_allowed')) {
+    /**
+     * Bloque l’accès si la catégorie n’appartient pas à l’espace du vendeur connecté.
+     */
+    function admin_vendeur_assert_categorie_allowed($categorie_id) {
+        if (session_status() !== PHP_SESSION_ACTIVE || !isset($_SESSION['admin_id'])) {
+            return;
+        }
+        $role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+        if ($role !== 'vendeur') {
+            return;
+        }
+        $cid = (int) $categorie_id;
+        $vid = (int) $_SESSION['admin_id'];
+        if ($cid <= 0 || $vid <= 0) {
+            header('Location: ' . admin_route_build_url('stock/index.php'));
+            exit;
+        }
+        require_once dirname(__DIR__) . '/models/model_categories.php';
+        if (!categorie_est_utilisable_par_vendeur($cid, $vid)) {
+            header('Location: ' . admin_route_build_url('stock/index.php'));
+            exit;
+        }
+    }
+}
+
+if (!function_exists('admin_vendeur_assert_produit_owned')) {
+    /**
+     * Empêche un vendeur d’ouvrir le formulaire / la fiche d’un produit d’une autre boutique.
+     */
+    function admin_vendeur_assert_produit_owned($produit) {
+        if (session_status() !== PHP_SESSION_ACTIVE || !isset($_SESSION['admin_id'])) {
+            return;
+        }
+        $role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+        if ($role !== 'vendeur') {
+            return;
+        }
+        if (!$produit || !is_array($produit)) {
+            header('Location: ' . admin_route_build_url('produits/index.php'));
+            exit;
+        }
+        $vid = (int) $_SESSION['admin_id'];
+        $aid = (int) ($produit['admin_id'] ?? 0);
+        if ($aid !== $vid) {
+            header('Location: ' . admin_route_build_url('produits/index.php'));
+            exit;
+        }
     }
 }

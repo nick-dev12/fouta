@@ -7,14 +7,17 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 // Récupérer les vidéos
 require_once __DIR__ . '/../../models/model_videos.php';
-$videos = get_all_videos(null);
+require_once __DIR__ . '/../../controllers/controller_videos.php';
+require_once __DIR__ . '/../../includes/admin_param_boutique_scope.php';
+$scope_vid = admin_param_boutique_scope_id();
+$videos = get_all_videos(null, $scope_vid !== null ? (int) $scope_vid : null);
 
 // Traiter les actions
 $error_message = '';
@@ -48,6 +51,9 @@ if (isset($_SESSION['success_message'])) {
 $video_to_edit = null;
 if (isset($_GET['edit']) && !empty($_GET['edit'])) {
     $video_to_edit = get_video_by_id((int) $_GET['edit']);
+    if ($video_to_edit && !admin_video_row_allowed($video_to_edit)) {
+        $video_to_edit = null;
+    }
 }
 ?>
 <!DOCTYPE html>

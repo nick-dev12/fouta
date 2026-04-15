@@ -3,6 +3,8 @@ session_start();
 
 // Inclusion des modèles et contrôleurs
 require_once __DIR__ . '/models/model_produits.php';
+require_once __DIR__ . '/models/model_categories.php';
+require_once __DIR__ . '/includes/produit_boutique_line.php';
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/models/model_visites.php';
 require_once __DIR__ . '/models/model_variantes.php';
@@ -77,13 +79,38 @@ if ($prix_original) {
 // Récupérer les variantes du produit
 $variantes = get_variantes_by_produit($produit_id);
 
-// Récupérer les produits similaires (même catégorie)
-$produits_similaires = get_produits_by_categorie($produit['categorie_id']);
-// Exclure le produit actuel
-$produits_similaires = array_filter($produits_similaires, function ($p) use ($produit_id) {
-    return $p['id'] != $produit_id;
-});
-$produits_similaires = array_slice($produits_similaires, 0, 4); // Limiter à 4 produits
+// Produits similaires : priorité au même rayon (catégorie générale), toutes boutiques
+$produit_generale_id = 0;
+if (function_exists('produits_has_column') && produits_has_column('categorie_generale_id') && !empty($produit['categorie_generale_id'])) {
+    $produit_generale_id = (int) $produit['categorie_generale_id'];
+}
+if ($produit_generale_id <= 0 && function_exists('categories_has_categorie_generale_id_column') && categories_has_categorie_generale_id_column()) {
+    $cat_row_sim = get_categorie_by_id((int) ($produit['categorie_id'] ?? 0));
+    if ($cat_row_sim && !empty($cat_row_sim['categorie_generale_id'])) {
+        $produit_generale_id = (int) $cat_row_sim['categorie_generale_id'];
+    }
+}
+
+$produits_similaires = [];
+if ($produit_generale_id > 0 && function_exists('get_produits_similaires_rayon_generale')) {
+    $produits_similaires = get_produits_similaires_rayon_generale($produit_id, $produit_generale_id, 8);
+}
+if (empty($produits_similaires)) {
+    $fallback_sim = get_produits_by_categorie($produit['categorie_id']);
+    if ($fallback_sim === false) {
+        $fallback_sim = [];
+    }
+    $produits_similaires = array_values(array_filter($fallback_sim, function ($p) use ($produit_id) {
+        return (int) ($p['id'] ?? 0) !== (int) $produit_id;
+    }));
+    $produits_similaires = array_slice($produits_similaires, 0, 8);
+}
+
+$produit_boutique_nom = produit_public_boutique_label($produit);
+$produit_boutique_slug = trim((string) ($produit['vendeur_boutique_slug'] ?? ''));
+$produit_boutique_url = $produit_boutique_slug !== ''
+    ? boutique_vitrine_entry_href($produit_boutique_slug)
+    : '/produits.php';
 
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
@@ -116,10 +143,6 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
@@ -129,6 +152,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <style>
         /* Styles pour la page produit - Palette gourmande */
         body {
@@ -263,6 +287,183 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             border: 2px solid var(--border-input);
             background: var(--blanc-casse);
             box-shadow: var(--ombre-douce);
+        }
+
+        /* Bandeau boutique — au-dessus du bloc image + détails (pleine largeur du container) */
+        .produit-detail-container > .produit-boutique-rail {
+            width: 100%;
+            margin-bottom: 24px;
+            padding: 18px 22px;
+            border-radius: 18px;
+            background: linear-gradient(
+                160deg,
+                rgba(255, 255, 255, 0.95) 0%,
+                var(--bleu-pale) 45%,
+                rgba(74, 122, 184, 0.14) 100%
+            );
+            border: 1px solid rgba(53, 100, 166, 0.18);
+            box-shadow: var(--ombre-douce),
+                inset 0 1px 0 rgba(255, 255, 255, 0.85);
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .produit-boutique-rail::before {
+            content: "";
+            position: absolute;
+            top: -40%;
+            right: -5%;
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, rgba(53, 100, 166, 0.22) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .produit-boutique-rail__inner {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 16px 24px;
+        }
+
+        .produit-boutique-rail__left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1 1 240px;
+            min-width: 0;
+        }
+
+        .produit-boutique-rail__text {
+            min-width: 0;
+            text-align: left;
+        }
+
+        .produit-boutique-rail__eyebrow {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--couleur-dominante);
+            opacity: 0.85;
+            margin: 0;
+            text-align: left;
+        }
+
+        .produit-boutique-rail__icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, var(--bleu-principal), var(--bleu-clair));
+            color: var(--texte-clair);
+            font-size: 1.35rem;
+            box-shadow: 0 6px 20px rgba(53, 100, 166, 0.35);
+        }
+
+        .produit-boutique-rail__nom {
+            font-family: var(--font-titres);
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--titres);
+            line-height: 1.35;
+            margin: 0;
+            word-break: break-word;
+            text-align: left;
+        }
+
+        .produit-boutique-rail__divider {
+            display: none;
+        }
+
+        @media (min-width: 769px) {
+            .produit-boutique-rail__divider {
+                display: block;
+                flex-shrink: 0;
+                width: 1px;
+                align-self: stretch;
+                min-height: 44px;
+                background: linear-gradient(
+                    180deg,
+                    transparent,
+                    rgba(53, 100, 166, 0.28) 20%,
+                    rgba(255, 107, 53, 0.35) 80%,
+                    transparent
+                );
+                opacity: 1;
+                border-radius: 1px;
+            }
+        }
+
+        .produit-boutique-rail__cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: auto;
+            flex: 0 0 auto;
+            min-width: min(220px, 100%);
+            padding: 13px 20px;
+            margin-top: 0;
+            margin-left: auto;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: var(--font-corps);
+            color: var(--texte-clair);
+            text-decoration: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--bleu-principal) 0%, var(--bleu-fonce) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 4px 16px rgba(53, 100, 166, 0.35);
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.28s ease, filter 0.2s ease;
+        }
+
+        .produit-boutique-rail__cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(53, 100, 166, 0.4);
+            filter: brightness(1.04);
+            color: var(--texte-clair);
+        }
+
+        .produit-boutique-rail__cta:focus-visible {
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 3px;
+        }
+
+        .produit-boutique-rail__cta i {
+            font-size: 0.88rem;
+            opacity: 0.95;
+        }
+
+        @media (max-width: 768px) {
+            .produit-detail-container > .produit-boutique-rail {
+                padding: 16px 18px;
+                margin-bottom: 20px;
+            }
+
+            .produit-boutique-rail__left {
+                flex: 1 1 100%;
+            }
+
+            .produit-boutique-rail__icon {
+                width: 48px;
+                height: 48px;
+            }
+
+            .produit-boutique-rail__cta {
+                flex: 1 1 100%;
+                max-width: none;
+                min-width: 0;
+                margin-left: 0;
+            }
         }
 
         .produit-info-section {
@@ -1346,6 +1547,24 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             </div>
         <?php endif; ?>
 
+        <aside class="produit-boutique-rail" aria-label="Boutique du vendeur">
+            <div class="produit-boutique-rail__inner">
+                <div class="produit-boutique-rail__left">
+                    <div class="produit-boutique-rail__icon" aria-hidden="true"><i class="fas fa-store"></i></div>
+                    <div class="produit-boutique-rail__text">
+                        <p class="produit-boutique-rail__eyebrow">Boutique</p>
+                        <p class="produit-boutique-rail__nom"><?php echo htmlspecialchars($produit_boutique_nom); ?></p>
+                    </div>
+                </div>
+                <span class="produit-boutique-rail__divider" aria-hidden="true"></span>
+                <a href="<?php echo htmlspecialchars($produit_boutique_url); ?>"
+                    class="produit-boutique-rail__cta">
+                    <span><?php echo $produit_boutique_slug !== '' ? 'Visiter la boutique' : 'Voir le catalogue'; ?></span>
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
+            </div>
+        </aside>
+
         <div class="produit-detail-wrapper">
             <!-- Section Image avec galerie -->
             <div class="produit-image-section">
@@ -1387,7 +1606,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 <?php endif; ?>
             </div>
 
-            <!-- Section Informations -->
+            <!-- Section Informations (détails produit) -->
             <div class="produit-info-section">
                 <h1 class="produit-nom" id="produit-nom"><?php echo htmlspecialchars($produit['nom']); ?></h1>
 
@@ -1692,46 +1911,33 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             </div>
         </div>
 
-        <!-- Produits similaires -->
+        <!-- Produits similaires (même rayon général, toutes boutiques — cartes type marketplace) -->
         <?php if (!empty($produits_similaires)): ?>
-            <div class="produits-similaires">
-                <h2>Produits similaires</h2>
-                <section class="produit_vedetes">
-                    <article class="articles carousel11">
-                        <?php foreach ($produits_similaires as $similaire): ?>
-                            <?php
-                            $prix_sim = !empty($similaire['prix_promotion']) && $similaire['prix_promotion'] < $similaire['prix']
-                                ? $similaire['prix_promotion']
-                                : $similaire['prix'];
-                            ?>
-                            <div class="carousel">
-                                <a href="produit.php?id=<?php echo $similaire['id']; ?>" class="product-card-link">
-                                    <div class="image-wrapper">
-                                        <img src="/upload/<?php echo htmlspecialchars($similaire['image_principale']); ?>"
-                                            alt="<?php echo htmlspecialchars($similaire['nom']); ?>"
-                                            onerror="this.src='/image/produit1.jpg'">
-                                    </div>
-                                    <div class="produit-content">
-                                        <p id="nom"><?php echo htmlspecialchars($similaire['nom']); ?></p>
-                                        <p class="prix"><?php echo number_format($prix_sim, 0, ',', ' '); ?> <span
-                                                class="span1">FCFA</span></p>
-                                        <p id="ville"><?php echo htmlspecialchars($similaire['categorie_nom']); ?></p>
-                                    </div>
-                                </a>
-                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                    <input type="hidden" name="produit_id" value="<?php echo $similaire['id']; ?>">
-                                    <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url"
-                                        value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produit.php'); ?>">
-                                    <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                                    </button>
-                                </form>
-                            </div>
-                        <?php endforeach; ?>
-                    </article>
-                </section>
-            </div>
+            <?php
+            $card_partial_sim = __DIR__ . '/includes/partials/home_mp_product_card.php';
+            $return_url_sim = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/produit.php?id=' . (int) $produit_id;
+            $_produit_save = $produit;
+            ?>
+            <section class="produit-similaires-mp" aria-labelledby="similaires-title">
+                <header class="mp-block-head">
+                    <div>
+                        <h2 id="similaires-title">Produits similaires</h2>
+                        <?php if (!empty($produit_generale_id)): ?>
+                        <p class="mp-sub">Même rayon (toutes les boutiques).</p>
+                        <?php endif; ?>
+                    </div>
+                </header>
+                <div class="mp-grid" id="produits-similaires-grid">
+                    <?php
+                    foreach ($produits_similaires as $row_sim) {
+                        $produit = $row_sim;
+                        $return_url = $return_url_sim;
+                        require $card_partial_sim;
+                    }
+                    $produit = $_produit_save;
+                    ?>
+                </div>
+            </section>
         <?php endif; ?>
     </div>
 

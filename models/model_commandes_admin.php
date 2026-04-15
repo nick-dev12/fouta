@@ -55,7 +55,7 @@ function _admin_cp_has_variante_columns() {
  * @param string $statut Filtrer par statut (optionnel)
  * @return array|false Tableau des commandes ou False en cas d'erreur
  */
-function get_all_commandes($statut = null) {
+function get_all_commandes($statut = null, $vendeur_id = null) {
     global $db;
 
     try {
@@ -72,6 +72,10 @@ function get_all_commandes($statut = null) {
         if ($statut) {
             $sql .= " AND c.statut = :statut";
             $params['statut'] = $statut;
+        }
+        if ($vendeur_id !== null && $vendeur_id !== '') {
+            $sql .= " AND c.vendeur_id = :vendeur_id";
+            $params['vendeur_id'] = (int) $vendeur_id;
         }
         $sql .= " ORDER BY c.date_commande DESC";
 
@@ -265,18 +269,55 @@ function update_commande_statut($commande_id, $statut, $admin_traitant_id = null
  * @param string $statut Le statut à compter
  * @return int Le nombre de commandes
  */
-function count_commandes_by_statut($statut = null) {
+function count_commandes_by_statut($statut = null, $vendeur_id = null) {
     global $db;
     
     try {
+        $sql = 'SELECT COUNT(*) FROM commandes WHERE 1=1';
+        $params = [];
         if ($statut) {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM commandes WHERE statut = :statut");
-            $stmt->execute(['statut' => $statut]);
-        } else {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM commandes");
-            $stmt->execute();
+            $sql .= ' AND statut = :statut';
+            $params['statut'] = $statut;
         }
+        if ($vendeur_id !== null && $vendeur_id !== '') {
+            $sql .= ' AND vendeur_id = :vendeur_id';
+            $params['vendeur_id'] = (int) $vendeur_id;
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Nombre de commandes actives pour une boutique (non livrées, non payées, non annulées).
+ * Utilisé pour le badge « en cours de traitement » dans la navigation vendeur.
+ *
+ * @param int $vendeur_id ID admin (boutique)
+ * @return int
+ */
+function count_commandes_en_traitement_vendeur($vendeur_id) {
+    global $db;
+    $vid = (int) $vendeur_id;
+    if ($vid <= 0) {
+        return 0;
+    }
+    if (!function_exists('_commandes_has_vendeur_id_column')) {
+        require_once __DIR__ . '/model_commandes.php';
+    }
+    if (!_commandes_has_vendeur_id_column()) {
+        return 0;
+    }
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM commandes
+            WHERE vendeur_id = :vid
+            AND statut NOT IN ('livree', 'paye', 'annulee')
+        ");
+        $stmt->execute(['vid' => $vid]);
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
         return 0;
@@ -288,16 +329,22 @@ function count_commandes_by_statut($statut = null) {
  * @param string|null $statut Filtrer par statut (optionnel). Si null, toutes les commandes.
  * @return float Montant total en FCFA
  */
-function get_montant_total_commandes($statut = null) {
+function get_montant_total_commandes($statut = null, $vendeur_id = null) {
     global $db;
     
     try {
+        $sql = 'SELECT COALESCE(SUM(montant_total), 0) FROM commandes WHERE 1=1';
+        $params = [];
         if ($statut) {
-            $stmt = $db->prepare("SELECT COALESCE(SUM(montant_total), 0) FROM commandes WHERE statut = :statut");
-            $stmt->execute(['statut' => $statut]);
-        } else {
-            $stmt = $db->query("SELECT COALESCE(SUM(montant_total), 0) FROM commandes");
+            $sql .= ' AND statut = :statut';
+            $params['statut'] = $statut;
         }
+        if ($vendeur_id !== null && $vendeur_id !== '') {
+            $sql .= ' AND vendeur_id = :vendeur_id';
+            $params['vendeur_id'] = (int) $vendeur_id;
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         
         return (float) $stmt->fetchColumn();
     } catch (PDOException $e) {
@@ -314,9 +361,10 @@ function get_montant_total_commandes($statut = null) {
  * @param string|null $date_fin Date fin Y-m-d (pour plage)
  * @param int|null $jour Jour du mois 1-31 (optionnel, pour jour)
  * @param bool $filtrer_vendues_uniquement Si true : uniquement statuts livrée et payée (ventes finalisées)
+ * @param int|null $vendeur_id Filtre boutique (marketplace)
  * @return array Tableau des commandes
  */
-function get_commandes_by_periode($periode, $annee = null, $mois = null, $date_debut = null, $date_fin = null, $jour = null, $filtrer_vendues_uniquement = false) {
+function get_commandes_by_periode($periode, $annee = null, $mois = null, $date_debut = null, $date_fin = null, $jour = null, $filtrer_vendues_uniquement = false, $vendeur_id = null) {
     global $db;
     $annee = $annee ?? (int) date('Y');
     $mois = $mois ?? (int) date('n');
@@ -333,6 +381,11 @@ function get_commandes_by_periode($periode, $annee = null, $mois = null, $date_d
             WHERE 1=1
         ";
         $params = [];
+
+        if ($vendeur_id !== null && $vendeur_id !== '') {
+            $sql .= ' AND c.vendeur_id = :vendeur_id';
+            $params['vendeur_id'] = (int) $vendeur_id;
+        }
 
         if ($filtrer_vendues_uniquement) {
             $sql .= " AND c.statut IN ('livree', 'paye')";
@@ -382,9 +435,10 @@ function get_commandes_by_periode($periode, $annee = null, $mois = null, $date_d
 
 /**
  * Totaux globaux (toutes dates) des commandes vendues : statuts livrée et payée uniquement.
+ * @param int|null $vendeur_id Filtre boutique (marketplace)
  * @return array{nb:int,ca_total:float,ca_livree:float,ca_paye:float}
  */
-function get_stats_commandes_vendues_globales() {
+function get_stats_commandes_vendues_globales($vendeur_id = null) {
     global $db;
     try {
         $sql = "
@@ -396,7 +450,15 @@ function get_stats_commandes_vendues_globales() {
             FROM commandes
             WHERE statut IN ('livree', 'paye')
         ";
-        $stmt = $db->query($sql);
+        $params = [];
+        if ($vendeur_id !== null && $vendeur_id !== '') {
+            $sql .= ' AND vendeur_id = :vendeur_id';
+            $params['vendeur_id'] = (int) $vendeur_id;
+        }
+        $stmt = $params ? $db->prepare($sql) : $db->query($sql);
+        if ($params) {
+            $stmt->execute($params);
+        }
         $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
         if (!$row) {
             return ['nb' => 0, 'ca_total' => 0.0, 'ca_livree' => 0.0, 'ca_paye' => 0.0];
@@ -415,9 +477,10 @@ function get_stats_commandes_vendues_globales() {
 
 /**
  * Liste de toutes les commandes vendues (livrée + payée), plus récentes en premier.
+ * @param int|null $vendeur_id Filtre boutique (marketplace)
  * @return array
  */
-function get_all_commandes_vendues() {
+function get_all_commandes_vendues($vendeur_id = null) {
     global $db;
     try {
         $sql = "
@@ -428,9 +491,15 @@ function get_all_commandes_vendues() {
             FROM commandes c
             LEFT JOIN users u ON c.user_id = u.id
             WHERE c.statut IN ('livree', 'paye')
-            ORDER BY c.date_commande DESC
         ";
-        $stmt = $db->query($sql);
+        $params = [];
+        if ($vendeur_id !== null && $vendeur_id !== '') {
+            $sql .= ' AND c.vendeur_id = :vendeur_id';
+            $params['vendeur_id'] = (int) $vendeur_id;
+        }
+        $sql .= ' ORDER BY c.date_commande DESC';
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         return $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
     } catch (PDOException $e) {
         error_log('[get_all_commandes_vendues] ' . $e->getMessage());

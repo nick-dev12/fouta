@@ -3,6 +3,7 @@ session_start();
 
 // Inclusion des modèles
 require_once __DIR__ . '/models/model_produits.php';
+require_once __DIR__ . '/includes/produit_boutique_line.php';
 
 // Récupérer les produits (recherche + filtres ou tous)
 $produits_tous = [];
@@ -51,8 +52,6 @@ $seo_canonical = $base . '/produits.php';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
@@ -234,6 +233,7 @@ $seo_canonical = $base . '/produits.php';
                                     </div>
                                     <div class="produit-content">
                                         <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                                        <?php echo produit_card_boutique_line_html($produit); ?>
                                         <?php if (!empty($produit['categorie_nom'])): ?>
                                             <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                                         <?php endif; ?>
@@ -373,6 +373,7 @@ $seo_canonical = $base . '/produits.php';
                                     </div>
                                     <div class="produit-content">
                                         <p id="nom">${escapeHtml(produit.nom)}</p>
+                                        ${boutiqueCardLineHtml(produit)}
                                         ${produit.categorie_nom ? `<p id="ville">${escapeHtml(produit.categorie_nom)}</p>` : ''}
                                         <p class="prix">${prixHTML}</p>
                                         ${stockHTML}
@@ -421,8 +422,20 @@ $seo_canonical = $base . '/produits.php';
 
         function escapeHtml(text) {
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = text == null ? '' : text;
             return div.innerHTML;
+        }
+
+        function boutiqueCardLineHtml(produit) {
+            if (!produit.boutique_nom && !produit.boutique_href) {
+                return '';
+            }
+            if (produit.boutique_href) {
+                return '<p class="produit-card-boutique"><a href="' + escapeHtml(produit.boutique_href) +
+                    '" class="produit-card-boutique-link">' + escapeHtml(produit.boutique_nom) + '</a></p>';
+            }
+            return '<p class="produit-card-boutique"><span class="produit-card-boutique-label">' +
+                escapeHtml(produit.boutique_nom) + '</span></p>';
         }
     </script>
 </body>

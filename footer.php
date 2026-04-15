@@ -38,7 +38,7 @@
                     </li>
                 <?php else: ?>
                     <li class="li footer_list_item">
-                        <a href="/user/connexion.php">Connexion</a>
+                        <a href="/choix-connexion.php">Connexion</a>
                     </li>
                     <li class="li footer_list_item">
                         <a href="/user/inscription.php">Inscription</a>

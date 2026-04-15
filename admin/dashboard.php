@@ -7,22 +7,26 @@
 session_start();
 
 // Vérifier si l'admin est connecté, sinon rediriger vers la page de connexion
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
 require_once __DIR__ . '/includes/require_access.php';
 
+$dash_show_compta = admin_route_is_allowed($_SESSION['admin_role'] ?? 'admin', 'comptabilite/index.php');
+
 require_once __DIR__ . '/../models/model_commandes_admin.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
+require_once __DIR__ . '/../includes/admin_route_access.php';
 
+$vf_dash = admin_vendeur_filter_id();
 $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
-$categories = get_all_categories();
-$produits = get_all_produits();
+$categories = admin_categories_list_for_session();
+$produits = get_all_produits(null, $vf_dash);
 
 if (!empty($produits)) {
     $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id) {
@@ -135,28 +139,41 @@ if (!empty($produits)) {
 
     <!-- Contenu principal -->
     <div class="contents-container">
-        <div class="content-header">
-            <h1><i class="fas fa-chart-line"></i> Tableau de Bord</h1>
-            <div class="header-actions">
-                <button type="button" id="btn-install-pwa" class="btn-primary btn-secondary-style"
+        <header class="dashboard-page-header" aria-label="En-tête du tableau de bord">
+            <div class="dashboard-page-header__intro">
+                <p class="dashboard-page-header__eyebrow">Espace administration</p>
+                <h1 class="dashboard-page-header__title">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    <span>Tableau de bord</span>
+                </h1>
+                <p class="dashboard-page-header__lead">
+                    Suivez les commandes, gérez le catalogue et accédez en un geste aux réglages courants.
+                </p>
+            </div>
+            <div class="dashboard-page-header__toolbar" role="group" aria-label="Actions rapides">
+                <button type="button" id="btn-install-pwa" class="dash-tool-btn dash-tool-btn--ghost"
                     title="Installer l'application FOUTA POIDS LOURDS sur cet appareil" style="display: none;">
-                    <i class="fas fa-download"></i> Installer l'application
+                    <i class="fas fa-download" aria-hidden="true"></i>
+                    <span>Installer l’appli</span>
                 </button>
-                <button type="button" id="btn-enable-notifications" class="btn-primary btn-secondary-style"
+                <button type="button" id="btn-enable-notifications" class="dash-tool-btn dash-tool-btn--outline"
                     title="Recevoir des notifications push pour les nouvelles commandes">
-                    <i class="fas fa-bell"></i> Activer les notifications
+                    <i class="fas fa-bell" aria-hidden="true"></i>
+                    <span>Notifications</span>
                 </button>
-                <!-- <a href="test-notification.php" class="btn-primary btn-secondary-style" title="Envoyer une notification de test sur cet ordinateur">
-                    <i class="fas fa-paper-plane"></i> Test notification
-                </a> -->
-                <a href="zones-livraison/index.php" class="btn-primary btn-secondary-style">
-                    <i class="fas fa-truck"></i> Zones de livraison
+                <?php if ($dash_show_compta): ?>
+                <a href="comptabilite/index.php" class="dash-tool-btn dash-tool-btn--outline"
+                    title="Comptabilité">
+                    <i class="fas fa-calculator" aria-hidden="true"></i>
+                    <span>Comptabilité</span>
                 </a>
-                <a href="produits/ajouter.php" class="btn-primary">
-                    <i class="fas fa-plus"></i> Nouveau Produit
+                <?php endif; ?>
+                <a href="produits/index.php?open_add=1" class="dash-tool-btn dash-tool-btn--primary">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                    <span>Nouveau produit</span>
                 </a>
             </div>
-        </div>
+        </header>
 
         <?php
         if (isset($_SESSION['notification_test_message'])) {
@@ -170,12 +187,12 @@ if (!empty($produits)) {
             </div>
             <?php
         }
-        // Récupérer les statistiques des commandes
-        $total_commandes = count_commandes_by_statut();
-        $commandes_perso_en_attente = count_commandes_personnalisees_by_statut('en_attente');
-        $en_attente = count_commandes_by_statut('en_attente');
-        $prise_en_charge = count_commandes_by_statut('prise_en_charge');
-        $livraison_en_cours = count_commandes_by_statut('livraison_en_cours');
+        // Récupérer les statistiques des commandes (filtrées par boutique si vendeur)
+        $total_commandes = count_commandes_by_statut(null, $vf_dash);
+        $commandes_perso_en_attente = count_commandes_personnalisees_by_statut('en_attente', $vf_dash);
+        $en_attente = count_commandes_by_statut('en_attente', $vf_dash);
+        $prise_en_charge = count_commandes_by_statut('prise_en_charge', $vf_dash);
+        $livraison_en_cours = count_commandes_by_statut('livraison_en_cours', $vf_dash);
         ?>
 
         <!-- Statistiques des commandes -->
@@ -271,7 +288,7 @@ if (!empty($produits)) {
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
                     <p>Aucun produit enregistré pour le moment.</p>
-                    <a href="produits/ajouter.php" class="btn-primary">
+                    <a href="produits/index.php?open_add=1" class="btn-primary">
                         <i class="fas fa-plus"></i> Ajouter le premier produit
                     </a>
                 </div>

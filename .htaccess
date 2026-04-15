@@ -7,6 +7,28 @@ RewriteEngine On
 RewriteBase /
 RewriteRule ^robots\.txt$ robots.php [L]
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+# Marketplace : URL courte https://domaine/{slug}/… (vitrine vendeur ; même contenu que /boutique/{slug}/)
+# Ne pas traiter le 1er segment comme slug boutique s’il est réservé (pages racine, assets, etc.)
+RewriteCond %{REQUEST_URI} ^/([a-z0-9-]+)/
+RewriteCond %1 !^(index|produits|produit|categorie|panier|commande|choix-connexion|choix-inscription|contact|promo|nouveautes|conditions-utilisation|politique-confidentialite|sign-up|add-to-panier|commande-personnalisee|stock-info|facture|facture-cp|facture-devis|robots|sitemap|debug-cp|check-php-config|generate-sitemap|generate-pwa-icons|run-migrate-fcm|run-migration-image-cp|fix-ssl-certificates|autoload|footer|nav-bar|admin|user|boutique|api|css|js|image|upload|config|conn|vendor|page|models|controllers|includes|fonts|mot-de-passe|pwa|connexion|inscription|deconnexion|mon-compte|suivi-commande)$
+RewriteRule ^([a-z0-9-]+)/(produits|panier|nouveautes|promo|contact)\.php$ boutique/$2.php?boutique=$1 [L,QSA]
+RewriteCond %{REQUEST_URI} ^/([a-z0-9-]+)/
+RewriteCond %1 !^(index|produits|produit|categorie|panier|commande|choix-connexion|choix-inscription|contact|promo|nouveautes|conditions-utilisation|politique-confidentialite|sign-up|add-to-panier|commande-personnalisee|stock-info|facture|facture-cp|facture-devis|robots|sitemap|debug-cp|check-php-config|generate-sitemap|generate-pwa-icons|run-migrate-fcm|run-migration-image-cp|fix-ssl-certificates|autoload|footer|nav-bar|admin|user|boutique|api|css|js|image|upload|config|conn|vendor|page|models|controllers|includes|fonts|mot-de-passe|pwa|connexion|inscription|deconnexion|mon-compte|suivi-commande)$
+RewriteRule ^([a-z0-9-]+)/categorie\.php$ boutique/categorie.php?boutique=$1 [L,QSA]
+
+# Compatibilité : /boutique/{slug}/…
+RewriteRule ^boutique/([a-z0-9-]+)/?$ boutique/index.php?boutique=$1 [L,QSA]
+RewriteRule ^boutique/([a-z0-9-]+)/(index\.php)?$ boutique/index.php?boutique=$1 [L,QSA]
+RewriteRule ^boutique/([a-z0-9-]+)/(produits|panier|categorie|nouveautes|promo|contact)\.php$ boutique/$2.php?boutique=$1 [L,QSA]
+
+# /{slug} seul → accueil boutique (uniquement si aucun fichier .php du même nom n’existe à la racine)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php !-f
+RewriteCond %{REQUEST_URI} ^/([a-z0-9-]+)/?$
+RewriteCond %1 !^(index|produits|produit|categorie|panier|commande|choix-connexion|choix-inscription|contact|promo|nouveautes|conditions-utilisation|politique-confidentialite|sign-up|add-to-panier|commande-personnalisee|stock-info|facture|facture-cp|facture-devis|robots|sitemap|debug-cp|check-php-config|generate-sitemap|generate-pwa-icons|run-migrate-fcm|run-migration-image-cp|fix-ssl-certificates|autoload|footer|nav-bar|admin|user|boutique|api|css|js|image|upload|config|conn|vendor|page|models|controllers|includes|fonts|mot-de-passe|pwa|connexion|inscription|deconnexion|mon-compte|suivi-commande)$
+RewriteRule ^([a-z0-9-]+)/?$ boutique/index.php?boutique=$1 [L,QSA]
 </IfModule>
 
 # Session persistante pour les utilisateurs connectés (30 jours)

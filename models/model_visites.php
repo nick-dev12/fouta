@@ -42,11 +42,15 @@ function get_produits_visites_by_user($user_id, $limit = 20) {
     global $db;
     
     try {
+        require_once __DIR__ . '/model_produits.php';
+        $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
             SELECT pv.*, p.*, c.nom as categorie_nom
+            " . $vj['select'] . "
             FROM produits_visites pv
             INNER JOIN produits p ON pv.produit_id = p.id
             LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $vj['join'] . "
             WHERE pv.user_id = :user_id
             ORDER BY pv.date_visite DESC
             LIMIT :limit
@@ -86,25 +90,37 @@ function count_visites_by_user($user_id) {
  * @param int $limit Nombre minimum de produits requis (par défaut 10)
  * @return array Tableau des produits les plus visités ou tous les produits mélangés si moins de $limit
  */
-function get_produits_plus_visites($limit = 10) {
+function get_produits_plus_visites($limit = 10, $boutique_admin_id = null) {
     global $db;
     
     try {
+        require_once __DIR__ . '/model_produits.php';
+        $extra = '';
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $extra = ' AND p.admin_id = :boutique_admin_id';
+        }
         // Récupérer les produits les plus visités avec le nombre de visites
+        $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
             SELECT 
                 p.*,
                 c.nom as categorie_nom,
+                MAX(vend.boutique_nom) AS vendeur_boutique_nom,
+                MAX(vend.boutique_slug) AS vendeur_boutique_slug,
                 COUNT(pv.id) as nb_visites
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $vj['join'] . "
             LEFT JOIN produits_visites pv ON p.id = pv.produit_id
-            WHERE p.statut = 'actif'
+            WHERE p.statut = 'actif' $extra
             GROUP BY p.id
             HAVING nb_visites > 0
             ORDER BY nb_visites DESC, p.date_creation DESC
             LIMIT :limit
         ");
+        if ($extra !== '') {
+            $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
+        }
         
         $stmt->bindValue(':limit', $limit * 2, PDO::PARAM_INT); // Récupérer plus pour avoir de la variété
         $stmt->execute();
@@ -114,7 +130,7 @@ function get_produits_plus_visites($limit = 10) {
         if (count($produits) < $limit) {
             if (file_exists(__DIR__ . '/model_produits.php')) {
                 require_once __DIR__ . '/model_produits.php';
-                $tous_produits = get_all_produits('actif');
+                $tous_produits = get_all_produits_paginated(0, max($limit * 3, 30), $boutique_admin_id);
                 
                 if ($tous_produits !== false && !empty($tous_produits)) {
                     // Mélanger aléatoirement

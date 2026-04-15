@@ -6,13 +6,16 @@
 
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../../models/model_logos.php';
-$logos = get_all_logos(null);
+require_once __DIR__ . '/../../controllers/controller_logos.php';
+require_once __DIR__ . '/../../includes/admin_param_boutique_scope.php';
+$scope_logo = admin_param_boutique_scope_id();
+$logos = get_all_logos(null, $scope_logo !== null ? (int) $scope_logo : null);
 
 $error_message = '';
 $success_message = '';
@@ -48,6 +51,9 @@ if (isset($_SESSION['success_message'])) {
 $logo_to_edit = null;
 if (isset($_GET['edit']) && !empty($_GET['edit'])) {
     $logo_to_edit = get_logo_by_id((int) $_GET['edit']);
+    if ($logo_to_edit && !admin_logo_row_allowed($logo_to_edit)) {
+        $logo_to_edit = null;
+    }
 }
 ?>
 <!DOCTYPE html>

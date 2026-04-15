@@ -11,7 +11,7 @@ require_once __DIR__ . '/../conn/conn.php';
  * Rôles autorisés pour les comptes admin (alignés sur ENUM MySQL après migration B2B)
  */
 function admin_roles_valides() {
-    return ['admin', 'gestion_stock', 'commercial', 'comptabilite', 'rh', 'caissier'];
+    return ['admin', 'gestion_stock', 'commercial', 'comptabilite', 'rh', 'caissier', 'vendeur', 'plateforme'];
 }
 
 /**
@@ -26,6 +26,8 @@ function admin_role_label($role) {
         'comptabilite' => 'Comptabilité',
         'rh' => 'Ressources humaines',
         'caissier' => 'Caissier (caissière)',
+        'vendeur' => 'Vendeur (boutique)',
+        'plateforme' => 'Plateforme',
     ];
     $r = (string) $role;
     if ($r === 'utilisateur') {
@@ -132,12 +134,157 @@ function get_admin_by_email($email)
 {
     global $db;
 
+    if ($email === null || $email === '') {
+        return false;
+    }
+
     try {
         $stmt = $db->prepare("SELECT * FROM admin WHERE email = :email");
         $stmt->execute(['email' => $email]);
         $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $admin ? $admin : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Récupère un admin par téléphone (vendeurs / connexion PIN)
+ */
+function get_admin_by_telephone($telephone)
+{
+    global $db;
+
+    $digits = preg_replace('/\D/', '', (string) $telephone);
+    if ($digits === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT * FROM admin
+            WHERE telephone IS NOT NULL AND TRIM(telephone) != ''
+              AND REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(telephone,''), ' ', ''), '-', ''), '+', ''), '.', '') = :d
+            LIMIT 1
+        ");
+        $stmt->execute(['d' => $digits]);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($admin) {
+            return $admin;
+        }
+
+        $t = preg_replace('/\s+/', '', (string) $telephone);
+        if ($t === '' || $t === $digits) {
+            return false;
+        }
+        $stmt = $db->prepare("SELECT * FROM admin WHERE telephone = :t LIMIT 1");
+        $stmt->execute(['t' => $t]);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $admin ? $admin : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Récupère un compte par slug boutique (URL partageable)
+ */
+function get_admin_by_boutique_slug($slug)
+{
+    global $db;
+
+    $s = trim((string) $slug, '/');
+    if ($s === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("SELECT * FROM admin WHERE boutique_slug = :s LIMIT 1");
+        $stmt->execute(['s' => $s]);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $admin ? $admin : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Téléphone déjà utilisé par un admin
+ */
+function admin_telephone_exists($telephone)
+{
+    global $db;
+
+    $t = preg_replace('/\s+/', '', (string) $telephone);
+    if ($t === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM admin WHERE telephone = :t");
+        $stmt->execute(['t' => $t]);
+        return ((int) $stmt->fetchColumn()) > 0;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Slug boutique déjà pris
+ */
+function admin_boutique_slug_exists($slug)
+{
+    global $db;
+
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM admin WHERE boutique_slug = :s");
+        $stmt->execute(['s' => $slug]);
+        return ((int) $stmt->fetchColumn()) > 0;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Crée un compte vendeur (boutique)
+ * @param string $identite Nom affiché (champ unique UI)
+ * @param string|null $email
+ * @param string $telephone
+ * @param string $password_hash hash du PIN / mot de passe
+ * @param string $boutique_nom Nom commercial
+ * @param string $boutique_slug Slug URL unique
+ * @return bool|int id ou false
+ */
+function create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug)
+{
+    global $db;
+
+    $identite = trim((string) $identite);
+    $boutique_nom = trim((string) $boutique_nom);
+    $boutique_slug = trim((string) $boutique_slug);
+    $telephone = preg_replace('/\s+/', '', (string) $telephone);
+    $email = $email !== null && trim((string) $email) !== '' ? trim((string) $email) : null;
+
+    try {
+        $stmt = $db->prepare("
+            INSERT INTO admin (nom, prenom, email, password, date_creation, statut, role, boutique_slug, boutique_nom, telephone)
+            VALUES (:nom, '', :email, :password, NOW(), 'actif', 'vendeur', :boutique_slug, :boutique_nom, :telephone)
+        ");
+        $ok = $stmt->execute([
+            'nom' => $identite,
+            'email' => $email,
+            'password' => $password_hash,
+            'boutique_slug' => $boutique_slug,
+            'boutique_nom' => $boutique_nom,
+            'telephone' => $telephone,
+        ]);
+        if ($ok) {
+            return (int) $db->lastInsertId();
+        }
+        return false;
     } catch (PDOException $e) {
         return false;
     }

@@ -116,6 +116,116 @@
   box-shadow: var(--ombre-douce);
 }
 
+/* Boutique (vendeur marketplace) — pastille haut-droite, verre bleu (ne pas confondre avec
+   style.css `.produit_vedete .articles .carousel a` qui ciblait tous les <a> : ancien bouton off-canvas). */
+.produit_vedete .articles .carousel .produit-card-boutique,
+.produit_vedetes .articles .carousel .produit-card-boutique,
+.carousel11 .carousel .produit-card-boutique {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  left: auto;
+  margin: 0;
+  z-index: 8;
+  max-width: min(72%, 148px);
+  width: max-content;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: right;
+  color: var(--texte-clair, #fff);
+  background: linear-gradient(
+    135deg,
+    rgba(53, 100, 166, 0.82) 0%,
+    rgba(74, 122, 184, 0.65) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(53, 100, 166, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Annule l’ancien style global sur l’intérieur de la pastille (évite right:-100px du style.css) */
+.produit_vedete .articles .carousel .produit-card-boutique-link,
+.produit_vedetes .articles .carousel .produit-card-boutique-link,
+.carousel11 .carousel .produit-card-boutique-link {
+  color: inherit !important;
+  text-decoration: none;
+  border-bottom: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: static !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: auto !important;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.produit_vedete .articles .carousel .produit-card-boutique-link:hover,
+.produit_vedetes .articles .carousel .produit-card-boutique-link:hover,
+.carousel11 .carousel .produit-card-boutique-link:hover {
+  color: #fff !important;
+  filter: brightness(1.08);
+}
+
+.produit_vedete .articles .carousel .produit-card-boutique-label,
+.produit_vedetes .articles .carousel .produit-card-boutique-label,
+.carousel11 .carousel .produit-card-boutique-label {
+  color: inherit;
+  font-weight: inherit;
+}
+
+/* Fiche produit : ligne classique sous le titre (pas de pastille) */
+.produit-info-section .produit-card-boutique {
+  position: static;
+  display: block;
+  max-width: none;
+  width: auto;
+  margin: 6px 0 14px;
+  padding: 0;
+  font-size: 13px;
+  text-align: left;
+  white-space: normal;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.produit-info-section .produit-card-boutique-link {
+  display: inline;
+  border-bottom: 1px solid rgba(53, 100, 166, 0.35);
+}
+
+.produit-info-section .produit-card-boutique-link:hover {
+  border-bottom-color: var(--bleu-fonce, #2d5690);
+}
+
+.produit-info-section .produit-card-boutique-label {
+  font-weight: 500;
+}
+
 /* Corps de la carte */
 .produit_vedete .articles .carousel .produit-content,
 .produit_vedetes .articles .carousel .produit-content,

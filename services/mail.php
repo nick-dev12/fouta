@@ -150,7 +150,7 @@ function mail_send_reset_link($email, $reset_link, $type = 'user') {
     $is_admin = ($type === 'admin');
     $sujet = 'Réinitialisation de votre mot de passe - Sugar Paper';
 
-    $body = '<div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">';
+    $body = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 500px; margin: 0 auto;">';
     $body .= '<h2 style="color: #918a44;">Réinitialisation du mot de passe</h2>';
     $body .= '<p>Vous avez demandé la réinitialisation de votre mot de passe.</p>';
     $body .= '<p>Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>';

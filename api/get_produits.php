@@ -9,6 +9,16 @@ session_start();
 
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/../models/model_produits.php';
+require_once __DIR__ . '/../models/model_admin.php';
+require_once __DIR__ . '/../includes/marketplace_helpers.php';
+
+$boutique_admin_id = null;
+if (!empty($_GET['boutique'])) {
+    $row = get_admin_by_boutique_slug(trim((string) $_GET['boutique']));
+    if ($row && ($row['role'] ?? '') === 'vendeur' && ($row['statut'] ?? '') === 'actif') {
+        $boutique_admin_id = (int) $row['id'];
+    }
+}
 
 // Récupérer les paramètres
 $offset = isset($_GET['offset']) ? (int) $_GET['offset'] : 0;
@@ -27,9 +37,9 @@ $has_filters = !empty($recherche) || $prix_min !== null || $prix_max !== null ||
 
 // Récupérer les produits (avec ou sans filtres)
 if ($has_filters) {
-    $produits = search_produits_with_filters($recherche, $prix_min, $prix_max, $categorie_id, $tri, $offset, $limit);
+    $produits = search_produits_with_filters($recherche, $prix_min, $prix_max, $categorie_id, $tri, $offset, $limit, $boutique_admin_id);
 } else {
-    $produits = get_all_produits_paginated($offset, $limit);
+    $produits = get_all_produits_paginated($offset, $limit, $boutique_admin_id);
 }
 
 // Formater les produits pour le JSON
@@ -40,6 +50,17 @@ foreach ($produits as $produit) {
         : $produit['prix'];
     $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
     $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
+
+    $boutique_nom = '';
+    $boutique_slug = '';
+    $boutique_href = '';
+    if ($boutique_admin_id === null) {
+        $boutique_nom = produit_public_boutique_label($produit);
+        $boutique_slug = trim((string) ($produit['vendeur_boutique_slug'] ?? ''));
+        if ($boutique_slug !== '') {
+            $boutique_href = boutique_url('index.php', $boutique_slug);
+        }
+    }
     
     $produits_formatted[] = [
         'id' => $produit['id'],
@@ -52,7 +73,10 @@ foreach ($produits as $produit) {
         'stock' => $produit['stock'],
         'poids' => $produit['poids'] ?? '',
         'categorie_nom' => $produit['categorie_nom'] ?? '',
-        'image_principale' => $produit['image_principale'] ?? 'produit1.jpg'
+        'image_principale' => $produit['image_principale'] ?? 'produit1.jpg',
+        'boutique_nom' => $boutique_nom,
+        'boutique_slug' => $boutique_slug,
+        'boutique_href' => $boutique_href,
     ];
 }
 

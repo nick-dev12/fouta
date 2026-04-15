@@ -21,9 +21,18 @@ if (!function_exists('admin_current_role')) {
         return admin_current_role() === 'admin';
     }
 
+    /**
+     * Même menu / périmètre fonctionnel large que l’administrateur principal
+     * (compte plateforme ou vendeur marketplace).
+     */
+    function admin_has_full_admin_menu() {
+        $r = admin_current_role();
+        return in_array($r, ['admin', 'plateforme', 'vendeur'], true);
+    }
+
     function admin_can_commercial() {
         $r = admin_current_role();
-        return $r === 'admin' || $r === 'commercial';
+        return $r === 'admin' || $r === 'plateforme' || $r === 'vendeur' || $r === 'commercial';
     }
 
     /** Devis, BL, conversion — même périmètre que l'espace commercial */
@@ -33,12 +42,20 @@ if (!function_exists('admin_current_role')) {
 
     function admin_can_comptabilite() {
         $r = admin_current_role();
-        return $r === 'admin' || $r === 'comptabilite';
+        return $r === 'admin' || $r === 'plateforme' || $r === 'vendeur' || $r === 'comptabilite';
     }
 
     function admin_can_rh() {
         $r = admin_current_role();
-        return $r === 'admin' || $r === 'rh';
+        return $r === 'admin' || $r === 'plateforme' || $r === 'vendeur' || $r === 'rh';
+    }
+
+    /**
+     * Gestion des clients (users) et comptes internes — admin, plateforme, vendeur, RH.
+     */
+    function admin_can_gestion_clients_comptes() {
+        $r = admin_current_role();
+        return in_array($r, ['admin', 'plateforme', 'vendeur', 'rh'], true);
     }
 
     /**
@@ -46,19 +63,19 @@ if (!function_exists('admin_current_role')) {
      */
     function admin_can_caisse() {
         $r = admin_current_role();
-        return in_array($r, ['admin', 'commercial', 'caissier'], true);
+        return in_array($r, ['admin', 'plateforme', 'vendeur', 'commercial', 'caissier'], true);
     }
 
     /** Bureau vendeur : scan, panier, génération de ticket (pas l’encaissement caissier seul) */
     function admin_can_caisse_vendeur() {
         $r = admin_current_role();
-        return $r === 'admin' || $r === 'commercial';
+        return $r === 'admin' || $r === 'plateforme' || $r === 'vendeur' || $r === 'commercial';
     }
 
     /** Encaissement (validation paiement) : administrateur ou caissier */
     function admin_can_encaisser_ticket() {
         $r = admin_current_role();
-        return $r === 'admin' || $r === 'caissier';
+        return $r === 'admin' || $r === 'plateforme' || $r === 'vendeur' || $r === 'caissier';
     }
 
     /**
@@ -66,7 +83,7 @@ if (!function_exists('admin_current_role')) {
      */
     function admin_can_gestion_boutique() {
         $r = admin_current_role();
-        return in_array($r, ['admin', 'gestion_stock'], true);
+        return in_array($r, ['admin', 'plateforme', 'vendeur', 'gestion_stock'], true);
     }
 
     /**
@@ -74,7 +91,7 @@ if (!function_exists('admin_current_role')) {
      */
     function admin_require_roles($allowed_roles, $redirect = 'dashboard.php') {
         $r = admin_current_role();
-        if (in_array($r, $allowed_roles, true) || $r === 'admin') {
+        if (in_array($r, $allowed_roles, true) || $r === 'admin' || $r === 'plateforme' || $r === 'vendeur') {
             return;
         }
         header('Location: ' . $redirect);

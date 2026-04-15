@@ -7,7 +7,7 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -20,6 +20,8 @@ if ($commande_id <= 0) {
     exit;
 }
 
+require_once __DIR__ . '/../includes/require_access.php';
+
 // Récupérer la commande et ses produits
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
 require_once __DIR__ . '/../../models/model_produits.php';
@@ -31,6 +33,13 @@ $produits = is_array($produits) ? $produits : [];
 $facture = get_facture_by_commande($commande_id);
 
 if (!$commande) {
+    header('Location: index.php');
+    exit;
+}
+
+require_once __DIR__ . '/../../includes/admin_route_access.php';
+$vf_ck = admin_vendeur_filter_id();
+if ($vf_ck !== null && (int) ($commande['vendeur_id'] ?? 0) !== $vf_ck) {
     header('Location: index.php');
     exit;
 }

@@ -15,7 +15,7 @@ if ($redirect_after && $redirect_after[0] !== '/') {
 $redirect_url = (!empty($redirect_after) && strpos($redirect_after, '//') === false) ? $redirect_after : '/index.php';
 
 // Si l'admin est déjà connecté, rediriger vers l'espace admin
-if (isset($_SESSION['admin_id']) && isset($_SESSION['admin_email'])) {
+if (isset($_SESSION['admin_id'])) {
     header('Location: /admin/dashboard.php');
     exit;
 }
@@ -35,9 +35,11 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
     $_SESSION['admin_id'] = $result['admin']['id'];
     $_SESSION['admin_nom'] = $result['admin']['nom'];
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
-    $_SESSION['admin_email'] = $result['admin']['email'];
+    $_SESSION['admin_email'] = $result['admin']['email'] ?? '';
     $_SESSION['admin_statut'] = $result['admin']['statut'];
     $_SESSION['admin_role'] = normalize_admin_role($result['admin']['role'] ?? 'admin');
+    $_SESSION['admin_boutique_nom'] = trim((string) ($result['admin']['boutique_nom'] ?? ''));
+    $_SESSION['admin_boutique_slug'] = trim((string) ($result['admin']['boutique_slug'] ?? ''));
 
     // Redirection vers l'espace admin. Si l'admin utilise "retour", connexion.php le redirigera à nouveau.
     header('Location: /admin/dashboard.php');
@@ -63,6 +65,8 @@ if (isset($_SESSION['inscription_success'])) {
     $inscription_success = $_SESSION['inscription_success'];
     unset($_SESSION['inscription_success']);
 }
+
+$active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode'] === 'phone') ? 'phone' : 'email';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -75,9 +79,6 @@ if (isset($_SESSION['inscription_success'])) {
     <title>Connexion - FOUTA POIDS LOURDS</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -94,26 +95,7 @@ if (isset($_SESSION['inscription_success'])) {
             justify-content: center;
             padding: 20px;
             position: relative;
-        }
-
-        /* Fond dégradé flouté harmonieux - même que le site */
-        body::before {
-            content: "";
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background:
-                radial-gradient(ellipse 80% 50% at 30% 20%, rgba(229, 72, 138, 0.4) 0%, transparent 50%),
-                radial-gradient(ellipse 60% 40% at 70% 10%, rgba(244, 211, 94, 0.35) 0%, transparent 45%),
-                radial-gradient(ellipse 70% 50% at 50% 80%, rgba(32, 197, 199, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse 50% 60% at 10% 70%, rgba(255, 255, 255, 0.95) 0%, transparent 45%),
-                radial-gradient(ellipse 60% 50% at 80% 60%, rgba(247, 127, 0, 0.25) 0%, transparent 45%),
-                linear-gradient(135deg, #ffffff 0%, rgba(229, 72, 138, 0.15) 50%, rgba(32, 197, 199, 0.1) 100%);
-            filter: blur(60px);
-            pointer-events: none;
-            z-index: -1;
+            background-color: var(--fond-page);
         }
 
         .auth-header {
@@ -224,7 +206,7 @@ if (isset($_SESSION['inscription_success'])) {
         .form-group input {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid rgba(229, 72, 138, 0.2);
+            border: 2px solid rgba(53, 100, 166, 0.2);
             border-radius: 8px;
             font-size: 15px;
             transition: all 0.3s ease;
@@ -235,7 +217,7 @@ if (isset($_SESSION['inscription_success'])) {
         .form-group input:focus {
             outline: none;
             border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
+            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.15);
         }
 
         .input-wrapper {
@@ -288,7 +270,7 @@ if (isset($_SESSION['inscription_success'])) {
         }
 
         .error-message {
-            background: rgba(229, 72, 138, 0.1);
+            background: rgba(53, 100, 166, 0.1);
             border-left: 4px solid var(--couleur-dominante);
             color: var(--titres);
             padding: 12px 15px;
@@ -327,7 +309,7 @@ if (isset($_SESSION['inscription_success'])) {
         .btn-submit:hover {
             transform: translateY(-2px);
             box-shadow: var(--ombre-promo);
-            background: rgba(229, 72, 138, 0.9);
+            background: rgba(53, 100, 166, 0.9);
         }
 
         .footer-text {
@@ -396,6 +378,45 @@ if (isset($_SESSION['inscription_success'])) {
             text-decoration: underline;
         }
 
+        .login-mode-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 4px;
+            background: var(--fond-secondaire, #fafafa);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .login-mode-tabs button {
+            flex: 1;
+            padding: 12px 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font-corps);
+            cursor: pointer;
+            background: transparent;
+            color: var(--texte-mute, #737373);
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .login-mode-tabs button[aria-selected="true"] {
+            background: var(--couleur-dominante);
+            color: var(--texte-clair);
+            box-shadow: var(--ombre-douce);
+        }
+
+        .login-mode-tabs button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+
+        .login-panel[hidden] {
+            display: none !important;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 30px 20px;
@@ -418,7 +439,7 @@ if (isset($_SESSION['inscription_success'])) {
                     <i class="fas fa-sign-in-alt"></i>
                 </div>
                 <h1>Connexion</h1>
-                <p>Accédez à votre compte</p>
+                <p>Email ou téléphone : même compte client ou équipe (PIN ou mot de passe).</p>
             </div>
 
             <?php if (!empty($inscription_success)): ?>
@@ -433,14 +454,30 @@ if (isset($_SESSION['inscription_success'])) {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" action="" id="loginForm">
+            <div class="login-mode-tabs" role="tablist" aria-label="Mode de connexion">
+                <button type="button" role="tab" id="tab-email" aria-controls="panel-email"
+                    aria-selected="<?php echo $active_login_mode === 'email' ? 'true' : 'false'; ?>"
+                    tabindex="<?php echo $active_login_mode === 'email' ? '0' : '-1'; ?>">
+                    <i class="fas fa-envelope" aria-hidden="true"></i> Email
+                </button>
+                <button type="button" role="tab" id="tab-phone" aria-controls="panel-phone"
+                    aria-selected="<?php echo $active_login_mode === 'phone' ? 'true' : 'false'; ?>"
+                    tabindex="<?php echo $active_login_mode === 'phone' ? '0' : '-1'; ?>">
+                    <i class="fas fa-phone" aria-hidden="true"></i> Téléphone
+                </button>
+            </div>
+
+            <div id="panel-email" class="login-panel" role="tabpanel" aria-labelledby="tab-email"
+                <?php echo $active_login_mode !== 'email' ? 'hidden' : ''; ?>>
+            <form method="POST" action="">
+                <input type="hidden" name="login_mode" value="email">
                 <?php if (!empty($redirect_after)): ?>
                 <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
                 <?php endif; ?>
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email *</label>
                     <div class="input-wrapper">
-                        <input type="email" id="email" name="email" placeholder="votre@email.com" required
+                        <input type="email" id="email" name="email" placeholder="votre@email.com" autocomplete="email"
                             value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                         <i class="fas fa-envelope"></i>
                     </div>
@@ -449,7 +486,7 @@ if (isset($_SESSION['inscription_success'])) {
                 <div class="form-group">
                     <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
                     <div class="input-wrapper password-wrapper">
-                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password">
                         <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -460,10 +497,10 @@ if (isset($_SESSION['inscription_success'])) {
                 </div>
 
                 <div class="checkbox-group">
-                    <input type="checkbox" id="accepte_conditions" name="accepte_conditions" value="1" required>
+                    <input type="checkbox" id="accepte_conditions" name="accepte_conditions" value="1" <?php echo (isset($_POST['accepte_conditions']) && $_POST['accepte_conditions'] === '1') ? 'checked' : ''; ?>>
                     <label for="accepte_conditions">
                         J'accepte les <a href="/conditions-utilisation.php" target="_blank">conditions d'utilisation</a>
-                        *
+                        (obligatoire pour les comptes clients)
                     </label>
                 </div>
 
@@ -471,14 +508,77 @@ if (isset($_SESSION['inscription_success'])) {
                     <i class="fas fa-sign-in-alt"></i> Se connecter
                 </button>
             </form>
+            </div>
+
+            <div id="panel-phone" class="login-panel" role="tabpanel" aria-labelledby="tab-phone"
+                <?php echo $active_login_mode !== 'phone' ? 'hidden' : ''; ?>>
+            <form method="POST" action="">
+                <input type="hidden" name="login_mode" value="phone">
+                <?php if (!empty($redirect_after)): ?>
+                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
+                <?php endif; ?>
+                <div class="form-group">
+                    <label for="telephone"><i class="fas fa-phone"></i> Numéro de téléphone *</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="telephone" name="telephone" placeholder="Ex. 77 123 45 67" autocomplete="tel"
+                            value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pin"><i class="fas fa-key"></i> Code PIN ou mot de passe *</label>
+                    <div class="input-wrapper password-wrapper">
+                        <input type="password" id="pin" name="pin" placeholder="Même secret que pour votre compte" autocomplete="current-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword('pin', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="accepte_conditions_phone" name="accepte_conditions_phone" value="1" <?php echo (isset($_POST['accepte_conditions_phone']) && $_POST['accepte_conditions_phone'] === '1') ? 'checked' : ''; ?>>
+                    <label for="accepte_conditions_phone">
+                        J'accepte les <a href="/conditions-utilisation.php" target="_blank">conditions d'utilisation</a>
+                        (obligatoire pour les comptes clients)
+                    </label>
+                </div>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+            </form>
+            </div>
 
             <div class="footer-text">
-                <p>Vous n'avez pas de compte ? <a href="inscription.php">Créer un compte</a></p>
+                <p>Vous n'avez pas de compte ? <a href="/choix-inscription.php<?php
+$rget = isset($_GET['redirect']) ? trim((string) $_GET['redirect']) : '';
+$rsafe = preg_match('/^[a-z0-9_-]+$/i', $rget) ? $rget : '';
+echo $rsafe !== '' ? htmlspecialchars('?' . http_build_query(['redirect' => $rsafe])) : '';
+?>">Créer un compte</a></p>
             </div>
         </div>
     </div>
 
     <script>
+        (function () {
+            var tabEmail = document.getElementById('tab-email');
+            var tabPhone = document.getElementById('tab-phone');
+            var panelEmail = document.getElementById('panel-email');
+            var panelPhone = document.getElementById('panel-phone');
+            if (!tabEmail || !tabPhone || !panelEmail || !panelPhone) return;
+
+            function showMode(mode) {
+                var isEmail = mode === 'email';
+                panelEmail.hidden = !isEmail;
+                panelPhone.hidden = isEmail;
+                tabEmail.setAttribute('aria-selected', isEmail ? 'true' : 'false');
+                tabPhone.setAttribute('aria-selected', isEmail ? 'false' : 'true');
+                tabEmail.tabIndex = isEmail ? 0 : -1;
+                tabPhone.tabIndex = isEmail ? -1 : 0;
+            }
+
+            tabEmail.addEventListener('click', function () { showMode('email'); });
+            tabPhone.addEventListener('click', function () { showMode('phone'); });
+        })();
+
         function togglePassword(inputId, button) {
             const input = document.getElementById(inputId);
             const icon = button.querySelector('i');

@@ -1,3 +1,5 @@
+@import url("./variables.css");
+
 *{
     margin: 0;
     padding: 0;
@@ -5,8 +7,7 @@
 }
 
 body{
-    font-family: 'Almarai', sans-serif;
-    font-family: 'Rozha One', serif;
+    font-family: var(--font-corps);
 }
 
 .info{
@@ -189,7 +190,7 @@ color: white;
 display: block;
 margin-left: 20px;
 text-transform: capitalize;
-font-family: 'Nunito', sans-serif;
+font-family: var(--font-corps);
 }
 
 .section1 div span i{
@@ -233,7 +234,7 @@ padding: 50px 70px ;
 background-color: #4b484823;
 backdrop-filter: blur(2px);
 border-radius: 15px;
-font-family: 'Nunito', sans-serif;
+font-family: var(--font-corps);
 }
 
 .section2 .formulaire1 form .erreur{
@@ -323,5 +324,5 @@ color: white;
 font-size: 15px;
 font-weight: lighter;
 font-style: italic;
-font-family: 'Nunito', sans-serif;
+font-family: var(--font-corps);
 }

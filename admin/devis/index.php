@@ -4,7 +4,7 @@
  */
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -26,7 +26,8 @@ if (empty($_SESSION['admin_csrf'])) {
 }
 
 $devis_list = get_all_devis();
-$zones_livraison = get_all_zones_livraison('actif');
+$vf_zones = admin_vendeur_filter_id();
+$zones_livraison = get_all_zones_livraison('actif', $vf_zones !== null ? $vf_zones : false);
 $bl_tables_ok = bl_tables_available();
 $bl_clients_list = $bl_tables_ok ? get_clients_b2b_avec_bl() : [];
 

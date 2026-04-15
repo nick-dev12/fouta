@@ -4,13 +4,15 @@
  * #3564a6 (bleu principal) | #FFFFFF (blanc)
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap");
+
 :root {
   /* Couleurs de base */
   --bleu-principal: #3564a6;
   --bleu-principal-hover: #2d5690;
-  --blanc: #FFFFFF;
-  --noir: #0D0D0D;
-  --orange: #FF6B35;
+  --blanc: #ffffff;
+  --noir: #0d0d0d;
+  --orange: #ff6b35;
 
   /* Nuances dérivées */
   --noir-doux: #1a1a1a;
@@ -18,11 +20,11 @@
   --gris-fonce: #4a4a4a;
   --gris-moyen: #737373;
   --gris-clair: #a3a3a3;
-  --blanc-casse: #FAFAFA;
-  --blanc-neige: #F5F5F5;
+  --blanc-casse: #fafafa;
+  --blanc-neige: #f5f5f5;
 
-  --orange-clair: #FF8F65;
-  --orange-fonce: #E85A2A;
+  --orange-clair: #ff8f65;
+  --orange-fonce: #e85a2a;
   --orange-pale: rgba(255, 107, 53, 0.12);
 
   --bleu: #3564a6;
@@ -31,20 +33,22 @@
   --bleu-pale: rgba(53, 100, 166, 0.12);
 
   /* Textes */
-  --texte-fonce: #0D0D0D;
-  --texte-clair: #FFFFFF;
+  --texte-fonce: #0d0d0d;
+  --texte-clair: #ffffff;
   /* Texte secondaire (labels, onglets inactifs) — aligné sur la grille grise */
   --texte-mute: var(--gris-moyen);
 
   /* Rôles sémantiques - Bleu comme couleur dominante */
-  --fond-principal: #FFFFFF;
-  --fond-secondaire: #FAFAFA;
+  --fond-principal: #ffffff;
+  --fond-secondaire: #fafafa;
+  /* Fond de page plein (sans dégradé) — préféré pour body sur tout le site */
+  --fond-page: var(--fond-principal);
   --couleur-dominante: #3564a6;
   --couleur-dominante-hover: #2d5690;
   --boutons-secondaires: #3564a6;
   --boutons-secondaires-hover: #2d5690;
-  --accent-promo: #FF6B35;
-  --titres: #0D0D0D;
+  --accent-promo: #ff6b35;
+  --titres: #0d0d0d;
 
   /* Rétrocompatibilité */
   --rose: var(--couleur-dominante);
@@ -53,7 +57,7 @@
   --turquoise: var(--bleu-clair);
 
   /* Glassmorphisme */
-  --glass-bg: #FFFFFF;
+  --glass-bg: #ffffff;
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 
@@ -75,6 +79,20 @@
   --noir-pale: rgba(13, 13, 13, 0.08);
 
   /* Typographie */
-  --font-titres: 'Playfair Display', serif;
-  --font-corps: 'Quicksand', 'Nunito', sans-serif;
+  --font-titres: "Poppins", sans-serif;
+  --font-corps: "Poppins", sans-serif;
+
+  /* Pastilles icônes navigation admin (squircles) — cycle bleu / orange */
+  --admin-nav-icon-1: var(--couleur-dominante);
+  --admin-nav-icon-2: var(--bleu-clair);
+  --admin-nav-icon-3: var(--orange);
+  --admin-nav-icon-4: var(--bleu-fonce);
+  --admin-nav-icon-5: var(--orange-clair);
+  --admin-nav-icon-6: color-mix(
+    in srgb,
+    var(--bleu) 58%,
+    var(--bleu-clair) 42%
+  );
+  --admin-nav-icon-7: var(--orange-fonce);
+  --admin-nav-icon-out: var(--orange-fonce);
 }

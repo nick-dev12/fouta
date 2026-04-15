@@ -71,6 +71,20 @@ function _commande_produits_has_variante_columns() {
     return $has;
 }
 
+function _commandes_has_vendeur_id_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM commandes LIKE 'vendeur_id'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
 /**
  * Génère un numéro de commande unique
  * @return string Le numéro de commande
@@ -89,13 +103,31 @@ function generate_numero_commande() {
  * @param int|null $zone_livraison_id ID de la zone de livraison (optionnel)
  * @param float $frais_livraison Frais de livraison en FCFA (défaut 0)
  * @param array $choix Choix couleur/poids/taille par panier_id [panier_id => ['couleur'=>..., 'poids'=>..., 'taille'=>...]]
+ * @param int|null $vendeur_id Boutique vendeuse (marketplace). Si null, dérivé du premier article si colonne présente.
+ * @param bool $manage_transaction Si false, ne pas begin/commit (transaction gérée par l'appelant)
  * @return array|false Tableau avec 'success' et 'commande_id' ou False en cas d'erreur
  */
-function create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = []) {
+function create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = [], $vendeur_id = null, $manage_transaction = true) {
     global $db;
     
     try {
-        $db->beginTransaction();
+        if ($manage_transaction) {
+            $db->beginTransaction();
+        }
+
+        if (_commandes_has_vendeur_id_column()) {
+            if ($vendeur_id === null || (int) $vendeur_id <= 0) {
+                $first = reset($panier_items);
+                $vendeur_id = isset($first['vendeur_id']) ? (int) $first['vendeur_id'] : (int) ($first['admin_id'] ?? 0);
+            } else {
+                $vendeur_id = (int) $vendeur_id;
+            }
+            if ($vendeur_id <= 0) {
+                throw new PDOException('vendeur_id requis pour la commande');
+            }
+        } else {
+            $vendeur_id = null;
+        }
         
         $sous_total = 0;
         foreach ($panier_items as $item) {
@@ -123,11 +155,25 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
             'telephone_livraison' => $telephone_livraison,
             'notes' => $notes
         ];
+        if (_commandes_has_vendeur_id_column()) {
+            $params_cmd['vendeur_id'] = $vendeur_id;
+        }
         
         if (_commandes_has_zone_columns()) {
             $params_cmd['zone_livraison_id'] = $zone_livraison_id ?: null;
             $params_cmd['frais_livraison'] = $frais_livraison;
-            $stmt = $db->prepare("
+            if (_commandes_has_vendeur_id_column()) {
+                $stmt = $db->prepare("
+                INSERT INTO commandes (
+                    user_id, vendeur_id, numero_commande, montant_total, adresse_livraison, 
+                    zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes
+                ) VALUES (
+                    :user_id, :vendeur_id, :numero_commande, :montant_total, :adresse_livraison,
+                    :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes
+                )
+            ");
+            } else {
+                $stmt = $db->prepare("
                 INSERT INTO commandes (
                     user_id, numero_commande, montant_total, adresse_livraison, 
                     zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes
@@ -136,8 +182,20 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
                     :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes
                 )
             ");
+            }
         } else {
-            $stmt = $db->prepare("
+            if (_commandes_has_vendeur_id_column()) {
+                $stmt = $db->prepare("
+                INSERT INTO commandes (
+                    user_id, vendeur_id, numero_commande, montant_total, adresse_livraison, 
+                    telephone_livraison, statut, date_commande, notes
+                ) VALUES (
+                    :user_id, :vendeur_id, :numero_commande, :montant_total, :adresse_livraison,
+                    :telephone_livraison, 'en_attente', NOW(), :notes
+                )
+            ");
+            } else {
+                $stmt = $db->prepare("
                 INSERT INTO commandes (
                     user_id, numero_commande, montant_total, adresse_livraison, 
                     telephone_livraison, statut, date_commande, notes
@@ -146,6 +204,7 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
                     :telephone_livraison, 'en_attente', NOW(), :notes
                 )
             ");
+            }
         }
         $stmt->execute($params_cmd);
         
@@ -214,7 +273,9 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
         // Le stock est décrémenté uniquement lorsque le statut de la commande passe à 'paye' (via update_commande_statut)
 
         // Valider la transaction
-        $db->commit();
+        if ($manage_transaction) {
+            $db->commit();
+        }
         
         return [
             'success' => true,
@@ -223,9 +284,75 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
         ];
         
     } catch (PDOException $e) {
-        // Annuler la transaction en cas d'erreur
-        $db->rollBack();
+        if ($manage_transaction && $db->inTransaction()) {
+            $db->rollBack();
+        }
         error_log('[create_commande] ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Crée plusieurs commandes (une par vendeur) à partir du panier marketplace.
+ * Les frais de livraison globaux sont appliqués uniquement à la première commande du lot.
+ *
+ * @return array|false ['success'=>true,'commandes'=>[...],'numeros_commandes'=>[...]] ou false
+ */
+function create_marketplace_commandes_from_panier($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = []) {
+    global $db;
+
+    if (!_commandes_has_vendeur_id_column()) {
+        return create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes, $zone_livraison_id, $frais_livraison, $choix, null, true);
+    }
+
+    $groups = [];
+    foreach ($panier_items as $item) {
+        $vid = isset($item['vendeur_id']) ? (int) $item['vendeur_id'] : 0;
+        if ($vid <= 0 && !empty($item['admin_id'])) {
+            $vid = (int) $item['admin_id'];
+        }
+        if ($vid <= 0) {
+            error_log('[create_marketplace_commandes_from_panier] Ligne panier sans vendeur_id');
+            return false;
+        }
+        if (!isset($groups[$vid])) {
+            $groups[$vid] = [];
+        }
+        $groups[$vid][] = $item;
+    }
+    ksort($groups, SORT_NUMERIC);
+
+    $created = [];
+    $numeros = [];
+
+    try {
+        $db->beginTransaction();
+        $i = 0;
+        foreach ($groups as $vid => $subset) {
+            $frais_ligne = ($i === 0) ? (float) $frais_livraison : 0.0;
+            $i++;
+            $res = create_commande($user_id, $subset, $adresse_livraison, $telephone_livraison, $notes, $zone_livraison_id, $frais_ligne, $choix, $vid, false);
+            if ($res === false || empty($res['success'])) {
+                $db->rollBack();
+                return false;
+            }
+            $created[] = $res;
+            $numeros[] = $res['numero_commande'];
+        }
+        $db->commit();
+
+        return [
+            'success' => true,
+            'commandes' => $created,
+            'numeros_commandes' => $numeros,
+            'commande_id' => $created[0]['commande_id'] ?? null,
+            'numero_commande' => $numeros[0] ?? '',
+        ];
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('[create_marketplace_commandes_from_panier] ' . $e->getMessage());
         return false;
     }
 }
@@ -441,20 +568,54 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
 /**
  * Récupère toutes les commandes d'un utilisateur
  * @param int $user_id L'ID de l'utilisateur
+ * @param int|null $boutique_admin_id Si défini, uniquement les commandes avec au moins une ligne de produits
+ *                                    dont produits.admin_id = cet ID. La colonne montant_lignes_boutique est ajoutée.
  * @return array Tableau des commandes
  */
-function get_commandes_by_user($user_id) {
+function get_commandes_by_user($user_id, $boutique_admin_id = null) {
     global $db;
-    
+
+    $boutique_admin_id = $boutique_admin_id !== null ? (int) $boutique_admin_id : null;
+    if ($boutique_admin_id !== null && $boutique_admin_id <= 0) {
+        $boutique_admin_id = null;
+    }
+
     try {
-        $stmt = $db->prepare("
-            SELECT * FROM commandes 
-            WHERE user_id = :user_id 
-            ORDER BY date_commande DESC
-        ");
-        $stmt->execute(['user_id' => $user_id]);
+        if ($boutique_admin_id !== null) {
+            require_once __DIR__ . '/model_produits.php';
+            if (!produits_has_column('admin_id')) {
+                return [];
+            }
+            $stmt = $db->prepare("
+                SELECT c.*,
+                    (SELECT COALESCE(SUM(cp.prix_total), 0)
+                     FROM commande_produits cp
+                     INNER JOIN produits p ON p.id = cp.produit_id AND p.admin_id = :vid_ca
+                     WHERE cp.commande_id = c.id) AS montant_lignes_boutique
+                FROM commandes c
+                WHERE c.user_id = :user_id
+                AND EXISTS (
+                    SELECT 1 FROM commande_produits cp2
+                    INNER JOIN produits p2 ON p2.id = cp2.produit_id AND p2.admin_id = :vid_ex
+                    WHERE cp2.commande_id = c.id
+                )
+                ORDER BY c.date_commande DESC
+            ");
+            $stmt->execute([
+                'user_id' => (int) $user_id,
+                'vid_ca' => $boutique_admin_id,
+                'vid_ex' => $boutique_admin_id,
+            ]);
+        } else {
+            $stmt = $db->prepare("
+                SELECT * FROM commandes
+                WHERE user_id = :user_id
+                ORDER BY date_commande DESC
+            ");
+            $stmt->execute(['user_id' => (int) $user_id]);
+        }
         $commandes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         return $commandes ? $commandes : [];
     } catch (PDOException $e) {
         return [];

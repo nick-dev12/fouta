@@ -3,7 +3,7 @@
  * Espace Comptabilité — hub à onglets (ventes, dépenses, BL / factures HT)
  */
 session_start();
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -18,6 +18,8 @@ if (!admin_can_comptabilite()) {
 
 require_once __DIR__ . '/../../models/model_factures_mensuelles.php';
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
+require_once __DIR__ . '/../../includes/admin_route_access.php';
+$__vf_compta = admin_vendeur_filter_id();
 require_once __DIR__ . '/../../models/model_bl.php';
 require_once __DIR__ . '/../../models/model_depenses.php';
 require_once __DIR__ . '/../../models/model_caisse_compta.php';
@@ -212,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['depense_ajout'])) {
     $active_tab = 'depenses';
 }
 
-$is_admin_role = (($_SESSION['admin_role'] ?? '') === 'admin');
+$is_admin_role = admin_has_full_admin_menu();
 
 /* Filtre période — onglet Ventes (commandes vendues = livrée ou payée, selon date de commande) */
 $v_periode = isset($_GET['v_periode']) ? trim((string) $_GET['v_periode']) : 'jour';
@@ -273,7 +275,8 @@ if ($ventes_filtre_actif) {
         $v_date_debut_ok !== '' ? $v_date_debut_ok : null,
         $v_date_fin_ok !== '' ? $v_date_fin_ok : null,
         $v_jour,
-        true
+        true,
+        $__vf_compta
     );
     $stats_ventes_affiche = get_stats_ventes_commandes_vendues($commandes_ventes_liste);
     $mois_fr_long_v = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -304,8 +307,8 @@ if ($ventes_filtre_actif) {
     }
     $ventes_liste_titre_suffix = $libelle_periode_ventes;
 } else {
-    $stats_ventes_affiche = get_stats_commandes_vendues_globales();
-    $commandes_ventes_liste = get_all_commandes_vendues();
+    $stats_ventes_affiche = get_stats_commandes_vendues_globales($__vf_compta);
+    $commandes_ventes_liste = get_all_commandes_vendues($__vf_compta);
     $libelle_periode_ventes = '';
     $ventes_liste_titre_suffix = 'Vue globale — toutes les dates';
 }

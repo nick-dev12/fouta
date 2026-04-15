@@ -4,7 +4,7 @@
  */
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -21,6 +21,7 @@ if (empty($_SESSION['admin_csrf'])) {
 
 require_once __DIR__ . '/../../models/model_devis.php';
 require_once __DIR__ . '/../../models/model_zones_livraison.php';
+require_once __DIR__ . '/../../includes/admin_route_access.php';
 
 $devis_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($devis_id <= 0) {
@@ -36,7 +37,8 @@ if (!$devis || ($devis['statut'] ?? '') !== 'brouillon') {
 }
 
 $produits = get_produits_by_devis($devis_id);
-$zones_livraison = get_all_zones_livraison('actif');
+$vf_zones = admin_vendeur_filter_id();
+$zones_livraison = get_all_zones_livraison('actif', $vf_zones !== null ? $vf_zones : false);
 
 $devis_erreur = $_SESSION['devis_erreur'] ?? null;
 $devis_post = $_SESSION['devis_post'] ?? null;

@@ -6,6 +6,11 @@
 
 session_start();
 
+$inscription_redirect_get = isset($_GET['redirect']) ? trim((string) $_GET['redirect']) : '';
+if ($inscription_redirect_get === '' || !preg_match('/^[a-z0-9_-]+$/i', $inscription_redirect_get)) {
+    $inscription_redirect_get = '';
+}
+
 // Si l'utilisateur est déjà connecté, rediriger vers le tableau de bord
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
     header('Location: mon-compte.php');
@@ -19,7 +24,11 @@ $result = process_user_inscription();
 // Si l'inscription est réussie, rediriger vers la page de connexion
 if (isset($result['success']) && $result['success']) {
     $_SESSION['inscription_success'] = $result['message'];
-    header('Location: connexion.php');
+    $loc = '/choix-connexion.php';
+    if ($inscription_redirect_get !== '') {
+        $loc .= '?' . http_build_query(['redirect' => $inscription_redirect_get]);
+    }
+    header('Location: ' . $loc);
     exit;
 }
 ?>
@@ -34,9 +43,6 @@ if (isset($result['success']) && $result['success']) {
     <title>Inscription - FOUTA POIDS LOURDS</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -53,26 +59,7 @@ if (isset($result['success']) && $result['success']) {
             justify-content: center;
             padding: 20px;
             position: relative;
-        }
-
-        /* Fond dégradé flouté harmonieux - même que le site */
-        body::before {
-            content: "";
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background:
-                radial-gradient(ellipse 80% 50% at 30% 20%, rgba(229, 72, 138, 0.4) 0%, transparent 50%),
-                radial-gradient(ellipse 60% 40% at 70% 10%, rgba(244, 211, 94, 0.35) 0%, transparent 45%),
-                radial-gradient(ellipse 70% 50% at 50% 80%, rgba(32, 197, 199, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse 50% 60% at 10% 70%, rgba(255, 255, 255, 0.95) 0%, transparent 45%),
-                radial-gradient(ellipse 60% 50% at 80% 60%, rgba(247, 127, 0, 0.25) 0%, transparent 45%),
-                linear-gradient(135deg, #ffffff 0%, rgba(229, 72, 138, 0.15) 50%, rgba(32, 197, 199, 0.1) 100%);
-            filter: blur(60px);
-            pointer-events: none;
-            z-index: -1;
+            background-color: var(--fond-page);
         }
 
         .auth-header {
@@ -183,7 +170,7 @@ if (isset($result['success']) && $result['success']) {
         .form-group input {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid rgba(229, 72, 138, 0.2);
+            border: 2px solid rgba(53, 100, 166, 0.2);
             border-radius: 8px;
             font-size: 15px;
             transition: all 0.3s ease;
@@ -194,7 +181,7 @@ if (isset($result['success']) && $result['success']) {
         .form-group input:focus {
             outline: none;
             border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
+            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.15);
         }
 
         .form-group input::placeholder {
@@ -251,7 +238,7 @@ if (isset($result['success']) && $result['success']) {
         }
 
         .error-message {
-            background: rgba(229, 72, 138, 0.1);
+            background: rgba(53, 100, 166, 0.1);
             border-left: 4px solid var(--couleur-dominante);
             color: var(--titres);
             padding: 12px 15px;
@@ -279,7 +266,7 @@ if (isset($result['success']) && $result['success']) {
         .btn-submit:hover {
             transform: translateY(-2px);
             box-shadow: var(--ombre-promo);
-            background: rgba(229, 72, 138, 0.9);
+            background: rgba(53, 100, 166, 0.9);
         }
 
         .footer-text {
@@ -394,7 +381,9 @@ if (isset($result['success']) && $result['success']) {
             </form>
 
             <div class="footer-text">
-                <p>Vous avez déjà un compte ? <a href="connexion.php">Se connecter</a></p>
+                <p>Vous avez déjà un compte ? <a href="/choix-connexion.php<?php
+echo $inscription_redirect_get !== '' ? htmlspecialchars('?' . http_build_query(['redirect' => $inscription_redirect_get])) : '';
+?>">Se connecter</a></p>
             </div>
         </div>
     </div>

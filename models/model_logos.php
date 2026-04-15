@@ -1,33 +1,39 @@
 <?php
 /**
  * Modèle pour la gestion des logos partenaires
- * Programmation procédurale uniquement
  */
 
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/../includes/db_schema_helpers.php';
 
 /**
- * Récupère tous les logos actifs
- * @param string|null $statut Filtrer par statut ('actif', 'inactif' ou null pour tous)
- * @return array Tableau des logos
+ * @param string|null $statut
+ * @param int|false|null $boutique_admin_id false = tout (admin) ; null = plateforme ; int = vendeur
  */
-function get_all_logos($statut = 'actif') {
+function get_all_logos($statut = 'actif', $boutique_admin_id = false) {
     global $db;
     try {
+        $where = [];
+        $params = [];
         if ($statut) {
-            $stmt = $db->prepare("
-                SELECT * FROM logos 
-                WHERE statut = :statut 
-                ORDER BY ordre ASC, date_creation DESC
-            ");
-            $stmt->execute(['statut' => $statut]);
-        } else {
-            $stmt = $db->prepare("
-                SELECT * FROM logos 
-                ORDER BY ordre ASC, date_creation DESC
-            ");
-            $stmt->execute();
+            $where[] = 'statut = :statut';
+            $params['statut'] = $statut;
         }
+        if (db_table_has_column('logos', 'admin_id') && $boutique_admin_id !== false) {
+            if ($boutique_admin_id === null || (int) $boutique_admin_id === 0) {
+                $where[] = 'admin_id IS NULL';
+            } else {
+                $where[] = 'admin_id = :aid';
+                $params['aid'] = (int) $boutique_admin_id;
+            }
+        }
+        $sql = 'SELECT * FROM logos';
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY ordre ASC, date_creation DESC';
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         $logos = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $logos ? $logos : [];
     } catch (PDOException $e) {
@@ -35,15 +41,10 @@ function get_all_logos($statut = 'actif') {
     }
 }
 
-/**
- * Récupère un logo par son ID
- * @param int $id L'ID du logo
- * @return array|false Les données du logo ou False
- */
 function get_logo_by_id($id) {
     global $db;
     try {
-        $stmt = $db->prepare("SELECT * FROM logos WHERE id = :id");
+        $stmt = $db->prepare('SELECT * FROM logos WHERE id = :id');
         $stmt->execute(['id' => (int) $id]);
         $logo = $stmt->fetch(PDO::FETCH_ASSOC);
         return $logo ? $logo : false;
@@ -53,38 +54,40 @@ function get_logo_by_id($id) {
 }
 
 /**
- * Crée un nouveau logo
- * @param string $image Chemin de l'image (ex: logos/xxx.png)
- * @param int $ordre Ordre d'affichage
- * @param string $statut actif ou inactif
- * @return int|false ID du logo créé ou False
+ * @param int|null $admin_id Propriétaire vendeur ou null = plateforme
  */
-function create_logo($image, $ordre = 0, $statut = 'actif') {
+function create_logo($image, $ordre = 0, $statut = 'actif', $admin_id = null) {
     global $db;
     try {
-        $stmt = $db->prepare("
-            INSERT INTO logos (image, ordre, statut, date_creation) 
-            VALUES (:image, :ordre, :statut, NOW())
-        ");
-        $stmt->execute([
-            'image' => $image,
-            'ordre' => (int) $ordre,
-            'statut' => in_array($statut, ['actif', 'inactif']) ? $statut : 'actif'
-        ]);
+        if (db_table_has_column('logos', 'admin_id')) {
+            $aid = $admin_id !== null && (int) $admin_id > 0 ? (int) $admin_id : null;
+            $stmt = $db->prepare('
+                INSERT INTO logos (image, ordre, statut, date_creation, admin_id)
+                VALUES (:image, :ordre, :statut, NOW(), :admin_id)
+            ');
+            $stmt->execute([
+                'image' => $image,
+                'ordre' => (int) $ordre,
+                'statut' => in_array($statut, ['actif', 'inactif'], true) ? $statut : 'actif',
+                'admin_id' => $aid,
+            ]);
+        } else {
+            $stmt = $db->prepare('
+                INSERT INTO logos (image, ordre, statut, date_creation)
+                VALUES (:image, :ordre, :statut, NOW())
+            ');
+            $stmt->execute([
+                'image' => $image,
+                'ordre' => (int) $ordre,
+                'statut' => in_array($statut, ['actif', 'inactif'], true) ? $statut : 'actif',
+            ]);
+        }
         return $db->lastInsertId();
     } catch (PDOException $e) {
         return false;
     }
 }
 
-/**
- * Met à jour un logo
- * @param int $id ID du logo
- * @param string|null $image Nouveau chemin image (null = ne pas modifier)
- * @param int|null $ordre Nouvel ordre (null = ne pas modifier)
- * @param string|null $statut Nouveau statut (null = ne pas modifier)
- * @return bool
- */
 function update_logo($id, $image = null, $ordre = null, $statut = null) {
     global $db;
     try {
@@ -98,14 +101,14 @@ function update_logo($id, $image = null, $ordre = null, $statut = null) {
             $sets[] = 'ordre = :ordre';
             $params['ordre'] = (int) $ordre;
         }
-        if ($statut !== null && in_array($statut, ['actif', 'inactif'])) {
+        if ($statut !== null && in_array($statut, ['actif', 'inactif'], true)) {
             $sets[] = 'statut = :statut';
             $params['statut'] = $statut;
         }
         if (empty($sets)) {
             return true;
         }
-        $sql = "UPDATE logos SET " . implode(', ', $sets) . ", date_modification = NOW() WHERE id = :id";
+        $sql = 'UPDATE logos SET ' . implode(', ', $sets) . ', date_modification = NOW() WHERE id = :id';
         $stmt = $db->prepare($sql);
         return $stmt->execute($params);
     } catch (PDOException $e) {
@@ -113,15 +116,10 @@ function update_logo($id, $image = null, $ordre = null, $statut = null) {
     }
 }
 
-/**
- * Supprime un logo
- * @param int $id ID du logo
- * @return bool
- */
 function delete_logo($id) {
     global $db;
     try {
-        $stmt = $db->prepare("DELETE FROM logos WHERE id = :id");
+        $stmt = $db->prepare('DELETE FROM logos WHERE id = :id');
         return $stmt->execute(['id' => (int) $id]);
     } catch (PDOException $e) {
         return false;

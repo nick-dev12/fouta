@@ -6,19 +6,33 @@
 
 session_start();
 
+require_once __DIR__ . '/includes/marketplace_helpers.php';
+require_once __DIR__ . '/models/model_admin.php';
+
+$commande_boutique_slug = trim((string) ($_GET['boutique'] ?? ''));
+$commande_boutique_admin = null;
+if ($commande_boutique_slug !== '') {
+    $commande_boutique_admin = get_admin_by_boutique_slug($commande_boutique_slug);
+    if (!$commande_boutique_admin) {
+        header('Location: /panier.php');
+        exit;
+    }
+}
+
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /user/connexion.php?redirect=commande');
+    $redir_cmd = '/commande.php';
+    if ($commande_boutique_slug !== '' && $commande_boutique_admin) {
+        $redir_cmd .= '?boutique=' . rawurlencode($commande_boutique_slug);
+    }
+    header('Location: /user/connexion.php?redirect=' . rawurlencode($redir_cmd));
     exit;
 }
 
 // Inclusion des modèles et contrôleurs
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/models/model_users.php';
-require_once __DIR__ . '/models/model_zones_livraison.php';
 require_once __DIR__ . '/controllers/controller_commandes.php';
-
-$zones_livraison = get_all_zones_livraison('actif');
 
 // Traitement du formulaire
 $message = '';
@@ -32,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($result['success']) {
         // Envoi de la réponse immédiatement pour ne pas bloquer l'utilisateur
         ignore_user_abort(true);
-        header('Location: /user/mes-commandes.php?success=1&numero=' . urlencode($result['numero_commande']));
+        $nums = !empty($result['numeros_commandes']) ? $result['numeros_commandes'] : [$result['numero_commande']];
+        header('Location: /user/mes-commandes.php?success=1&numeros=' . urlencode(implode(',', $nums)));
         echo ' ';
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
@@ -43,18 +58,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
         }
 
-        // Envoi notification + email en arrière-plan (après que le client a reçu la redirection)
-        if (!empty($result['email_data']) && file_exists(__DIR__ . '/services/send_new_commande_to_admin.php')) {
+        // Envoi notification + email en arrière-plan (une cible par boutique)
+        if (file_exists(__DIR__ . '/services/send_new_commande_to_admin.php')) {
             require_once __DIR__ . '/services/send_new_commande_to_admin.php';
-            $d = $result['email_data'];
-            send_new_commande_to_admin(
-                $d['numero_commande'],
-                $d['montant_total'],
-                $d['nombre_articles'],
-                $d['telephone_livraison'] ?? '',
-                $d['adresse_livraison'] ?? '',
-                $d['produits'] ?? []
-            );
+            if (!empty($result['notifications']) && is_array($result['notifications'])) {
+                foreach ($result['notifications'] as $n) {
+                    if (empty($n['vendeur_id']) || empty($n['numero_commande'])) {
+                        continue;
+                    }
+                    send_new_commande_to_vendeur(
+                        (int) $n['vendeur_id'],
+                        isset($n['commande_id']) ? (int) $n['commande_id'] : 0,
+                        (string) $n['numero_commande'],
+                        (float) ($n['montant_total'] ?? 0),
+                        (int) ($n['nombre_articles'] ?? 0),
+                        (string) ($n['telephone_livraison'] ?? ''),
+                        (string) ($n['adresse_livraison'] ?? ''),
+                        is_array($n['produits'] ?? null) ? $n['produits'] : []
+                    );
+                }
+            } elseif (!empty($result['email_data'])) {
+                $d = $result['email_data'];
+                send_new_commande_to_admin(
+                    $d['numero_commande'],
+                    $d['montant_total'],
+                    $d['nombre_articles'],
+                    $d['telephone_livraison'] ?? '',
+                    $d['adresse_livraison'] ?? '',
+                    $d['produits'] ?? []
+                );
+            }
         }
         exit;
     } else {
@@ -66,22 +99,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Récupérer les informations de l'utilisateur
 $user = get_user_by_id($_SESSION['user_id']);
 
-// Récupérer les produits du panier
+// Récupérer les produits du panier (éventuellement limités à une boutique)
 $panier_items = get_panier_by_user($_SESSION['user_id']);
+if ($commande_boutique_admin) {
+    $panier_items = filter_panier_items_by_vendeur($panier_items, (int) $commande_boutique_admin['id']);
+}
 
 // Vérifier que le panier n'est pas vide
 if (empty($panier_items)) {
-    header('Location: /panier.php');
+    if ($commande_boutique_admin && $commande_boutique_slug !== '') {
+        header('Location: ' . boutique_url('panier.php', $commande_boutique_slug));
+    } else {
+        header('Location: /panier.php');
+    }
     exit;
 }
 
-// S'il n'y a aucune zone de livraison, le formulaire affichera un message et sera désactivé
+// Calculer le total (sous-ensemble affiché)
+$panier_total = panier_items_sous_total($panier_items);
+$nombre_total_articles = panier_items_count_quantites($panier_items);
 
-// Calculer le total
-$panier_total = get_panier_total($_SESSION['user_id']);
-$nombre_total_articles = 0;
-foreach ($panier_items as $item) {
-    $nombre_total_articles += $item['quantite'];
+// Contexte badge panier (commande limitée à une boutique)
+if ($commande_boutique_admin) {
+    $GLOBALS['nav_panier_count_for_vendeur_id'] = (int) $commande_boutique_admin['id'];
 }
 
 // Inclusion de la barre de navigation
@@ -108,15 +148,12 @@ include 'nav_bar.php';
 
     .commande-wrapper {
         display: grid;
-        grid-template-columns: 1fr 400px;
+        grid-template-columns: 1fr;
         gap: 30px;
         margin-top: 30px;
-    }
-
-    @media (max-width: 968px) {
-        .commande-wrapper {
-            grid-template-columns: 1fr;
-        }
+        max-width: 827px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .commande-form-section {
@@ -136,8 +173,6 @@ include 'nav_bar.php';
         padding: 30px;
         box-shadow: var(--glass-shadow);
         height: fit-content;
-        position: sticky;
-        top: 20px;
     }
 
     .section-title {
@@ -324,6 +359,13 @@ include 'nav_bar.php';
         font-weight: 600;
     }
 
+    .panier-item-boutique {
+        font-size: 12px;
+        color: var(--orange, #c26638);
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
     .panier-item-summary-info p {
         font-size: 12px;
         color: var(--gris-moyen);
@@ -382,7 +424,7 @@ include 'nav_bar.php';
         <h1 class="commande-page-title">
             <i class="fas fa-shopping-bag"></i> Passer la commande
         </h1>
-        <p class="commande-page-subtitle">Veuillez remplir les informations de contact</p>
+        <p class="commande-page-subtitle">Indiquez un numéro de téléphone pour la livraison. Les modalités sont convenues avec chaque boutique.</p>
 
         <?php if ($message): ?>
         <div class="message <?php echo $message_type; ?>">
@@ -391,68 +433,7 @@ include 'nav_bar.php';
         <?php endif; ?>
 
         <div class="commande-wrapper">
-            <!-- Formulaire de commande -->
-            <div class="commande-form-section">
-                <h2 class="section-title">
-                    <i class="fas fa-phone"></i> Informations de livraison
-                </h2>
-
-                <form method="POST" action="" id="form-commande">
-                    <input type="hidden" name="action" value="create_commande">
-
-                    <?php if (empty($zones_livraison)): ?>
-                    <div class="message error">
-                        <i class="fas fa-exclamation-triangle"></i> Aucune zone de livraison n'est configurée. Veuillez
-                        contacter l'administrateur.
-                    </div>
-                    <?php else: ?>
-                    <div class="form-group">
-                        <label for="zone_livraison_id">
-                            <i class="fas fa-map-marker-alt"></i> Zone de livraison *
-                        </label>
-                        <select id="zone_livraison_id" name="zone_livraison_id" required>
-                            <option value="">Sélectionnez votre zone de livraison</option>
-                            <?php if (!empty($zones_livraison)): ?>
-                            <?php foreach ($zones_livraison as $zone): ?>
-                            <option value="<?php echo $zone['id']; ?>"
-                                data-prix="<?php echo (float) $zone['prix_livraison']; ?>">
-                                <?php echo htmlspecialchars($zone['ville'] . ' - ' . $zone['quartier']); ?>
-                                (<?php echo number_format($zone['prix_livraison'], 0, ',', ' '); ?> FCFA)
-                            </option>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                        <small>Choisissez la zone correspondant à votre adresse de livraison</small>
-                    </div>
-                    <?php endif; ?>
-
-                    <div class="form-group">
-                        <label for="telephone_livraison">
-                            <i class="fas fa-phone"></i> Téléphone de livraison *
-                        </label>
-                        <input type="tel" id="telephone_livraison" name="telephone_livraison" required
-                            placeholder="+241 XX XX XX XX"
-                            value="<?php echo isset($_POST['telephone_livraison']) ? htmlspecialchars($_POST['telephone_livraison']) : htmlspecialchars($user['telephone'] ?? ''); ?>">
-                        <small>Numéro de téléphone pour la livraison</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notes">
-                            <i class="fas fa-sticky-note"></i> Notes (optionnel)
-                        </label>
-                        <textarea id="notes" name="notes"
-                            placeholder="Instructions spéciales pour la livraison (ex: code d'accès, étage, etc.)"><?php echo isset($_POST['notes']) ? htmlspecialchars($_POST['notes']) : ''; ?></textarea>
-                        <small>Ajoutez des instructions spéciales si nécessaire</small>
-                    </div>
-
-                    <button type="submit" class="btn-submit-commande"
-                        <?php echo empty($zones_livraison) ? 'disabled' : ''; ?>>
-                        <i class="fas fa-check-circle"></i> Confirmer la commande
-                    </button>
-                </form>
-            </div>
-
-            <!-- Résumé de la commande -->
+            <!-- Résumé en premier (au-dessus du formulaire) -->
             <div class="commande-summary-section">
                 <h2 class="section-title">
                     <i class="fas fa-shopping-cart"></i> Résumé
@@ -472,6 +453,9 @@ include 'nav_bar.php';
                             alt="<?php echo htmlspecialchars($item['nom']); ?>"
                             onerror="this.src='/image/produit1.jpg'">
                         <div class="panier-item-summary-info">
+                            <?php if (!empty($item['vendeur_boutique_nom'])): ?>
+                            <div class="panier-item-boutique"><i class="fas fa-store"></i> <?php echo htmlspecialchars($item['vendeur_boutique_nom']); ?></div>
+                            <?php endif; ?>
                             <h4><?php echo htmlspecialchars(!empty($item['panier_variante_nom']) ? $item['nom'] . ' - ' . $item['panier_variante_nom'] : $item['nom']); ?></h4>
                             <?php
                             $opts = [];
@@ -520,9 +504,36 @@ include 'nav_bar.php';
                     </div>
                 </div>
 
-                <a href="/panier.php" class="commande-link-retour">
+                <a href="<?php echo $commande_boutique_admin && $commande_boutique_slug !== '' ? htmlspecialchars(boutique_url('panier.php', $commande_boutique_slug), ENT_QUOTES, 'UTF-8') : '/panier.php'; ?>" class="commande-link-retour">
                     <i class="fas fa-arrow-left"></i> Retour au panier
                 </a>
+            </div>
+
+            <div class="commande-form-section">
+                <h2 class="section-title">
+                    <i class="fas fa-phone"></i> Informations de livraison
+                </h2>
+
+                <form method="POST" action="" id="form-commande">
+                    <input type="hidden" name="action" value="create_commande">
+                    <?php if ($commande_boutique_admin && $commande_boutique_slug !== ''): ?>
+                    <input type="hidden" name="boutique_slug" value="<?php echo htmlspecialchars($commande_boutique_slug, ENT_QUOTES, 'UTF-8'); ?>">
+                    <?php endif; ?>
+
+                    <div class="form-group">
+                        <label for="telephone_livraison">
+                            <i class="fas fa-phone"></i> Téléphone de livraison *
+                        </label>
+                        <input type="tel" id="telephone_livraison" name="telephone_livraison" required
+                            placeholder="+241 XX XX XX XX"
+                            value="<?php echo isset($_POST['telephone_livraison']) ? htmlspecialchars($_POST['telephone_livraison']) : htmlspecialchars($user['telephone'] ?? ''); ?>">
+                        <small>Numéro de téléphone pour la livraison</small>
+                    </div>
+
+                    <button type="submit" class="btn-submit-commande">
+                        <i class="fas fa-check-circle"></i> Confirmer la commande
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -532,7 +543,6 @@ include 'nav_bar.php';
     <script>
     (function() {
         var panierTotal = <?php echo $panier_total; ?>;
-        var selectZone = document.getElementById('zone_livraison_id');
         var spanLivraison = document.getElementById('summary-livraison');
         var spanTotal = document.getElementById('summary-total');
 
@@ -540,17 +550,9 @@ include 'nav_bar.php';
             return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         }
 
-        function updateTotaux() {
-            var opt = selectZone.options[selectZone.selectedIndex];
-            var frais = opt && opt.dataset.prix ? parseFloat(opt.dataset.prix) : 0;
-            var total = panierTotal + frais;
-            spanLivraison.textContent = formatNumber(Math.round(frais)) + ' FCFA';
-            spanTotal.textContent = formatNumber(Math.round(total)) + ' FCFA';
-        }
-        if (selectZone) {
-            selectZone.addEventListener('change', updateTotaux);
-            updateTotaux();
-        }
+        var frais = 0;
+        if (spanLivraison) spanLivraison.textContent = formatNumber(Math.round(frais)) + ' FCFA';
+        if (spanTotal) spanTotal.textContent = formatNumber(Math.round(panierTotal + frais)) + ' FCFA';
     })();
     </script>
 </body>

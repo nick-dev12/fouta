@@ -49,18 +49,25 @@ function create_stock_mouvement($data)
  * @param int|null $categorie_id Filtrer par catégorie
  * @param string|null $type Filtrer par type (entree, sortie, inventaire)
  * @param int $limit Nombre max
+ * @param int|null $boutique_admin_id Limiter aux produits de cette boutique (marketplace)
  * @return array
  */
-function get_stock_mouvements($stock_article_id = null, $produit_id = null, $categorie_id = null, $type = null, $limit = 100)
+function get_stock_mouvements($stock_article_id = null, $produit_id = null, $categorie_id = null, $type = null, $limit = 100, $boutique_admin_id = null)
 {
     global $db;
 
     try {
+        require_once __DIR__ . '/model_produits.php';
         $sql = "SELECT m.*, p.nom as produit_nom, p.categorie_id as produit_categorie_id
                 FROM stock_mouvements m
                 LEFT JOIN produits p ON m.produit_id = p.id
                 WHERE 1=1";
         $params = ['limit' => (int) $limit];
+
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            $sql .= ' AND p.admin_id = :boutique_admin_id';
+            $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
 
         if ($produit_id !== null && $produit_id > 0) {
             $sql .= " AND m.produit_id = :produit_id";

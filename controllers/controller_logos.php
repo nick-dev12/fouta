@@ -5,6 +5,23 @@
  */
 
 require_once __DIR__ . '/../models/model_logos.php';
+require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
+require_once __DIR__ . '/../includes/db_schema_helpers.php';
+
+/**
+ * Vendeur : uniquement ses logos ; plateforme : logos sans admin_id.
+ */
+function admin_logo_row_allowed(array $row) {
+    $scope = admin_param_boutique_scope_id();
+    if ($scope !== null) {
+        return isset($row['admin_id']) && (int) $row['admin_id'] === (int) $scope;
+    }
+    if (db_table_has_column('logos', 'admin_id')) {
+        $aid = $row['admin_id'] ?? null;
+        return $aid === null || $aid === '';
+    }
+    return true;
+}
 
 /**
  * Upload une image de logo
@@ -47,7 +64,9 @@ function process_add_logo() {
         return ['success' => false, 'message' => 'Veuillez sélectionner une image valide (JPG, PNG, GIF, WebP, max 2 Mo).'];
     }
     $ordre = isset($_POST['ordre']) ? (int) $_POST['ordre'] : 0;
-    $id = create_logo($image, $ordre, 'actif');
+    $scope = admin_param_boutique_scope_id();
+    $owner = $scope !== null ? (int) $scope : null;
+    $id = create_logo($image, $ordre, 'actif', $owner);
     if ($id) {
         return ['success' => true, 'message' => 'Logo ajouté avec succès.'];
     }
@@ -67,6 +86,9 @@ function process_update_logo() {
     $logo = get_logo_by_id($logo_id);
     if (!$logo) {
         return ['success' => false, 'message' => 'Logo introuvable.'];
+    }
+    if (!admin_logo_row_allowed($logo)) {
+        return ['success' => false, 'message' => 'Accès refusé.'];
     }
     $image = $logo['image'];
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -98,6 +120,9 @@ function process_delete_logo() {
     $logo = get_logo_by_id($logo_id);
     if (!$logo) {
         return ['success' => false, 'message' => 'Logo introuvable.'];
+    }
+    if (!admin_logo_row_allowed($logo)) {
+        return ['success' => false, 'message' => 'Accès refusé.'];
     }
     if (delete_logo($logo_id)) {
         $path = __DIR__ . '/../upload/' . $logo['image'];

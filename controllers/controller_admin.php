@@ -130,17 +130,59 @@ function process_admin_inscription() {
  * Traite la connexion d'un administrateur
  * @return array Tableau avec 'success' (bool), 'message' (string) et 'admin' (array|false)
  */
+/**
+ * Connexion vendeur : téléphone + PIN 6 chiffres (hashé en base comme un mot de passe).
+ */
+function process_vendeur_pin_login() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return ['success' => false, 'message' => '', 'admin' => false];
+    }
+
+    $tel = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
+    $pin = isset($_POST['pin']) ? (string) $_POST['pin'] : '';
+    $tel_norm = preg_replace('/\s+/', '', $tel);
+    $errors = [];
+
+    if ($tel_norm === '') {
+        $errors[] = 'Le téléphone est obligatoire.';
+    }
+    if (strlen($pin) < 4) {
+        $errors[] = 'Le code doit comporter au moins 4 caractères.';
+    }
+    if (!empty($errors)) {
+        return ['success' => false, 'message' => implode('<br>', $errors), 'admin' => false];
+    }
+
+    $admin = get_admin_by_telephone($tel_norm);
+    if (!$admin) {
+        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'admin' => false];
+    }
+    if (($admin['statut'] ?? '') !== 'actif') {
+        return ['success' => false, 'message' => 'Votre compte est désactivé. Contactez la plateforme.', 'admin' => false];
+    }
+    if (!password_verify($pin, $admin['password'])) {
+        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'admin' => false];
+    }
+
+    update_admin_last_login($admin['id']);
+    return ['success' => true, 'message' => 'Connexion réussie !', 'admin' => $admin];
+}
+
 function process_admin_login() {
     $errors = [];
     $success = false;
     $message = '';
     $admin = false;
-    
+
     // Vérifier si le formulaire a été soumis
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return ['success' => false, 'message' => '', 'admin' => false];
     }
-    
+
+    if (isset($_POST['vendeur_login']) && (string) $_POST['vendeur_login'] === '1') {
+        return process_vendeur_pin_login();
+    }
+
     // Récupération des données
     $email = isset($_POST['email']) ? trim($_POST['email']) : '';
     $password = isset($_POST['password']) ? $_POST['password'] : '';
@@ -319,6 +361,78 @@ function process_reset_password() {
     }
 
     return ['success' => $success, 'message' => $message];
+}
+
+/**
+ * Inscription vendeur / création de boutique (téléphone + PIN + slug).
+ */
+function process_inscription_vendeur() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return ['success' => false, 'message' => ''];
+    }
+
+    require_once __DIR__ . '/../includes/marketplace_helpers.php';
+
+    $identite = isset($_POST['identite']) ? trim((string) $_POST['identite']) : '';
+    $email = isset($_POST['email']) ? trim((string) $_POST['email']) : '';
+    $telephone = preg_replace('/\s+/', '', trim((string) ($_POST['telephone'] ?? '')));
+    $pin = (string) ($_POST['pin'] ?? '');
+    $pin2 = (string) ($_POST['pin_confirm'] ?? '');
+    $boutique_nom = isset($_POST['boutique_nom']) ? trim((string) $_POST['boutique_nom']) : '';
+
+    $errors = [];
+    if (mb_strlen($identite) < 2) {
+        $errors[] = 'L\'identité est obligatoire.';
+    }
+    if ($telephone === '') {
+        $errors[] = 'Le téléphone est obligatoire.';
+    }
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'L\'email n\'est pas valide.';
+    }
+    if (!preg_match('/^\d{6}$/', $pin)) {
+        $errors[] = 'Le code PIN doit comporter exactement 6 chiffres.';
+    }
+    if ($pin !== $pin2) {
+        $errors[] = 'Les deux saisies du PIN ne correspondent pas.';
+    }
+    if (mb_strlen($boutique_nom) < 2) {
+        $errors[] = 'Le nom de la boutique est obligatoire.';
+    }
+    if (admin_telephone_exists($telephone)) {
+        $errors[] = 'Ce numéro de téléphone est déjà enregistré.';
+    }
+    if ($email !== '' && admin_email_exists($email)) {
+        $errors[] = 'Cet email est déjà utilisé.';
+    }
+
+    $slug = marketplace_slugify($boutique_nom);
+    $base_slug = $slug;
+    $n = 0;
+    while (admin_boutique_slug_exists($slug)) {
+        $n++;
+        $slug = $base_slug . '-' . $n;
+        if ($n > 200) {
+            $errors[] = 'Impossible de générer une URL boutique unique. Modifiez le nom.';
+            break;
+        }
+    }
+
+    if (!empty($errors)) {
+        return ['success' => false, 'message' => implode('<br>', $errors)];
+    }
+
+    $hash = password_hash($pin, PASSWORD_BCRYPT);
+    $id = create_vendeur_boutique($identite, $email !== '' ? $email : null, $telephone, $hash, $boutique_nom, $slug);
+    if (!$id) {
+        return ['success' => false, 'message' => 'Erreur lors de la création du compte. Réessayez.'];
+    }
+
+    return [
+        'success' => true,
+        'message' => 'Votre boutique a été créée. Connectez-vous avec votre téléphone et votre code PIN.',
+        'boutique_slug' => $slug,
+    ];
 }
 
 ?>

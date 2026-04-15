@@ -26,6 +26,35 @@ $is_comptes = strpos($current_dir, '/comptes') !== false;
 $is_commercial_hub = strpos($current_dir, '/commercial') !== false;
 $is_comptabilite_hub = strpos($current_dir, '/comptabilite') !== false;
 $admin_role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+$is_vendeur_menu = ($admin_role === 'vendeur');
+
+/** Titre marque dans la sidebar : nom commercial de la boutique si vendeur, sinon plateforme. */
+$admin_sidebar_brand_title = 'FOUTA POIDS LOURDS';
+if ($is_vendeur_menu && !empty(
+    $_SESSION['admin_id'])) {
+    $bn_nav = trim((string) ($_SESSION['admin_boutique_nom'] ?? ''));
+    if ($bn_nav === '') {
+        require_once dirname(__DIR__, 2) . '/models/model_admin.php';
+        $adm_nav = get_admin_by_id((int) $_SESSION['admin_id']);
+        if ($adm_nav) {
+            $bn_nav = trim((string) ($adm_nav['boutique_nom'] ?? ''));
+            if ($bn_nav !== '') {
+                $_SESSION['admin_boutique_nom'] = $bn_nav;
+            }
+        }
+    }
+    if ($bn_nav !== '') {
+        $admin_sidebar_brand_title = $bn_nav;
+    }
+}
+
+/** Badge navigation : commandes en cours (boutique vendeur uniquement) */
+$nav_commandes_en_traitement = 0;
+if ($is_vendeur_menu && !empty($_SESSION['admin_id'])) {
+    require_once dirname(__DIR__, 2) . '/models/model_commandes_admin.php';
+    $nav_commandes_en_traitement = count_commandes_en_traitement_vendeur((int) $_SESSION['admin_id']);
+}
+
 if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres || $is_commandes || $is_caisse || $is_devis || $is_users || $is_contacts || $is_zones_livraison || $is_comptes || $is_commercial_hub || $is_comptabilite_hub) {
     $base_path = '../';
 } else {
@@ -67,154 +96,172 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
     <aside class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-header">
             <i class="fas fa-store logo-icon"></i>
-            <h2>FOUTA POIDS LOURDS</h2>
+            <h2><?php echo htmlspecialchars($admin_sidebar_brand_title, ENT_QUOTES, 'UTF-8'); ?></h2>
         </div>
-        <nav class="sidebar-menu">
-            <?php if ($admin_role === 'admin'): ?>
+        <nav class="sidebar-menu" aria-label="Navigation administration">
+            <?php if (in_array($admin_role, ['admin', 'plateforme', 'vendeur'], true)): ?>
             <a href="<?php echo $base_path; ?>dashboard.php"
-                class="menu-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
-                <i class="fas fa-home"></i>
-                <span>Tableau de bord</span>
+                class="menu-item <?php echo ($current_page == 'dashboard.php' || ($is_vendeur_menu && $is_produits && $current_page == 'index.php')) ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-home"></i></span>
+                <span class="menu-item__text">Tableau de bord</span>
             </a>
+            <?php if ($is_vendeur_menu): ?>
+            <a href="<?php echo $base_path; ?>stock/index.php"
+                class="menu-item <?php echo $is_stock ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
+                <span class="menu-item__text">Stock</span>
+            </a>
+            <?php endif; ?>
+            <?php if (!$is_vendeur_menu): ?>
             <a href="<?php echo $base_path; ?>devis/index.php"
                 class="menu-item <?php echo ($is_devis || $is_commercial_hub) ? 'active' : ''; ?>">
-                <i class="fas fa-handshake"></i>
-                <span>Devis &amp; BL</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-handshake"></i></span>
+                <span class="menu-item__text">Devis &amp; BL</span>
             </a>
-            <a href="<?php echo $base_path; ?>comptabilite/index.php"
-                class="menu-item <?php echo $is_comptabilite_hub ? 'active' : ''; ?>">
-                <i class="fas fa-calculator"></i>
-                <span>Comptabilité</span>
-            </a>
+            <?php endif; ?>
+            <?php if (!$is_vendeur_menu): ?>
             <a href="<?php echo $base_path; ?>produits/index.php"
                 class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
-                <i class="fas fa-box"></i>
-                <span>Produits</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-box"></i></span>
+                <span class="menu-item__text">Produits</span>
             </a>
+            <?php endif; ?>
+            <?php if (!$is_vendeur_menu): ?>
             <a href="<?php echo $base_path; ?>stock/index.php"
                 class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
-                <i class="fas fa-boxes-stacked"></i>
-                <span>Stock</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
+                <span class="menu-item__text">Stock</span>
             </a>
+            <?php endif; ?>
             <a href="<?php echo $base_path; ?>commandes/index.php"
-                class="menu-item <?php echo ($is_commandes && ($current_page == 'index.php' || $current_page == 'livrees.php' || $current_page == 'annulees.php' || $current_page == 'details.php' || $current_page == 'historique-ventes.php')) ? 'active' : ''; ?>">
-                <i class="fas fa-shopping-cart"></i>
-                <span>Commandes</span>
+                class="menu-item menu-item--has-badge <?php echo ($is_commandes && ($current_page == 'index.php' || $current_page == 'livrees.php' || $current_page == 'annulees.php' || $current_page == 'details.php' || $current_page == 'historique-ventes.php')) ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-shopping-cart"></i></span>
+                <span class="menu-item__text">Commandes</span>
+                <?php if ($is_vendeur_menu && $nav_commandes_en_traitement > 0): ?>
+                <span class="menu-item__badge" title="<?php echo (int) $nav_commandes_en_traitement; ?> commande<?php echo $nav_commandes_en_traitement > 1 ? 's' : ''; ?> en cours de traitement" aria-label="<?php echo (int) $nav_commandes_en_traitement; ?> commande<?php echo $nav_commandes_en_traitement > 1 ? 's' : ''; ?> en cours de traitement"><?php echo (int) $nav_commandes_en_traitement; ?></span>
+                <?php endif; ?>
             </a>
             <a href="<?php echo $base_path; ?>caisse/index.php"
                 class="menu-item <?php echo ($is_caisse && !$is_caisse_encaisser) ? 'active' : ''; ?>">
-                <i class="fas fa-cash-register"></i>
-                <span>Caisse</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
+                <span class="menu-item__text">Caisse</span>
             </a>
+            <?php if (!$is_vendeur_menu): ?>
             <a href="<?php echo $base_path; ?>caisse/encaisser-ticket.php"
                 class="menu-item <?php echo $is_caisse_encaisser ? 'active' : ''; ?>">
-                <i class="fas fa-money-bill-wave"></i>
-                <span>Encaissement tickets</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-money-bill-wave"></i></span>
+                <span class="menu-item__text">Encaissement tickets</span>
             </a>
             <a href="<?php echo $base_path; ?>caisse/historique-encaissements.php"
                 class="menu-item <?php echo $is_caisse_historique ? 'active' : ''; ?>">
-                <i class="fas fa-history"></i>
-                <span>Historique encaissements</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-history"></i></span>
+                <span class="menu-item__text">Historique encaissements</span>
             </a>
             <a href="<?php echo $base_path; ?>contacts/index.php"
                 class="menu-item <?php echo $is_contacts ? 'active' : ''; ?>">
-                <i class="fas fa-address-book"></i>
-                <span>Contacts</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-address-book"></i></span>
+                <span class="menu-item__text">Contacts</span>
             </a>
+            <?php endif; ?>
             <a href="<?php echo $base_path; ?>users/index.php"
                 class="menu-item <?php echo $is_users ? 'active' : ''; ?>">
-                <i class="fas fa-store"></i>
-                <span>Clients</span>
-            </a>
-            <a href="<?php echo $base_path; ?>comptes/index.php"
-                class="menu-item <?php echo $is_comptes ? 'active' : ''; ?>">
-                <i class="fas fa-user-shield"></i>
-                <span>Comptes d’accès</span>
-            </a>
-            <a href="<?php echo $base_path; ?>zones-livraison/index.php"
-                class="menu-item <?php echo ($is_zones_livraison) ? 'active' : ''; ?>">
-                <i class="fas fa-truck"></i>
-                <span>Zones de livraison</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-store"></i></span>
+                <span class="menu-item__text">Clients</span>
             </a>
             <a href="<?php echo $base_path; ?>parametres.php"
-                class="menu-item <?php echo ($current_page == 'parametres.php' || strpos($current_dir, '/parametres') !== false) ? 'active' : ''; ?>">
-                <i class="fas fa-cog"></i>
-                <span>Paramètres</span>
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || strpos($current_dir, '/parametres') !== false || $is_zones_livraison || $is_comptes) ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
+                <span class="menu-item__text">Paramètres</span>
             </a>
             <?php elseif ($admin_role === 'commercial'): ?>
             <a href="<?php echo $base_path; ?>devis/index.php"
                 class="menu-item <?php echo ($is_devis || $is_commercial_hub) ? 'active' : ''; ?>">
-                <i class="fas fa-handshake"></i>
-                <span>Devis &amp; BL</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-handshake"></i></span>
+                <span class="menu-item__text">Devis &amp; BL</span>
             </a>
             <a href="<?php echo $base_path; ?>commandes/index.php"
                 class="menu-item <?php echo ($is_commandes && ($current_page == 'index.php' || $current_page == 'livrees.php' || $current_page == 'annulees.php' || $current_page == 'details.php' || $current_page == 'historique-ventes.php')) ? 'active' : ''; ?>">
-                <i class="fas fa-shopping-cart"></i>
-                <span>Commandes</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-shopping-cart"></i></span>
+                <span class="menu-item__text">Commandes</span>
             </a>
             <a href="<?php echo $base_path; ?>caisse/index.php"
                 class="menu-item <?php echo ($is_caisse && !$is_caisse_encaisser) ? 'active' : ''; ?>">
-                <i class="fas fa-cash-register"></i>
-                <span>Caisse</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
+                <span class="menu-item__text">Caisse</span>
+            </a>
+            <a href="<?php echo $base_path; ?>parametres.php"
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
+                <span class="menu-item__text">Paramètres</span>
             </a>
             <?php elseif ($admin_role === 'caissier'): ?>
             <a href="<?php echo $base_path; ?>caisse/encaisser-ticket.php"
                 class="menu-item <?php echo $is_caisse_encaisser ? 'active' : ''; ?>">
-                <i class="fas fa-money-bill-wave"></i>
-                <span>Encaissement tickets</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-money-bill-wave"></i></span>
+                <span class="menu-item__text">Encaissement tickets</span>
             </a>
             <a href="<?php echo $base_path; ?>caisse/historique-encaissements.php"
                 class="menu-item <?php echo $is_caisse_historique ? 'active' : ''; ?>">
-                <i class="fas fa-history"></i>
-                <span>Historique encaissements</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-history"></i></span>
+                <span class="menu-item__text">Historique encaissements</span>
+            </a>
+            <a href="<?php echo $base_path; ?>parametres.php"
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
+                <span class="menu-item__text">Paramètres</span>
             </a>
             <?php elseif ($admin_role === 'comptabilite'): ?>
             <a href="<?php echo $base_path; ?>comptabilite/index.php"
                 class="menu-item <?php echo $is_comptabilite_hub ? 'active' : ''; ?>">
-                <i class="fas fa-calculator"></i>
-                <span>Comptabilité</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-calculator"></i></span>
+                <span class="menu-item__text">Comptabilité</span>
             </a>
             <a href="<?php echo $base_path; ?>commandes/historique-ventes.php"
                 class="menu-item <?php echo ($is_commandes && $current_page === 'historique-ventes.php') ? 'active' : ''; ?>">
-                <i class="fas fa-chart-line"></i>
-                <span>Historique des ventes</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-chart-line"></i></span>
+                <span class="menu-item__text">Historique des ventes</span>
+            </a>
+            <a href="<?php echo $base_path; ?>parametres.php"
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
+                <span class="menu-item__text">Paramètres</span>
             </a>
             <?php elseif ($admin_role === 'rh'): ?>
             <a href="<?php echo $base_path; ?>contacts/index.php"
                 class="menu-item <?php echo $is_contacts ? 'active' : ''; ?>">
-                <i class="fas fa-address-book"></i>
-                <span>Contacts</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-address-book"></i></span>
+                <span class="menu-item__text">Contacts</span>
             </a>
             <a href="<?php echo $base_path; ?>users/index.php"
                 class="menu-item <?php echo $is_users ? 'active' : ''; ?>">
-                <i class="fas fa-store"></i>
-                <span>Clients</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-store"></i></span>
+                <span class="menu-item__text">Clients</span>
             </a>
-            <a href="<?php echo $base_path; ?>comptes/index.php"
-                class="menu-item <?php echo $is_comptes ? 'active' : ''; ?>">
-                <i class="fas fa-user-shield"></i>
-                <span>Comptes d’accès</span>
+            <a href="<?php echo $base_path; ?>parametres.php"
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
+                <span class="menu-item__text">Paramètres</span>
             </a>
             <?php elseif ($admin_role === 'gestion_stock'): ?>
             <a href="<?php echo $base_path; ?>stock/index.php"
                 class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
-                <i class="fas fa-boxes-stacked"></i>
-                <span>Stock</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
+                <span class="menu-item__text">Stock</span>
             </a>
             <a href="<?php echo $base_path; ?>produits/index.php"
                 class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
-                <i class="fas fa-box"></i>
-                <span>Produits</span>
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-box"></i></span>
+                <span class="menu-item__text">Produits</span>
+            </a>
+            <a href="<?php echo $base_path; ?>parametres.php"
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
+                <span class="menu-item__text">Paramètres</span>
             </a>
             <?php endif; ?>
-            <a href="<?php echo $base_path; ?>profil.php"
-                class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">
-                <i class="fas fa-user-shield"></i>
-                <span>Mon profil</span>
-            </a>
-            <a href="<?php echo $base_path; ?>logout.php" class="menu-item">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Déconnexion</span>
+            <a href="<?php echo $base_path; ?>logout.php" class="menu-item menu-item--logout">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-sign-out-alt"></i></span>
+                <span class="menu-item__text">Déconnexion</span>
             </a>
         </nav>
     </aside>

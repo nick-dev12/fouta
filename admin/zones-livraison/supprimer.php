@@ -6,7 +6,7 @@
 
 session_start();
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -20,7 +20,10 @@ if ($zone_id <= 0) {
 }
 
 require_once __DIR__ . '/../../models/model_zones_livraison.php';
-$result = delete_zone_livraison($zone_id);
+require_once __DIR__ . '/../../includes/admin_param_boutique_scope.php';
+$scope = admin_param_boutique_scope_id();
+$scope_del = $scope !== null ? (int) $scope : null;
+$result = delete_zone_livraison($zone_id, $scope_del);
 
 $_SESSION['success_message'] = $result['message'];
 header('Location: index.php');

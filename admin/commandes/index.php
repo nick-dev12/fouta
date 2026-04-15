@@ -7,18 +7,20 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 require_once __DIR__ . '/../includes/require_access.php';
+require_once __DIR__ . '/../../includes/admin_permissions.php';
 
 // Récupérer toutes les commandes
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
 require_once __DIR__ . '/../../models/model_zones_livraison.php';
-$toutes_commandes = get_all_commandes();
-$zones_livraison = get_all_zones_livraison('actif');
+$vf_cmd = admin_vendeur_filter_id();
+$toutes_commandes = get_all_commandes(null, $vf_cmd);
+$zones_livraison = get_all_zones_livraison('actif', $vf_cmd !== null ? $vf_cmd : false);
 
 $show_modal_commande_manuelle = isset($_GET['modal']) && $_GET['modal'] === 'commande_manuelle';
 $commande_manuelle_erreur = $_SESSION['commande_manuelle_erreur'] ?? null;
@@ -33,12 +35,12 @@ $commandes = array_filter($toutes_commandes, function($commande) {
 });
 
 // Statistiques
-$total_commandes = count_commandes_by_statut();
-$en_attente = count_commandes_by_statut('en_attente');
-$confirmees = count_commandes_by_statut('confirmee');
-$livrees = count_commandes_by_statut('livree') + count_commandes_by_statut('paye');
-$prise_en_charge = count_commandes_by_statut('prise_en_charge');
-$livraison_en_cours = count_commandes_by_statut('livraison_en_cours');
+$total_commandes = count_commandes_by_statut(null, $vf_cmd);
+$en_attente = count_commandes_by_statut('en_attente', $vf_cmd);
+$confirmees = count_commandes_by_statut('confirmee', $vf_cmd);
+$livrees = count_commandes_by_statut('livree', $vf_cmd) + count_commandes_by_statut('paye', $vf_cmd);
+$prise_en_charge = count_commandes_by_statut('prise_en_charge', $vf_cmd);
+$livraison_en_cours = count_commandes_by_statut('livraison_en_cours', $vf_cmd);
 
 // Comptabilité : montant total des commandes à traiter
 $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
@@ -62,7 +64,7 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
     <div class="content-header">
         <h1><i class="fas fa-shopping-bag"></i> Commandes Non Traitées</h1>
         <div class="header-actions">
-            <?php if (($_SESSION['admin_role'] ?? '') === 'admin'): ?>
+            <?php if (admin_has_full_admin_menu()): ?>
             <a href="historique-ventes.php" class="btn-primary">
                 <i class="fas fa-chart-line"></i> Historique des ventes & Comptabilité
             </a>

@@ -6,37 +6,45 @@
 
 // Inclusion du fichier de connexion à la BDD
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/../includes/db_schema_helpers.php';
 
 /**
- * Récupère toutes les vidéos actives
+ * Récupère les vidéos.
  * @param string|null $statut Filtrer par statut ('actif', 'inactif' ou null pour tous)
- * @return array Tableau des vidéos (vide si aucun ou en cas d'erreur)
+ * @param int|false|null $boutique_admin_id false = pas de filtre vendeur (liste admin complète) ;
+ *        null = uniquement plateforme (admin_id IS NULL) ; int = ce vendeur
  */
-function get_all_videos($statut = 'actif')
+function get_all_videos($statut = 'actif', $boutique_admin_id = false)
 {
     global $db;
 
     try {
+        $where = [];
+        $params = [];
         if ($statut) {
-            $stmt = $db->prepare("
-                SELECT * FROM videos 
-                WHERE statut = :statut 
-                ORDER BY date_creation DESC
-            ");
-            $stmt->execute(['statut' => $statut]);
-        } else {
-            $stmt = $db->prepare("
-                SELECT * FROM videos 
-                ORDER BY date_creation DESC
-            ");
-            $stmt->execute();
+            $where[] = 'statut = :statut';
+            $params['statut'] = $statut;
         }
+        if (db_table_has_column('videos', 'admin_id') && $boutique_admin_id !== false) {
+            if ($boutique_admin_id === null || (int) $boutique_admin_id === 0) {
+                $where[] = 'admin_id IS NULL';
+            } else {
+                $where[] = 'admin_id = :aid';
+                $params['aid'] = (int) $boutique_admin_id;
+            }
+        }
+        $sql = 'SELECT * FROM videos';
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY date_creation DESC';
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
 
         $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         return $videos ? $videos : [];
     } catch (PDOException $e) {
-        // En cas d'erreur (table n'existe pas encore), retourner un tableau vide
         return [];
     }
 }
@@ -71,17 +79,31 @@ function create_video($data)
     global $db;
 
     try {
-        $stmt = $db->prepare("
-            INSERT INTO videos (titre, fichier_video, image_preview, statut, date_creation) 
-            VALUES (:titre, :fichier_video, :image_preview, :statut, NOW())
-        ");
-
-        $result = $stmt->execute([
-            'titre' => $data['titre'],
-            'fichier_video' => $data['fichier_video'],
-            'image_preview' => $data['image_preview'] ?? null,
-            'statut' => $data['statut'] ?? 'actif'
-        ]);
+        if (db_table_has_column('videos', 'admin_id')) {
+            $aid = isset($data['admin_id']) && (int) $data['admin_id'] > 0 ? (int) $data['admin_id'] : null;
+            $stmt = $db->prepare("
+                INSERT INTO videos (titre, fichier_video, image_preview, statut, date_creation, admin_id)
+                VALUES (:titre, :fichier_video, :image_preview, :statut, NOW(), :admin_id)
+            ");
+            $result = $stmt->execute([
+                'titre' => $data['titre'],
+                'fichier_video' => $data['fichier_video'],
+                'image_preview' => $data['image_preview'] ?? null,
+                'statut' => $data['statut'] ?? 'actif',
+                'admin_id' => $aid,
+            ]);
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO videos (titre, fichier_video, image_preview, statut, date_creation)
+                VALUES (:titre, :fichier_video, :image_preview, :statut, NOW())
+            ");
+            $result = $stmt->execute([
+                'titre' => $data['titre'],
+                'fichier_video' => $data['fichier_video'],
+                'image_preview' => $data['image_preview'] ?? null,
+                'statut' => $data['statut'] ?? 'actif',
+            ]);
+        }
 
         if ($result) {
             return $db->lastInsertId();

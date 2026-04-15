@@ -15,7 +15,6 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 
 // Récupérer les commandes de l'utilisateur
 require_once __DIR__ . '/../models/model_commandes.php';
-require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 
 // Traitement de la confirmation de livraison
 $success_message = '';
@@ -96,9 +95,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recommander'])) {
                         $surcout_taille = isset($produit['surcout_taille']) ? (float) $produit['surcout_taille'] : 0;
                         $prix_unitaire = isset($produit['prix_unitaire']) ? (float) $produit['prix_unitaire'] : null;
 
-                        if (add_to_panier($_SESSION['user_id'], $produit['produit_id'], $quantite,
-                            $produit['couleur'] ?? null, $produit['poids'] ?? null, $produit['taille'] ?? null,
-                            $variante_id, $variante_nom, $variante_image, $surcout_poids, $surcout_taille, $prix_unitaire)) {
+                        if (
+                            add_to_panier(
+                                $_SESSION['user_id'],
+                                $produit['produit_id'],
+                                $quantite,
+                                $produit['couleur'] ?? null,
+                                $produit['poids'] ?? null,
+                                $produit['taille'] ?? null,
+                                $variante_id,
+                                $variante_nom,
+                                $variante_image,
+                                $surcout_poids,
+                                $surcout_taille,
+                                $prix_unitaire
+                            )
+                        ) {
                             $added_count++;
                         }
                     }
@@ -120,7 +132,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recommander'])) {
 }
 
 // Message de succès après création de commande
-if (isset($_GET['success']) && $_GET['success'] == '1' && isset($_GET['numero'])) {
+if (isset($_GET['success']) && $_GET['success'] == '1' && !empty($_GET['numeros'])) {
+    $nums = array_filter(array_map('trim', explode(',', (string) $_GET['numeros'])));
+    if (count($nums) > 1) {
+        $success_message = 'Vos commandes ont été créées avec succès : ' . implode(', ', array_map('htmlspecialchars', $nums)) . '.';
+    } elseif (count($nums) === 1) {
+        $success_message = 'Votre commande #' . htmlspecialchars($nums[0]) . ' a été créée avec succès !';
+    }
+} elseif (isset($_GET['success']) && $_GET['success'] == '1' && isset($_GET['numero'])) {
     $success_message = 'Votre commande #' . htmlspecialchars($_GET['numero']) . ' a été créée avec succès !';
 }
 
@@ -141,12 +160,7 @@ $commandes_actives = array_filter($commandes, function ($commande) {
     return $commande['statut'] !== 'livree' && $commande['statut'] !== 'paye' && $commande['statut'] !== 'annulee';
 });
 
-// Commandes personnalisées actives (en cours, hors terminées/refusées/annulées)
-$commandes_perso = get_commandes_personnalisees_by_user($_SESSION['user_id']);
-$commandes_perso_actives = array_filter($commandes_perso, function ($cp) {
-    return !in_array($cp['statut'], ['terminee', 'refusee', 'annulee']);
-});
-$statuts_labels = get_statuts_commande_personnalisee();
+$nb_commandes_actives = count($commandes_actives);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -156,270 +170,184 @@ $statuts_labels = get_statuts_commande_personnalisee();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
-    <title>Mes Commandes - FOUTA POIDS LOURDS</title>
+    <title>Mes commandes — FOUTA POIDS LOURDS</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/user-mes-commandes.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="user-page-mes-commandes">
     <?php include 'includes/user_nav.php'; ?>
 
-    <div class="content-header">
-        <h1><i class="fas fa-shopping-bag"></i> Mes Commandes</h1>
-    </div>
-
-    <div class="continue-shopping-banner">
-        <div class="continue-shopping-content">
-            <i class="fas fa-shopping-cart"></i>
-            <div>
-                <strong>Continuer vos achats</strong>
-                <p>Retournez à l'accueil ou parcourez nos produits pour continuer vos courses.</p>
+    <div class="mc-orders">
+        <header class="mc-orders-hero">
+            <div class="mc-orders-hero__inner">
+                <div class="mc-orders-hero__top">
+                    <div class="mc-orders-hero__intro">
+                        <p class="mc-eyebrow">Suivi en temps réel</p>
+                        <h1 id="mc-orders-heading">
+                            <span class="mc-hero-icon" aria-hidden="true"><i class="fas fa-shopping-bag"></i></span>
+                            <span class="mc-orders-hero__title-text">Mes commandes</span>
+                        </h1>
+                    </div>
+                    <div class="mc-orders-hero__metrics" aria-labelledby="mc-orders-heading">
+                        <div class="mc-stat-pill mc-stat-pill--compact">
+                            <i class="fas fa-receipt" aria-hidden="true"></i>
+                            <div class="mc-stat-pill__text">
+                                <strong><?php echo (int) $nb_commandes_actives; ?></strong>
+                                <span>Actives</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="mc-orders-lead">Suivez vos commandes en cours et repassez commande depuis le catalogue.</p>
             </div>
-            <a href="/index.php" class="btn-continue-shopping">
-                <i class="fas fa-home"></i> Retour à l'accueil
-            </a>
-            <a href="/produits.php" class="btn-continue-shopping btn-continue-products">
-                <i class="fas fa-shopping-cart"></i> Voir les produits
-            </a>
-        </div>
-    </div>
-    <style>
-        .continue-shopping-banner {
-            background: linear-gradient(135deg, rgba(229, 72, 138, 0.1) 0%, rgba(145, 138, 68, 0.15) 100%);
-            border: 1px solid rgba(229, 72, 138, 0.2);
-            border-radius: 12px;
-            padding: 20px 24px;
-            margin: 0 20px 24px;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .continue-shopping-content {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .continue-shopping-content > i {
-            font-size: 36px;
-            color: var(--couleur-dominante);
-        }
-        .continue-shopping-content > div {
-            flex: 1;
-            min-width: 200px;
-        }
-        .continue-shopping-content strong {
-            display: block;
-            font-size: 16px;
-            color: var(--titres);
-            margin-bottom: 4px;
-        }
-        .continue-shopping-content p {
-            margin: 0;
-            font-size: 14px;
-            color: var(--texte-fonce);
-            opacity: 0.9;
-        }
-        .btn-continue-shopping {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            background: var(--couleur-dominante);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.3s;
-            white-space: nowrap;
-        }
-        .btn-continue-shopping:hover {
-            background: rgba(229, 72, 138, 0.9);
-            transform: translateY(-2px);
-            color: #fff;
-        }
-        .btn-continue-products {
-            background: rgba(145, 138, 68, 0.9);
-        }
-        .btn-continue-products:hover {
-            background: rgba(145, 138, 68, 1);
-        }
-    </style>
+        </header>
 
-    <section class="content-section">
-        <?php if ($success_message): ?>
-            <div class="message success">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+        <section class="mc-continue-banner" aria-label="Poursuivre vos achats">
+            <div class="mc-continue-inner">
+                <div class="mc-continue-icon" aria-hidden="true">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="mc-continue-text">
+                    <strong>Continuer vos achats</strong>
+                    <p>Retournez à l’accueil ou parcourez le catalogue pour compléter vos courses.</p>
+                </div>
+                <div class="mc-continue-actions">
+                    <a href="/index.php" class="mc-btn mc-btn--primary">
+                        <i class="fas fa-home" aria-hidden="true"></i>
+                        Accueil
+                    </a>
+                    <a href="/produits.php" class="mc-btn mc-btn--secondary">
+                        <i class="fas fa-shopping-basket" aria-hidden="true"></i>
+                        Catalogue
+                    </a>
+                </div>
             </div>
-        <?php endif; ?>
+        </section>
 
-        <?php if ($error_message): ?>
-            <div class="message error">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error_message); ?>
+        <section class="content-section mc-orders-section">
+            <?php if ($success_message): ?>
+            <div class="mc-alert mc-alert--success" role="status">
+                <i class="fas fa-circle-check" aria-hidden="true"></i>
+                <span><?php echo htmlspecialchars($success_message); ?></span>
             </div>
-        <?php endif; ?>
+            <?php endif; ?>
 
-        <div class="section-title">
-            <h2><i class="fas fa-list"></i> Mes Commandes Actives (<?php echo count($commandes_actives); ?>)</h2>
-            <a href="commande-categorie.php" class="btn-view-categories">
-                <i class="fas fa-layer-group"></i> Voir par catégorie
-            </a>
-        </div>
+            <?php if ($error_message): ?>
+            <div class="mc-alert mc-alert--error" role="alert">
+                <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+                <span><?php echo htmlspecialchars($error_message); ?></span>
+            </div>
+            <?php endif; ?>
 
-        <?php if (empty($commandes_actives)): ?>
-            <div class="empty-state">
-                <i class="fas fa-shopping-bag"></i>
-                <p>Aucune commande active pour le moment.</p>
+            <div class="mc-section-head">
+                <h2>
+                    <span class="mc-section-icon" aria-hidden="true"><i class="fas fa-list-check"></i></span>
+                    Commandes actives (<?php echo $nb_commandes_actives; ?>)
+                </h2>
+                <div class="mc-section-actions">
+                    <a href="commande-categorie.php" class="mc-btn-outline">
+                        <i class="fas fa-layer-group" aria-hidden="true"></i>
+                        Voir par catégorie
+                    </a>
+                </div>
+            </div>
+
+            <?php if (empty($commandes_actives)): ?>
+            <div class="mc-empty">
+                <div class="mc-empty-icon" aria-hidden="true"><i class="fas fa-box-open"></i></div>
+                <p>Aucune commande active pour le moment. Parcourez votre catalogue et passez votre première commande.</p>
                 <a href="/produits.php" class="btn-primary">
-                    <i class="fas fa-shopping-cart"></i> Découvrir nos produits
+                    <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                    Découvrir les produits
                 </a>
             </div>
-        <?php else: ?>
-            <div class="commandes-grid">
+            <?php else: ?>
+            <div class="mc-commandes-grid">
                 <?php foreach ($commandes_actives as $commande): ?>
-                    <div class="commande-item">
-                        <div class="commande-header">
-                            <div class="commande-info">
-                                <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
-                                <p>Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
-                            </div>
-                            <span class="commande-statut statut-<?php echo $commande['statut']; ?>"
-                                style="align-self: flex-start;">
-                                <?php
-                                // Formater l'affichage du statut
-                                $statut_display = ucfirst(str_replace('_', ' ', $commande['statut']));
-                                // Remplacer "Livree" par "Reçu"
-                                if ($commande['statut'] == 'livree' || $commande['statut'] == 'paye') {
-                                    $statut_display = 'Reçu';
-                                }
-                                // Remplacer "Annulee" par "Annulée"
-                                if ($commande['statut'] == 'annulee') {
-                                    $statut_display = 'Annulée';
-                                }
-                                echo $statut_display;
-                                ?>
-                            </span>
+                <article class="mc-commande-card">
+                    <div class="mc-commande-card__top">
+                        <div>
+                            <h3 class="mc-commande-card__ref">Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
+                            <p class="mc-commande-card__date">
+                                <i class="fas fa-clock" aria-hidden="true"></i>
+                                <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?>
+                            </p>
                         </div>
-                        <div class="commande-details">
-                            <div class="detail-item">
-                                <label>Montant total</label>
-                                <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
-                                </div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Adresse</label>
-                                <div class="value"
-                                    style="font-size: 11px; max-width: 150px; text-align: right; word-break: break-word;">
-                                    <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
-                                </div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Téléphone</label>
-                                <div class="value" style="font-size: 12px;">
-                                    <?php echo htmlspecialchars($commande['telephone_livraison']); ?>
-                                </div>
-                            </div>
-                            <?php if ($commande['date_livraison']): ?>
-                                <div class="detail-item">
-                                    <label>Date livraison</label>
-                                    <div class="value" style="font-size: 12px;">
-                                        <?php echo date('d/m/Y', strtotime($commande['date_livraison'])); ?>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="commande-actions">
-                            <a href="commande-categorie.php?commande_id=<?php echo $commande['id']; ?>"
-                                class="btn-view-categories btn-view-commande">
-                                <i class="fas fa-eye"></i> Voir les produits
-                            </a>
-
-                            <!-- Bouton Colis reçu - visible uniquement si statut = livraison_en_cours -->
-                            <?php if ($commande['statut'] == 'livraison_en_cours'): ?>
-                                <form method="POST" action="" style="margin: 0;">
-                                    <input type="hidden" name="commande_id" value="<?php echo $commande['id']; ?>">
-                                    <button type="submit" name="confirmer_livraison" class="btn-confirmer-livraison"
-                                        onclick="return confirm('Avez-vous bien reçu votre colis ?');" style="width: 100%;">
-                                        <i class="fas fa-check-circle"></i> Colis reçu
-                                    </button>
-                                </form>
-                            <?php endif; ?>
-
-                            <!-- Bouton Annuler - visible uniquement si la commande peut être annulée -->
+                        <span class="commande-statut statut-<?php echo htmlspecialchars($commande['statut']); ?> mc-badge">
                             <?php
-                            $can_cancel = in_array($commande['statut'], ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation']);
-                            if ($can_cancel):
-                                ?>
-                                <form method="POST" action="" style="margin: 0;">
-                                    <input type="hidden" name="commande_id" value="<?php echo $commande['id']; ?>">
-                                    <button type="submit" name="annuler_commande" class="btn-annuler-commande"
-                                        onclick="return confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.');">
-                                        <i class="fas fa-times-circle"></i> Annuler la commande
-                                    </button>
-                                </form>
-                            <?php endif; ?>
-
-                        </div>
+                            $statut_display = ucfirst(str_replace('_', ' ', $commande['statut']));
+                            if ($commande['statut'] == 'livree' || $commande['statut'] == 'paye') {
+                                $statut_display = 'Reçu';
+                            }
+                            if ($commande['statut'] == 'annulee') {
+                                $statut_display = 'Annulée';
+                            }
+                            echo htmlspecialchars($statut_display);
+                            ?>
+                        </span>
                     </div>
+                    <div class="mc-commande-card__body">
+                        <div class="mc-detail-row">
+                            <label>Montant</label>
+                            <div class="value value--montant">
+                                <?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
+                            </div>
+                        </div>
+                        <div class="mc-detail-row">
+                            <label>Adresse</label>
+                            <div class="value value--address">
+                                <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 80)); ?><?php echo strlen($commande['adresse_livraison']) > 80 ? '…' : ''; ?>
+                            </div>
+                        </div>
+                        <div class="mc-detail-row">
+                            <label>Téléphone</label>
+                            <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
+                        </div>
+                        <?php if ($commande['date_livraison']): ?>
+                        <div class="mc-detail-row">
+                            <label>Livraison</label>
+                            <div class="value"><?php echo date('d/m/Y', strtotime($commande['date_livraison'])); ?></div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="mc-commande-card__actions commande-actions">
+                        <a href="commande-categorie.php?commande_id=<?php echo (int) $commande['id']; ?>"
+                            class="btn-view-categories btn-view-commande">
+                            <i class="fas fa-eye" aria-hidden="true"></i> Voir les produits
+                        </a>
+
+                        <?php if ($commande['statut'] == 'livraison_en_cours'): ?>
+                        <form method="post" action="">
+                            <input type="hidden" name="commande_id" value="<?php echo (int) $commande['id']; ?>">
+                            <button type="submit" name="confirmer_livraison" class="btn-confirmer-livraison"
+                                onclick="return confirm('Avez-vous bien reçu votre colis ?');">
+                                <i class="fas fa-check-circle" aria-hidden="true"></i> Colis reçu
+                            </button>
+                        </form>
+                        <?php endif; ?>
+
+                        <?php
+                        $can_cancel = in_array($commande['statut'], ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation']);
+                        if ($can_cancel):
+                            ?>
+                        <form method="post" action="">
+                            <input type="hidden" name="commande_id" value="<?php echo (int) $commande['id']; ?>">
+                            <button type="submit" name="annuler_commande" class="btn-annuler-commande"
+                                onclick="return confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.');">
+                                <i class="fas fa-times-circle" aria-hidden="true"></i> Annuler la commande
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
+                </article>
                 <?php endforeach; ?>
             </div>
-        <?php endif; ?>
-
-        <!-- Section Commandes personnalisées -->
-        <div class="section-title" style="margin-top: 40px;">
-            <h2><i class="fas fa-palette"></i> Mes commandes personnalisées (<?php echo count($commandes_perso_actives); ?>)</h2>
-            <a href="/commande-personnalisee.php" class="btn-view-categories">
-                <i class="fas fa-plus"></i> Nouvelle demande
-            </a>
-        </div>
-
-        <?php if (empty($commandes_perso_actives)): ?>
-            <div class="empty-state empty-state-compact">
-                <i class="fas fa-palette"></i>
-                <p>Aucune commande personnalisée en cours.</p>
-                <a href="/commande-personnalisee.php" class="btn-primary">
-                    <i class="fas fa-palette"></i> Faire une demande personnalisée
-                </a>
-            </div>
-        <?php else: ?>
-            <div class="commandes-grid">
-                <?php foreach ($commandes_perso_actives as $cp): ?>
-                    <div class="commande-item commande-item-perso">
-                        <div class="commande-header">
-                            <div class="commande-info">
-                                <h3>Demande #<?php echo $cp['id']; ?></h3>
-                                <p>Date: <?php echo date('d/m/Y à H:i', strtotime($cp['date_creation'])); ?></p>
-                            </div>
-                            <span class="commande-statut statut-<?php echo $cp['statut']; ?>" style="align-self: flex-start;">
-                                <?php echo $statuts_labels[$cp['statut']] ?? $cp['statut']; ?>
-                            </span>
-                        </div>
-                        <div class="commande-details">
-                            <div class="detail-item">
-                                <label>Description</label>
-                                <div class="value" style="font-size: 13px; line-height: 1.4;">
-                                    <?php echo nl2br(htmlspecialchars(substr($cp['description'], 0, 120))); ?><?php echo strlen($cp['description']) > 120 ? '...' : ''; ?>
-                                </div>
-                            </div>
-                            <?php if ($cp['type_produit']): ?>
-                            <div class="detail-item">
-                                <label>Type</label>
-                                <div class="value"><?php echo htmlspecialchars($cp['type_produit']); ?></div>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="commande-actions">
-                            <a href="commande-personnalisee-details.php?id=<?php echo $cp['id']; ?>" class="btn-view-categories btn-view-commande">
-                                <i class="fas fa-eye"></i> Voir les détails
-                            </a>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-    </section>
+            <?php endif; ?>
+        </section>
+    </div>
 
     <?php include 'includes/user_footer.php'; ?>

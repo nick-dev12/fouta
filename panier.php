@@ -4,6 +4,7 @@ session_start();
 // Inclusion des modèles et contrôleurs
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
+require_once __DIR__ . '/includes/marketplace_helpers.php';
 
 // Traitement des actions du panier
 $message = '';
@@ -47,12 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /user/connexion.php?redirect=panier');
+    header('Location: /choix-connexion.php?redirect=panier');
     exit;
 }
 
 // Récupérer les produits du panier
 $panier_items = get_panier_by_user($_SESSION['user_id']);
+$panier_groups = group_panier_items_by_vendeur($panier_items);
 
 // Calculer le total et le nombre total d'articles
 $panier_total = get_panier_total($_SESSION['user_id']);
@@ -81,8 +83,6 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
@@ -172,6 +172,28 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
             display: flex;
             flex-direction: column;
             gap: 20px;
+        }
+
+        .panier-vendeur-block {
+            margin-bottom: 8px;
+        }
+
+        .panier-vendeur-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--couleur-dominante);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--glass-border);
+        }
+
+        .panier-vendeur-header a {
+            color: #c26638;
+            text-decoration: none;
+        }
+
+        .panier-vendeur-header a:hover {
+            text-decoration: underline;
         }
 
         .panier-item {
@@ -540,7 +562,21 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
             <div class="panier-content">
                 <!-- Liste des produits -->
                 <div class="panier-items">
-                    <?php foreach ($panier_items as $item): ?>
+                    <?php foreach ($panier_groups as $g): ?>
+                    <div class="panier-vendeur-block">
+                        <?php
+                        $show_vendor = (count($panier_groups) > 1 || !empty($g['slug']));
+                        ?>
+                        <?php if ($show_vendor): ?>
+                            <div class="panier-vendeur-header">
+                                <?php if (!empty($g['slug'])): ?>
+                                    <a href="<?php echo htmlspecialchars(boutique_url('index.php', $g['slug'])); ?>"><?php echo htmlspecialchars($g['label']); ?></a>
+                                <?php else: ?>
+                                    <?php echo htmlspecialchars($g['label']); ?>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php foreach ($g['items'] as $item): ?>
                         <?php
                         // Prix unitaire : variante/surcoûts ou produit de base
                         $prix_unitaire = (!empty($item['panier_prix_unitaire']) && $item['panier_prix_unitaire'] > 0)
@@ -636,6 +672,8 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                                 </p>
                             </div>
                         </div>
+                    <?php endforeach; ?>
+                    </div>
                     <?php endforeach; ?>
                 </div>
 

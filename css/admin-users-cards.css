@@ -113,7 +113,7 @@
   background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
 }
 
-/* En-tête de carte - couleur dominante (rose) */
+/* En-tête de carte - couleur dominante */
 .page-comptes .user-card .card-header-wrap,
 .page-users .user-card .card-header-wrap {
   background: var(--couleur-dominante);
@@ -295,10 +295,10 @@
 }
 
 .page-users .user-card .stat-item {
-  background: rgba(229, 72, 138, 0.06);
+  background: rgba(53, 100, 166, 0.06);
   padding: 14px;
   border-radius: 10px;
-  border: 1px solid rgba(229, 72, 138, 0.15);
+  border: 1px solid rgba(53, 100, 166, 0.15);
   text-align: center;
 }
 

@@ -7,7 +7,7 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -19,9 +19,15 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
-// Récupérer tous les slides
+// Récupérer les slides (vendeur : uniquement les siens pour la vitrine)
 require_once __DIR__ . '/../../models/model_slider.php';
-$slides = get_all_slides(null); // Récupérer tous les slides (actifs et inactifs)
+$slides = get_all_slides(null);
+if (isset($_SESSION['admin_role']) && ($_SESSION['admin_role'] ?? '') === 'vendeur' && !empty($_SESSION['admin_id'])) {
+    $mid = (int) $_SESSION['admin_id'];
+    $slides = array_values(array_filter($slides, function ($s) use ($mid) {
+        return isset($s['admin_id']) && (int) $s['admin_id'] === $mid;
+    }));
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">

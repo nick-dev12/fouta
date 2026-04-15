@@ -3,6 +3,33 @@ if (!function_exists('get_asset_version')) {
     require_once __DIR__ . '/includes/asset_version.php';
 }
 $asset_version = isset($asset_version) ? $asset_version : get_asset_version();
+$u_home = $GLOBALS['nav_home'] ?? '/index.php';
+$u_produits = $GLOBALS['nav_produits'] ?? '/produits.php';
+$u_panier = $GLOBALS['nav_panier'] ?? '/panier.php';
+$u_nouveautes = $GLOBALS['nav_nouveautes'] ?? '/nouveautes.php';
+$u_promo = $GLOBALS['nav_promo'] ?? '/promo.php';
+$u_contact = $GLOBALS['nav_contact'] ?? '/contact.php';
+if (!function_exists('nav_categorie_href')) {
+    require_once __DIR__ . '/includes/marketplace_helpers.php';
+}
+$categories_menu = [];
+$nav_megamenu = [];
+if (file_exists(__DIR__ . '/models/model_categories.php')) {
+    require_once __DIR__ . '/models/model_categories.php';
+    $boutique_mid = defined('BOUTIQUE_ADMIN_ID') ? (int) BOUTIQUE_ADMIN_ID : null;
+    if ($boutique_mid > 0 && function_exists('get_all_categories_for_vendeur')) {
+        // Vitrine : uniquement les catégories ayant des produits de ce vendeur (pas tout le méga-menu plateforme)
+        $categories_menu = get_all_categories_for_vendeur($boutique_mid);
+        $nav_megamenu = [];
+    } elseif (function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled() && function_exists('get_megamenu_categories')) {
+        $nav_megamenu = get_megamenu_categories(null);
+        foreach ($nav_megamenu as $bl) {
+            $categories_menu[] = $bl['general'];
+        }
+    } else {
+        $categories_menu = get_all_categories();
+    }
+}
 // Compter les articles du panier si l'utilisateur est connecté
 $panier_count = 0;
 if (isset($_SESSION['user_id'])) {
@@ -16,9 +43,20 @@ if (isset($_SESSION['user_id'])) {
 
     if (file_exists($model_path)) {
         require_once $model_path;
-        $panier_count = count_panier_items($_SESSION['user_id']);
+        $panier_vid = null;
+        if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
+            $panier_vid = (int) BOUTIQUE_ADMIN_ID;
+        } elseif (!empty($GLOBALS['nav_panier_count_for_vendeur_id'])) {
+            $panier_vid = (int) $GLOBALS['nav_panier_count_for_vendeur_id'];
+        }
+        if ($panier_vid > 0 && function_exists('count_panier_items_for_vendeur')) {
+            $panier_count = count_panier_items_for_vendeur($_SESSION['user_id'], $panier_vid);
+        } else {
+            $panier_count = count_panier_items($_SESSION['user_id']);
+        }
     }
 }
+$nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier.php';
 ?>
 <link rel="stylesheet" href="/css/variables.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="/css/nabare.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
@@ -28,8 +66,6 @@ if (isset($_SESSION['user_id'])) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&display=swap" rel="stylesheet">
 <style>
     /* Nav style Planète Gâteau - fond dégradé, barre recherche, Mon compte, panier */
     .nav-planete-gateau {
@@ -527,10 +563,10 @@ if (isset($_SESSION['user_id'])) {
 </div>
 <nav class="nav-planete-gateau">
     <div class="nav-top-row">
-        <a class="logo" href="/index.php">
+        <a class="logo" href="<?php echo htmlspecialchars($u_home); ?>">
             <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS">
         </a>
-        <a href="<?php echo isset($_SESSION['user_id']) ? '/panier.php' : '/user/connexion.php?redirect=panier'; ?>"
+        <a href="<?php echo isset($_SESSION['user_id']) ? htmlspecialchars($u_panier) : '/choix-connexion.php?redirect=' . rawurlencode($nav_panier_connect_redirect); ?>"
             class="nav-panier-link"
             title="<?php echo isset($_SESSION['user_id']) ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Se connecter pour voir le panier'; ?>">
             <i class="fa-solid fa-cart-shopping"></i>
@@ -544,7 +580,7 @@ if (isset($_SESSION['user_id'])) {
         elseif (isset($_SESSION['user_id']))
             echo '/user/mon-compte.php';
         else
-            echo '/user/connexion.php';
+            echo '/choix-connexion.php';
         ?>" class="nav-compte-btn">
             <span class="nav-compte-title">Mon compte</span>
             <span class="nav-compte-subtitle"><?php
@@ -562,7 +598,7 @@ if (isset($_SESSION['user_id'])) {
     </div>
 
     <div class="nav-search-wrapper">
-        <form class="nav-search-form" action="/produits.php" method="get" id="nav-search-form">
+        <form class="nav-search-form" action="<?php echo htmlspecialchars($u_produits); ?>" method="get" id="nav-search-form">
             <button type="submit" class="nav-search-btn" aria-label="Rechercher">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
@@ -602,7 +638,31 @@ if (isset($_SESSION['user_id'])) {
                     <label for="filter-categorie">Catégorie</label>
                     <select id="filter-categorie" name="categorie">
                         <option value="">Toutes les catégories</option>
-                        <?php if (!empty($categories_menu)): ?>
+                        <?php if (!empty($nav_megamenu)): ?>
+                            <?php foreach ($nav_megamenu as $mega): ?>
+                                <?php
+                                $g = $mega['general'];
+                                $subs = $mega['subcategories'];
+                                $gid = (int) $g['id'];
+                                ?>
+                                <?php if (empty($subs)): ?>
+                                <option value="<?php echo $gid; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $gid) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($g['nom']); ?>
+                                </option>
+                                <?php else: ?>
+                                <optgroup label="<?php echo htmlspecialchars($g['nom']); ?>">
+                                    <option value="<?php echo $gid; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $gid) ? 'selected' : ''; ?>>
+                                        Tout le rayon
+                                    </option>
+                                    <?php foreach ($subs as $s): ?>
+                                    <option value="<?php echo (int) $s['id']; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $s['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($s['nom']); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        <?php elseif (!empty($categories_menu)): ?>
                             <?php foreach ($categories_menu as $cat): ?>
                                 <option value="<?php echo $cat['id']; ?>" <?php echo (isset($_GET['categorie']) && $_GET['categorie'] == $cat['id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($cat['nom']); ?>
@@ -675,42 +735,57 @@ if (isset($_SESSION['user_id'])) {
     </script>
 </nav>
 
-<?php
-$categories_menu = [];
-if (file_exists(__DIR__ . '/models/model_categories.php')) {
-    require_once __DIR__ . '/models/model_categories.php';
-    $categories_menu = get_all_categories();
-}
-?>
-
 <!-- Overlay et sidebar menu latéral (apparaît au clic sur MENU) -->
 <div class="nav-sidebar-overlay" id="navSidebarOverlay"></div>
 <aside class="nav-sidebar" id="navSidebar">
     <div class="nav-sidebar-header">
-        <a href="/index.php" class="nav-sidebar-logo">
+        <a href="<?php echo htmlspecialchars($u_home); ?>" class="nav-sidebar-logo">
             <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS">
         </a>
         <p class="nav-sidebar-slogan">FOUTA POIDS LOURDS</p>
     </div>
     <div class="nav-sidebar-content">
-        <a href="/nouveautes.php" class="nav-sidebar-item nav-sidebar-nouveautes">
+        <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-sidebar-item nav-sidebar-nouveautes">
             <i class="fa-solid fa-cake-candles"></i>
             <span>NOUVEAUTÉS</span>
         </a>
-        <a href="/promo.php" class="nav-sidebar-item nav-sidebar-promo">
+        <a href="<?php echo htmlspecialchars($u_promo); ?>" class="nav-sidebar-item nav-sidebar-promo">
             <i class="fa-solid fa-percent"></i>
             <span>PROMO</span>
         </a>
-        <div class="nav-sidebar-categories">
-            <?php if (!empty($categories_menu)): ?>
+        <div class="nav-sidebar-categories nav-sidebar-categories--glass">
+            <?php if (!empty($nav_megamenu)): ?>
+                <p class="nav-sidebar-section-label">Nos rayons</p>
+                <ul class="nav-glass-rayons-list" role="list">
+                <?php foreach ($nav_megamenu as $mega): ?>
+                    <?php
+                    $g = $mega['general'];
+                    $gid = (int) $g['id'];
+                    $ic_class = function_exists('categorie_fa_icon_class') ? categorie_fa_icon_class($g) : 'fa-solid fa-layer-group';
+                    $rayon_href = function_exists('nav_categorie_generale_href')
+                        ? nav_categorie_generale_href($gid)
+                        : nav_categorie_href($gid);
+                    ?>
+                    <li>
+                        <a class="nav-glass-rayon-card" href="<?php echo htmlspecialchars($rayon_href); ?>">
+                            <span class="nav-glass-rayon-icon" aria-hidden="true"><i class="<?php echo htmlspecialchars($ic_class); ?>"></i></span>
+                            <span class="nav-glass-rayon-label"><?php echo htmlspecialchars($g['nom']); ?></span>
+                            <span class="nav-glass-rayon-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+                </ul>
+            <?php elseif (!empty($categories_menu)): ?>
+                <p class="nav-sidebar-section-label">Catégories</p>
                 <?php foreach ($categories_menu as $categorie): ?>
-                    <a href="categorie.php?id=<?php echo $categorie['id']; ?>" class="nav-sidebar-category">
+                    <a href="<?php echo htmlspecialchars(nav_categorie_href($categorie['id'])); ?>" class="nav-sidebar-category">
                         <span><?php echo htmlspecialchars($categorie['nom']); ?></span>
                         <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
                     </a>
                 <?php endforeach; ?>
             <?php else: ?>
-                <a href="produits.php" class="nav-sidebar-category">
+                <p class="nav-sidebar-section-label">Catalogue</p>
+                <a href="<?php echo htmlspecialchars($u_produits); ?>" class="nav-sidebar-category">
                     <span>Tous les produits</span>
                     <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
                 </a>
@@ -718,15 +793,15 @@ if (file_exists(__DIR__ . '/models/model_categories.php')) {
         </div>
     </div>
     <div class="nav-sidebar-footer">
-        <a href="/contact.php" class="nav-sidebar-footer-btn">
+        <a href="<?php echo htmlspecialchars($u_contact); ?>" class="nav-sidebar-footer-btn">
             <i class="fa-solid fa-phone"></i>
             <span>CONTACTEZ<br>NOUS</span>
         </a>
-        <a href="/contact.php#livraison" class="nav-sidebar-footer-btn">
+        <a href="<?php echo htmlspecialchars($u_contact); ?>#livraison" class="nav-sidebar-footer-btn">
             <i class="fa-solid fa-truck"></i>
             <span>PORTS ET<br>EXPÉDITION</span>
         </a>
-        <a href="<?php echo isset($_SESSION['user_id']) ? '/user/mon-compte.php' : '/user/connexion.php'; ?>"
+        <a href="<?php echo isset($_SESSION['user_id']) ? '/user/mon-compte.php' : '/choix-connexion.php'; ?>"
             class="nav-sidebar-footer-btn">
             <i class="fa-solid fa-briefcase"></i>
             <span>COMPTE<br>PRO</span>
@@ -742,15 +817,15 @@ if (file_exists(__DIR__ . '/models/model_categories.php')) {
         </button>
     </div>
     <div class="section1-right">
-        <a href="/nouveautes.php" class="nav-action-btn nav-btn-nouveautes">
+        <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-action-btn nav-btn-nouveautes">
             <i class="fa-solid fa-gift"></i>
             <span>NOUVEAUTÉS</span>
         </a>
-        <a href="/promo.php" class="nav-action-btn nav-btn-promo">
+        <a href="<?php echo htmlspecialchars($u_promo); ?>" class="nav-action-btn nav-btn-promo">
             <i class="fa-solid fa-percent"></i>
             <span>PROMO</span>
         </a>
-        <a href="/contact.php" class="nav-action-btn nav-btn-contact">
+        <a href="<?php echo htmlspecialchars($u_contact); ?>" class="nav-action-btn nav-btn-contact">
             <i class="fa-solid fa-phone"></i>
             <span>CONTACT</span>
         </a>

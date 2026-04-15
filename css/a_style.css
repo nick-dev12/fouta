@@ -1,4 +1,3 @@
-@import url("https ://fonts.googleapis.com/css2 ?family=Roboto&display=swap");
 :root {
   --colo-primary: var(--couleur-dominante);
   --colo-dark-1: var(--texte-fonce);
@@ -16,7 +15,7 @@
 }
 
 body {
-  font-family: "Roboto", sans-serif;
+  font-family: var(--font-corps);
 }
 .erreur {
   background-color: var(--error-bg);

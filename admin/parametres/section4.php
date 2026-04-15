@@ -7,14 +7,16 @@
 session_start();
 
 // Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
 // Récupérer la configuration actuelle
 require_once __DIR__ . '/../../models/model_section4.php';
-$config = get_section4_config();
+require_once __DIR__ . '/../../includes/admin_param_boutique_scope.php';
+$scope = admin_param_boutique_scope_id();
+$config = get_section4_config($scope !== null ? (int) $scope : null);
 
 // Traiter le formulaire uniquement si c'est une requête POST
 $error_message = '';

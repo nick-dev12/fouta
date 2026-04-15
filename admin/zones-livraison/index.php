@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -10,7 +10,9 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 require_once __DIR__ . '/../../models/model_zones_livraison.php';
-$zones = get_all_zones_livraison(null);
+require_once __DIR__ . '/../../includes/admin_param_boutique_scope.php';
+$scope = admin_param_boutique_scope_id();
+$zones = get_all_zones_livraison(null, $scope !== null ? (int) $scope : null);
 ?>
 <!DOCTYPE html>
 <html lang="fr">

@@ -101,10 +101,15 @@ function create_commande_personnalisee($data) {
 /**
  * Récupère toutes les commandes personnalisées
  * @param string|null $statut Filtrer par statut
+ * @param int|null $vendeur_id Si défini (boutique) : commandes perso = espace plateforme uniquement → liste vide
  * @return array
  */
-function get_all_commandes_personnalisees($statut = null) {
+function get_all_commandes_personnalisees($statut = null, $vendeur_id = null) {
     global $db;
+
+    if ($vendeur_id !== null && $vendeur_id !== '') {
+        return [];
+    }
 
     try {
         $sql = "
@@ -263,10 +268,15 @@ function update_commande_personnalisee_notes($id, $notes_admin) {
 /**
  * Compte les commandes personnalisées par statut
  * @param string|null $statut
+ * @param int|null $vendeur_id Si défini (boutique) : pas d’accès aux stats globales perso
  * @return int
  */
-function count_commandes_personnalisees_by_statut($statut = null) {
+function count_commandes_personnalisees_by_statut($statut = null, $vendeur_id = null) {
     global $db;
+
+    if ($vendeur_id !== null && $vendeur_id !== '') {
+        return 0;
+    }
 
     try {
         if ($statut) {
