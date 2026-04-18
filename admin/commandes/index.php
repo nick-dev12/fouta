@@ -56,131 +56,159 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-commandes-index.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body>
     <?php include '../includes/nav.php'; ?>
 
-    <div class="content-header">
-        <h1><i class="fas fa-shopping-bag"></i> Commandes Non Traitées</h1>
-        <div class="header-actions">
-            <?php if (admin_has_full_admin_menu()): ?>
-            <a href="historique-ventes.php" class="btn-primary">
-                <i class="fas fa-chart-line"></i> Historique des ventes & Comptabilité
-            </a>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <?php if (isset($_SESSION['success_message'])): ?>
-    <div class="message success">
-        <i class="fas fa-check-circle"></i>
-        <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
-    </div>
-    <?php endif; ?>
-
-    <!-- Statistiques -->
-    <div class="commandes-stats">
-        <div class="stat-box">
-            <h3>Total Commandes</h3>
-            <div class="stat-value"><?php echo $total_commandes; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>En Attente</h3>
-            <div class="stat-value"><?php echo $en_attente; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>Prise en charge</h3>
-            <div class="stat-value"><?php echo $prise_en_charge; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>Livraison en cours</h3>
-            <div class="stat-value"><?php echo $livraison_en_cours; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>Livrées</h3>
-            <div class="stat-value"><?php echo $livrees; ?></div>
-        </div>
-    </div>
-
-    <!-- Comptabilité -->
-    <div class="comptabilite-box">
-        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes à traiter</div>
-        <div class="comptabilite-value"><?php echo number_format($montant_total_a_traiter, 0, ',', ' '); ?> FCFA</div>
-    </div>
-
-    <!-- Liste des commandes -->
-    <section class="content-section">
-        <div class="section-header">
-            <div class="section-title">
-                <h2><i class="fas fa-list"></i> Commandes à Traiter (<?php echo count($commandes); ?>)</h2>
-            </div>
-            <div class="form-actions" style="flex-wrap: wrap;">
-                <button type="button" class="btn-primary" id="btn-commande-manuelle"
-                    aria-label="Ajouter une commande manuellement">
-                    <i class="fas fa-plus-circle"></i> Ajouter une commande
-                </button>
-                <a href="livrees.php" class="btn-link">
-                    <i class="fas fa-check-circle"></i> Voir les commandes livrées
-                </a>
-                <a href="annulees.php" class="btn-link btn-danger">
-                    <i class="fas fa-ban"></i> Voir les commandes annulées
-                </a>
-            </div>
-        </div>
-
-        <?php if (empty($commandes)): ?>
-        <div class="empty-state">
-            <i class="fas fa-shopping-bag"></i>
-            <h3>Aucune commande à traiter</h3>
-            <p>Toutes les commandes ont été traitées et livrées.</p>
-        </div>
-        <?php else: ?>
-        <div class="commandes-grid">
-            <?php foreach ($commandes as $commande): ?>
-            <div class="commande-item">
-                <div class="commande-header">
-                    <div class="commande-info">
-                        <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
-                        <p>
-                            <strong>Client:</strong>
-                            <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
-                            <span
-                                class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
-                        </p>
-                        <p class="commande-date">Date:
-                            <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
-                    </div>
-                    <span class="commande-statut statut-<?php echo $commande['statut']; ?>">
-                        <?php echo ucfirst(str_replace('_', ' ', $commande['statut'])); ?>
-                    </span>
+    <div class="contents-container cmd-list-page">
+        <header class="cmd-hero" aria-labelledby="cmd-page-title">
+            <div class="cmd-hero__inner">
+                <div>
+                    <p class="cmd-hero__eyebrow"><i class="fas fa-bolt" aria-hidden="true"></i> File active</p>
+                    <h1 class="cmd-hero__title" id="cmd-page-title">Commandes à traiter</h1>
+                    <p class="cmd-hero__lead">
+                        Visualisez l’activité globale, le montant cumulé des commandes en cours, puis ouvrez chaque fiche pour préparer ou livrer.
+                    </p>
                 </div>
-                <div class="commande-details">
-                    <div class="detail-item">
-                        <label>Montant total</label>
-                        <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label>Adresse</label>
-                        <div class="value small">
-                            <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label>Téléphone</label>
-                        <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
-                    </div>
+                <div class="cmd-hero__actions">
+                    <?php if (admin_has_full_admin_menu()): ?>
+                    <a href="historique-ventes.php" class="btn-primary">
+                        <i class="fas fa-chart-line"></i> Historique &amp; comptabilité
+                    </a>
+                    <?php endif; ?>
                 </div>
-
-                <a href="details.php?id=<?php echo $commande['id']; ?>" class="btn-view">
-                    <i class="fas fa-eye"></i> Voir les détails
-                </a>
             </div>
-            <?php endforeach; ?>
+        </header>
+
+        <?php if (isset($_SESSION['success_message'])): ?>
+        <div class="message success" role="status">
+            <i class="fas fa-check-circle" aria-hidden="true"></i>
+            <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
         </div>
         <?php endif; ?>
-    </section>
+
+        <section class="cmd-kpi-section" aria-label="Indicateurs des commandes">
+            <div class="cmd-kpi-grid">
+                <article class="cmd-kpi">
+                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-layer-group"></i></span>
+                    <span class="cmd-kpi__label">Total (toutes)</span>
+                    <span class="cmd-kpi__value"><?php echo (int) $total_commandes; ?></span>
+                </article>
+                <article class="cmd-kpi">
+                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-hourglass-half"></i></span>
+                    <span class="cmd-kpi__label">En attente</span>
+                    <span class="cmd-kpi__value"><?php echo (int) $en_attente; ?></span>
+                </article>
+                <article class="cmd-kpi">
+                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-check-double"></i></span>
+                    <span class="cmd-kpi__label">Confirmées</span>
+                    <span class="cmd-kpi__value"><?php echo (int) $confirmees; ?></span>
+                </article>
+                <article class="cmd-kpi">
+                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-hand-holding-box"></i></span>
+                    <span class="cmd-kpi__label">Prise en charge</span>
+                    <span class="cmd-kpi__value"><?php echo (int) $prise_en_charge; ?></span>
+                </article>
+                <article class="cmd-kpi">
+                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-truck-fast"></i></span>
+                    <span class="cmd-kpi__label">Livraison en cours</span>
+                    <span class="cmd-kpi__value"><?php echo (int) $livraison_en_cours; ?></span>
+                </article>
+                <article class="cmd-kpi">
+                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-circle-check"></i></span>
+                    <span class="cmd-kpi__label">Livrées / payées</span>
+                    <span class="cmd-kpi__value"><?php echo (int) $livrees; ?></span>
+                </article>
+            </div>
+        </section>
+
+        <div class="cmd-montant-card">
+            <div class="cmd-montant-card__label">
+                <i class="fas fa-coins" aria-hidden="true"></i>
+                Montant total — commandes affichées ci‑dessous
+            </div>
+            <div class="cmd-montant-card__value"><?php echo number_format($montant_total_a_traiter, 0, ',', ' '); ?> FCFA</div>
+            <p class="cmd-montant-card__hint">Somme des commandes non livrées, non payées et non annulées (file à traiter).</p>
+        </div>
+
+        <section class="cmd-main-section" aria-labelledby="cmd-list-heading">
+            <div class="cmd-section-head">
+                <h2 class="cmd-section-head__title" id="cmd-list-heading">
+                    <i class="fas fa-list-check" aria-hidden="true"></i>
+                    File à traiter
+                    <span class="cmd-badge-count"><?php echo count($commandes); ?></span>
+                </h2>
+                <div class="cmd-toolbar">
+                    <button type="button" class="btn-primary" id="btn-commande-manuelle"
+                        aria-label="Ajouter une commande manuellement">
+                        <i class="fas fa-plus-circle"></i> Nouvelle commande
+                    </button>
+                    <a href="livrees.php" class="btn-link">
+                        <i class="fas fa-check-circle"></i> Livrées
+                    </a>
+                    <a href="annulees.php" class="btn-link btn-danger">
+                        <i class="fas fa-ban"></i> Annulées
+                    </a>
+                </div>
+            </div>
+
+            <div class="cmd-section-body">
+                <?php if (empty($commandes)): ?>
+                <div class="cmd-empty">
+                    <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+                    <h3>Rien en attente</h3>
+                    <p>Il n’y a aucune commande à traiter pour le moment. Les nouvelles commandes apparaîtront ici.</p>
+                </div>
+                <?php else: ?>
+                <div class="cmd-cards-grid">
+                    <?php foreach ($commandes as $commande): ?>
+                    <?php
+                    $client_nom_complet = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''));
+                    if ($client_nom_complet === '') {
+                        $client_nom_complet = 'Client inconnu';
+                    }
+                    ?>
+                    <article class="commande-item cmd-card">
+                        <div class="cmd-card__top">
+                            <h3 class="cmd-card__num">Commande <span>#<?php echo htmlspecialchars($commande['numero_commande']); ?></span></h3>
+                            <span class="commande-statut statut-<?php echo htmlspecialchars($commande['statut']); ?>">
+                                <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $commande['statut']))); ?>
+                            </span>
+                        </div>
+                        <div class="cmd-card__client">
+                            <p class="cmd-card__client-name"><?php echo htmlspecialchars($client_nom_complet); ?></p>
+                            <span class="cmd-card__client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : 'Pas d’e-mail'; ?></span>
+                            <p class="cmd-card__meta">
+                                <i class="far fa-clock" aria-hidden="true"></i>
+                                <?php echo date('d/m/Y · H:i', strtotime($commande['date_commande'])); ?>
+                            </p>
+                        </div>
+                        <div class="commande-details cmd-card__details">
+                            <div class="detail-item">
+                                <label>Montant</label>
+                                <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Téléphone</label>
+                                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Livraison</label>
+                                <div class="value small"><?php echo htmlspecialchars($commande['adresse_livraison']); ?></div>
+                            </div>
+                        </div>
+                        <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="btn-view">
+                            <i class="fas fa-arrow-right"></i> Ouvrir la fiche
+                        </a>
+                    </article>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </section>
+    </div>
 
     <!-- Modal commande manuelle (plein écran) -->
     <div id="modal-commande-manuelle"

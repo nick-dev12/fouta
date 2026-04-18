@@ -153,6 +153,138 @@ function get_categories_for_vendeur_stock($vendeur_id) {
 }
 
 /**
+ * Remplit la table pivot pour les sous-catégories plateforme qui n’y figurent pas encore (après migration ou données anciennes).
+ */
+function plateforme_ensure_liaison_rows_for_legacy_categories() {
+    if (!categories_generales_liaisons_table_exists() || !categories_has_categorie_generale_id_column()) {
+        return;
+    }
+    global $db;
+    try {
+        $db->exec("
+            INSERT IGNORE INTO `categories_categories_generales` (`categorie_id`, `categorie_generale_id`)
+            SELECT c.`id`, c.`categorie_generale_id`
+            FROM `categories` c
+            WHERE c.`categorie_generale_id` IS NOT NULL AND c.`categorie_generale_id` > 0
+              AND (c.`admin_id` IS NULL OR c.`admin_id` = 0)
+              AND NOT EXISTS (
+                SELECT 1 FROM `categories_categories_generales` x WHERE x.`categorie_id` = c.`id`
+              )
+        ");
+    } catch (PDOException $e) {
+    }
+}
+
+/**
+ * Sous-catégories communes (super admin) pour formulaires vendeur : categories.admin_id NULL + categorie_generale_id.
+ */
+function get_plateforme_sous_categories_for_form() {
+    global $db;
+    if (!categories_has_categorie_generale_id_column() || !categories_generales_table_exists()) {
+        return [];
+    }
+    plateforme_ensure_liaison_rows_for_legacy_categories();
+    try {
+        if (categories_generales_liaisons_table_exists()) {
+            $st = $db->query("
+                SELECT c.`id`, c.`nom`, c.`categorie_generale_id`, c.`description`, c.`image`,
+                       GROUP_CONCAT(cg.`nom` ORDER BY cg.`sort_ordre` ASC, cg.`nom` ASC SEPARATOR ', ') AS `generale_nom`,
+                       MIN(cg.`sort_ordre`) AS `generale_sort`
+                FROM `categories` c
+                INNER JOIN `categories_categories_generales` ccg ON ccg.`categorie_id` = c.`id`
+                INNER JOIN `categories_generales` cg ON cg.`id` = ccg.`categorie_generale_id`
+                WHERE (c.`admin_id` IS NULL OR c.`admin_id` = 0)
+                GROUP BY c.`id`, c.`nom`, c.`categorie_generale_id`, c.`description`, c.`image`, c.`sort_ordre`
+                ORDER BY `generale_sort` ASC, c.`nom` ASC
+            ");
+        } else {
+            $st = $db->query("
+                SELECT c.`id`, c.`nom`, c.`categorie_generale_id`, c.`description`, c.`image`,
+                       cg.`nom` AS `generale_nom`, cg.`sort_ordre` AS `generale_sort`
+                FROM `categories` c
+                INNER JOIN `categories_generales` cg ON cg.`id` = c.`categorie_generale_id`
+                WHERE (c.`admin_id` IS NULL OR c.`admin_id` = 0)
+                  AND c.`categorie_generale_id` IS NOT NULL AND c.`categorie_generale_id` > 0
+                ORDER BY cg.`sort_ordre` ASC, cg.`nom` ASC, c.`nom` ASC
+            ");
+        }
+        return $st ? ($st->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Catégories affichées dans Stock vendeur : sous-catégories plateforme ayant au moins un produit de la boutique.
+ */
+function get_categories_platform_for_vendeur_stock($vendeur_id) {
+    global $db;
+    $vendeur_id = (int) $vendeur_id;
+    if ($vendeur_id <= 0 || !categories_has_categorie_generale_id_column()) {
+        return [];
+    }
+    require_once __DIR__ . '/model_produits.php';
+    if (!produits_has_column('admin_id')) {
+        return [];
+    }
+    try {
+        $st = $db->prepare("
+            SELECT DISTINCT c.*
+            FROM `categories` c
+            INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`admin_id` = :vid
+            WHERE (c.`admin_id` IS NULL OR c.`admin_id` = 0)
+              AND c.`categorie_generale_id` IS NOT NULL AND c.`categorie_generale_id` > 0
+            ORDER BY c.`nom` ASC
+        ");
+        $st->execute(['vid' => $vendeur_id]);
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Sous-catégorie définie par la plateforme (categories.categorie_generale_id renseigné, sans vendeur propriétaire).
+ */
+function categorie_est_sous_categorie_plateforme($categorie) {
+    if (!is_array($categorie)) {
+        $categorie = get_categorie_by_id((int) $categorie);
+    }
+    if (!$categorie) {
+        return false;
+    }
+    $aid = isset($categorie['admin_id']) ? (int) $categorie['admin_id'] : 0;
+    if ($aid !== 0) {
+        return false;
+    }
+    $cg = isset($categorie['categorie_generale_id']) ? (int) $categorie['categorie_generale_id'] : 0;
+    if ($cg > 0) {
+        return true;
+    }
+    if (categories_generales_liaisons_table_exists()) {
+        $ids = plateforme_get_rayons_ids_for_categorie((int) ($categorie['id'] ?? 0));
+        return !empty($ids);
+    }
+    return false;
+}
+
+/**
+ * Le vendeur peut modifier / supprimer uniquement ses propres catégories (héritage).
+ */
+function categorie_est_modifiable_par_vendeur($categorie_id, $vendeur_id) {
+    $categorie_id = (int) $categorie_id;
+    $vendeur_id = (int) $vendeur_id;
+    if ($categorie_id <= 0 || $vendeur_id <= 0) {
+        return false;
+    }
+    $c = get_categorie_by_id($categorie_id);
+    if (!$c) {
+        return false;
+    }
+    return (int) ($c['admin_id'] ?? 0) === $vendeur_id;
+}
+
+/**
  * Le vendeur peut utiliser cette catégorie pour ses produits (propriétaire ou produits déjà liés).
  */
 function categorie_est_utilisable_par_vendeur($categorie_id, $vendeur_id) {
@@ -164,6 +296,9 @@ function categorie_est_utilisable_par_vendeur($categorie_id, $vendeur_id) {
     $c = get_categorie_by_id($categorie_id);
     if (!$c) {
         return false;
+    }
+    if (categorie_est_sous_categorie_plateforme($c)) {
+        return true;
     }
     if ((int) ($c['admin_id'] ?? 0) === $vendeur_id) {
         return true;
@@ -316,6 +451,14 @@ function delete_categorie($id)
     global $db;
 
     try {
+        $id = (int) $id;
+        if ($id <= 0) {
+            return false;
+        }
+        if (categories_generales_liaisons_table_exists()) {
+            $st = $db->prepare('DELETE FROM `categories_categories_generales` WHERE `categorie_id` = :id');
+            $st->execute(['id' => $id]);
+        }
         $stmt = $db->prepare("DELETE FROM categories WHERE id = :id");
         return $stmt->execute(['id' => $id]);
     } catch (PDOException $e) {
@@ -480,17 +623,29 @@ function categories_est_plateforme_column() {
 }
 
 /**
+ * Nettoie une chaîne de classes Font Awesome pour l’attribut HTML class (XSS).
+ */
+function fa_icon_classes_sanitize($s) {
+    $s = trim((string) $s);
+    $s = preg_replace('/\s+/', ' ', $s);
+    if ($s === '' || !preg_match('/^[a-zA-Z0-9\s\-_]+$/', $s)) {
+        return 'fa-solid fa-layer-group';
+    }
+    return $s;
+}
+
+/**
  * Classe Font Awesome pour icône menu (champ icone en BDD)
  */
 function categorie_fa_icon_class(array $row) {
     $ic_raw = trim((string) ($row['icone'] ?? ''));
     if ($ic_raw === '' || stripos($ic_raw, 'fa-') === false) {
-        return 'fa-solid fa-layer-group';
+        return fa_icon_classes_sanitize('fa-solid fa-layer-group');
     }
     if (preg_match('/^(fa-solid|fa-regular|fa-brands)\s+/i', $ic_raw)) {
-        return $ic_raw;
+        return fa_icon_classes_sanitize($ic_raw);
     }
-    return 'fa-solid ' . $ic_raw;
+    return fa_icon_classes_sanitize('fa-solid ' . $ic_raw);
 }
 
 /**
@@ -519,6 +674,75 @@ function categories_generales_table_exists() {
 }
 
 /**
+ * Colonnes attr_* présentes sur categories_generales (migration attributs produit).
+ */
+function categories_generales_attr_columns_exist() {
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    global $db;
+    $cached = false;
+    if (!$db || !categories_generales_table_exists()) {
+        return false;
+    }
+    try {
+        $st = $db->query("
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories_generales' AND COLUMN_NAME = 'attr_poids'
+        ");
+        $cached = ((int) $st->fetchColumn()) > 0;
+    } catch (PDOException $e) {
+        $cached = false;
+    }
+    return $cached;
+}
+
+/**
+ * @param array<string,mixed>|false|null $row Ligne categories_generales
+ * @return array{poids:bool,taille:bool,mesure:bool,couleur:bool}
+ */
+function categorie_generale_parse_attributs_row($row) {
+    $defaults = ['poids' => true, 'taille' => true, 'mesure' => true, 'couleur' => true];
+    if (!is_array($row) || $row === []) {
+        return $defaults;
+    }
+    if (!array_key_exists('attr_poids', $row)) {
+        return $defaults;
+    }
+    return [
+        'poids' => !empty((int) $row['attr_poids']),
+        'taille' => !empty((int) $row['attr_taille']),
+        'mesure' => !empty((int) $row['attr_mesure']),
+        'couleur' => !empty((int) $row['attr_couleur']),
+    ];
+}
+
+/**
+ * Carte rayon_id → { p,t,m,c } pour le formulaire vendeur (JSON).
+ *
+ * @return array<string, array{p:int,t:int,m:int,c:int}>
+ */
+function get_categorie_generale_attributs_map_for_js() {
+    $list = categories_generales_list_all();
+    $out = [];
+    foreach ($list as $cg) {
+        $id = (int) ($cg['id'] ?? 0);
+        if ($id <= 0) {
+            continue;
+        }
+        $a = categorie_generale_parse_attributs_row($cg);
+        $out[(string) $id] = [
+            'p' => $a['poids'] ? 1 : 0,
+            't' => $a['taille'] ? 1 : 0,
+            'm' => $a['mesure'] ? 1 : 0,
+            'c' => $a['couleur'] ? 1 : 0,
+        ];
+    }
+    return $out;
+}
+
+/**
  * Colonne categories.categorie_generale_id (lien sous-cat. vendeur → rayon)
  */
 function categories_has_categorie_generale_id_column() {
@@ -538,6 +762,143 @@ function categories_has_categorie_generale_id_column() {
         $cached = false;
     }
     return $cached;
+}
+
+/**
+ * Table pivot categories ↔ categories_generales (plusieurs rayons par sous-catégorie plateforme).
+ */
+function categories_generales_liaisons_table_exists() {
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    global $db;
+    $cached = false;
+    if (!$db) {
+        return false;
+    }
+    try {
+        $st = $db->query("
+            SELECT COUNT(*) FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories_categories_generales'
+        ");
+        $cached = ((int) $st->fetchColumn()) > 0;
+    } catch (PDOException $e) {
+        $cached = false;
+    }
+    return $cached;
+}
+
+/**
+ * @param array<int|string> $ids
+ * @return int[]
+ */
+function plateforme_rayons_ids_normalize($ids) {
+    if (!is_array($ids)) {
+        $ids = [$ids];
+    }
+    $out = [];
+    foreach ($ids as $x) {
+        $i = (int) $x;
+        if ($i > 0) {
+            $out[$i] = true;
+        }
+    }
+    $keys = array_keys($out);
+    sort($keys, SORT_NUMERIC);
+    return $keys;
+}
+
+/**
+ * IDs des rayons (categories_generales) liés à une sous-catégorie plateforme.
+ *
+ * @return int[]
+ */
+function plateforme_get_rayons_ids_for_categorie($categorie_id) {
+    $categorie_id = (int) $categorie_id;
+    if ($categorie_id <= 0) {
+        return [];
+    }
+    if (categories_generales_liaisons_table_exists()) {
+        global $db;
+        try {
+            $st = $db->prepare('
+                SELECT `categorie_generale_id` FROM `categories_categories_generales`
+                WHERE `categorie_id` = :cid
+                ORDER BY `categorie_generale_id` ASC
+            ');
+            $st->execute(['cid' => $categorie_id]);
+            $rows = $st->fetchAll(PDO::FETCH_COLUMN);
+            $ids = [];
+            foreach ($rows ?: [] as $r) {
+                $ids[] = (int) $r;
+            }
+            if (!empty($ids)) {
+                return $ids;
+            }
+        } catch (PDOException $e) {
+        }
+    }
+    $c = get_categorie_by_id($categorie_id);
+    if (!$c) {
+        return [];
+    }
+    $g = (int) ($c['categorie_generale_id'] ?? 0);
+    return $g > 0 ? [$g] : [];
+}
+
+/**
+ * Enregistre les rayons liés à une sous-catégorie (et synchronise categories.categorie_generale_id sur le 1er id).
+ *
+ * @param int[] $generale_ids
+ */
+function plateforme_set_rayons_for_categorie($categorie_id, array $generale_ids) {
+    global $db;
+    $categorie_id = (int) $categorie_id;
+    $ids = plateforme_rayons_ids_normalize($generale_ids);
+    if ($categorie_id <= 0 || empty($ids)) {
+        return false;
+    }
+    foreach ($ids as $gid) {
+        if (!get_categorie_generale_by_id($gid)) {
+            return false;
+        }
+    }
+    $primary = (int) $ids[0];
+    if (categories_generales_liaisons_table_exists()) {
+        try {
+            $db->beginTransaction();
+            $st = $db->prepare('DELETE FROM `categories_categories_generales` WHERE `categorie_id` = :cid');
+            $st->execute(['cid' => $categorie_id]);
+            $ins = $db->prepare('
+                INSERT INTO `categories_categories_generales` (`categorie_id`, `categorie_generale_id`)
+                VALUES (:cid, :gid)
+            ');
+            foreach ($ids as $gid) {
+                $ins->execute(['cid' => $categorie_id, 'gid' => (int) $gid]);
+            }
+            if (categories_table_has_column('categorie_generale_id')) {
+                $st2 = $db->prepare('UPDATE `categories` SET `categorie_generale_id` = :g WHERE `id` = :id');
+                $st2->execute(['g' => $primary, 'id' => $categorie_id]);
+            }
+            $db->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            return false;
+        }
+    }
+    if (categories_table_has_column('categorie_generale_id')) {
+        try {
+            $st = $db->prepare('UPDATE `categories` SET `categorie_generale_id` = :g WHERE `id` = :id');
+            return $st->execute(['g' => $primary, 'id' => $categorie_id]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+    return false;
 }
 
 function get_categorie_generale_by_id($id) {
@@ -602,7 +963,7 @@ function categorie_generale_leaf_category_ids($generale_id) {
     try {
         $st = $db->prepare("
             SELECT `id` FROM `categories`
-            WHERE `categorie_generale_id` = :g AND `admin_id` IS NOT NULL
+            WHERE `categorie_generale_id` = :g
         ");
         $st->execute(['g' => $generale_id]);
         return array_map('intval', array_column($st->fetchAll(PDO::FETCH_ASSOC), 'id'));
@@ -617,6 +978,11 @@ function categorie_generale_leaf_category_ids($generale_id) {
 function vendeur_prefill_from_categorie_row($categorie_row) {
     $out = ['generale' => 0, 'sub' => 0];
     if (empty($categorie_row) || !is_array($categorie_row)) {
+        return $out;
+    }
+    if (categorie_est_sous_categorie_plateforme($categorie_row)) {
+        $out['sub'] = (int) ($categorie_row['id'] ?? 0);
+        $out['generale'] = (int) ($categorie_row['categorie_generale_id'] ?? 0);
         return $out;
     }
     if ((int) ($categorie_row['admin_id'] ?? 0) > 0) {
@@ -835,16 +1201,16 @@ function get_subcategories_with_active_products_for_general($general_id, $boutiq
                     SELECT DISTINCT c.`id`, c.`nom`
                     FROM `categories` c
                     INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`statut` = 'actif' AND p.`admin_id` = :aid
-                    WHERE c.`categorie_generale_id` = :gid AND c.`admin_id` = :aid2
+                    WHERE c.`categorie_generale_id` = :gid
                     ORDER BY c.`nom` ASC
                 ");
-                $st->execute(['gid' => $general_id, 'aid' => $boutique_admin_id, 'aid2' => $boutique_admin_id]);
+                $st->execute(['gid' => $general_id, 'aid' => $boutique_admin_id]);
             } else {
                 $st = $db->prepare("
                     SELECT DISTINCT c.`id`, c.`nom`
                     FROM `categories` c
                     INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`statut` = 'actif'
-                    WHERE c.`categorie_generale_id` = :gid AND c.`admin_id` IS NOT NULL
+                    WHERE c.`categorie_generale_id` = :gid
                     ORDER BY c.`nom` ASC
                 ");
                 $st->execute(['gid' => $general_id]);
@@ -898,93 +1264,31 @@ function get_megamenu_categories($boutique_admin_id = null) {
  * JSON pour formulaire produit vendeur : { "generaleId": [ {id,nom}, ... ], ... }
  */
 function get_vendeur_subcategories_grouped_json($vendeur_id) {
-    global $db;
-    $vendeur_id = (int) $vendeur_id;
-    if ($vendeur_id <= 0 || !categories_hierarchy_enabled()) {
+    unset($vendeur_id);
+    $rows = get_plateforme_sous_categories_for_form();
+    if (empty($rows)) {
         return '{}';
     }
-    try {
-        if (categories_has_categorie_generale_id_column()) {
-            $st = $db->prepare("
-                SELECT `id`, `nom`, `categorie_generale_id` FROM `categories`
-                WHERE `admin_id` = :v AND `categorie_generale_id` IS NOT NULL AND `categorie_generale_id` > 0
-                ORDER BY `categorie_generale_id` ASC, `nom` ASC
-            ");
-            $st->execute(['v' => $vendeur_id]);
-            $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-            $grouped = [];
-            foreach ($rows as $r) {
-                $p = (string) (int) $r['categorie_generale_id'];
-                if (!isset($grouped[$p])) {
-                    $grouped[$p] = [];
-                }
-                $grouped[$p][] = ['id' => (int) $r['id'], 'nom' => $r['nom']];
-            }
-            return json_encode($grouped, JSON_UNESCAPED_UNICODE);
+    $grouped = [];
+    foreach ($rows as $r) {
+        $p = (string) (int) ($r['categorie_generale_id'] ?? 0);
+        if ($p === '0') {
+            continue;
         }
-        $st = $db->prepare("
-            SELECT `id`, `nom`, `parent_id` FROM `categories`
-            WHERE `admin_id` = :v AND `parent_id` IS NOT NULL AND `parent_id` > 0
-            ORDER BY `parent_id` ASC, `nom` ASC
-        ");
-        $st->execute(['v' => $vendeur_id]);
-        $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        $grouped = [];
-        foreach ($rows as $r) {
-            $p = (string) (int) $r['parent_id'];
-            if (!isset($grouped[$p])) {
-                $grouped[$p] = [];
-            }
-            $grouped[$p][] = ['id' => (int) $r['id'], 'nom' => $r['nom']];
+        if (!isset($grouped[$p])) {
+            $grouped[$p] = [];
         }
-        return json_encode($grouped, JSON_UNESCAPED_UNICODE);
-    } catch (PDOException $e) {
-        return '{}';
+        $grouped[$p][] = ['id' => (int) $r['id'], 'nom' => (string) ($r['nom'] ?? '')];
     }
+    return json_encode($grouped, JSON_UNESCAPED_UNICODE);
 }
 
 /**
- * Toutes les sous-catégories vendeur pour selects (avec nom du rayon)
+ * Sous-catégories pour le formulaire produit vendeur (liste commune définie par le super admin).
  */
 function get_all_vendeur_subcategories_for_form($vendeur_id) {
-    global $db;
-    $vendeur_id = (int) $vendeur_id;
-    if ($vendeur_id <= 0 || !categories_hierarchy_enabled()) {
-        return [];
-    }
-    try {
-        if (categories_has_categorie_generale_id_column() && categories_generales_table_exists()) {
-            $st = $db->prepare("
-                SELECT c.`id`, c.`nom`, c.`categorie_generale_id`, cg.`nom` AS `generale_nom`, cg.`sort_ordre` AS `generale_sort`
-                FROM `categories` c
-                LEFT JOIN `categories_generales` cg ON cg.`id` = c.`categorie_generale_id`
-                WHERE c.`admin_id` = :v
-                   OR (c.`admin_id` IS NULL AND EXISTS (
-                        SELECT 1 FROM `produits` p
-                        WHERE p.`categorie_id` = c.`id` AND p.`admin_id` = :v2
-                   ))
-                ORDER BY cg.`sort_ordre` ASC, cg.`nom` ASC, c.`nom` ASC
-            ");
-            $st->execute(['v' => $vendeur_id, 'v2' => $vendeur_id]);
-            return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        }
-        $st = $db->prepare("
-            SELECT c.`id`, c.`nom`, c.`parent_id`,
-                   p.`nom` AS `generale_nom`, p.`sort_ordre` AS `generale_sort`
-            FROM `categories` c
-            LEFT JOIN `categories` p ON p.`id` = c.`parent_id`
-            WHERE c.`admin_id` = :v
-               OR (c.`admin_id` IS NULL AND EXISTS (
-                    SELECT 1 FROM `produits` p
-                    WHERE p.`categorie_id` = c.`id` AND p.`admin_id` = :v2
-               ))
-            ORDER BY p.`sort_ordre` ASC, p.`nom` ASC, c.`nom` ASC
-        ");
-        $st->execute(['v' => $vendeur_id, 'v2' => $vendeur_id]);
-        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    } catch (PDOException $e) {
-        return [];
-    }
+    unset($vendeur_id);
+    return get_plateforme_sous_categories_for_form();
 }
 
 /**
@@ -1013,6 +1317,432 @@ function vendeur_align_subcategorie_generale($categorie_id, $categorie_generale_
         ');
         $st->execute(['g' => $categorie_generale_id, 'id' => $categorie_id, 'v' => $vendeur_admin_id]);
     } catch (PDOException $e) {
+    }
+}
+
+/**
+ * Compte les produits rattachés à une catégorie (toutes boutiques).
+ */
+function count_produits_par_categorie_id($categorie_id) {
+    global $db;
+    $categorie_id = (int) $categorie_id;
+    if ($categorie_id <= 0) {
+        return 0;
+    }
+    try {
+        $st = $db->prepare('SELECT COUNT(*) FROM `produits` WHERE `categorie_id` = :c');
+        $st->execute(['c' => $categorie_id]);
+        return (int) $st->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Nom de sous-catégorie plateforme disponible pour un rayon (hors id exclus), avec table pivot ou colonne seule.
+ */
+function plateforme_sous_categorie_nom_disponible_pour_rayon($nom, $categorie_generale_id, $exclude_id = 0) {
+    global $db;
+    $nom = trim((string) $nom);
+    $categorie_generale_id = (int) $categorie_generale_id;
+    $exclude_id = (int) $exclude_id;
+    if ($nom === '' || $categorie_generale_id <= 0) {
+        return false;
+    }
+    if (categories_generales_liaisons_table_exists()) {
+        $sql = '
+            SELECT c.`id` FROM `categories` c
+            WHERE (c.`admin_id` IS NULL OR c.`admin_id` = 0)
+              AND c.`nom` = :n
+        ';
+        if ($exclude_id > 0) {
+            $sql .= ' AND c.`id` != :ex';
+        }
+        $sql .= ' AND (
+            EXISTS (
+                SELECT 1 FROM `categories_categories_generales` ccg
+                WHERE ccg.`categorie_id` = c.`id` AND ccg.`categorie_generale_id` = :g
+            )
+            OR (
+                c.`categorie_generale_id` = :g2
+                AND NOT EXISTS (
+                    SELECT 1 FROM `categories_categories_generales` ccg2 WHERE ccg2.`categorie_id` = c.`id`
+                )
+            )
+        ) LIMIT 1';
+        try {
+            $st = $db->prepare($sql);
+            $p = ['n' => $nom, 'g' => $categorie_generale_id, 'g2' => $categorie_generale_id];
+            if ($exclude_id > 0) {
+                $p['ex'] = $exclude_id;
+            }
+            $st->execute($p);
+            return $st->fetchColumn() === false;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+    try {
+        $sql = '
+            SELECT `id` FROM `categories`
+            WHERE `nom` = :n AND `categorie_generale_id` = :g
+              AND ( `admin_id` IS NULL OR `admin_id` = 0 )
+        ';
+        if ($exclude_id > 0) {
+            $sql .= ' AND `id` != :ex';
+        }
+        $sql .= ' LIMIT 1';
+        $st = $db->prepare($sql);
+        $p = ['n' => $nom, 'g' => $categorie_generale_id];
+        if ($exclude_id > 0) {
+            $p['ex'] = $exclude_id;
+        }
+        $st->execute($p);
+        return $st->fetchColumn() === false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Nom disponible pour chacun des rayons donnés (même libellé sous plusieurs rayons = une seule ligne categories).
+ *
+ * @param int[] $generale_ids
+ */
+function plateforme_sous_categorie_nom_disponible_multi($nom, array $generale_ids, $exclude_id = 0) {
+    $nom = trim((string) $nom);
+    $ids = plateforme_rayons_ids_normalize($generale_ids);
+    if ($nom === '' || empty($ids)) {
+        return false;
+    }
+    foreach ($ids as $gid) {
+        if (!plateforme_sous_categorie_nom_disponible_pour_rayon($nom, $gid, $exclude_id)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Nom de sous-catégorie plateforme unique pour un rayon donné (hors id exclus).
+ */
+function plateforme_sous_categorie_nom_disponible($nom, $categorie_generale_id, $exclude_id = 0) {
+    return plateforme_sous_categorie_nom_disponible_multi($nom, [$categorie_generale_id], $exclude_id);
+}
+
+/**
+ * Crée une sous-catégorie commune (admin_id NULL).
+ * $generale_ids : un ou plusieurs IDs de rayons (categories_generales).
+ *
+ * @param int|int[] $generale_ids
+ */
+function plateforme_create_sous_categorie($nom, $description, $image, $generale_ids, $sort_ordre = 0) {
+    global $db;
+    $nom = trim((string) $nom);
+    $sort_ordre = (int) $sort_ordre;
+    $ids = plateforme_rayons_ids_normalize(is_array($generale_ids) ? $generale_ids : [$generale_ids]);
+    if ($nom === '' || empty($ids)) {
+        return false;
+    }
+    foreach ($ids as $gid) {
+        if (!get_categorie_generale_by_id($gid)) {
+            return false;
+        }
+    }
+    if (!plateforme_sous_categorie_nom_disponible_multi($nom, $ids, 0)) {
+        return false;
+    }
+    $primary = (int) $ids[0];
+    $cols = ['`nom`', '`description`', '`image`', '`date_creation`'];
+    $holders = [':nom', ':description', ':image', 'NOW()'];
+    $params = [
+        'nom' => $nom,
+        'description' => $description !== null ? (string) $description : null,
+        'image' => $image,
+    ];
+    if (categories_table_has_column('categorie_generale_id')) {
+        $cols[] = '`categorie_generale_id`';
+        $holders[] = ':categorie_generale_id';
+        $params['categorie_generale_id'] = $primary;
+    } else {
+        return false;
+    }
+    if (categories_table_has_column('sort_ordre')) {
+        $cols[] = '`sort_ordre`';
+        $holders[] = ':sort_ordre';
+        $params['sort_ordre'] = $sort_ordre;
+    }
+    if (categories_table_has_column('admin_id')) {
+        $cols[] = '`admin_id`';
+        $holders[] = 'NULL';
+    }
+    if (categories_table_has_column('parent_id')) {
+        $cols[] = '`parent_id`';
+        $holders[] = 'NULL';
+    }
+    if (categories_table_has_column('est_plateforme')) {
+        $cols[] = '`est_plateforme`';
+        $holders[] = '0';
+    }
+    try {
+        $sql = 'INSERT INTO `categories` (' . implode(', ', $cols) . ') VALUES (' . implode(', ', $holders) . ')';
+        $stmt = $db->prepare($sql);
+        if ($stmt->execute($params)) {
+            $newId = (int) $db->lastInsertId();
+            if (categories_generales_liaisons_table_exists()) {
+                plateforme_set_rayons_for_categorie($newId, $ids);
+            }
+            return $newId;
+        }
+    } catch (PDOException $e) {
+    }
+    return false;
+}
+
+/**
+ * Met à jour une sous-catégorie plateforme (id, nom, description, image, rayons, ordre).
+ *
+ * @param int|int[] $generale_ids
+ */
+function plateforme_update_sous_categorie($id, $nom, $description, $image, $generale_ids, $sort_ordre = null) {
+    global $db;
+    $id = (int) $id;
+    $ids = plateforme_rayons_ids_normalize(is_array($generale_ids) ? $generale_ids : [$generale_ids]);
+    if ($id <= 0 || empty($ids)) {
+        return false;
+    }
+    $c = get_categorie_by_id($id);
+    if (!$c || !categorie_est_sous_categorie_plateforme($c)) {
+        return false;
+    }
+    $nom = trim((string) $nom);
+    if ($nom === '') {
+        return false;
+    }
+    foreach ($ids as $gid) {
+        if (!get_categorie_generale_by_id($gid)) {
+            return false;
+        }
+    }
+    if (!plateforme_sous_categorie_nom_disponible_multi($nom, $ids, $id)) {
+        return false;
+    }
+    $sets = ['`nom` = :nom', '`description` = :description', '`image` = :image'];
+    $params = [
+        'id' => $id,
+        'nom' => $nom,
+        'description' => $description !== null ? (string) $description : null,
+        'image' => $image,
+    ];
+    if ($sort_ordre !== null && categories_table_has_column('sort_ordre')) {
+        $sets[] = '`sort_ordre` = :so';
+        $params['so'] = (int) $sort_ordre;
+    }
+    try {
+        $sql = 'UPDATE `categories` SET ' . implode(', ', $sets) . ' WHERE `id` = :id AND (`admin_id` IS NULL OR `admin_id` = 0)';
+        $st = $db->prepare($sql);
+        if (!$st->execute($params)) {
+            return false;
+        }
+        if (categories_generales_liaisons_table_exists()) {
+            return plateforme_set_rayons_for_categorie($id, $ids);
+        }
+        $primary = (int) $ids[0];
+        if (categories_table_has_column('categorie_generale_id')) {
+            $st2 = $db->prepare('UPDATE `categories` SET `categorie_generale_id` = :g WHERE `id` = :id AND (`admin_id` IS NULL OR `admin_id` = 0)');
+            return $st2->execute(['g' => $primary, 'id' => $id]);
+        }
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Supprime une sous-catégorie plateforme si aucun produit.
+ */
+function plateforme_delete_sous_categorie($id) {
+    $id = (int) $id;
+    if ($id <= 0) {
+        return false;
+    }
+    $c = get_categorie_by_id($id);
+    if (!$c || !categorie_est_sous_categorie_plateforme($c)) {
+        return false;
+    }
+    if (categorie_has_produits($id)) {
+        return false;
+    }
+    return delete_categorie($id);
+}
+
+/** Liste complète categories_generales */
+function categories_generales_list_all() {
+    global $db;
+    if (!categories_generales_table_exists()) {
+        return [];
+    }
+    try {
+        $st = $db->query('SELECT * FROM `categories_generales` ORDER BY `sort_ordre` ASC, `nom` ASC');
+        return $st ? ($st->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+function categories_generales_insert_row($nom, $description, $icone, $sort_ordre, $attr_poids = 1, $attr_taille = 1, $attr_mesure = 1, $attr_couleur = 1) {
+    global $db;
+    if (!categories_generales_table_exists()) {
+        return false;
+    }
+    $nom = trim((string) $nom);
+    if ($nom === '') {
+        return false;
+    }
+    if (get_categorie_generale_by_nom($nom)) {
+        return false;
+    }
+    $ap = (int) (bool) $attr_poids;
+    $at = (int) (bool) $attr_taille;
+    $am = (int) (bool) $attr_mesure;
+    $ac = (int) (bool) $attr_couleur;
+    try {
+        if (categories_generales_attr_columns_exist()) {
+            $st = $db->prepare('
+                INSERT INTO `categories_generales` (`nom`, `description`, `icone`, `sort_ordre`, `attr_poids`, `attr_taille`, `attr_mesure`, `attr_couleur`, `date_creation`)
+                VALUES (:nom, :descr, :icone, :so, :ap, :at, :am, :ac, NOW())
+            ');
+            if ($st->execute([
+                'nom' => $nom,
+                'descr' => $description !== null ? (string) $description : null,
+                'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
+                'so' => (int) $sort_ordre,
+                'ap' => $ap,
+                'at' => $at,
+                'am' => $am,
+                'ac' => $ac,
+            ])) {
+                return (int) $db->lastInsertId();
+            }
+        } else {
+            $st = $db->prepare('
+                INSERT INTO `categories_generales` (`nom`, `description`, `icone`, `sort_ordre`, `date_creation`)
+                VALUES (:nom, :descr, :icone, :so, NOW())
+            ');
+            if ($st->execute([
+                'nom' => $nom,
+                'descr' => $description !== null ? (string) $description : null,
+                'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
+                'so' => (int) $sort_ordre,
+            ])) {
+                return (int) $db->lastInsertId();
+            }
+        }
+    } catch (PDOException $e) {
+    }
+    return false;
+}
+
+function categories_generales_update_row($id, $nom, $description, $icone, $sort_ordre, $attr_poids = null, $attr_taille = null, $attr_mesure = null, $attr_couleur = null) {
+    global $db;
+    $id = (int) $id;
+    if ($id <= 0 || !categories_generales_table_exists()) {
+        return false;
+    }
+    $row = get_categorie_generale_by_id($id);
+    if (!$row) {
+        return false;
+    }
+    $nom = trim((string) $nom);
+    if ($nom === '') {
+        return false;
+    }
+    $other = get_categorie_generale_by_nom($nom);
+    if ($other && (int) $other['id'] !== $id) {
+        return false;
+    }
+    $def_attr = function ($key, $param) use ($row) {
+        if ($param !== null) {
+            return (int) (bool) $param;
+        }
+        return array_key_exists($key, $row) ? (int) (!empty($row[$key])) : 1;
+    };
+    try {
+        if (categories_generales_attr_columns_exist()) {
+            $st = $db->prepare('
+                UPDATE `categories_generales`
+                SET `nom` = :nom, `description` = :descr, `icone` = :icone, `sort_ordre` = :so,
+                    `attr_poids` = :ap, `attr_taille` = :at, `attr_mesure` = :am, `attr_couleur` = :ac
+                WHERE `id` = :id
+            ');
+            return $st->execute([
+                'id' => $id,
+                'nom' => $nom,
+                'descr' => $description !== null ? (string) $description : null,
+                'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
+                'so' => (int) $sort_ordre,
+                'ap' => $def_attr('attr_poids', $attr_poids),
+                'at' => $def_attr('attr_taille', $attr_taille),
+                'am' => $def_attr('attr_mesure', $attr_mesure),
+                'ac' => $def_attr('attr_couleur', $attr_couleur),
+            ]);
+        }
+        $st = $db->prepare('
+            UPDATE `categories_generales`
+            SET `nom` = :nom, `description` = :descr, `icone` = :icone, `sort_ordre` = :so
+            WHERE `id` = :id
+        ');
+        return $st->execute([
+            'id' => $id,
+            'nom' => $nom,
+            'descr' => $description !== null ? (string) $description : null,
+            'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
+            'so' => (int) $sort_ordre,
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Supprime une catégorie générale si aucune sous-catégorie ne la référence.
+ */
+function categories_generales_delete_row($id) {
+    global $db;
+    $id = (int) $id;
+    if ($id <= 0 || !categories_generales_table_exists()) {
+        return false;
+    }
+    if (!get_categorie_generale_by_id($id)) {
+        return false;
+    }
+    if (categories_generales_liaisons_table_exists()) {
+        try {
+            $st = $db->prepare('SELECT COUNT(*) FROM `categories_categories_generales` WHERE `categorie_generale_id` = :id');
+            $st->execute(['id' => $id]);
+            if ((int) $st->fetchColumn() > 0) {
+                return false;
+            }
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+    if (categories_has_categorie_generale_id_column()) {
+        try {
+            $st = $db->prepare('SELECT COUNT(*) FROM `categories` WHERE `categorie_generale_id` = :id');
+            $st->execute(['id' => $id]);
+            if ((int) $st->fetchColumn() > 0) {
+                return false;
+            }
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+    try {
+        $st = $db->prepare('DELETE FROM `categories_generales` WHERE `id` = :id');
+        return $st->execute(['id' => $id]);
+    } catch (PDOException $e) {
+        return false;
     }
 }
 

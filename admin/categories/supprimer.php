@@ -31,7 +31,7 @@ if (!$categorie) {
     header('Location: index.php');
     exit;
 }
-admin_vendeur_assert_categorie_allowed($categorie_id);
+admin_vendeur_assert_categorie_editable($categorie_id);
 
 // Traiter la suppression
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {

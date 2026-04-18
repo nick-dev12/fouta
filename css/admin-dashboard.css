@@ -7978,3 +7978,49 @@ body.caisse-modal-open {
     padding: 0 !important;
   }
 }
+
+/* Genres vendeur — cases à cocher (formulaire produit) */
+.fap-fieldset-genres {
+  border: 1px solid rgba(53, 100, 166, 0.2);
+  border-radius: 12px;
+  padding: 14px 16px 16px;
+  margin: 0 0 18px;
+  background: var(--blanc-casse, #fafafa);
+}
+.fap-fieldset-genres legend {
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0 6px;
+  color: var(--titres, #0d0d0d);
+}
+.fap-genres-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px 14px;
+  margin-top: 8px;
+}
+.fap-genre-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--blanc, #fff);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.35;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.fap-genre-label:hover {
+  border-color: rgba(53, 100, 166, 0.35);
+  box-shadow: 0 2px 10px rgba(53, 100, 166, 0.08);
+}
+.fap-genre-label input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: var(--couleur-dominante, #3564a6);
+}
+.fap-hint--warn {
+  color: #8a4a16;
+}

@@ -26,7 +26,14 @@ $cat_modal_open = false;
 $cat_modal_nom = '';
 $cat_modal_description = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['stock_add_categorie'])) {
+require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../models/model_produits.php';
+$__stock_role_idx = function_exists('admin_normalize_role_for_route')
+    ? admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin')
+    : 'admin';
+$stock_catalogue_vendeur_seul = ($__stock_role_idx === 'vendeur' && function_exists('get_categories_platform_for_vendeur_stock'));
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['stock_add_categorie']) && !$stock_catalogue_vendeur_seul) {
     $tok = $_POST['csrf_token'] ?? '';
     if (!hash_equals((string) ($_SESSION['admin_csrf'] ?? ''), (string) $tok)) {
         $cat_modal_error = 'Session expirée ou formulaire invalide. Veuillez réessayer.';
@@ -52,17 +59,20 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
-require_once __DIR__ . '/../../models/model_categories.php';
-$__stock_role_idx = function_exists('admin_normalize_role_for_route')
-    ? admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin')
-    : 'admin';
-$stock_catalogue_vendeur_seul = ($__stock_role_idx === 'vendeur' && function_exists('get_categories_for_vendeur_stock'));
 if ($stock_catalogue_vendeur_seul) {
-    $categories = get_categories_for_vendeur_stock((int) ($_SESSION['admin_id'] ?? 0));
+    $categories = get_categories_platform_for_vendeur_stock((int) ($_SESSION['admin_id'] ?? 0));
 } else {
-$categories = get_all_categories();
+    $categories = get_all_categories();
 }
 $nb_cat = count($categories);
+
+$rayons_avec_produits = [];
+if (function_exists('get_categories_generales_avec_produits_actifs')) {
+    $rayon_boutique_id = !empty($stock_catalogue_vendeur_seul) ? (int) ($_SESSION['admin_id'] ?? 0) : null;
+    $rayons_avec_produits = get_categories_generales_avec_produits_actifs(
+        ($rayon_boutique_id !== null && $rayon_boutique_id > 0) ? $rayon_boutique_id : null
+    );
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -678,10 +688,21 @@ $nb_cat = count($categories);
         body.stock-cat-modal-active {
             overflow: hidden;
         }
+
+        .stock-section--rayons {
+            margin-bottom: 1.35rem;
+        }
+
+        .stock-rayon-count {
+            margin: 0;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--couleur-dominante);
+        }
     </style>
 </head>
 
-<body class="stock-page<?php echo $cat_modal_open ? ' stock-cat-modal-active' : ''; ?>">
+<body class="stock-page<?php echo ($cat_modal_open && empty($stock_catalogue_vendeur_seul)) ? ' stock-cat-modal-active' : ''; ?>">
     <?php include '../includes/nav.php'; ?>
 
     <div class="stock-shell">
@@ -692,7 +713,7 @@ $nb_cat = count($categories);
                     <i class="fas fa-tags" aria-hidden="true"></i>
                     <?php echo (int) $nb_cat; ?>
                     <?php if (!empty($stock_catalogue_vendeur_seul)): ?>
-                        catégorie<?php echo $nb_cat > 1 ? 's' : ''; ?> de votre boutique
+                        rayon<?php echo $nb_cat > 1 ? 's' : ''; ?> (sous-cat. plateforme) avec produits
                     <?php else: ?>
                         catégorie<?php echo $nb_cat > 1 ? 's' : ''; ?>
                     <?php endif; ?>
@@ -702,9 +723,11 @@ $nb_cat = count($categories);
                 <a href="mouvements.php" class="stock-btn stock-btn--ghost">
                     <i class="fas fa-history" aria-hidden="true"></i> Historique des mouvements
                 </a>
+                <?php if (empty($stock_catalogue_vendeur_seul)): ?>
                 <button type="button" class="stock-btn stock-btn--accent js-open-stock-cat-modal">
                     <i class="fas fa-plus" aria-hidden="true"></i> Nouvelle catégorie
                 </button>
+                <?php endif; ?>
         </div>
         </header>
 
@@ -715,10 +738,51 @@ $nb_cat = count($categories);
         </div>
     <?php endif; ?>
 
+        <?php if (!empty($rayons_avec_produits)): ?>
+        <section class="stock-section stock-section--rayons" aria-labelledby="stock-rayons-heading">
+            <div class="stock-section__head">
+                <h2 id="stock-rayons-heading"><i class="fas fa-store" aria-hidden="true"></i>
+                    Rayons — produits publiés
+                </h2>
+            </div>
+            <div class="stock-cat-grid">
+                <?php foreach ($rayons_avec_produits as $rayon): ?>
+                <article class="stock-cat-card">
+                    <div class="stock-cat-card__media">
+                        <div class="stock-cat-card__placeholder" aria-hidden="true">
+                            <i class="<?php echo htmlspecialchars(categorie_fa_icon_class($rayon)); ?>"></i>
+                        </div>
+                    </div>
+                    <div class="stock-cat-card__body">
+                        <h3><?php echo htmlspecialchars($rayon['nom'] ?? ''); ?></h3>
+                        <p class="stock-cat-card__desc">
+                            <?php
+                            $rdesc = trim((string) ($rayon['description'] ?? ''));
+                            echo $rdesc !== '' ? htmlspecialchars($rdesc) : 'Produits actifs listés pour ce rayon.';
+                            ?>
+                        </p>
+                        <p class="stock-rayon-count">
+                            <i class="fas fa-box-open" aria-hidden="true"></i>
+                            <?php echo (int) ($rayon['nb_produits_actifs'] ?? 0); ?>
+                            produit<?php echo ((int) ($rayon['nb_produits_actifs'] ?? 0)) > 1 ? 's' : ''; ?> publié<?php echo ((int) ($rayon['nb_produits_actifs'] ?? 0)) > 1 ? 's' : ''; ?>
+                        </p>
+                        <div class="stock-cat-card__actions">
+                            <a href="../produits/index.php?categorie_generale_id=<?php echo (int) ($rayon['id'] ?? 0); ?>"
+                                class="stock-act-view">
+                                <i class="fas fa-list" aria-hidden="true"></i> Voir les produits publiés
+                            </a>
+                        </div>
+                    </div>
+                </article>
+                <?php endforeach; ?>
+            </div>
+        </section>
+        <?php endif; ?>
+
         <section class="stock-section" aria-labelledby="stock-cat-heading">
             <div class="stock-section__head">
                 <h2 id="stock-cat-heading"><i class="fas fa-layer-group" aria-hidden="true"></i>
-                    <?php echo !empty($stock_catalogue_vendeur_seul) ? 'Vos catégories (hors rayons plateforme)' : 'Catalogue par catégorie'; ?>
+                    <?php echo !empty($stock_catalogue_vendeur_seul) ? 'Sous-catégories plateforme (vos produits)' : 'Catalogue par catégorie'; ?>
                 </h2>
         </div>
 
@@ -727,11 +791,13 @@ $nb_cat = count($categories);
                 <i class="fas fa-tags" aria-hidden="true"></i>
                 <h3>Aucune catégorie</h3>
                 <p><?php echo !empty($stock_catalogue_vendeur_seul)
-                    ? 'Créez une catégorie qui vous appartient pour organiser vos produits. Les rayons du site public ne s’affichent pas ici.'
+                    ? 'Les rayons et sous-catégories sont gérés par la plateforme. Les catégories apparaîtront ici dès que vous aurez classé des produits dans une sous-catégorie lors de l’ajout d’article.'
                     : 'Créez une première catégorie pour organiser vos produits et le stock.'; ?></p>
+                <?php if (empty($stock_catalogue_vendeur_seul)): ?>
                 <button type="button" class="stock-btn stock-btn--accent js-open-stock-cat-modal">
                     <i class="fas fa-plus" aria-hidden="true"></i> Ajouter une catégorie
                 </button>
+                <?php endif; ?>
             </div>
         <?php else: ?>
             <div class="stock-cat-grid">
@@ -758,6 +824,7 @@ $nb_cat = count($categories);
                                 class="stock-act-view">
                                 <i class="fas fa-box" aria-hidden="true"></i> Produits
                             </a>
+                            <?php if (empty($stock_catalogue_vendeur_seul)): ?>
                             <a href="../categories/modifier.php?id=<?php echo (int) $categorie['id']; ?>"
                                 class="stock-act-edit">
                                 <i class="fas fa-edit" aria-hidden="true"></i> Modifier
@@ -767,6 +834,7 @@ $nb_cat = count($categories);
                                 onclick="return confirm('Supprimer cette catégorie ?');">
                                 <i class="fas fa-trash" aria-hidden="true"></i> Supprimer
                             </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </article>
@@ -776,6 +844,7 @@ $nb_cat = count($categories);
     </section>
     </div>
 
+    <?php if (empty($stock_catalogue_vendeur_seul)): ?>
     <div class="stock-cat-modal<?php echo $cat_modal_open ? ' stock-cat-modal--open' : ''; ?>" id="stockCatModal"
         role="dialog" aria-modal="true" aria-labelledby="stockCatModalTitle"<?php echo $cat_modal_open ? '' : ' hidden'; ?>>
         <div class="stock-cat-modal__panel" role="document">
@@ -838,6 +907,7 @@ $nb_cat = count($categories);
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
     <script>
         (function () {

@@ -44,6 +44,15 @@ if ($vf_ck !== null && (int) ($commande['vendeur_id'] ?? 0) !== $vf_ck) {
     exit;
 }
 
+$statut_raw = (string) ($commande['statut'] ?? '');
+$statut_safe_class = htmlspecialchars($statut_raw, ENT_QUOTES, 'UTF-8');
+$statut_display = ucfirst(str_replace('_', ' ', $statut_raw));
+if ($statut_raw === 'annulee') {
+    $statut_display = 'Annulée';
+} elseif ($statut_raw === 'paye') {
+    $statut_display = 'Payée';
+}
+
 // Vérifier si la commande est annulée ou livrée (pas de modification possible)
 $is_annulee = $commande['statut'] === 'annulee';
 $is_livree = $commande['statut'] === 'livree';
@@ -104,50 +113,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-commandes-details.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body>
     <?php include '../includes/nav.php'; ?>
 
-    <div class="content-header">
-        <h1>
-            <i class="fas fa-shopping-bag"></i> Commande #<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?>
-        </h1>
-        <div class="header-actions">
-            <?php if ($facture): ?>
-                <a href="facture.php?id=<?php echo (int) $facture['id']; ?>" class="btn-primary" target="_blank">
-                    <i class="fas fa-file-invoice"></i> Voir la facture
-                </a>
-            <?php else: ?>
-                <a href="generer_facture.php?id=<?php echo $commande_id; ?>" class="btn-primary">
-                    <i class="fas fa-file-invoice"></i> Générer une facture
-                </a>
-            <?php endif; ?>
-            <a href="index.php" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Retour
-            </a>
-        </div>
-    </div>
+    <div class="contents-container cmd-detail-page">
+        <header class="cmd-detail-hero" aria-labelledby="cmd-detail-title">
+            <div class="cmd-detail-hero__top">
+                <a href="index.php" class="cmd-detail-back"><i class="fas fa-arrow-left" aria-hidden="true"></i> Liste des commandes</a>
+                <span class="commande-statut statut-<?php echo $statut_safe_class; ?>"><?php echo htmlspecialchars($statut_display); ?></span>
+            </div>
+            <div class="cmd-detail-hero__main">
+                <div>
+                    <p class="cmd-detail-eyebrow">Fiche commande</p>
+                    <h1 class="cmd-detail-hero__title" id="cmd-detail-title">Commande <span>#<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?></span></h1>
+                    <p class="cmd-detail-meta">
+                        <span><i class="far fa-calendar-alt" aria-hidden="true"></i> <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></span>
+                        <?php
+                        $frais_liv = isset($commande['frais_livraison']) ? (float) $commande['frais_livraison'] : 0;
+                        if ($frais_liv > 0):
+                        ?>
+                        <span><i class="fas fa-truck" aria-hidden="true"></i> Livraison <?php echo number_format($frais_liv, 0, ',', ' '); ?> FCFA</span>
+                        <?php endif; ?>
+                    </p>
+                </div>
+                <div class="cmd-detail-hero__actions">
+                    <?php if ($facture): ?>
+                    <a href="facture.php?id=<?php echo (int) $facture['id']; ?>" class="btn-primary" target="_blank" rel="noopener noreferrer">
+                        <i class="fas fa-file-invoice"></i> Voir la facture
+                    </a>
+                    <?php else: ?>
+                    <a href="generer_facture.php?id=<?php echo (int) $commande_id; ?>" class="btn-primary">
+                        <i class="fas fa-file-invoice"></i> Générer une facture
+                    </a>
+                    <?php endif; ?>
+                    <a href="index.php" class="btn-back">
+                        <i class="fas fa-list" aria-hidden="true"></i> Retour liste
+                    </a>
+                </div>
+            </div>
+        </header>
 
     <?php if (isset($_SESSION['success_message'])): ?>
-        <div class="message success">
-            <i class="fas fa-check-circle"></i>
+        <div class="message success" role="status">
+            <i class="fas fa-check-circle" aria-hidden="true"></i>
             <span><?php echo htmlspecialchars($_SESSION['success_message'] ?? '');
             unset($_SESSION['success_message']); ?></span>
         </div>
     <?php endif; ?>
     <?php if (isset($_SESSION['error_message'])): ?>
-        <div class="message error">
-            <i class="fas fa-exclamation-circle"></i>
+        <div class="message error" role="alert">
+            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
             <span><?php echo htmlspecialchars($_SESSION['error_message'] ?? '');
             unset($_SESSION['error_message']); ?></span>
         </div>
     <?php endif; ?>
 
-    <!-- Détails de la commande -->
-    <div class="commande-details-grid">
-        <div class="detail-box">
-            <h3><i class="fas fa-user"></i> Informations Client</h3>
+    <div class="cmd-detail-grid">
+        <div class="cmd-detail-panel">
+            <h3 class="cmd-detail-panel__head"><i class="fas fa-user" aria-hidden="true"></i> Client</h3>
             <div class="detail-item">
                 <label>Nom complet</label>
                 <div class="value">
@@ -164,8 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             </div>
         </div>
 
-        <div class="detail-box">
-            <h3><i class="fas fa-map-marker-alt"></i> Livraison</h3>
+        <div class="cmd-detail-panel">
+            <h3 class="cmd-detail-panel__head"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Livraison</h3>
             <div class="detail-item">
                 <label>Adresse</label>
                 <div class="value"><?php echo nl2br(htmlspecialchars($commande['adresse_livraison'] ?? '')); ?></div>
@@ -193,17 +219,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         </div>
     </div>
 
-    <!-- Produits de la commande -->
-    <section class="content-section">
-        <div class="section-title">
-            <h2><i class="fas fa-box"></i> Produits Commandés</h2>
+    <section class="cmd-products-section" aria-labelledby="cmd-products-heading">
+        <div class="cmd-products-section__head">
+            <h2 id="cmd-products-heading"><i class="fas fa-box-open" aria-hidden="true"></i> Lignes de commande</h2>
         </div>
 
-        <div class="produits-list">
+        <div class="cmd-products-list">
+            <?php if (empty($produits)): ?>
+            <div class="cmd-products-empty">
+                <i class="fas fa-box-open" aria-hidden="true"></i>
+                <p>Aucune ligne produit enregistrée pour cette commande.</p>
+            </div>
+            <?php else: ?>
             <?php foreach ($produits as $produit): ?>
                 <?php $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? ''); ?>
                 <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : ($produit['produit_nom'] ?? ''); ?>
-                <div class="produit-item">
+                <div class="cmd-produit-card">
                     <img src="/upload/<?php echo htmlspecialchars($img_src ?? ''); ?>"
                         alt="<?php echo htmlspecialchars($nom_affichage ?? ''); ?>"
                         onerror="this.src='/image/produit1.jpg'">
@@ -280,64 +311,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 </div>
             <?php endforeach; ?>
 
-            <div class="produits-list-total">
+            <div class="cmd-products-total">
                 <?php
                 $sous_total = array_sum(array_column($produits, 'prix_total'));
                 $frais = isset($commande['frais_livraison']) ? (float) $commande['frais_livraison'] : 0;
                 ?>
                 <?php if ($frais > 0): ?>
-                    <p style="margin-bottom: 8px;">Sous-total produits:
-                        <?php echo number_format($sous_total, 0, ',', ' '); ?> FCFA
-                    </p>
-                    <p style="margin-bottom: 8px;">Frais de livraison: <?php echo number_format($frais, 0, ',', ' '); ?>
-                        FCFA</p>
+                    <p class="cmd-products-total__line">Sous-total produits <strong><?php echo number_format($sous_total, 0, ',', ' '); ?> FCFA</strong></p>
+                    <p class="cmd-products-total__line">Frais de livraison <strong><?php echo number_format($frais, 0, ',', ' '); ?> FCFA</strong></p>
                 <?php endif; ?>
-                <h3>Total: <span
-                        class="total-value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?>
-                        FCFA</span></h3>
+                <h3>Total commande <span class="total-value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</span></h3>
             </div>
+            <?php endif; ?>
         </div>
     </section>
 
-    <!-- Actions rapides -->
-    <section class="content-section">
-        <div class="section-title">
-            <h2><i class="fas fa-tasks"></i> Statut de la commande</h2>
+    <section class="cmd-status-section" aria-labelledby="cmd-status-heading">
+        <div class="cmd-status-section__head">
+            <h2 id="cmd-status-heading"><i class="fas fa-sliders-h" aria-hidden="true"></i> Statut &amp; actions</h2>
         </div>
+        <div class="cmd-status-body">
 
         <?php if ($is_annulee): ?>
-            <div class="alert-annulee">
-                <h3><i class="fas fa-ban"></i> Commande Annulée</h3>
-                <p>Cette commande a été annulée. Les actions de modification ne sont pas disponibles. Vous pouvez uniquement
-                    consulter les détails.</p>
+            <div class="cmd-alert cmd-alert--danger" role="status">
+                <h3><i class="fas fa-ban" aria-hidden="true"></i> Commande annulée</h3>
+                <p>Cette commande a été annulée. Aucune modification n’est possible ; vous pouvez consulter les informations ci-dessus.</p>
             </div>
         <?php elseif ($is_livree): ?>
-            <div class="alert-livree">
-                <h3><i class="fas fa-check-circle"></i> Commande livrée</h3>
-                <p>Le client a confirmé la réception du colis. La commande est terminée. Aucune modification n'est possible.
-                </p>
+            <div class="cmd-alert cmd-alert--success" role="status">
+                <h3><i class="fas fa-check-circle" aria-hidden="true"></i> Commande livrée</h3>
+                <p>Le client a confirmé la réception. La commande est terminée.</p>
             </div>
         <?php elseif ($is_paye): ?>
-            <div class="alert-livree">
-                <h3><i class="fas fa-money-bill-wave"></i> Commande payée</h3>
-                <p>La commande a été marquée comme payée. Le stock a été décrémenté. La commande est terminée.
-                </p>
+            <div class="cmd-alert cmd-alert--success" role="status">
+                <h3><i class="fas fa-money-bill-wave" aria-hidden="true"></i> Commande payée</h3>
+                <p>Le paiement est enregistré et le stock a été mis à jour. La commande est terminée.</p>
             </div>
         <?php else: ?>
-            <div class="statut-form">
+            <div class="statut-form cmd-statut-form">
                 <div class="form-group">
                     <label>Statut actuel</label>
-                    <div class="statut-current-wrap">
-                        <span class="commande-statut statut-<?php echo $commande['statut']; ?>">
-                            <?php
-                            $statut_display = ucfirst(str_replace('_', ' ', $commande['statut']));
-                            if ($commande['statut'] == 'annulee') {
-                                $statut_display = 'Annulée';
-                            } elseif ($commande['statut'] == 'paye') {
-                                $statut_display = 'Payée';
-                            }
-                            echo $statut_display;
-                            ?>
+                    <div class="statut-current-wrap cmd-statut-current">
+                        <span class="commande-statut statut-<?php echo $statut_safe_class; ?>">
+                            <?php echo htmlspecialchars($statut_display); ?>
                         </span>
                     </div>
                 </div>
@@ -359,15 +375,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
 
                     <?php elseif ($commande['statut'] == 'livraison_en_cours'): ?>
                         <div class="alert-livraison">
-                            <p><i class="fas fa-truck"></i> Commande en cours de livraison</p>
-                            <p class="sub">Vous pouvez changer le statut manuellement ci-dessous pour la marquer comme "Payée" (décrémente le stock)</p>
+                            <p><i class="fas fa-truck" aria-hidden="true"></i> Livraison en cours</p>
+                            <p class="sub">Utilisez le menu ci-dessous pour passer à <strong>Payée</strong> une fois le règlement confirmé (mise à jour du stock).</p>
                         </div>
                     <?php endif; ?>
                 </div>
 
-                <!-- Formulaire de changement manuel de statut (masqué si livrée ou payée) -->
-                <div class="actions-divider">
-                    <h3>Changer le statut manuellement</h3>
+                <div class="actions-divider cmd-actions-divider">
+                    <h3>Changement manuel de statut</h3>
                     <form method="POST" action="">
                         <div class="form-group">
                             <label for="statut">Nouveau statut</label>
@@ -395,6 +410,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 </div>
             </div>
         <?php endif; ?>
+        </div>
     </section>
+
+    </div>
 
     <?php include '../includes/footer.php'; ?>

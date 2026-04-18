@@ -46,6 +46,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_add_produit'])
 $produits = get_all_produits(null, admin_vendeur_filter_id());
 $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
+$categorie_generale_id = isset($_GET['categorie_generale_id']) ? (int) $_GET['categorie_generale_id'] : 0;
+$rayon_filtre_nom = '';
+if ($categorie_generale_id > 0) {
+    $cgf = get_categorie_generale_by_id($categorie_generale_id);
+    $rayon_filtre_nom = $cgf && !empty($cgf['nom']) ? (string) $cgf['nom'] : '';
+}
+
+$ids_produits_rayon = null;
+if ($categorie_generale_id > 0) {
+    $prods_rayon = get_produits_by_categorie_generale($categorie_generale_id, admin_vendeur_filter_id());
+    $ids_produits_rayon = [];
+    foreach ($prods_rayon as $pr) {
+        $ids_produits_rayon[(int) ($pr['id'] ?? 0)] = true;
+    }
+}
 $open_add_modal = isset($_GET['open_add']) && $_GET['open_add'] === '1';
 $categorie_id_prefill_modal = isset($_GET['prefill_categorie']) ? (int) $_GET['prefill_categorie'] : 0;
 
@@ -64,7 +79,14 @@ if (!empty($produits)) {
     $expanded_filter_ids = ($categorie_id > 0 && function_exists('category_expanded_ids_for_products'))
         ? category_expanded_ids_for_products($categorie_id)
         : ($categorie_id > 0 ? [$categorie_id] : []);
-    $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id, $expanded_filter_ids) {
+    $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id, $expanded_filter_ids, $ids_produits_rayon) {
+        if ($ids_produits_rayon !== null) {
+            $pid = (int) ($produit['id'] ?? 0);
+            if ($pid <= 0 || !isset($ids_produits_rayon[$pid])) {
+                return false;
+            }
+        }
+
         if ($categorie_id > 0 && !in_array((int) ($produit['categorie_id'] ?? 0), $expanded_filter_ids, true)) {
             return false;
         }
@@ -293,10 +315,17 @@ if (!empty($produits)) {
 
     <section class="produits-section">
         <div class="section-title">
-            <h2><i class="fas fa-box"></i> Tous les Produits (<?php echo count($produits); ?>)</h2>
+            <h2><i class="fas fa-box"></i> Tous les Produits (<?php echo count($produits); ?>)
+                <?php if ($categorie_generale_id > 0 && $rayon_filtre_nom !== ''): ?>
+                    <span style="font-size:0.85em;font-weight:500;color:var(--gris-moyen,#737373);"> — Rayon&nbsp;: <?php echo htmlspecialchars($rayon_filtre_nom); ?></span>
+                <?php endif; ?>
+            </h2>
         </div>
 
         <form method="GET" action="" class="admin-filters-bar">
+            <?php if ($categorie_generale_id > 0): ?>
+            <input type="hidden" name="categorie_generale_id" value="<?php echo (int) $categorie_generale_id; ?>">
+            <?php endif; ?>
             <div class="admin-filter-field">
                 <label for="recherche">Recherche</label>
                 <input type="text" id="recherche" name="recherche" placeholder="Nom, FPL000151 ou 5 chiffres (ex. 00151)…"

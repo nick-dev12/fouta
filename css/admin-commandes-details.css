@@ -1,0 +1,697 @@
+/**
+ * Détail d'une commande — admin/commandes/details.php
+ * Version compacte (éléments réduits)
+ */
+
+.cmd-detail-page {
+  --cd-radius: 12px;
+  --cd-shadow: 0 2px 16px rgba(53, 100, 166, 0.08);
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0.65rem 0.85rem 1.5rem;
+  font-family: var(--font-corps, "Poppins", system-ui, sans-serif);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 768px) {
+  .cmd-detail-page {
+    padding: 0.75rem 1.1rem 1.75rem;
+  }
+}
+
+/* ——— Hero ——— */
+.cmd-detail-hero {
+  position: relative;
+  border-radius: 14px;
+  padding: 0.85rem 0.95rem 1rem;
+  margin-bottom: 0.85rem;
+  background: linear-gradient(
+    135deg,
+    var(--blanc, #fff) 0%,
+    rgba(53, 100, 166, 0.06) 48%,
+    rgba(255, 107, 53, 0.04) 100%
+  );
+  border: 1px solid rgba(53, 100, 166, 0.12);
+  box-shadow: var(--cd-shadow);
+  overflow: hidden;
+}
+
+.cmd-detail-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--couleur-dominante, #3564a6),
+    var(--bleu-clair, #4a7ab8),
+    var(--accent-promo, #ff6b35)
+  );
+}
+
+.cmd-detail-hero__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.cmd-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--couleur-dominante, #3564a6);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(53, 100, 166, 0.08);
+  transition: background 0.2s ease;
+}
+
+.cmd-detail-back:hover {
+  background: rgba(53, 100, 166, 0.15);
+}
+
+.cmd-detail-hero .commande-statut {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+}
+
+.cmd-detail-hero__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+@media (min-width: 768px) {
+  .cmd-detail-hero__main {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.cmd-detail-eyebrow {
+  margin: 0 0 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.cmd-detail-hero__title {
+  margin: 0 0 0.3rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--titres, #0d0d0d);
+  font-family: var(--font-titres, inherit);
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .cmd-detail-hero__title {
+    font-size: 1.28rem;
+  }
+}
+
+.cmd-detail-hero__title span {
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.cmd-detail-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--texte-mute, #737373);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.cmd-detail-meta i {
+  color: var(--couleur-dominante, #3564a6);
+  opacity: 0.85;
+  font-size: 0.85em;
+}
+
+.cmd-detail-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.cmd-detail-hero__actions .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: 0.78rem;
+  box-shadow: 0 2px 10px rgba(53, 100, 166, 0.2);
+}
+
+.cmd-detail-hero__actions .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.7rem;
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: 0.78rem;
+  border: 1px solid rgba(53, 100, 166, 0.25);
+  background: var(--blanc, #fff);
+  color: var(--titres, #0d0d0d);
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.cmd-detail-hero__actions .btn-back:hover {
+  border-color: var(--couleur-dominante, #3564a6);
+  background: rgba(53, 100, 166, 0.06);
+}
+
+/* Messages */
+.cmd-detail-page .message.success,
+.cmd-detail-page .message.error {
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.cmd-detail-page .message.success {
+  border: 1px solid rgba(53, 100, 166, 0.22);
+  background: linear-gradient(
+    135deg,
+    rgba(53, 100, 166, 0.08),
+    rgba(255, 255, 255, 0.95)
+  );
+}
+
+.cmd-detail-page .message.error {
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+/* Grille client + livraison */
+.cmd-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+@media (min-width: 900px) {
+  .cmd-detail-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.cmd-detail-panel {
+  background: var(--blanc, #fff);
+  border-radius: var(--cd-radius);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: var(--cd-shadow);
+  padding: 0.75rem 0.85rem 0.8rem;
+}
+
+.cmd-detail-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.65rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(53, 100, 166, 0.12);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--titres, #0d0d0d);
+  font-family: var(--font-titres, inherit);
+}
+
+.cmd-detail-panel__head i {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--bleu-pale, rgba(53, 100, 166, 0.12));
+  color: var(--couleur-dominante, #3564a6);
+  font-size: 0.82rem;
+}
+
+.cmd-detail-panel .detail-item {
+  margin-bottom: 0.55rem;
+}
+
+.cmd-detail-panel .detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.cmd-detail-panel .detail-item label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--texte-mute, #737373);
+  margin-bottom: 0.2rem;
+}
+
+.cmd-detail-panel .detail-item .value {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--titres, #0d0d0d);
+  word-break: break-word;
+}
+
+/* Section produits */
+.cmd-products-section {
+  background: var(--blanc, #fff);
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: var(--cd-shadow);
+  overflow: hidden;
+  margin-bottom: 0.85rem;
+}
+
+.cmd-products-section__head {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: linear-gradient(180deg, rgba(250, 250, 252, 0.95) 0%, var(--blanc, #fff) 100%);
+}
+
+.cmd-products-section__head h2 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--titres, #0d0d0d);
+}
+
+.cmd-products-section__head i {
+  color: var(--couleur-dominante, #3564a6);
+  font-size: 0.88em;
+}
+
+.cmd-products-list {
+  padding: 0.5rem 0.6rem 0.65rem;
+}
+
+@media (min-width: 640px) {
+  .cmd-products-list {
+    padding: 0.65rem 0.75rem 0.75rem;
+  }
+}
+
+.cmd-produit-card {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 0.55rem;
+  align-items: start;
+  padding: 0.55rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(250, 250, 252, 0.65);
+  margin-bottom: 0.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cmd-produit-card:last-of-type {
+  margin-bottom: 0;
+}
+
+.cmd-produit-card:hover {
+  border-color: rgba(53, 100, 166, 0.18);
+  box-shadow: 0 3px 12px rgba(53, 100, 166, 0.07);
+}
+
+@media (max-width: 520px) {
+  .cmd-produit-card {
+    grid-template-columns: 48px 1fr;
+  }
+  .cmd-produit-card .produit-total {
+    grid-column: 1 / -1;
+    text-align: right;
+    padding-top: 0.25rem;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  }
+}
+
+.cmd-produit-card img {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.cmd-produit-card .produit-info h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--titres, #0d0d0d);
+  line-height: 1.3;
+}
+
+.cmd-produit-card .produit-info-lignes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.65rem;
+  font-size: 0.72rem;
+  color: var(--texte-mute, #737373);
+  margin-bottom: 0.2rem;
+}
+
+.cmd-produit-card .info-ligne {
+  font-variant-numeric: tabular-nums;
+}
+
+.cmd-produit-card .produit-options-detail {
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.55rem;
+  border-top: none;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 8px;
+  border: 1px solid rgba(53, 100, 166, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-start;
+}
+
+.cmd-produit-card .produit-options-detail .option-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.4rem;
+  font-size: 0.72rem;
+}
+
+.cmd-produit-card .produit-options-detail .option-label {
+  font-weight: 700;
+  color: var(--couleur-dominante, #3564a6);
+  min-width: 3.5rem;
+}
+
+.cmd-produit-card .produit-options-detail .option-detail.option-poids,
+.cmd-produit-card .produit-options-detail .option-detail.option-taille {
+  align-items: flex-start;
+}
+
+.cmd-produit-card .option-detail {
+  font-size: 0.72rem;
+  margin-bottom: 0.2rem;
+}
+
+.cmd-produit-card .option-label {
+  font-weight: 600;
+  color: var(--texte-mute, #737373);
+}
+
+.cmd-produit-card .produit-options-detail .couleur-swatch-large {
+  width: 26px;
+  height: 26px;
+  border-width: 2px;
+}
+
+.cmd-produit-card .produit-total {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--couleur-dominante, #3564a6);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cmd-products-total {
+  margin: 0.55rem 0.6rem 0.65rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: linear-gradient(
+    125deg,
+    rgba(53, 100, 166, 0.1) 0%,
+    rgba(255, 255, 255, 0.95) 55%,
+    rgba(255, 107, 53, 0.05) 100%
+  );
+  border: 1px solid rgba(53, 100, 166, 0.16);
+}
+
+.cmd-products-total__line {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  color: var(--texte-mute, #737373);
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cmd-products-total__line strong {
+  color: var(--titres, #0d0d0d);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+}
+
+.cmd-products-total h3 {
+  margin: 0.4rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--titres, #0d0d0d);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.cmd-products-total .total-value {
+  color: var(--couleur-dominante, #3564a6);
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section statut */
+.cmd-status-section {
+  background: var(--blanc, #fff);
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: var(--cd-shadow);
+  overflow: hidden;
+}
+
+.cmd-status-section__head {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: linear-gradient(180deg, rgba(250, 250, 252, 0.95) 0%, var(--blanc, #fff) 100%);
+}
+
+.cmd-status-section__head h2 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cmd-status-section__head i {
+  color: var(--couleur-dominante, #3564a6);
+  font-size: 0.9em;
+}
+
+.cmd-status-body {
+  padding: 0.75rem 0.85rem 0.9rem;
+}
+
+.cmd-alert {
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  margin: 0;
+}
+
+.cmd-alert h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cmd-alert h3 i {
+  font-size: 0.95em;
+}
+
+.cmd-alert p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--titres, #0d0d0d);
+}
+
+.cmd-alert--danger {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.cmd-alert--success {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+}
+
+.cmd-alert--info {
+  background: rgba(53, 100, 166, 0.08);
+  border: 1px solid rgba(53, 100, 166, 0.2);
+}
+
+.cmd-alert--danger h3 {
+  color: #b91c1c;
+}
+
+.cmd-alert--success h3 {
+  color: #15803d;
+}
+
+.cmd-alert--info h3 {
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.cmd-statut-form {
+  max-width: 480px;
+}
+
+.cmd-statut-form .form-group {
+  margin-bottom: 0.75rem;
+}
+
+.cmd-statut-form .form-group label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texte-mute, #737373);
+  margin-bottom: 0.3rem;
+}
+
+.cmd-statut-current {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cmd-detail-page .statut-current-wrap .commande-statut {
+  font-size: 0.68rem;
+  padding: 0.3rem 0.55rem;
+}
+
+.cmd-statut-form .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.cmd-statut-form select {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: 9px;
+  border: 1.5px solid rgba(53, 100, 166, 0.22);
+  font-size: 0.82rem;
+  background: var(--blanc, #fff);
+}
+
+.cmd-statut-form select:focus {
+  outline: none;
+  border-color: var(--couleur-dominante, #3564a6);
+  box-shadow: 0 0 0 2px var(--focus-ring, rgba(53, 100, 166, 0.15));
+}
+
+.cmd-actions-divider {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.cmd-actions-divider h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--titres, #0d0d0d);
+}
+
+.notes-box {
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.alert-livraison {
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(53, 100, 166, 0.08);
+  border: 1px solid rgba(53, 100, 166, 0.2);
+  margin-bottom: 0.65rem;
+}
+
+.alert-livraison p {
+  margin: 0 0 0.2rem;
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.alert-livraison .sub {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--texte-mute, #737373);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cmd-products-empty {
+  text-align: center;
+  padding: 1.25rem 0.75rem;
+  color: var(--texte-mute, #737373);
+  font-size: 0.82rem;
+}
+
+.cmd-products-empty i {
+  font-size: 1.75rem;
+  margin-bottom: 0.35rem;
+  opacity: 0.35;
+  display: block;
+}
+
+.cmd-detail-page .statut-form.cmd-statut-form {
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.cmd-detail-page .statut-current-wrap {
+  padding: 0.25rem 0;
+  background: transparent;
+  margin-bottom: 0.35rem;
+}

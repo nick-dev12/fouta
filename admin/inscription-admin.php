@@ -373,7 +373,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
 <body>
     <header class="auth-header">
         <a class="logo" href="/index.php">
-            <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS">
+            <img src="/image/logo_market.png" alt="COLObanes">
         </a>
     </header>
 

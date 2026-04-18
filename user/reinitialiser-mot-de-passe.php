@@ -272,7 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
 <body>
     <header class="auth-header">
         <a class="logo" href="/index.php">
-            <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS">
+            <img src="/image/logo_market.png" alt="COLObanes">
         </a>
     </header>
 

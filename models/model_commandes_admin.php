@@ -55,6 +55,38 @@ function _admin_cp_has_variante_columns() {
  * @param string $statut Filtrer par statut (optionnel)
  * @return array|false Tableau des commandes ou False en cas d'erreur
  */
+/**
+ * Commandes d’un client (acheteur) — toutes dates, plus récentes en premier.
+ *
+ * @param int $user_id ID table users
+ * @return array<int, array<string, mixed>>
+ */
+function get_commandes_by_user_id($user_id) {
+    global $db;
+    $uid = (int) $user_id;
+    if ($uid <= 0) {
+        return [];
+    }
+    try {
+        $sql = "
+            SELECT c.*,
+                   COALESCE(u.nom, c.client_nom) as user_nom,
+                   COALESCE(u.prenom, c.client_prenom) as user_prenom,
+                   COALESCE(u.email, c.client_email) as user_email
+            FROM commandes c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.user_id = :uid
+            ORDER BY c.date_commande DESC
+        ";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['uid' => $uid]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ? $rows : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
 function get_all_commandes($statut = null, $vendeur_id = null) {
     global $db;
 
@@ -135,24 +167,31 @@ function get_produits_by_commande($commande_id) {
     try {
         $has_opts = _admin_cp_has_option_columns();
         $has_var = _admin_cp_has_variante_columns();
-        
-        $produit_nom_col = _admin_cp_has_nom_produit() ? "COALESCE(NULLIF(TRIM(cp.nom_produit), ''), p.nom) as produit_nom" : "p.nom as produit_nom";
-        $cols = "cp.*, $produit_nom_col, p.image_principale, c.nom as categorie_nom";
-        if ($has_opts) $cols .= ", cp.couleur, cp.poids, cp.taille";
+        $has_nom_snap = _admin_cp_has_nom_produit();
+
+        if ($has_nom_snap) {
+            $produit_nom_col = "COALESCE(NULLIF(TRIM(cp.nom_produit), ''), p.nom, CONCAT('Produit #', cp.produit_id)) as produit_nom";
+        } else {
+            $produit_nom_col = "COALESCE(p.nom, CONCAT('Produit #', cp.produit_id)) as produit_nom";
+        }
+        $cols = "cp.*, $produit_nom_col, p.image_principale, cat.nom as categorie_nom";
+        if ($has_opts) {
+            $cols .= ", cp.couleur, cp.poids, cp.taille";
+        }
         if ($has_var) {
             $cols .= ", cp.variante_id, COALESCE(NULLIF(TRIM(cp.variante_nom), ''), pv.nom) as variante_nom, cp.surcout_poids, cp.surcout_taille";
             $cols .= ", COALESCE(pv.image, p.image_principale) as image_afficher";
-            $join_pv = "LEFT JOIN produits_variantes pv ON cp.variante_id = pv.id AND pv.produit_id = p.id";
+            $join_pv = "LEFT JOIN produits_variantes pv ON cp.variante_id = pv.id AND pv.produit_id = cp.produit_id";
         } else {
             $cols .= ", p.image_principale as image_afficher";
             $join_pv = "";
         }
-        
+
         $sql = "
             SELECT $cols
             FROM commande_produits cp
-            INNER JOIN produits p ON cp.produit_id = p.id
-            LEFT JOIN categories c ON p.categorie_id = c.id
+            LEFT JOIN produits p ON cp.produit_id = p.id
+            LEFT JOIN categories cat ON p.categorie_id = cat.id
             $join_pv
             WHERE cp.commande_id = :commande_id
             ORDER BY cp.id

@@ -564,7 +564,7 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
 <nav class="nav-planete-gateau">
     <div class="nav-top-row">
         <a class="logo" href="<?php echo htmlspecialchars($u_home); ?>">
-            <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS">
+            <img src="/image/logo_market.png" alt="COLObanes">
         </a>
         <a href="<?php echo isset($_SESSION['user_id']) ? htmlspecialchars($u_panier) : '/choix-connexion.php?redirect=' . rawurlencode($nav_panier_connect_redirect); ?>"
             class="nav-panier-link"
@@ -740,7 +740,7 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
 <aside class="nav-sidebar" id="navSidebar">
     <div class="nav-sidebar-header">
         <a href="<?php echo htmlspecialchars($u_home); ?>" class="nav-sidebar-logo">
-            <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS">
+            <img src="/image/logo_market.png" alt="COLObanes">
         </a>
         <p class="nav-sidebar-slogan">FOUTA POIDS LOURDS</p>
     </div>

@@ -207,9 +207,40 @@ if (!function_exists('admin_categories_list_for_session')) {
         require_once dirname(__DIR__) . '/models/model_categories.php';
         $role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
         if ($role === 'vendeur') {
+            $plat = function_exists('get_plateforme_sous_categories_for_form')
+                ? get_plateforme_sous_categories_for_form() : [];
+            if (!empty($plat)) {
+                return $plat;
+            }
             return get_categories_for_vendeur_stock((int) $_SESSION['admin_id']);
         }
         return get_all_categories();
+    }
+}
+
+if (!function_exists('admin_vendeur_assert_categorie_editable')) {
+    /**
+     * Autorise le vendeur uniquement à modifier / supprimer ses propres catégories (pas les rayons plateforme).
+     */
+    function admin_vendeur_assert_categorie_editable($categorie_id) {
+        if (session_status() !== PHP_SESSION_ACTIVE || !isset($_SESSION['admin_id'])) {
+            return;
+        }
+        $role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+        if ($role !== 'vendeur') {
+            return;
+        }
+        $cid = (int) $categorie_id;
+        $vid = (int) $_SESSION['admin_id'];
+        if ($cid <= 0 || $vid <= 0) {
+            header('Location: ' . admin_route_build_url('stock/index.php'));
+            exit;
+        }
+        require_once dirname(__DIR__) . '/models/model_categories.php';
+        if (!categorie_est_modifiable_par_vendeur($cid, $vid)) {
+            header('Location: ' . admin_route_build_url('stock/index.php'));
+            exit;
+        }
     }
 }
 

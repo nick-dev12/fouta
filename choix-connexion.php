@@ -408,7 +408,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
 <body>
     <header class="auth-header">
         <a class="logo" href="/index.php">
-            <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS">
+            <img src="/image/logo_market.png" alt="COLObanes">
         </a>
     </header>
 

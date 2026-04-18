@@ -1,18 +1,42 @@
 <?php
 /**
- * Formulaire d'ajout produit — inclus par ajouter.php et index.php (modal).
+ * Formulaire ajout / modification produit — ajouter.php, modifier.php, index.php (modal).
  * Variables attendues :
- *   $add_produit_modal (bool) : true = contexte modal (champ hidden admin_add_produit)
- *   $add_produit_form_action (string) : action du <form> ('' = page courante, 'index.php', etc.)
- *   $categories, $categorie_id_prefill
- *   Vendeur (hiérarchie) : $fap_use_category_hierarchy, $vcat_prefill_sub, $vcat_prefill_generale (rayon), optionnel $vendeur_subcats_for_form
- * Le message d'erreur s'affiche via $add_produit_error_message (optionnel).
+ *   $add_produit_modal, $add_produit_form_action, $categories, $categorie_id_prefill
+ *   Hiérarchie vendeur : $fap_use_category_hierarchy, $vcat_prefill_sub, $vcat_prefill_generale
+ *   $add_produit_error_message (optionnel)
+ * Édition : $fap_is_edit = true, $fap_edit_produit (tableau), $PM prérempli par modifier.php
+ *   $fap_edit_variantes_js (optionnel) — variantes initiales pour le script
  */
 $add_produit_modal = !empty($add_produit_modal);
+$fap_is_edit = !empty($fap_is_edit);
 $add_produit_form_action = isset($add_produit_form_action) ? (string) $add_produit_form_action : '';
-$form_el_id = $add_produit_modal ? 'form-add-produit-modal' : 'form-add-produit-page';
-$PM = $_POST;
+$form_el_id = $fap_is_edit ? 'form-edit-produit-page' : ($add_produit_modal ? 'form-add-produit-modal' : 'form-add-produit-page');
+if (!isset($PM) || !is_array($PM)) {
+    $PM = $_POST;
+}
+$fap_edit_produit = (isset($fap_edit_produit) && is_array($fap_edit_produit)) ? $fap_edit_produit : null;
+if (!isset($fap_edit_variantes_js) || !is_array($fap_edit_variantes_js)) {
+    $fap_edit_variantes_js = [];
+}
 $categorie_id_prefill = isset($categorie_id_prefill) ? (int) $categorie_id_prefill : 0;
+
+$fap_existing_image_paths = [];
+if ($fap_is_edit && $fap_edit_produit) {
+    $fe = $fap_edit_produit;
+    if (!empty($fe['images'])) {
+        $dec = json_decode((string) $fe['images'], true);
+        if (is_array($dec)) {
+            $fap_existing_image_paths = $dec;
+        }
+    }
+    if (empty($fap_existing_image_paths) && !empty($fe['image_principale'])) {
+        $fap_existing_image_paths = [(string) $fe['image_principale']];
+    }
+}
+if ($fap_is_edit && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['images_to_keep']) && is_array($_POST['images_to_keep'])) {
+    $fap_existing_image_paths = array_values(array_filter(array_map('trim', $_POST['images_to_keep'])));
+}
 $fap_use_category_hierarchy = !empty($fap_use_category_hierarchy);
 if (!isset($vcat_prefill_sub)) {
     $vcat_prefill_sub = 0;
@@ -31,6 +55,14 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
         }
     }
 }
+$fap_cg_attr_map = [];
+if (function_exists('get_categorie_generale_attributs_map_for_js')) {
+    require_once __DIR__ . '/../../models/model_categories.php';
+    $fap_cg_attr_map = get_categorie_generale_attributs_map_for_js();
+}
+$fap_attr_conditional = !empty($fap_use_category_hierarchy);
+$pm_unite = isset($PM['unite']) ? (string) $PM['unite'] : 'unité';
+$pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
 ?>
 <form method="POST" action="<?php echo htmlspecialchars($add_produit_form_action); ?>"
     enctype="multipart/form-data"
@@ -54,7 +86,11 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                     <i class="fas fa-info-circle"></i>
                     <h3>Informations principales</h3>
                 </div>
+                <?php if (!$fap_is_edit): ?>
                 <p class="fap-hint">Un code interne <strong>FPLxxxxxx</strong> est attribué automatiquement à l’enregistrement.</p>
+                <?php else: ?>
+                <p class="fap-hint">Référence interne attribuée à la création — non modifiable.</p>
+                <?php endif; ?>
                 <div class="fap-field">
                     <label for="nom">Nom du produit <span class="required">*</span></label>
                     <input type="text" id="nom" name="nom" required placeholder="Ex. Kit frein arrière complet"
@@ -64,6 +100,17 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                     <label for="description">Description <span class="required">*</span></label>
                     <textarea id="description" name="description" required placeholder="Décrivez le produit, compatibilité, état…" rows="5"><?php echo isset($PM['description']) ? htmlspecialchars($PM['description']) : ''; ?></textarea>
                 </div>
+                <?php if ($fap_is_edit && $fap_edit_produit): ?>
+                <?php
+                $ident_ro = trim((string) ($fap_edit_produit['identifiant_interne'] ?? ''));
+                ?>
+                <div class="fap-field">
+                    <label for="fap_ident_interne_ro">Identifiant interne (FPL)</label>
+                    <input type="text" id="fap_ident_interne_ro" readonly
+                        value="<?php echo $ident_ro !== '' ? htmlspecialchars($ident_ro) : '—'; ?>"
+                        style="background:var(--blanc-neige,#f5f5f5);cursor:default;">
+                </div>
+                <?php endif; ?>
                 <?php if ($fap_use_category_hierarchy): ?>
                     <?php require __DIR__ . '/inc_vendeur_category_fields.php'; ?>
                 <?php else: ?>
@@ -117,12 +164,14 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
 
             <div class="fap-card">
                 <div class="fap-card-head">
-                    <i class="fas fa-palette"></i>
-                    <h3>Poids &amp; couleurs</h3>
+                    <i class="fas fa-sliders-h"></i>
+                    <h3>Poids, taille, mesures &amp; couleurs</h3>
                 </div>
-                <p class="fap-hint">Options facultatives : supplément FCFA par poids sélectionné en boutique.</p>
-                <div class="fap-field">
+                <p class="fap-hint">Facultatif. Les champs affichés dépendent du <strong>rayon</strong> choisi (configuration super administrateur).</p>
+
+                <div class="fap-field" data-fap-attr="poids">
                     <label>Poids disponibles</label>
+                    <p class="fap-hint" style="margin-top:0;">Supplément FCFA optionnel par option en boutique.</p>
                     <div class="options-add-block options-with-surcharge">
                         <div class="options-add-row">
                             <input type="text" id="poids-input" placeholder="Ex. 500g, 1kg" class="options-input">
@@ -136,7 +185,44 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                             value="<?php echo isset($PM['poids']) ? htmlspecialchars($PM['poids']) : ''; ?>">
                     </div>
                 </div>
-                <div class="fap-field">
+
+                <div class="fap-field" data-fap-attr="taille">
+                    <label>Tailles disponibles</label>
+                    <div class="options-add-block options-with-surcharge">
+                        <div class="options-add-row">
+                            <input type="text" id="taille-input" placeholder="Ex. S, M, L, XL" class="options-input">
+                            <input type="number" id="taille-surcharge" placeholder="+ FCFA" min="0" step="1" class="options-surcharge" title="Montant à ajouter au prix">
+                            <button type="button" class="btn-add-option" id="btn-add-taille">
+                                <i class="fas fa-plus"></i> Ajouter
+                            </button>
+                        </div>
+                        <div id="taille-list" class="options-tags-list options-tags-with-surcharge"></div>
+                        <input type="hidden" name="taille" id="taille-hidden"
+                            value="<?php echo isset($PM['taille']) ? htmlspecialchars($PM['taille']) : ''; ?>">
+                    </div>
+                </div>
+
+                <div class="fap-field" data-fap-attr="mesure">
+                    <div class="fap-row-2">
+                        <div class="fap-field" style="margin-bottom:0;">
+                            <label for="unite">Unité par défaut</label>
+                            <select id="unite" name="unite">
+                                <option value="unité" <?php echo ($pm_unite === 'unité') ? 'selected' : ''; ?>>Unité</option>
+                                <option value="kg" <?php echo ($pm_unite === 'kg') ? 'selected' : ''; ?>>Kilogramme</option>
+                                <option value="g" <?php echo ($pm_unite === 'g') ? 'selected' : ''; ?>>Gramme</option>
+                                <option value="L" <?php echo ($pm_unite === 'L') ? 'selected' : ''; ?>>Litre</option>
+                            </select>
+                        </div>
+                        <div class="fap-field" style="margin-bottom:0;">
+                            <label for="mesure">Mesures / dimensions</label>
+                            <input type="text" id="mesure" name="mesure" maxlength="500" placeholder="Ex. 30 × 40 cm, 2 L…"
+                                value="<?php echo htmlspecialchars($pm_mesure, ENT_QUOTES, 'UTF-8'); ?>">
+                        </div>
+                    </div>
+                    <p class="fap-hint">Texte libre pour préciser dimensions, volume ou conditionnement.</p>
+                </div>
+
+                <div class="fap-field" data-fap-attr="couleur">
                     <label>Couleurs (optionnel)</label>
                     <div class="couleurs-picker-block">
                         <div class="couleurs-add-row">
@@ -159,6 +245,7 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                     <i class="fas fa-images"></i>
                     <h3>Visuels</h3>
                 </div>
+                <?php if (!$fap_is_edit): ?>
                 <div class="fap-field">
                     <label>Images <span class="required">*</span></label>
                     <p class="fap-hint">La 1<sup>ère</sup> image est la photo principale ; les autres enrichissent la fiche.</p>
@@ -172,11 +259,41 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                     </div>
                     <div id="preview-images" class="image-preview-accumulator"></div>
                 </div>
+                <?php else: ?>
+                <div class="fap-field">
+                    <label>Images <span class="required">*</span></label>
+                    <p class="fap-hint">Conservez au moins une image. La 1<sup>ère</sup> reste la photo principale. Utilisez &times; pour retirer une image existante avant enregistrement.</p>
+                    <div id="fap-existing-gallery" class="fap-existing-gallery image-preview-accumulator">
+                        <?php foreach ($fap_existing_image_paths as $idx => $img_path): ?>
+                        <div class="preview-item fap-thumb-existing" data-path="<?php echo htmlspecialchars($img_path, ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="images_to_keep[]" value="<?php echo htmlspecialchars($img_path, ENT_QUOTES, 'UTF-8'); ?>">
+                            <span class="preview-badge"><?php echo (int) $idx === 0 ? 'Principale' : (string) ((int) $idx + 1); ?></span>
+                            <button type="button" class="preview-remove fap-remove-existing-img" title="Retirer">&times;</button>
+                            <img src="/upload/<?php echo htmlspecialchars($img_path, ENT_QUOTES, 'UTF-8'); ?>" alt=""
+                                onerror="this.src='/image/produit1.jpg'">
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <p class="fap-hint" style="margin-top:8px;">Ajouter des images à la galerie</p>
+                    <div class="fap-dropzone file-input-wrapper file-input-single" data-trigger="images_supplementaires">
+                        <input type="file" id="images_supplementaires" name="images_supplementaires[]" accept="image/*" multiple class="file-input fap-file-native">
+                        <div class="fap-dropzone-inner">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Glissez-déposez ou cliquez pour ajouter</span>
+                            <small>JPG, PNG, WEBP, GIF — plusieurs fichiers possibles</small>
+                        </div>
+                    </div>
+                    <div id="preview-images-supp" class="image-preview-accumulator"></div>
+                </div>
+                <?php endif; ?>
                 <div class="fap-field">
                     <label for="statut">Visibilité</label>
                     <select id="statut" name="statut">
-                        <option value="actif" <?php echo (!isset($PM['statut']) || $PM['statut'] == 'actif') ? 'selected' : ''; ?>>Actif (visible en boutique)</option>
-                        <option value="inactif" <?php echo (isset($PM['statut']) && $PM['statut'] == 'inactif') ? 'selected' : ''; ?>>Inactif (masqué)</option>
+                        <option value="actif" <?php echo (!isset($PM['statut']) || $PM['statut'] === 'actif') ? 'selected' : ''; ?>>Actif (visible en boutique)</option>
+                        <option value="inactif" <?php echo (isset($PM['statut']) && $PM['statut'] === 'inactif') ? 'selected' : ''; ?>>Inactif (masqué)</option>
+                        <?php if ($fap_is_edit): ?>
+                        <option value="rupture_stock" <?php echo (isset($PM['statut']) && $PM['statut'] === 'rupture_stock') ? 'selected' : ''; ?>>Rupture de stock</option>
+                        <?php endif; ?>
                     </select>
                 </div>
             </div>
@@ -207,9 +324,11 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
 
     <div class="fap-actions">
         <button type="submit" class="btn-fap-submit">
-            <i class="fas fa-check"></i> Enregistrer le produit
+            <i class="fas fa-check"></i> <?php echo $fap_is_edit ? 'Enregistrer les modifications' : 'Enregistrer le produit'; ?>
         </button>
-        <?php if ($add_produit_modal): ?>
+        <?php if ($fap_is_edit): ?>
+        <a href="index.php" class="btn-fap-cancel">Annuler</a>
+        <?php elseif ($add_produit_modal): ?>
         <button type="button" class="btn-fap-cancel" id="btn-fap-cancel-modal" data-close-modal>Annuler</button>
         <?php elseif ($categorie_id_prefill > 0): ?>
         <a href="../categories/produits.php?id=<?php echo (int) $categorie_id_prefill; ?>" class="btn-fap-cancel">Annuler</a>
@@ -468,6 +587,7 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
     cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; padding: 0;
 }
 .image-preview-accumulator .preview-item .preview-remove:hover { background: #c00; }
+.fap-existing-gallery .fap-thumb-existing { position: relative; }
 .couleurs-picker-block { margin-top: 8px; }
 .couleurs-add-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .couleurs-add-row input[type="color"] { width: 50px; height: 40px; padding: 2px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; }
@@ -512,29 +632,37 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
     var form = document.getElementById(formId);
     if (!form) return;
 
-    var input = document.getElementById('images_produit');
-    var container = document.getElementById('preview-images');
-    var accumulatedFiles = [];
-    if (input && container) {
-        function updateInputFiles() {
-            var dt = new DataTransfer();
-            for (var i = 0; i < accumulatedFiles.length; i++) { dt.items.add(accumulatedFiles[i]); }
-            input.files = dt.files;
+    var fapIsEdit = <?php echo $fap_is_edit ? 'true' : 'false'; ?>;
+
+    if (fapIsEdit) {
+        var suppInput = document.getElementById('images_supplementaires');
+        var suppContainer = document.getElementById('preview-images-supp');
+        var existGal = document.getElementById('fap-existing-gallery');
+        var accumulatedSupp = [];
+        function countKept() {
+            return existGal ? existGal.querySelectorAll('input[name="images_to_keep[]"]').length : 0;
         }
-        function addPreviews(newFiles) {
+        function updateSuppFiles() {
+            if (!suppInput) return;
+            var dt = new DataTransfer();
+            for (var s = 0; s < accumulatedSupp.length; s++) { dt.items.add(accumulatedSupp[s]); }
+            suppInput.files = dt.files;
+        }
+        function addSuppPreviews(newFiles) {
+            if (!suppContainer || !suppInput) return;
             for (var i = 0; i < newFiles.length; i++) {
                 (function (file) {
                     if (!file.type.match('image.*')) return;
-                    var pos = accumulatedFiles.length;
-                    accumulatedFiles.push(file);
+                    var pos = accumulatedSupp.length;
+                    accumulatedSupp.push(file);
                     var reader = new FileReader();
                     reader.onload = function (e) {
                         var div = document.createElement('div');
                         div.className = 'preview-item';
-                        div.dataset.index = pos;
+                        div.dataset.suppIndex = String(pos);
                         var badge = document.createElement('span');
                         badge.className = 'preview-badge';
-                        badge.textContent = pos === 0 ? 'Principale' : String(pos + 1);
+                        badge.textContent = 'Nouvelle';
                         var img = document.createElement('img');
                         img.src = e.target.result;
                         img.alt = 'Aperçu';
@@ -545,39 +673,118 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                         btn.title = 'Retirer';
                         btn.onclick = function (ev) {
                             ev.preventDefault(); ev.stopPropagation();
-                            var idx = parseInt(div.dataset.index, 10);
-                            accumulatedFiles.splice(idx, 1);
+                            var idx = parseInt(div.dataset.suppIndex, 10);
+                            accumulatedSupp.splice(idx, 1);
                             div.remove();
-                            for (var j = 0; j < container.children.length; j++) {
-                                container.children[j].dataset.index = j;
-                                container.children[j].querySelector('.preview-badge').textContent =
-                                    j === 0 ? 'Principale' : String(j + 1);
+                            for (var j = 0; j < suppContainer.children.length; j++) {
+                                suppContainer.children[j].dataset.suppIndex = String(j);
                             }
-                            updateInputFiles();
+                            updateSuppFiles();
                         };
                         div.appendChild(badge);
                         div.appendChild(img);
                         div.appendChild(btn);
-                        container.appendChild(div);
+                        suppContainer.appendChild(div);
                     };
                     reader.readAsDataURL(file);
                 })(newFiles[i]);
             }
-            updateInputFiles();
+            updateSuppFiles();
         }
-        input.addEventListener('change', function () {
-            if (this.files && this.files.length > 0) {
-                var nf = []; for (var i = 0; i < this.files.length; i++) nf.push(this.files[i]);
-                addPreviews(nf);
-            }
-        });
+        if (suppInput && suppContainer) {
+            suppInput.addEventListener('change', function () {
+                if (this.files && this.files.length > 0) {
+                    var nf = [];
+                    for (var i = 0; i < this.files.length; i++) nf.push(this.files[i]);
+                    addSuppPreviews(nf);
+                }
+            });
+        }
+        if (existGal) {
+            existGal.addEventListener('click', function (e) {
+                var r = e.target.closest('.fap-remove-existing-img');
+                if (r) {
+                    e.preventDefault();
+                    var thumb = r.closest('.fap-thumb-existing');
+                    if (thumb) thumb.remove();
+                }
+            });
+        }
         form.addEventListener('submit', function (e) {
-            if (accumulatedFiles.length === 0) {
+            if (countKept() + accumulatedSupp.length < 1) {
                 e.preventDefault();
-                alert('Veuillez ajouter au moins une image.');
+                alert('Au moins une image est obligatoire (conservez une image existante ou ajoutez-en une nouvelle).');
                 return false;
             }
         });
+    } else {
+        var input = document.getElementById('images_produit');
+        var container = document.getElementById('preview-images');
+        var accumulatedFiles = [];
+        if (input && container) {
+            function updateInputFiles() {
+                var dt = new DataTransfer();
+                for (var i = 0; i < accumulatedFiles.length; i++) { dt.items.add(accumulatedFiles[i]); }
+                input.files = dt.files;
+            }
+            function addPreviews(newFiles) {
+                for (var i = 0; i < newFiles.length; i++) {
+                    (function (file) {
+                        if (!file.type.match('image.*')) return;
+                        var pos = accumulatedFiles.length;
+                        accumulatedFiles.push(file);
+                        var reader = new FileReader();
+                        reader.onload = function (e) {
+                            var div = document.createElement('div');
+                            div.className = 'preview-item';
+                            div.dataset.index = pos;
+                            var badge = document.createElement('span');
+                            badge.className = 'preview-badge';
+                            badge.textContent = pos === 0 ? 'Principale' : String(pos + 1);
+                            var img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.alt = 'Aperçu';
+                            var btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'preview-remove';
+                            btn.innerHTML = '&times;';
+                            btn.title = 'Retirer';
+                            btn.onclick = function (ev) {
+                                ev.preventDefault(); ev.stopPropagation();
+                                var idx = parseInt(div.dataset.index, 10);
+                                accumulatedFiles.splice(idx, 1);
+                                div.remove();
+                                for (var j = 0; j < container.children.length; j++) {
+                                    container.children[j].dataset.index = j;
+                                    container.children[j].querySelector('.preview-badge').textContent =
+                                        j === 0 ? 'Principale' : String(j + 1);
+                                }
+                                updateInputFiles();
+                            };
+                            div.appendChild(badge);
+                            div.appendChild(img);
+                            div.appendChild(btn);
+                            container.appendChild(div);
+                        };
+                        reader.readAsDataURL(file);
+                    })(newFiles[i]);
+                }
+                updateInputFiles();
+            }
+            input.addEventListener('change', function () {
+                if (this.files && this.files.length > 0) {
+                    var nf = []; for (var ii = 0; ii < this.files.length; ii++) nf.push(this.files[ii]);
+                    addPreviews(nf);
+                }
+            });
+            form.addEventListener('submit', function (e) {
+                if (accumulatedFiles.length === 0) {
+                    e.preventDefault();
+                    alert('Veuillez ajouter au moins une image.');
+                    return false;
+                }
+            });
+        }
     }
 
     (function couleurs() {
@@ -686,7 +893,36 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
             renderL();
         }
         initOptionsWithSurcharge('poids-input', 'poids-surcharge', 'poids-list', 'poids-hidden', 'btn-add-poids');
+        initOptionsWithSurcharge('taille-input', 'taille-surcharge', 'taille-list', 'taille-hidden', 'btn-add-taille');
     })();
+
+    <?php if (!empty($fap_attr_conditional)): ?>
+    (function () {
+        var map = <?php echo json_encode($fap_cg_attr_map, JSON_UNESCAPED_UNICODE); ?>;
+        var sel = document.getElementById('categorie_generale_id');
+        function syncFapAttrs() {
+            var els = document.querySelectorAll('[data-fap-attr]');
+            if (!sel) {
+                for (var i = 0; i < els.length; i++) els[i].style.display = '';
+                return;
+            }
+            var id = String(parseInt(sel.value, 10) || 0);
+            var attr = map[id] || { p: 1, t: 1, m: 1, c: 1 };
+            for (var j = 0; j < els.length; j++) {
+                var el = els[j];
+                var k = el.getAttribute('data-fap-attr');
+                var show = true;
+                if (k === 'poids') show = !!attr.p;
+                else if (k === 'taille') show = !!attr.t;
+                else if (k === 'mesure') show = !!attr.m;
+                else if (k === 'couleur') show = !!attr.c;
+                el.style.display = show ? '' : 'none';
+            }
+        }
+        if (sel) sel.addEventListener('change', syncFapAttrs);
+        syncFapAttrs();
+    })();
+    <?php endif; ?>
 
     /* Variantes : mémoire + mount pour POST */
     (function variantes() {
@@ -710,6 +946,11 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
             variantesData.forEach(function (v) {
                 var w = document.createElement('div');
                 w.className = 'fap-v-chunk';
+                var hidId = document.createElement('input');
+                hidId.type = 'hidden';
+                hidId.name = 'variantes_id[]';
+                hidId.value = (v.id != null && String(v.id) !== '' && String(v.id) !== '0') ? String(v.id) : '';
+                hidId.tabIndex = -1;
                 var nom = document.createElement('input');
                 nom.type = 'text';
                 nom.name = 'variantes_nom[]';
@@ -739,6 +980,7 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                         fi.files = dt.files;
                     } catch (e) {}
                 }
+                w.appendChild(hidId);
                 w.appendChild(nom);
                 w.appendChild(pr);
                 w.appendChild(prm);
@@ -764,6 +1006,8 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                     var r = new FileReader();
                     r.onload = function (e) { thumb.src = e.target.result; };
                     r.readAsDataURL(v.file);
+                } else if (v.existingImage) {
+                    thumb.src = v.existingImage;
                 } else {
                     thumb.style.display = 'none';
                 }
@@ -775,7 +1019,8 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                 var meta = document.createElement('p');
                 meta.className = 'fap-variante-chip-meta';
                 var promoTxt = (v.promo && parseFloat(v.promo) > 0) ? ' — Promo : ' + v.promo + ' FCFA' : '';
-                meta.textContent = 'Prix : ' + v.prix + ' FCFA' + promoTxt + (v.file ? '' : ' — sans image');
+                var imgNote = v.file ? '' : (v.existingImage ? ' — image enregistrée' : ' — sans image');
+                meta.textContent = 'Prix : ' + v.prix + ' FCFA' + promoTxt + imgNote;
                 body.appendChild(h);
                 body.appendChild(meta);
                 var actions = document.createElement('div');
@@ -834,10 +1079,24 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
                 if (f === null && editIndex !== null && editIndex >= 0 && variantesData[editIndex] && variantesData[editIndex].file) {
                     f = variantesData[editIndex].file;
                 }
-                var entry = { nom: nom, prix: String(prix), promo: promo, file: f };
+                var prev = (editIndex !== null && editIndex >= 0) ? variantesData[editIndex] : null;
+                var entry = {
+                    id: prev && prev.id != null ? prev.id : null,
+                    nom: nom,
+                    prix: String(prix),
+                    promo: promo,
+                    file: f,
+                    existingImage: null
+                };
+                if (f) {
+                    entry.existingImage = null;
+                } else if (prev && prev.existingImage) {
+                    entry.existingImage = prev.existingImage;
+                }
                 if (editIndex !== null && editIndex >= 0) {
                     variantesData[editIndex] = entry;
                 } else {
+                    entry.id = null;
                     variantesData.push(entry);
                 }
                 renderCards();
@@ -875,14 +1134,28 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
             $noms = array_values($PM['variantes_nom']);
             $prixs = isset($PM['variantes_prix']) && is_array($PM['variantes_prix']) ? array_values($PM['variantes_prix']) : [];
             $promos = isset($PM['variantes_prix_promo']) && is_array($PM['variantes_prix_promo']) ? array_values($PM['variantes_prix_promo']) : [];
+            $ids_row = isset($PM['variantes_id']) && is_array($PM['variantes_id']) ? array_values($PM['variantes_id']) : [];
+            if ($fap_is_edit && !function_exists('get_variante_by_id')) {
+                require_once __DIR__ . '/../../models/model_variantes.php';
+            }
             foreach ($noms as $ki => $vn) {
                 $vn = trim((string) $vn);
                 $vp = isset($prixs[$ki]) && is_numeric($prixs[$ki]) ? (float) $prixs[$ki] : 0;
                 if ($vn !== '' && $vp > 0) {
+                    $vid = isset($ids_row[$ki]) ? (int) $ids_row[$ki] : 0;
+                    $exImg = null;
+                    if ($fap_is_edit && $vid > 0 && function_exists('get_variante_by_id')) {
+                        $ov = get_variante_by_id($vid);
+                        if ($ov && !empty($ov['image'])) {
+                            $exImg = '/upload/' . ltrim((string) $ov['image'], '/');
+                        }
+                    }
                     $repop_v[] = [
+                        'id' => $vid > 0 ? $vid : null,
                         'nom' => $vn,
                         'prix' => (string) $vp,
                         'promo' => isset($promos[$ki]) && (float) $promos[$ki] > 0 ? (string) $promos[$ki] : '',
+                        'existingImage' => $exImg,
                     ];
                 }
             }
@@ -892,7 +1165,30 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill > 0 && (int) $vcat_pref
         try {
             var repop = <?php echo json_encode($repop_v, JSON_UNESCAPED_UNICODE); ?>;
             if (Array.isArray(repop)) repop.forEach(function (r) {
-                variantesData.push({ nom: r.nom, prix: r.prix, promo: r.promo || '', file: null });
+                variantesData.push({
+                    id: r.id != null && r.id !== 0 ? r.id : null,
+                    nom: r.nom,
+                    prix: r.prix,
+                    promo: r.promo || '',
+                    file: null,
+                    existingImage: r.existingImage || null
+                });
+            });
+            renderCards();
+            rebuildMount();
+        } catch (e) {}
+        <?php elseif ($fap_is_edit && !empty($fap_edit_variantes_js)): ?>
+        try {
+            var ini = <?php echo json_encode($fap_edit_variantes_js, JSON_UNESCAPED_UNICODE); ?>;
+            if (Array.isArray(ini)) ini.forEach(function (r) {
+                variantesData.push({
+                    id: r.id != null ? r.id : null,
+                    nom: r.nom,
+                    prix: r.prix,
+                    promo: r.promo || '',
+                    file: null,
+                    existingImage: r.existingImage || null
+                });
             });
             renderCards();
             rebuildMount();

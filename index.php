@@ -391,9 +391,12 @@ $seo_canonical = $base . '/';
     }
 
     .mp-shell {
+        box-sizing: border-box;
+        width: 100%;
         max-width: 1320px;
         margin: 0 auto;
         padding: 0 16px;
+        overflow-x: hidden;
     }
 
     .mp-slider-wrap {
@@ -416,27 +419,104 @@ $seo_canonical = $base . '/';
         display: block;
     }
 
-    /* Bandeau recherche */
+    /* Titre page — hors hero carrousel */
+    .mp-hero-title-wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 20px 16px 8px;
+        text-align: center;
+    }
+
+    .mp-hero-title-wrap .mp-page-title {
+        font-size: clamp(20px, 3vw, 28px);
+        font-weight: 700;
+        color: var(--titres);
+        font-family: var(--font-titres);
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    /* Bandeau hero : zone slide ≤ 300px, images entières (object-fit: contain) */
     .mp-hero {
-        background: linear-gradient(180deg, var(--blanc-casse) 0%, var(--blanc-neige) 100%);
+        --mp-hero-slide-h: 300px;
+        background: var(--blanc-neige);
         border-bottom: 1px solid var(--glass-border);
-        padding: 28px 16px 32px;
+        padding: 0 0 8px;
         margin-bottom: 8px;
+    }
+
+    .mp-hero .mp-hero-slider-wrap {
+        box-sizing: border-box;
+        max-height: none;
+        padding: 0 16px;
+        margin-bottom: 0;
+        overflow: visible;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-area.owl-carousel {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .owl-stage-outer {
+        height: var(--mp-hero-slide-h);
+        max-height: var(--mp-hero-slide-h);
+    }
+
+    .mp-hero .mp-hero-slider-wrap .owl-stage,
+    .mp-hero .mp-hero-slider-wrap .owl-item {
+        height: var(--mp-hero-slide-h);
+        max-height: var(--mp-hero-slide-h);
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-item {
+        box-sizing: border-box;
+        height: var(--mp-hero-slide-h);
+        max-height: var(--mp-hero-slide-h);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--fond-secondaire, #fafafa);
+        line-height: 0;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-item img {
+        box-sizing: border-box;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .owl-dots {
+        margin: 6px 0 0;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .owl-nav {
+        margin-top: 0;
+    }
+
+    .mp-hero-slider-wrap {
+        margin-bottom: 0;
+    }
+
+    .mp-hero-placeholder {
+        min-height: 200px;
+        max-height: var(--mp-hero-slide-h, 300px);
+        margin: 8px 16px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--bleu-pale) 0%, var(--fond-secondaire) 100%);
+        border: 1px dashed var(--border-input);
     }
 
     .mp-hero-inner {
         max-width: 920px;
         margin: 0 auto;
         text-align: center;
-    }
-
-    .mp-hero h1 {
-        font-size: clamp(20px, 3vw, 28px);
-        font-weight: 700;
-        color: var(--titres);
-        font-family: var(--font-titres);
-        margin: 0 0 8px;
-        letter-spacing: -0.02em;
     }
 
     .mp-hero .mp-hero-sub {
@@ -715,35 +795,34 @@ $seo_canonical = $base . '/';
         background: var(--couleur-dominante-hover);
     }
 
-    /* —— Vitrine 3 colonnes (catégories + tendances + coups de cœur) —— */
+    /* —— Vitrine (catégories + tendances + coups de cœur) : mobile-first = 1 colonne —— */
     .mp-showcase {
         padding: 20px 0 8px;
+        overflow-x: hidden;
     }
 
     .mp-showcase-inner {
         display: grid;
-        grid-template-columns: 240px minmax(0, 1fr) minmax(260px, 320px);
+        grid-template-columns: 1fr;
         gap: 16px;
         align-items: stretch;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
     }
 
-    @media (max-width: 1100px) {
+    .mp-showcase-inner > * {
+        min-width: 0;
+    }
+
+    @media (min-width: 1101px) {
         .mp-showcase-inner {
-            grid-template-columns: 1fr;
+            grid-template-columns: 240px minmax(0, 1fr) minmax(260px, 320px);
         }
 
-        .mp-showcase-spotlight {
-            min-height: 220px;
-        }
-    }
-
-    .mp-showcase-inner.mp-showcase-inner--no-nav {
-        grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-    }
-
-    @media (max-width: 1100px) {
         .mp-showcase-inner.mp-showcase-inner--no-nav {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
         }
     }
 
@@ -954,27 +1033,33 @@ $seo_canonical = $base . '/';
         object-fit: cover;
     }
 
-    /* Coups de cœur */
+    /* Coups de cœur — carte mise en avant */
     .mp-showcase-spotlight {
-        border-radius: 12px;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        justify-self: stretch;
+        border-radius: 18px;
         overflow: hidden;
         position: relative;
-        background: linear-gradient(145deg, var(--bleu-pale) 0%, var(--blanc) 55%, var(--bleu-pale) 100%);
-        border: 1px solid var(--glass-border);
-        box-shadow: var(--glass-shadow);
-        padding: 22px 18px;
+        background: linear-gradient(155deg, #ffffff 0%, var(--blanc-casse) 38%, rgba(53, 100, 166, 0.07) 100%);
+        border: 1px solid rgba(53, 100, 166, 0.14);
+        box-shadow: 0 4px 24px rgba(53, 100, 166, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+        padding: clamp(16px, 3vw, 24px) clamp(14px, 2.5vw, 22px) clamp(16px, 2.5vw, 22px);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 360px;
+        gap: clamp(10px, 2vw, 18px);
+        min-height: min(360px, 52vh);
     }
 
     .mp-showcase-spotlight::before {
         content: '';
         position: absolute;
         inset: 0;
-        background-image: radial-gradient(circle at 20% 80%, rgba(53, 100, 166, 0.08) 0%, transparent 45%),
-            radial-gradient(circle at 80% 20%, rgba(255, 107, 53, 0.06) 0%, transparent 40%);
+        background-image:
+            radial-gradient(ellipse 90% 70% at 0% 0%, rgba(53, 100, 166, 0.12) 0%, transparent 55%),
+            radial-gradient(ellipse 80% 60% at 100% 100%, rgba(255, 107, 53, 0.1) 0%, transparent 50%);
         pointer-events: none;
     }
 
@@ -983,20 +1068,43 @@ $seo_canonical = $base . '/';
         z-index: 1;
     }
 
-    .mp-sp-content h2 {
-        margin: 0 0 8px;
-        font-size: 22px;
+    .mp-sp-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.65rem;
         font-weight: 700;
-        color: var(--bleu-fonce);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--couleur-dominante);
+        background: rgba(53, 100, 166, 0.1);
+        border: 1px solid rgba(53, 100, 166, 0.18);
+        padding: 5px 10px;
+        border-radius: 999px;
+        margin-bottom: 10px;
+    }
+
+    .mp-sp-badge i {
+        font-size: 0.7rem;
+        opacity: 0.9;
+    }
+
+    .mp-sp-content h2 {
+        margin: 0 0 clamp(6px, 1.2vw, 10px);
+        font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+        font-weight: 700;
+        color: var(--titres);
         font-family: var(--font-titres);
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
     }
 
     .mp-sp-content p {
-        margin: 0 0 16px;
-        font-size: 13px;
+        margin: 0;
+        font-size: clamp(12px, 1.8vw, 14px);
         line-height: 1.55;
         color: var(--gris-fonce);
+        max-width: 28em;
     }
 
     .mp-sp-visual {
@@ -1006,37 +1114,54 @@ $seo_canonical = $base . '/';
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 8px 0;
+        min-height: 120px;
+        margin: 0;
+        padding: clamp(8px, 2vw, 14px);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(250, 250, 250, 0.95) 100%);
+        border: 1px solid rgba(53, 100, 166, 0.1);
+        border-radius: 16px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 28px rgba(53, 100, 166, 0.08);
     }
 
     .mp-sp-visual img {
         max-width: 100%;
-        max-height: 140px;
+        width: auto;
+        height: auto;
+        max-height: clamp(110px, 22vw, 150px);
         object-fit: contain;
         border-radius: 12px;
+        filter: drop-shadow(0 6px 16px rgba(53, 100, 166, 0.14));
+    }
+
+    .mp-sp-visual .mp-sp-fallback-ico {
+        font-size: clamp(2.5rem, 12vw, 3.5rem);
+        color: var(--bleu-clair);
+        opacity: 0.35;
     }
 
     .mp-sp-dots {
         display: flex;
-        gap: 6px;
+        gap: 8px;
         justify-content: center;
+        align-items: center;
         position: relative;
         z-index: 1;
-        padding-top: 10px;
+        padding: 4px 0 0;
     }
 
     .mp-sp-dots span {
-        width: 7px;
-        height: 7px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         background: var(--gris-clair);
-        opacity: 0.6;
+        opacity: 0.45;
+        transition: transform 0.2s, opacity 0.2s, background 0.2s;
     }
 
     .mp-sp-dots span.is-active {
         background: var(--couleur-dominante);
         opacity: 1;
-        transform: scale(1.15);
+        transform: scale(1.2);
     }
 
     .mp-sp-cta {
@@ -1045,20 +1170,89 @@ $seo_canonical = $base . '/';
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 10px;
         width: 100%;
-        padding: 12px 16px;
-        background: var(--couleur-dominante);
+        padding: clamp(11px, 2.5vw, 14px) clamp(14px, 3vw, 20px);
+        background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
         color: var(--texte-clair) !important;
         font-weight: 600;
-        font-size: 14px;
+        font-size: clamp(13px, 2vw, 14px);
         border-radius: 999px;
         text-decoration: none;
-        transition: background 0.2s;
-        margin-top: 8px;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+        margin-top: 0;
+        box-shadow: 0 4px 14px rgba(53, 100, 166, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .mp-sp-cta i {
+        font-size: 0.9em;
+        opacity: 0.95;
+        transition: transform 0.2s ease;
     }
 
     .mp-sp-cta:hover {
-        background: var(--couleur-dominante-hover);
+        background: linear-gradient(135deg, var(--couleur-dominante-hover) 0%, var(--bleu-fonce) 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 22px rgba(53, 100, 166, 0.4);
+    }
+
+    .mp-sp-cta:hover i {
+        transform: translateX(3px);
+    }
+
+    @media (max-width: 1100px) {
+        .mp-showcase-spotlight {
+            min-height: auto;
+            max-width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .mp-sp-visual img {
+            max-height: clamp(130px, 28vw, 180px);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .mp-showcase-spotlight {
+            border-radius: 16px;
+            padding: 16px 14px 16px;
+            gap: 12px;
+        }
+
+        .mp-sp-badge {
+            font-size: 0.6rem;
+            padding: 4px 9px;
+        }
+
+        .mp-sp-visual {
+            min-height: 108px;
+            padding: 10px;
+            border-radius: 14px;
+        }
+
+        .mp-sp-visual img {
+            max-height: min(170px, 42vw);
+        }
+
+        .mp-sp-dots {
+            padding-top: 2px;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .mp-showcase-spotlight {
+            padding: 14px 12px 14px;
+        }
+
+        .mp-sp-content p {
+            line-height: 1.45;
+        }
+
+        .mp-sp-cta {
+            gap: 8px;
+        }
     }
 
     /* Bandeau « commande / personnalisation » */
@@ -1098,18 +1292,11 @@ $seo_canonical = $base . '/';
     }
 
     .mp-promo-copy h2 {
-        margin: 0 0 10px;
+        margin: 0 0 14px;
         font-size: clamp(20px, 3vw, 26px);
         font-weight: 700;
         font-family: var(--font-titres);
         line-height: 1.2;
-    }
-
-    .mp-promo-copy > p {
-        margin: 0 0 18px;
-        font-size: 14px;
-        line-height: 1.55;
-        opacity: 0.94;
     }
 
     .mp-promo-list {
@@ -1278,13 +1465,38 @@ $seo_canonical = $base . '/';
 
     .mp-panel-products {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
     }
 
-    @media (max-width: 576px) {
+    /* Tablettes / mobile : 2 produits par ligne dans chaque panneau (Top & Nouveautés) */
+    @media (max-width: 768px) {
         .mp-panel-products {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px 12px;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .mp-panel-products {
+            gap: 8px 10px;
+        }
+
+        .mp-new-card {
+            padding: 8px 6px;
+        }
+
+        .mp-new-price {
+            font-size: 14px;
+        }
+
+        .mp-new-moq {
+            font-size: 10px;
+        }
+
+        .mp-new-cart-btn {
+            padding: 6px;
+            font-size: 13px;
         }
     }
 
@@ -1600,47 +1812,45 @@ $seo_canonical = $base . '/';
         $produits_strip = array_slice($produits_tous, 0, 4);
     }
 
+    $hero_affiches = [];
+    if (file_exists(__DIR__ . '/models/model_marketplace_hero.php')) {
+        require_once __DIR__ . '/models/model_marketplace_hero.php';
+        $hero_affiches = marketplace_hero_list_actifs();
+    }
+    if (!is_array($hero_affiches)) {
+        $hero_affiches = [];
+    }
+
     $mp_spotlight_img = null;
-    if (!empty($slides[0]['image'])) {
+    if (!empty($hero_affiches[0]['image'])) {
+        $mp_spotlight_img = '/upload/marketplace_hero/' . rawurlencode((string) $hero_affiches[0]['image']);
+    } elseif (!empty($slides[0]['image'])) {
         $mp_spotlight_img = '/upload/slider/' . htmlspecialchars((string) $slides[0]['image'], ENT_QUOTES, 'UTF-8');
     }
     ?>
 
     <main class="mp-main">
 
-        <?php if (!empty($slides)): ?>
-        <div class="mp-slider-wrap">
-            <div class="slider-area owl-carousel">
-                <?php foreach ($slides as $slide): ?>
-                <div class="slider-item">
-                    <img src="/upload/slider/<?php echo htmlspecialchars($slide['image']); ?>"
-                        alt="<?php echo htmlspecialchars($slide['titre'] ?? ''); ?>"
-                        onerror="this.src='/image/produit1.jpg'">
-                </div>
-                <?php endforeach; ?>
-            </div>
+        <div class="mp-hero-title-wrap">
+            <h1 class="mp-page-title">Marketplace — multi-boutiques</h1>
         </div>
-        <?php endif; ?>
 
-        <section class="mp-hero" aria-label="Recherche marketplace">
-            <div class="mp-hero-inner">
-                <h1>Marketplace — multi-boutiques</h1>
-                <p class="mp-hero-sub">Pièces et équipements proposés par plusieurs vendeurs sur la plateforme — recherchez
-                    un article ou parcourez les catégories.</p>
-                <form class="mp-search" method="get" action="produits.php" role="search">
-                    <label for="mp-search-q" class="visually-hidden">Recherche produits</label>
-                    <input id="mp-search-q" class="mp-search-input" type="search" name="recherche" value=""
-                        placeholder="Que recherchez-vous ?" autocomplete="off">
-                    <button type="submit" class="mp-search-btn">
-                        <i class="fas fa-search" aria-hidden="true"></i> Rechercher
-                    </button>
-                </form>
-                <div class="mp-trust-row">
-                    <span class="mp-trust-item"><i class="fas fa-store" aria-hidden="true"></i> Multi-boutiques</span>
-                    <span class="mp-trust-item"><i class="fas fa-shield-alt" aria-hidden="true"></i> Commande sécurisée</span>
-                    <span class="mp-trust-item"><i class="fas fa-truck" aria-hidden="true"></i> Livraison</span>
+        <section class="mp-hero" aria-label="Affichage marketplace">
+            <?php if (!empty($hero_affiches)): ?>
+            <div class="mp-slider-wrap mp-hero-slider-wrap">
+                <div class="slider-area owl-carousel">
+                    <?php foreach ($hero_affiches as $ha): ?>
+                    <div class="slider-item">
+                        <img src="/upload/marketplace_hero/<?php echo htmlspecialchars((string) ($ha['image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                            alt="<?php echo htmlspecialchars((string) ($ha['alt_text'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                            onerror="this.src='/image/produit1.jpg'">
+                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
+            <?php else: ?>
+            <div class="mp-hero-placeholder" role="img" aria-label="Aucune bannière"></div>
+            <?php endif; ?>
         </section>
 
         <div class="mp-shell">
@@ -1728,19 +1938,20 @@ $seo_canonical = $base . '/';
                         </div>
                     </div>
 
-                    <aside class="mp-showcase-spotlight">
+                    <aside class="mp-showcase-spotlight" aria-labelledby="mp-sp-title">
                         <div class="mp-sp-content">
-                            <h2>Coups de cœur</h2>
+                            <span class="mp-sp-badge"><i class="fas fa-heart" aria-hidden="true"></i> Sélection</span>
+                            <h2 id="mp-sp-title">Coups de cœur</h2>
                             <p>Une sélection d’articles phares de la plateforme, proposés par nos vendeurs partenaires.</p>
                         </div>
                         <div class="mp-sp-visual">
                             <?php if ($mp_spotlight_img): ?>
-                            <img src="<?php echo $mp_spotlight_img; ?>" alt="Sélection" onerror="this.style.display='none'">
+                            <img src="<?php echo htmlspecialchars($mp_spotlight_img, ENT_QUOTES, 'UTF-8'); ?>" alt="Aperçu de la sélection Coups de cœur" onerror="this.style.display='none'">
                             <?php else: ?>
-                            <span style="font-size:56px;color:var(--bleu-clair);opacity:.35;"><i class="fas fa-store"></i></span>
+                            <span class="mp-sp-fallback-ico" aria-hidden="true"><i class="fas fa-store"></i></span>
                             <?php endif; ?>
                         </div>
-                        <a class="mp-sp-cta" href="produits.php">En savoir plus</a>
+                        <a class="mp-sp-cta" href="produits.php"><span>En savoir plus</span><i class="fas fa-arrow-right" aria-hidden="true"></i></a>
                         <div class="mp-sp-dots" aria-hidden="true">
                             <span class="is-active"></span><span></span><span></span>
                         </div>
@@ -1755,8 +1966,6 @@ $seo_canonical = $base . '/';
                     <div class="mp-promo-copy">
                         <span class="mp-promo-ico" aria-hidden="true"><i class="fas fa-pencil-ruler"></i></span>
                         <h2 id="mp-b2b-title">Commande pro &amp; réassort</h2>
-                        <p>Pièces poids lourds, bus, tracteurs et remorques : centralisez vos achats auprès de plusieurs
-                            boutiques vérifiées.</p>
                         <ul class="mp-promo-list">
                             <li><i class="fas fa-check" aria-hidden="true"></i> Devis et commandes simplifiés</li>
                             <li><i class="fas fa-check" aria-hidden="true"></i> Suivi des stocks en temps réel</li>

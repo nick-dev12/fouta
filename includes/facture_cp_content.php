@@ -22,7 +22,7 @@ $zone_libelle = (!empty($cp['zone_ville']) || !empty($cp['zone_quartier'])) ? tr
 require_once __DIR__ . '/site_url.php';
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - FOUTA POIDS LOURDS';
 $facture_og_desc = 'Facture FOUTA POIDS LOURDS - Demande personnalisée - Montant : ' . $montant_aff;
-$facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
+$facture_og_image = get_site_base_url() . '/image/logo_market.png';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -100,7 +100,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
         <div class="facture-header">
             <div class="facture-entreprise">
                 <div class="facture-logo">
-                    <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS">
+                    <img src="/image/logo_market.png" alt="COLObanes">
                 </div>
                 <div class="facture-entreprise-info">
                     <h1><?php echo htmlspecialchars($entreprise_nom); ?></h1>

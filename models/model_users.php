@@ -265,6 +265,103 @@ function get_all_users_with_stats($boutique_admin_id = null) {
 }
 
 /**
+ * Construit la clause WHERE (alias u) pour recherche + filtre statut (liste plateforme).
+ *
+ * @param string $search Terme recherché (nom, prénom, email, téléphone)
+ * @param string $statut_filtre '' | 'actif' | 'inactif'
+ * @return array{sql:string,params:array}
+ */
+function _users_platform_filter_sql($search, $statut_filtre) {
+    $search = trim((string) $search);
+    $statut_filtre = (string) $statut_filtre;
+    $parts = ['1=1'];
+    $params = [];
+
+    if ($search !== '') {
+        $like = '%' . $search . '%';
+        $parts[] = '(u.nom LIKE :ulk1 OR u.prenom LIKE :ulk2 OR u.email LIKE :ulk3 OR COALESCE(u.telephone,\'\') LIKE :ulk4)';
+        $params['ulk1'] = $like;
+        $params['ulk2'] = $like;
+        $params['ulk3'] = $like;
+        $params['ulk4'] = $like;
+    }
+    if ($statut_filtre === 'actif' || $statut_filtre === 'inactif') {
+        $parts[] = 'u.statut = :ustat';
+        $params['ustat'] = $statut_filtre;
+    }
+
+    return [
+        'sql' => implode(' AND ', $parts),
+        'params' => $params,
+    ];
+}
+
+/**
+ * Nombre d'utilisateurs correspondant aux filtres (vue super admin plateforme).
+ */
+function count_users_platform_filtered($search, $statut_filtre) {
+    global $db;
+
+    $f = _users_platform_filter_sql($search, $statut_filtre);
+    try {
+        $stmt = $db->prepare('SELECT COUNT(*) FROM users u WHERE ' . $f['sql']);
+        $stmt->execute($f['params']);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Utilisateurs avec stats commandes, filtrés et paginés (scope plateforme globale).
+ *
+ * @param string $search
+ * @param string $statut_filtre '' | 'actif' | 'inactif'
+ * @param int $page Numéro de page (1-based)
+ * @param int $per_page Entrées par page (5–100)
+ * @return array Liste des lignes utilisateur + stats
+ */
+function get_users_platform_paginated($search, $statut_filtre, $page, $per_page) {
+    global $db;
+
+    $page = max(1, (int) $page);
+    $per_page = max(5, min(100, (int) $per_page));
+    $offset = ($page - 1) * $per_page;
+
+    $f = _users_platform_filter_sql($search, $statut_filtre);
+    $whereSql = $f['sql'];
+
+    try {
+        $sql = "
+            SELECT
+                u.id,
+                u.nom,
+                u.prenom,
+                u.email,
+                u.telephone,
+                u.date_creation,
+                u.statut,
+                COUNT(DISTINCT c.id) AS nb_commandes,
+                COUNT(DISTINCT CASE WHEN c.statut = 'livree' THEN c.id END) AS nb_commandes_livrees,
+                COALESCE(SUM(CASE WHEN c.id IS NOT NULL AND c.statut <> 'annulee' THEN c.montant_total ELSE 0 END), 0) AS ca_total_ht
+            FROM users u
+            LEFT JOIN commandes c ON u.id = c.user_id
+            WHERE $whereSql
+            GROUP BY u.id
+            ORDER BY u.date_creation DESC
+            LIMIT " . (int) $per_page . " OFFSET " . (int) $offset . "
+        ";
+        $stmt = $db->prepare($sql);
+        $stmt->execute($f['params']);
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $users ? $users : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
  * Met à jour le statut d'un utilisateur (actif/inactif)
  * @param int $id L'ID de l'utilisateur
  * @param string $statut Le nouveau statut ('actif' ou 'inactif')

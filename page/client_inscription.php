@@ -11,7 +11,7 @@
 </head>
 <body>
     <nav>
-        <a class="logo" href="/index.html"><img src="../logo.png" alt=""></a>
+        <a class="logo" href="/index.html"><img src="/image/logo_market.png" alt="COLObanes"></a>
         <div class="container">
             <div class="box">
                 <a href="/page/connexion.html"><button>connexion</button></a>

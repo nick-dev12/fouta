@@ -27,9 +27,11 @@ if (isset($result['success']) && $result['success']) {
 }
 
 require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../models/model_genres.php';
 $categories = admin_categories_list_for_session();
 $__role_add = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
 $fap_use_category_hierarchy = categories_hierarchy_enabled() && ($__role_add === 'vendeur');
+$vendeur_genre_ids_prefill = [];
 $vcat_prefill_sub = 0;
 $vcat_prefill_generale = 0;
 $categorie_id_prefill = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;

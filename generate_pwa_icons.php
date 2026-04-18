@@ -1,21 +1,21 @@
 <?php
 /**
- * Script pour générer les icônes PWA (192x192 et 512x512) depuis image/logo-fpl.png
+ * Script pour générer les icônes PWA (192x192 et 512x512) depuis image/logo_market.png
  * À exécuter si vous modifiez le logo : php generate_pwa_icons.php
  */
 
-$source = __DIR__ . '/image/logo-fpl.png';
+$source = __DIR__ . '/image/logo_market.png';
 $iconsDir = __DIR__ . '/icons';
 
 if (!file_exists($source)) {
-    die("Erreur : image/logo-fpl.png introuvable.\n");
+    die("Erreur : image/logo_market.png introuvable.\n");
 }
 
 if (!extension_loaded('gd')) {
     die("Erreur : l'extension GD de PHP est requise.\n");
 }
 
-$image = @imagecreatefromjpeg($source);
+$image = @imagecreatefrompng($source);
 if (!$image) {
     die("Erreur : impossible de charger l'image source.\n");
 }

@@ -234,6 +234,43 @@ function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = n
 }
 
 /**
+ * Rayons (categories_generales) contenant au moins un produit publié (statut actif).
+ *
+ * @param int|null $boutique_admin_id ID vendeur pour restreindre à sa boutique, ou null pour tous les vendeurs
+ * @return array<int, array> Lignes de la table categories_generales avec la clé nb_produits_actifs
+ */
+function get_categories_generales_avec_produits_actifs($boutique_admin_id = null) {
+    global $db;
+    require_once __DIR__ . '/model_categories.php';
+    if (!function_exists('categories_generales_table_exists') || !categories_generales_table_exists()) {
+        return [];
+    }
+    try {
+        $stmt = $db->query('
+            SELECT * FROM `categories_generales`
+            ORDER BY `sort_ordre` ASC, `nom` ASC
+        ');
+        $list = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+    $out = [];
+    foreach ($list as $row) {
+        $gid = (int) ($row['id'] ?? 0);
+        if ($gid <= 0) {
+            continue;
+        }
+        $prods = get_produits_by_categorie_generale($gid, $boutique_admin_id);
+        $n = is_array($prods) ? count($prods) : 0;
+        if ($n > 0) {
+            $row['nb_produits_actifs'] = $n;
+            $out[] = $row;
+        }
+    }
+    return $out;
+}
+
+/**
  * Produits similaires marketplace : même rayon (categories_generales), toutes boutiques, hors l’article courant.
  *
  * @param int $exclude_produit_id Produit à exclure
@@ -1145,6 +1182,11 @@ function create_produit($data)
             $cg = $data['categorie_generale_id'] ?? null;
             $params['categorie_generale_id'] = ($cg !== null && $cg !== '') ? (int) $cg : null;
         }
+        if (produits_has_column('mesure')) {
+            $cols .= ", mesure";
+            $vals .= ", :mesure";
+            $params['mesure'] = isset($data['mesure']) && (string) $data['mesure'] !== '' ? trim((string) $data['mesure']) : null;
+        }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {
             $cols .= ", couleurs, taille";
@@ -1216,6 +1258,10 @@ function update_produit($id, $data)
             $cg = $data['categorie_generale_id'];
             $params['categorie_generale_id'] = ($cg !== null && $cg !== '') ? (int) $cg : null;
         }
+        if (produits_has_column('mesure') && array_key_exists('mesure', $data)) {
+            $sets .= ", mesure = :mesure";
+            $params['mesure'] = isset($data['mesure']) && (string) $data['mesure'] !== '' ? trim((string) $data['mesure']) : null;
+        }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {
             $sets .= ", couleurs = :couleurs, taille = :taille";
@@ -1249,6 +1295,16 @@ function delete_produit($id)
     global $db;
 
     try {
+        $id = (int) $id;
+        if ($id <= 0) {
+            return false;
+        }
+        if (file_exists(__DIR__ . '/model_genres.php')) {
+            require_once __DIR__ . '/model_genres.php';
+            if (function_exists('delete_produits_genres_for_produit')) {
+                delete_produits_genres_for_produit($id);
+            }
+        }
         $stmt = $db->prepare("DELETE FROM produits WHERE id = :id");
         return $stmt->execute(['id' => $id]);
     } catch (PDOException $e) {

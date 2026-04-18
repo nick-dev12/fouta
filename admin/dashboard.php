@@ -22,6 +22,45 @@ require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
 require_once __DIR__ . '/../includes/admin_route_access.php';
 
+$success_message = '';
+if (isset($_SESSION['success_message'])) {
+    $success_message = $_SESSION['success_message'];
+    unset($_SESSION['success_message']);
+}
+
+$add_produit_error_message = '';
+$add_produit_post_error = false;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_add_produit'])) {
+    require_once __DIR__ . '/../controllers/controller_produits.php';
+    $add_result = process_add_produit();
+    if (!empty($add_result['success'])) {
+        $_SESSION['success_message'] = $add_result['message'];
+        header('Location: dashboard.php');
+        exit;
+    }
+    $add_produit_error_message = $add_result['message'] ?? 'Erreur lors de l’ajout.';
+    $add_produit_post_error = true;
+}
+
+$__role_dash = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+$fap_use_category_hierarchy = categories_hierarchy_enabled() && ($__role_dash === 'vendeur');
+$vcat_prefill_sub = 0;
+$vcat_prefill_generale = 0;
+$vendeur_genre_ids_prefill = [];
+$open_add_modal = isset($_GET['open_add']) && $_GET['open_add'] === '1';
+$categorie_id_prefill_modal = isset($_GET['prefill_categorie']) ? (int) $_GET['prefill_categorie'] : 0;
+if ($fap_use_category_hierarchy && $categorie_id_prefill_modal > 0) {
+    $cp = get_categorie_by_id($categorie_id_prefill_modal);
+    if ($cp && function_exists('categorie_est_utilisable_par_vendeur')
+        && categorie_est_utilisable_par_vendeur((int) $cp['id'], (int) $_SESSION['admin_id'])) {
+        $vcat_prefill_sub = (int) $cp['id'];
+        if (function_exists('categories_has_categorie_generale_id_column') && categories_has_categorie_generale_id_column()) {
+            $vcat_prefill_generale = (int) ($cp['categorie_generale_id'] ?? 0);
+        }
+    }
+}
+$categorie_id_prefill = $categorie_id_prefill_modal;
+
 $vf_dash = admin_vendeur_filter_id();
 $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
@@ -129,6 +168,93 @@ if (!empty($produits)) {
         .produit-card-linkable:hover .produit-card-nom {
             color: #c26638;
         }
+
+        /* Modal plein écran — ajout produit (même principe que produits/index.php) */
+        .adm-modal-add-produit[hidden] {
+            display: none !important;
+        }
+        .adm-modal-add-produit {
+            position: fixed;
+            inset: 0;
+            z-index: 9990;
+            display: flex;
+            flex-direction: column;
+            background: rgba(13, 13, 13, 0.52);
+            backdrop-filter: blur(6px);
+        }
+        .adm-modal-add-produit-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            margin: 0;
+            max-width: none;
+            width: 100%;
+            align-self: stretch;
+            background: linear-gradient(165deg, var(--fond-secondaire, #fafafa) 0%, var(--blanc, #fff) 42%, rgba(53, 100, 166, 0.04) 100%);
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            border-top: 3px solid var(--couleur-dominante, #3564a6);
+            overflow: hidden;
+        }
+        .adm-modal-add-head {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 22px;
+            background: var(--blanc, #fff);
+            border-bottom: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
+        }
+        .adm-modal-add-head h2 {
+            margin: 0;
+            font-size: 1.28rem;
+            font-family: var(--font-titres, inherit);
+            color: var(--titres, #0d0d0d);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .adm-modal-add-head h2 i {
+            color: var(--couleur-dominante, #3564a6);
+        }
+        .adm-modal-add-head-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .adm-modal-add-close {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(53, 100, 166, 0.1);
+            color: var(--couleur-dominante, #3564a6);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+        .adm-modal-add-close:hover {
+            background: var(--couleur-dominante, #3564a6);
+            color: var(--texte-clair, #fff);
+        }
+        .adm-modal-add-body {
+            flex: 1;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 22px 24px 40px;
+        }
+        .adm-modal-add-body .form-add-container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 
@@ -168,12 +294,18 @@ if (!empty($produits)) {
                     <span>Comptabilité</span>
                 </a>
                 <?php endif; ?>
-                <a href="produits/index.php?open_add=1" class="dash-tool-btn dash-tool-btn--primary">
+                <button type="button" id="btnOpenAddProduitModalDash" class="dash-tool-btn dash-tool-btn--primary">
                     <i class="fas fa-plus" aria-hidden="true"></i>
                     <span>Nouveau produit</span>
-                </a>
+                </button>
             </div>
         </header>
+
+        <?php if (!empty($success_message)): ?>
+            <div class="message success" style="margin-bottom: 20px;">
+                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+            </div>
+        <?php endif; ?>
 
         <?php
         if (isset($_SESSION['notification_test_message'])) {
@@ -288,9 +420,9 @@ if (!empty($produits)) {
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
                     <p>Aucun produit enregistré pour le moment.</p>
-                    <a href="produits/index.php?open_add=1" class="btn-primary">
+                    <button type="button" class="btn-primary" id="btnOpenAddProduitModalDashEmpty">
                         <i class="fas fa-plus"></i> Ajouter le premier produit
-                    </a>
+                    </button>
                 </div>
             <?php else: ?>
                 <!-- Grille de produits -->
@@ -347,6 +479,27 @@ if (!empty($produits)) {
         </section>
     </div>
 
+    <?php
+    $add_produit_modal = true;
+    $add_produit_form_action = 'dashboard.php';
+    $modal_should_show = $add_produit_post_error || $open_add_modal;
+    ?>
+    <div id="modalAddProduitDash" class="adm-modal-add-produit" <?php echo $modal_should_show ? '' : 'hidden'; ?> aria-hidden="<?php echo $modal_should_show ? 'false' : 'true'; ?>">
+        <div class="adm-modal-add-produit-inner">
+            <div class="adm-modal-add-head">
+                <h2><i class="fas fa-plus-circle"></i> Publier un produit</h2>
+                <div class="adm-modal-add-head-actions">
+                    <button type="button" class="adm-modal-add-close" id="btnCloseAddProduitModalDash" title="Fermer" aria-label="Fermer">&times;</button>
+                </div>
+            </div>
+            <div class="adm-modal-add-body">
+                <div class="form-add-container">
+                    <?php require __DIR__ . '/produits/inc_form_ajouter_produit.php'; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging-compat.js"></script>
     <?php require_once __DIR__ . '/../includes/firebase_init.php'; ?>
@@ -358,6 +511,53 @@ if (!empty($produits)) {
     <script src="/js/firebase-notifications.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            var modalAdd = document.getElementById('modalAddProduitDash');
+            var btnOpenDash = document.getElementById('btnOpenAddProduitModalDash');
+            var btnOpenDashEmpty = document.getElementById('btnOpenAddProduitModalDashEmpty');
+            var btnCloseDash = document.getElementById('btnCloseAddProduitModalDash');
+            var btnCancelModal = document.getElementById('btn-fap-cancel-modal');
+            function openAddModalDash() {
+                if (!modalAdd) return;
+                modalAdd.removeAttribute('hidden');
+                modalAdd.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeAddModalDash() {
+                if (!modalAdd) return;
+                modalAdd.setAttribute('hidden', '');
+                modalAdd.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+            if (btnOpenDash) btnOpenDash.addEventListener('click', openAddModalDash);
+            if (btnOpenDashEmpty) btnOpenDashEmpty.addEventListener('click', openAddModalDash);
+            if (btnCloseDash) btnCloseDash.addEventListener('click', closeAddModalDash);
+            if (btnCancelModal) btnCancelModal.addEventListener('click', closeAddModalDash);
+            if (modalAdd) modalAdd.addEventListener('click', function (ev) {
+                if (ev.target === modalAdd) closeAddModalDash();
+            });
+            document.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Escape' && modalAdd && !modalAdd.hasAttribute('hidden')) {
+                    var vm = document.getElementById('fapVarianteModal');
+                    if (vm && !vm.hidden) return;
+                    closeAddModalDash();
+                }
+            });
+            if (modalAdd && !modalAdd.hasAttribute('hidden')) {
+                document.body.style.overflow = 'hidden';
+            }
+            try {
+                var q = new URLSearchParams(window.location.search);
+                if (q.get('open_add') === '1') {
+                    openAddModalDash();
+                    if (window.history && window.history.replaceState) {
+                        var u = new URL(window.location.href);
+                        u.searchParams.delete('open_add');
+                        u.searchParams.delete('prefill_categorie');
+                        window.history.replaceState({}, '', u.pathname + u.search + u.hash);
+                    }
+                }
+            } catch (e) {}
+
             document.querySelectorAll('.produit-card-linkable').forEach(function(card) {
                 card.addEventListener('click', function(event) {
                     if (event.target.closest('a, button, input, select, textarea, form')) {

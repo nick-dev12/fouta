@@ -10,7 +10,7 @@ require_once __DIR__ . '/includes/site_url.php';
 require_once __DIR__ . '/models/model_produits.php';
 
 $base = get_site_base_url();
-$logo_url = $base . '/image/logo-fpl.png';
+$logo_url = $base . '/image/logo_market.png';
 
 // Pages statiques (logo inclus pour la page d'accueil)
 $static_pages = [

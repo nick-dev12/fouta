@@ -31,7 +31,7 @@ if (!$categorie) {
     header('Location: index.php');
     exit;
 }
-admin_vendeur_assert_categorie_allowed($categorie_id);
+admin_vendeur_assert_categorie_editable($categorie_id);
 
 // Traiter le formulaire
 require_once __DIR__ . '/../../controllers/controller_categories.php';

@@ -27,7 +27,7 @@ if ($facture_bl_statut_libelle !== '') {
 require_once __DIR__ . '/site_url.php';
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - FOUTA POIDS LOURDS';
 $facture_og_desc = 'Facture FOUTA POIDS LOURDS - ' . ($entreprise_nom ?? 'FOUTA POIDS LOURDS') . ' - Montant : ' . number_format($facture['montant_total'] ?? 0, 0, ',', ' ') . ' CFA';
-$facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
+$facture_og_image = get_site_base_url() . '/image/logo_market.png';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -694,7 +694,7 @@ $facture_og_image = get_site_base_url() . '/image/logo-fpl.png';
         <div class="facture-header">
             <div class="facture-entreprise">
                 <div class="facture-logo">
-                    <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS"
+                    <img src="/image/logo_market.png" alt="COLObanes"
                         onerror="this.style.background='#fafafa';this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext x=%2250%22 y=%2255%22 text-anchor=%22middle%22 font-size=%2240%22%3E🍰%3C/text%3E%3C/svg%3E'">
                 </div>
                 <div class="facture-entreprise-info">

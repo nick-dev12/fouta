@@ -2,7 +2,7 @@
     <div class="container footer_container">
         <div class="footer_item">
             <a href="/index.php" class="footer_logo">
-                <img src="/image/logo-fpl.png" alt="FOUTA POIDS LOURDS" class="footer_logo_img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                <img src="/image/logo_market.png" alt="COLObanes" class="footer_logo_img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
                 <span class="footer_logo_fallback"><i class="fas fa-truck"></i> FOUTA POIDS LOURDS</span>
             </a>
             <div class="footer_p">

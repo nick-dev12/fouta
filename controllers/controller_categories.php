@@ -55,6 +55,43 @@ function upload_categorie_image($file) {
 }
 
 /**
+ * Upload une image de genre (super admin — dossier upload/genres/)
+ * @param array $file Tableau $_FILES
+ * @return string|false Chemin relatif sous upload/ ou false
+ */
+function upload_genre_image($file) {
+    if (!isset($file['image']) || $file['image']['error'] !== UPLOAD_ERR_OK) {
+        return false;
+    }
+
+    $upload_dir = __DIR__ . '/../upload/genres/';
+    if (!file_exists($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
+
+    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    $max_size = 5 * 1024 * 1024;
+
+    $file_info = $file['image'];
+    if (!in_array($file_info['type'], $allowed_types, true)) {
+        return false;
+    }
+    if ($file_info['size'] > $max_size) {
+        return false;
+    }
+
+    $extension = pathinfo($file_info['name'], PATHINFO_EXTENSION);
+    $filename = uniqid('genre_', true) . '.' . $extension;
+    $filepath = $upload_dir . $filename;
+
+    if (move_uploaded_file($file_info['tmp_name'], $filepath)) {
+        return 'genres/' . $filename;
+    }
+
+    return false;
+}
+
+/**
  * Traite l'ajout d'une nouvelle catégorie
  * @return array Tableau avec 'success' (bool) et 'message' (string)
  */
@@ -70,6 +107,10 @@ function process_add_categorie() {
     $is_vendeur = function_exists('admin_normalize_role_for_route')
         && admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin') === 'vendeur';
     $admin_id_sess = isset($_SESSION['admin_id']) ? (int) $_SESSION['admin_id'] : 0;
+
+    if ($is_vendeur) {
+        return ['success' => false, 'message' => 'Les catégories sont définies par la plateforme. Utilisez les sous-catégories proposées lors de l’ajout d’un produit.'];
+    }
 
     // Récupération et validation des données
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
@@ -145,8 +186,8 @@ function process_update_categorie($categorie_id) {
 
     $role_upd = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
     $vid_upd = (int) ($_SESSION['admin_id'] ?? 0);
-    if ($role_upd === 'vendeur' && $vid_upd > 0 && !categorie_est_utilisable_par_vendeur((int) $categorie_id, $vid_upd)) {
-        return ['success' => false, 'message' => 'Accès non autorisé à cette catégorie.'];
+    if ($role_upd === 'vendeur' && $vid_upd > 0 && !categorie_est_modifiable_par_vendeur((int) $categorie_id, $vid_upd)) {
+        return ['success' => false, 'message' => 'Vous ne pouvez pas modifier cette catégorie (définie par la plateforme).'];
     }
     
     // Récupération et validation des données
@@ -213,8 +254,10 @@ function process_delete_categorie($categorie_id) {
 
     $role_del = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
     $vid_del = (int) ($_SESSION['admin_id'] ?? 0);
-    if ($role_del === 'vendeur' && $vid_del > 0 && !categorie_est_utilisable_par_vendeur((int) $categorie_id, $vid_del)) {
-        return ['success' => false, 'message' => 'Accès non autorisé à cette catégorie.'];
+    if ($role_del === 'vendeur' && $vid_del > 0) {
+        if (!categorie_est_modifiable_par_vendeur((int) $categorie_id, $vid_del)) {
+            return ['success' => false, 'message' => 'Vous ne pouvez pas supprimer cette catégorie (rayon plateforme ou accès refusé).'];
+        }
     }
     
     // Vérifier si des produits utilisent cette catégorie
