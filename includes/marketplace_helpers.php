@@ -43,8 +43,11 @@ if (!function_exists('marketplace_is_reserved_public_slug')) {
 
 if (!function_exists('produit_public_boutique_label')) {
     function produit_public_boutique_label($produit) {
+        if (!defined('SITE_BRAND_NAME')) {
+            require_once __DIR__ . '/site_brand.php';
+        }
         $n = trim((string) ($produit['vendeur_boutique_nom'] ?? ''));
-        return $n !== '' ? $n : 'FOUTA POIDS LOURDS';
+        return $n !== '' ? $n : SITE_BRAND_NAME;
     }
 }
 

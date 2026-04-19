@@ -24,7 +24,7 @@ if (empty($tokens)) {
 } else {
     $result = firebase_send_notification(
         $tokens,
-        'Test FOUTA POIDS LOURDS',
+        'Test COLObanes',
         'Ceci est une notification de test. Les notifications fonctionnent correctement !',
         ['link' => '/admin/dashboard.php', 'tag' => 'test']
     );

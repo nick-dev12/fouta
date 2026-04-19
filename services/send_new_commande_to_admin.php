@@ -32,7 +32,7 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
 
     $admin_emails = get_all_admin_emails();
     if (!empty($admin_emails) && function_exists('mail_send')) {
-        $sujet = "[FOUTA POIDS LOURDS] Nouvelle commande #{$numero_commande}";
+        $sujet = "[COLObanes] Nouvelle commande #{$numero_commande}";
         $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
         $body_html .= '<h2 style="color: #918a44;">Nouvelle commande reçue</h2>';
         $body_html .= '<p><strong>Numéro :</strong> ' . htmlspecialchars($numero_commande) . '</p>';
@@ -78,7 +78,7 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
 
         $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Voir les commandes</a></p>';
         $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
-        $body_html .= '<p style="font-size: 12px; color: #999;">FOUTA POIDS LOURDS - Pièces poids lourds</p>';
+        $body_html .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
         $body_html .= '</div>';
 
         foreach ($admin_emails as $email) {
@@ -135,7 +135,7 @@ function send_new_commande_to_vendeur($vendeur_id, $commande_id, $numero_command
         return;
     }
 
-    $sujet = "[FOUTA POIDS LOURDS] Nouvelle commande #{$numero_commande} (votre boutique)";
+    $sujet = "[COLObanes] Nouvelle commande #{$numero_commande} (votre boutique)";
     $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
     $body_html .= '<h2 style="color: #918a44;">Nouvelle commande pour votre boutique</h2>';
     $body_html .= '<p><strong>Numéro :</strong> ' . htmlspecialchars($numero_commande) . '</p>';
@@ -181,7 +181,7 @@ function send_new_commande_to_vendeur($vendeur_id, $commande_id, $numero_command
 
     $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Voir la commande</a></p>';
     $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
-    $body_html .= '<p style="font-size: 12px; color: #999;">FOUTA POIDS LOURDS</p>';
+    $body_html .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
     $body_html .= '</div>';
 
     mail_send(trim($admin['email']), $sujet, $body_html, true);

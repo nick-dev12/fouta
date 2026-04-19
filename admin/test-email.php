@@ -28,11 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Service email non disponible. Exécutez "composer install".';
         $message_type = 'error';
     } else {
-        $sujet = 'Test email - FOUTA POIDS LOURDS';
+        $sujet = 'Test email - COLObanes';
         $body = '<h2>Test d\'envoi d\'email</h2>';
         $body .= '<p>Si vous recevez ce message, la configuration SMTP fonctionne correctement.</p>';
         $body .= '<p>Envoyé le ' . date('d/m/Y H:i:s') . ' depuis l\'interface admin.</p>';
-        $body .= '<hr><p><small>FOUTA POIDS LOURDS - Site e-commerce</small></p>';
+        $body .= '<hr><p><small>COLObanes - Site e-commerce</small></p>';
 
         $result = mail_send($destinataire, $sujet, $body, true);
 

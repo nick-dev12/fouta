@@ -4,8 +4,8 @@ session_start();
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
-$seo_title = 'Politique de Confidentialité - FOUTA POIDS LOURDS';
-$seo_description = 'Politique de confidentialité et protection des données personnelles de FOUTA POIDS LOURDS, vente de pièces de véhicules poids lourds. Vos informations sont sécurisées.';
+$seo_title = 'Politique de Confidentialité - COLObanes';
+$seo_description = 'Politique de confidentialité COLObanes : protection des données sur notre marketplace multi-boutiques au Sénégal. Vos informations sont traitées avec sécurité.';
 $seo_canonical = $base . '/politique-confidentialite.php';
 ?>
 <!DOCTYPE html>
@@ -95,13 +95,13 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         
         <h2>1. Introduction</h2>
         <p>
-            <strong>FOUTA POIDS LOURDS</strong> est une boutique en ligne spécialisée dans la vente de pièces de véhicules poids lourds (camions, bus, tracteurs, remorques, cylindres). Nous nous engageons à protéger la confidentialité de vos informations personnelles. 
-            Cette politique de confidentialité explique comment nous collectons, utilisons et protégeons vos données 
-            lorsque vous utilisez notre site et nos services.
+            <strong>COLObanes</strong> est une plateforme marketplace qui met en relation des boutiques et vendeurs au Sénégal avec des acheteurs. Nous nous engageons à protéger la confidentialité de vos informations personnelles.
+            Cette politique explique comment nous collectons, utilisons et protégeons vos données
+            lorsque vous utilisez le site, passez commande ou ouvrez une boutique partenaire.
         </p>
         
         <h2>2. Données Collectées</h2>
-        <p>Dans le cadre de nos activités (vente de pièces de véhicules poids lourds, commandes sur mesure), nous collectons les informations suivantes :</p>
+        <p>Dans le cadre de nos activités (mise en relation commerciale, commandes marketplace, espaces vendeurs), nous collectons notamment :</p>
         <ul>
             <li>Nom et prénom</li>
             <li>Adresse email</li>
@@ -115,9 +115,9 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         <h2>3. Utilisation des Données</h2>
         <p>Vos données sont utilisées pour :</p>
         <ul>
-            <li>Traiter et préparer vos commandes de gâteaux et accessoires de pâtisserie</li>
-            <li>Personnaliser vos produits selon vos demandes</li>
-            <li>Gérer la livraison de vos commandes</li>
+            <li>Traiter et suivre vos commandes auprès des vendeurs concernés</li>
+            <li>Transmettre les informations nécessaires aux vendeurs pour préparer ou expédier vos achats</li>
+            <li>Gérer la livraison et le suivi des commandes</li>
             <li>Vous contacter concernant vos commandes (confirmation, suivi, livraison)</li>
             <li>Améliorer nos services et votre expérience sur le site</li>
             <li>Vous envoyer des communications marketing (uniquement avec votre consentement explicite)</li>
@@ -136,7 +136,8 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             Vos données peuvent être partagées uniquement avec :
         </p>
         <ul>
-            <li>Nos prestataires de livraison pour l'acheminement de vos commandes</li>
+            <li>Les vendeurs / boutiques partenaires, dans la stricte mesure nécessaire à l’exécution de votre commande</li>
+            <li>Nos prestataires techniques ou de livraison pour l’acheminement et le bon fonctionnement du service</li>
             <li>Les autorités compétentes en cas d'obligation légale</li>
         </ul>
         
@@ -168,7 +169,7 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         <p>
             Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, 
             contactez-nous à : 
-<a href="mailto:info@foutapoidslourds.com">info@foutapoidslourds.com</a>
+<a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a>
             ou par téléphone au <a href="tel:+221338700070">+221 33 870 00 70</a>.
         </p>
         

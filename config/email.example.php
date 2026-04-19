@@ -23,16 +23,16 @@ return [
     // Expéditeur par défaut
     'from' => [
         'email' => 'service@sugar-paper.com',
-        'name' => 'FOUTA POIDS LOURDS',
+        'name' => 'COLObanes',
     ],
 
     // Email de contact (destinataire des messages du formulaire contact)
-    'contact_email' => 'info@foutapoidslourds.com',
+    'contact_email' => 'contact@colobanes.sn',
 
     // Mode debug : true pour afficher les erreurs SMTP
     'debug' => false,
 
     // URL du site pour les liens dans les emails (optionnel)
-    // Si défini ici, surcharge config/site.php. Ex: 'https://sugar-paper.com'
-    // 'site_url' => 'https://sugar-paper.com',
+    // Si défini ici, surcharge config/site.php. Ex: 'https://www.colobanes.sn'
+    // 'site_url' => 'https://www.colobanes.sn',
 ];

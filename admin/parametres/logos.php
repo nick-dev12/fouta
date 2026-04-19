@@ -203,7 +203,7 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
                         <input type="file" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" onchange="previewLogo(this)">
                     </div>
                     <small style="display: block; color: #666; font-size: 12px; margin-top: 5px;">
-                        JPG, PNG, GIF, WebP (max 2 Mo)
+                        JPG, PNG, GIF, WebP (max. 20 Mo)
                     </small>
                     <div id="logoPreview" class="logo-preview-box">
                         <?php if ($logo_to_edit && !empty($logo_to_edit['image'])): ?>

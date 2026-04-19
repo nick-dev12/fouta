@@ -103,7 +103,7 @@ if (!empty($produits)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de Bord - Administration FOUTA POIDS LOURDS</title>
+    <title>Tableau de Bord - Administration COLObanes</title>
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -278,7 +278,7 @@ if (!empty($produits)) {
             </div>
             <div class="dashboard-page-header__toolbar" role="group" aria-label="Actions rapides">
                 <button type="button" id="btn-install-pwa" class="dash-tool-btn dash-tool-btn--ghost"
-                    title="Installer l'application FOUTA POIDS LOURDS sur cet appareil" style="display: none;">
+                    title="Installer l'application COLObanes sur cet appareil" style="display: none;">
                     <i class="fas fa-download" aria-hidden="true"></i>
                     <span>Installer l’appli</span>
                 </button>

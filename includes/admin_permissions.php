@@ -87,6 +87,13 @@ if (!function_exists('admin_current_role')) {
     }
 
     /**
+     * Connexion en tant que collaborateur (compte créé par le vendeur), pas le titulaire boutique.
+     */
+    function admin_is_vendeur_collaborateur() {
+        return !empty($_SESSION['vendeur_collaborateur_id']);
+    }
+
+    /**
      * Redirige si le rôle n'est pas autorisé
      */
     function admin_require_roles($allowed_roles, $redirect = 'dashboard.php') {

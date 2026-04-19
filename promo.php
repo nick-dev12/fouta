@@ -17,9 +17,11 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 }
 
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = 'Promotions pièces poids lourds - FOUTA POIDS LOURDS';
-$seo_description = 'Promotions sur les pièces de véhicules poids lourds : camions, bus, tracteurs, remorques, cylindres. Pièces détachées à prix réduits.';
+$seo_title = 'Promotions & bonnes affaires — ' . SITE_BRAND_NAME;
+$seo_description = 'Promotions et produits en réduction sur ' . SITE_BRAND_NAME . ', marketplace multi-boutiques au Sénégal. Économisez sur des milliers d’articles.';
+$seo_keywords = site_brand_seo_keywords_default() . ', promotions Sénégal, soldes en ligne, bonnes affaires Dakar';
 $seo_canonical = $base . '/promo.php';
 
 $return_url_list = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/promo.php';

@@ -3,6 +3,7 @@
  * Images d'affichage du hero marketplace (page d'accueil)
  */
 require_once __DIR__ . '/../includes/require_login.php';
+require_once dirname(__DIR__, 2) . '/includes/upload_image_limits.php';
 require_once dirname(__DIR__, 2) . '/models/model_marketplace_hero.php';
 require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
 require_once dirname(__DIR__, 2) . '/controllers/controller_super_admin.php';
@@ -64,11 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $tmp = $_FILES['image']['tmp_name'] ?? '';
         $err = (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE);
-        $max = 5 * 1024 * 1024;
+        $max = UPLOAD_MAX_IMAGE_BYTES;
         if ($err !== UPLOAD_ERR_OK || $tmp === '' || !is_uploaded_file($tmp)) {
             $msg_err = 'Envoi du fichier invalide.';
         } elseif ((int) ($_FILES['image']['size'] ?? 0) > $max) {
-            $msg_err = 'Fichier trop volumineux (maximum 5 Mo).';
+            $msg_err = 'Fichier trop volumineux (maximum 20 Mo).';
         } else {
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             $mime = $finfo ? $finfo->file($tmp) : '';
@@ -151,7 +152,7 @@ $hero_count = count($list);
                     <h1 class="sa-users-hero__title">Hero de la page d’accueil</h1>
                     <p class="sa-users-hero__lead">
                         Gérez le carrousel affiché dans la section <strong>mp-hero</strong> de <strong>index.php</strong>.
-                        Formats acceptés : JPEG, PNG, WebP, GIF — 5&nbsp;Mo max.
+                        Formats acceptés : JPEG, PNG, WebP, GIF — 20&nbsp;Mo max.
                     </p>
                 </div>
                 <div class="sa-users-kpis" aria-label="Synthèse">
@@ -270,7 +271,7 @@ $hero_count = count($list);
                 <form method="post" action="" enctype="multipart/form-data" class="sa-hero-fs-modal__form" id="heroAddForm">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                     <label class="sa-hero-fs-modal__label" for="hero_alt_text">Texte alternatif</label>
-                    <input type="text" class="sa-hero-fs-modal__input" name="alt_text" id="hero_alt_text" placeholder="Ex. : Promotion pièces poids lourds" maxlength="250" autocomplete="off">
+                    <input type="text" class="sa-hero-fs-modal__input" name="alt_text" id="hero_alt_text" placeholder="Ex. : Promotion marketplace COLObanes" maxlength="250" autocomplete="off">
 
                     <div class="sa-hero-preview-zone">
                         <span class="sa-hero-fs-modal__label">Aperçu</span>
@@ -278,7 +279,7 @@ $hero_count = count($list);
                             <div class="sa-hero-preview-box__placeholder" id="heroPreviewPlaceholder">
                                 <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
                                 <span>Aucun fichier sélectionné</span>
-                                <small>JPEG, PNG, WebP ou GIF — max. 5&nbsp;Mo</small>
+                                <small>JPEG, PNG, WebP ou GIF — max. 20&nbsp;Mo</small>
                             </div>
                             <img id="heroPreviewImg" alt="" style="display:none;">
                         </div>

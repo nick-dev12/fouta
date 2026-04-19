@@ -4,6 +4,7 @@
  */
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/marketplace_helpers.php';
+require_once __DIR__ . '/boutique_vendeur_display.php';
 require_once __DIR__ . '/../models/model_admin.php';
 
 /**
@@ -56,5 +57,6 @@ function boutique_bootstrap_or_404() {
     if (!defined('BOUTIQUE_NOM')) {
         define('BOUTIQUE_NOM', (string) ($row['boutique_nom'] ?: $row['boutique_slug']));
     }
+    $GLOBALS['BOUTIQUE_VENDEUR_DISPLAY'] = boutique_vendeur_display_from_row($row);
     return $row;
 }

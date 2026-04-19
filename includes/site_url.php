@@ -3,7 +3,7 @@
  * Retourne l'URL de base du site pour les liens (emails, notifications, etc.)
  * Priorité : config/site.php > config/email.php > déduction depuis $_SERVER
  * 
- * @return string URL sans slash final (ex: https://sugar-paper.com)
+ * @return string URL sans slash final (ex: https://www.colobanes.sn)
  */
 function get_site_base_url() {
     $site_url = '';

@@ -40,7 +40,7 @@ if (isset($result['success']) && $result['success']) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
-    <title>Inscription - FOUTA POIDS LOURDS</title>
+    <title>Inscription - COLObanes</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -313,7 +313,7 @@ if (isset($result['success']) && $result['success']) {
                     <i class="fas fa-user-plus"></i>
                 </div>
                 <h1>Créer un compte</h1>
-                <p>Rejoignez FOUTA POIDS LOURDS</p>
+                <p>Rejoignez COLObanes</p>
             </div>
 
             <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>

@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
+require_once __DIR__ . '/../../includes/upload_image_limits.php';
+
 // Récupérer l'ID du slide
 $slide_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -181,7 +183,7 @@ if (isset($result['success']) && $result['success']) {
         </div>
 
         <form method="POST" action="" enctype="multipart/form-data" class="form-container">
-            <input type="hidden" name="MAX_FILE_SIZE" value="52428800">
+            <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo (int) UPLOAD_MAX_IMAGE_BYTES; ?>">
             <div class="form-group">
                 <label for="titre">Titre *</label>
                 <input type="text" id="titre" name="titre" required
@@ -199,7 +201,7 @@ if (isset($result['success']) && $result['success']) {
                 <label for="image">Nouvelle image (laisser vide pour garder l'actuelle)</label>
                 <input type="file" id="image" name="image" accept="image/*">
                 <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
-                    Formats acceptés: JPEG, JPG, PNG, GIF, WEBP, AVIF (Max: 50MB - Images 4K acceptées)
+                    Formats acceptés: JPEG, JPG, PNG, GIF, WEBP, AVIF (max. 20 Mo)
                 </small>
             </div>
 

@@ -36,6 +36,13 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
     $_SESSION['admin_boutique_nom'] = trim((string) ($result['admin']['boutique_nom'] ?? ''));
     $_SESSION['admin_boutique_slug'] = trim((string) ($result['admin']['boutique_slug'] ?? ''));
 
+    if (!empty($result['vendeur_collaborateur']) && is_array($result['vendeur_collaborateur'])) {
+        $_SESSION['vendeur_collaborateur_id'] = (int) ($result['vendeur_collaborateur']['id'] ?? 0);
+        $_SESSION['vendeur_collaborateur_nom'] = trim((string) ($result['vendeur_collaborateur']['nom'] ?? ''));
+    } else {
+        unset($_SESSION['vendeur_collaborateur_id'], $_SESSION['vendeur_collaborateur_nom']);
+    }
+
     header('Location: /admin/dashboard.php');
     exit;
 }
@@ -68,7 +75,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require_once __DIR__ . '/includes/asset_version.php'; ?>
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
-    <title>Connexion - FOUTA POIDS LOURDS</title>
+    <title>Connexion - COLObanes</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -515,7 +522,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                         </button>
                     </div>
                     <p style="font-size: 12px; color: var(--texte-mute); margin-top: 8px; line-height: 1.45;">
-                        Utilisez le code défini à l’inscription (ex. PIN vendeur à 6 chiffres, ou le mot de passe de votre compte client).
+                        Comptes équipe : PIN ou mot de passe vendeur, ou <strong>compte d’accès</strong> créé par votre gérant (téléphone + mot de passe). Compte client : même champ avec le mot de passe de votre espace acheteur.
                     </p>
                 </div>
                 <div class="checkbox-group">

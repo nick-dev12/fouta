@@ -10,11 +10,14 @@ if (file_exists($autoload)) {
 }
 require_once __DIR__ . '/../models/model_users.php';
 require_once __DIR__ . '/../models/model_admin.php';
+if (file_exists(__DIR__ . '/../models/model_vendeur_comptes_acces.php')) {
+    require_once __DIR__ . '/../models/model_vendeur_comptes_acces.php';
+}
 
 /**
  * Connexion unifiée : vérifie admin puis users.
  * Permet aux admins de se connecter depuis la page user/connexion.php.
- * @return array ['success' => bool, 'message' => string, 'type' => 'admin'|'user'|null, 'admin' => array|null, 'user' => array|null]
+ * @return array ['success' => bool, 'message' => string, 'type' => 'admin'|'user'|null, 'admin' => array|null, 'user' => array|null, 'vendeur_collaborateur' => array|null]
  */
 function process_unified_login() {
     $errors = [];
@@ -25,7 +28,7 @@ function process_unified_login() {
     $user = null;
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        return ['success' => false, 'message' => '', 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => '', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
 
     $login_mode = isset($_POST['login_mode']) ? trim((string) $_POST['login_mode']) : 'email';
@@ -47,14 +50,14 @@ function process_unified_login() {
     }
 
     if (!empty($errors)) {
-        return ['success' => false, 'message' => implode('<br>', $errors), 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => implode('<br>', $errors), 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
 
     // 1. Vérifier d'abord la table admin
     $admin = get_admin_by_email($email);
     if ($admin && $admin['statut'] === 'actif' && password_verify($password, $admin['password'])) {
         update_admin_last_login($admin['id']);
-        return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'admin', 'admin' => $admin, 'user' => null];
+        return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'admin', 'admin' => $admin, 'user' => null, 'vendeur_collaborateur' => null];
     }
 
     // 2. Sinon vérifier la table users
@@ -68,7 +71,7 @@ function process_unified_login() {
             if ($accepte_conditions) {
                 update_user_accepte_conditions($user['id'], true);
             }
-            return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user];
+            return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user, 'vendeur_collaborateur' => null];
         } else {
             $errors[] = 'Email ou mot de passe incorrect.';
         }
@@ -77,12 +80,12 @@ function process_unified_login() {
     }
 
     $message = !empty($errors) ? implode('<br>', $errors) : 'Une erreur est survenue.';
-    return ['success' => false, 'message' => $message, 'type' => null, 'admin' => null, 'user' => null];
+    return ['success' => false, 'message' => $message, 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
 }
 
 /**
  * Connexion unifiée par téléphone + code (même secret hashé que le mot de passe en base).
- * Vérifie d’abord admin, puis compte client (conditions d’utilisation requises pour le client).
+ * Vérifie d’abord admin, puis compte d’accès collaborateur vendeur, puis compte client (CGU requises pour le client).
  * @return array
  */
 function process_unified_phone_login() {
@@ -92,34 +95,62 @@ function process_unified_phone_login() {
 
     $digits = preg_replace('/\D/', '', $tel);
     if ($digits === '') {
-        return ['success' => false, 'message' => 'Le numéro de téléphone est obligatoire.', 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => 'Le numéro de téléphone est obligatoire.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
     if ($secret === '') {
-        return ['success' => false, 'message' => 'Le code PIN ou mot de passe est obligatoire.', 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => 'Le code PIN ou mot de passe est obligatoire.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
 
     $admin = get_admin_by_telephone($tel);
     if ($admin && ($admin['statut'] ?? '') === 'actif' && password_verify($secret, $admin['password'])) {
         update_admin_last_login($admin['id']);
-        return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'admin', 'admin' => $admin, 'user' => null];
+        return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'admin', 'admin' => $admin, 'user' => null, 'vendeur_collaborateur' => null];
+    }
+
+    if (function_exists('get_vendeur_compte_acces_by_telephone_for_unified_login')) {
+        $collab = get_vendeur_compte_acces_by_telephone_for_unified_login($tel);
+        if ($collab) {
+            if (($collab['statut'] ?? '') !== 'actif') {
+                return ['success' => false, 'message' => 'Ce compte d’accès est désactivé. Contactez le gérant de la boutique.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+            }
+            if (!password_verify($secret, $collab['password'])) {
+                // Laisser tomber vers la vérification client (même téléphone possible en théorie)
+                $collab = null;
+            } else {
+                $owner = get_admin_by_id((int) ($collab['vendeur_admin_id'] ?? 0));
+                if (!$owner || ($owner['statut'] ?? '') !== 'actif' || normalize_admin_role($owner['role'] ?? '') !== 'vendeur') {
+                    return ['success' => false, 'message' => 'Boutique indisponible. Contactez la plateforme.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+                }
+                update_vendeur_compte_acces_last_login((int) $collab['id']);
+                update_admin_last_login($owner['id']);
+                return [
+                    'success' => true,
+                    'message' => 'Connexion réussie !',
+                    'type' => 'admin',
+                    'admin' => $owner,
+                    'user' => null,
+                    'vendeur_collaborateur' => $collab,
+                ];
+            }
+        }
     }
 
     $user = get_user_by_telephone($tel);
     if (!$user) {
-        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
     if (($user['statut'] ?? '') !== 'actif') {
-        return ['success' => false, 'message' => 'Votre compte est désactivé. Contactez le support.', 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => 'Votre compte est désactivé. Contactez le support.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
     if (!$accepte_conditions) {
-        return ['success' => false, 'message' => 'Vous devez accepter les conditions d\'utilisation pour vous connecter.', 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => 'Vous devez accepter les conditions d\'utilisation pour vous connecter.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
     if (!password_verify($secret, $user['password'])) {
-        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
 
     update_user_accepte_conditions($user['id'], true);
-    return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user];
+    return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user, 'vendeur_collaborateur' => null];
 }
 
 /**

@@ -1,28 +1,77 @@
+<?php
+if (!defined('SITE_BRAND_NAME')) {
+    require_once __DIR__ . '/includes/site_brand.php';
+}
+if (!function_exists('boutique_url')) {
+    require_once __DIR__ . '/includes/marketplace_helpers.php';
+}
+$__footer_vd = isset($GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']) && is_array($GLOBALS['BOUTIQUE_VENDEUR_DISPLAY'])
+    ? $GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']
+    : null;
+$__footer_slug = defined('BOUTIQUE_SLUG') ? (string) BOUTIQUE_SLUG : '';
+$__footer_is_boutique = ($__footer_slug !== '' && $__footer_vd !== null);
+$__footer_nom = $__footer_is_boutique
+    ? (trim((string) ($__footer_vd['boutique_nom'] ?? '')) !== '' ? trim((string) $__footer_vd['boutique_nom']) : (defined('BOUTIQUE_NOM') ? BOUTIQUE_NOM : 'Boutique'))
+    : '';
+$__footer_logo_src = '/image/logo_market.png';
+$__footer_logo_alt = SITE_BRAND_NAME;
+if ($__footer_is_boutique && !empty($__footer_vd['boutique_logo'])) {
+    $__footer_logo_src = '/upload/' . str_replace('\\', '/', $__footer_vd['boutique_logo']);
+    $__footer_logo_alt = $__footer_nom;
+}
+$__footer_home = $__footer_is_boutique ? boutique_url('index.php', $__footer_slug) : '/index.php';
+$__footer_panier = $__footer_is_boutique ? boutique_url('panier.php', $__footer_slug) : '/panier.php';
+$__footer_produits = $__footer_is_boutique ? boutique_url('produits.php', $__footer_slug) : '/produits.php';
+$__footer_contact = $__footer_is_boutique ? boutique_url('contact.php', $__footer_slug) : '/contact.php';
+$__footer_tel = '';
+$__footer_mail = '';
+$__footer_addr = '';
+if ($__footer_is_boutique) {
+    $__footer_tel = trim((string) ($__footer_vd['telephone'] ?? ''));
+    $__footer_mail = trim((string) ($__footer_vd['email'] ?? ''));
+    $__footer_addr = trim((string) ($__footer_vd['boutique_adresse'] ?? ''));
+    if ($__footer_tel === '') {
+        $__footer_tel = '+221 33 870 00 70';
+    }
+    if ($__footer_mail === '') {
+        $__footer_mail = 'contact@colobanes.sn';
+    }
+    if ($__footer_addr === '') {
+        $__footer_addr = 'Adresse non renseignée — contactez la boutique par téléphone ou email.';
+    }
+} else {
+    $__footer_tel = '+221 33 870 00 70';
+    $__footer_mail = 'contact@colobanes.sn';
+    $__footer_addr = 'Rond point ZAC MBAO, Dakar';
+}
+?>
 <footer class="footer">
     <div class="container footer_container">
         <div class="footer_item">
-            <a href="/index.php" class="footer_logo">
-                <img src="/image/logo_market.png" alt="COLObanes" class="footer_logo_img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
-                <span class="footer_logo_fallback"><i class="fas fa-truck"></i> FOUTA POIDS LOURDS</span>
+            <a href="<?php echo htmlspecialchars($__footer_home, ENT_QUOTES, 'UTF-8'); ?>" class="footer_logo">
+                <img src="<?php echo htmlspecialchars($__footer_logo_src, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($__footer_logo_alt, ENT_QUOTES, 'UTF-8'); ?>" class="footer_logo_img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                <span class="footer_logo_fallback"><i class="fas fa-store"></i> <?php echo htmlspecialchars($__footer_is_boutique ? $__footer_nom : SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?></span>
             </a>
             <div class="footer_p">
-                FOUTA POIDS LOURDS à votre service
+                <?php echo $__footer_is_boutique
+                    ? htmlspecialchars($__footer_nom . ' — boutique partenaire', ENT_QUOTES, 'UTF-8')
+                    : (SITE_BRAND_NAME . ' — marketplace Sénégal'); ?>
             </div>
         </div>
         <div class="footer_item">
-            <h3 class="footer_item_titl">Contact</h3>
+            <h3 class="footer_item_titl"><?php echo $__footer_is_boutique ? 'La boutique' : 'Contact'; ?></h3>
             <ul class="footer_list">
                 <li class="li footer_list_item">
                     <i class="fas fa-phone"></i>
-                    <a href="tel:+221338700070">+221 33 870 00 70</a>
+                    <a href="tel:<?php echo htmlspecialchars(preg_replace('/\s+/', '', $__footer_tel), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($__footer_tel, ENT_QUOTES, 'UTF-8'); ?></a>
                 </li>
                 <li class="li footer_list_item">
                     <i class="fas fa-map-marker-alt"></i>
-                    <span>Rond point ZAC MBAO, Dakar</span>
+                    <span><?php echo nl2br(htmlspecialchars($__footer_addr, ENT_QUOTES, 'UTF-8')); ?></span>
                 </li>
                 <li class="li footer_list_item">
                     <i class="fas fa-envelope"></i>
-                    <a href="mailto:info@foutapoidslourds.com">info@foutapoidslourds.com</a>
+                    <a href="mailto:<?php echo htmlspecialchars($__footer_mail, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($__footer_mail, ENT_QUOTES, 'UTF-8'); ?></a>
                 </li>
             </ul>
         </div>
@@ -45,10 +94,13 @@
                     </li>
                 <?php endif; ?>
                 <li class="li footer_list_item">
-                    <a href="/panier.php">Panier</a>
+                    <a href="<?php echo htmlspecialchars($__footer_panier, ENT_QUOTES, 'UTF-8'); ?>">Panier</a>
                 </li>
                 <li class="li footer_list_item">
-                    <a href="/produits.php">Produits</a>
+                    <a href="<?php echo htmlspecialchars($__footer_produits, ENT_QUOTES, 'UTF-8'); ?>">Produits</a>
+                </li>
+                <li class="li footer_list_item">
+                    <a href="<?php echo htmlspecialchars($__footer_contact, ENT_QUOTES, 'UTF-8'); ?>">Contact</a>
                 </li>
             </ul>
         </div>
@@ -67,7 +119,9 @@
     <div class="footer_bottom">
         <div class="container footer_bottom_container">
             <p class="footer_copy">
-                2026 FOUTA POIDS LOURDS | Tous droits réservés
+                <?php echo $__footer_is_boutique
+                    ? '2026 ' . htmlspecialchars($__footer_nom, ENT_QUOTES, 'UTF-8') . ' | Tous droits réservés'
+                    : '2026 COLObanes | Tous droits réservés'; ?>
             </p>
         </div>
     </div>

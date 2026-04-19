@@ -1,6 +1,6 @@
 ================================================================================
   ARCHITECTURE ESPACE ADMIN — COMMERCIAL / COMPTABILITÉ / RH
-  FOUTA POIDS LOURDS — Document de référence (v1)
+  COLObanes — Document de référence (v1)
 ================================================================================
 
 1. ORGANISATION DES RÔLES (table admin.role)

@@ -358,6 +358,48 @@ function update_admin_last_login($admin_id)
 }
 
 /**
+ * Mise à jour branding vitrine vendeur (logo, couleurs, adresse affichée).
+ * Colonnes attendues : boutique_logo, boutique_couleur_principale, boutique_couleur_accent, boutique_adresse
+ *
+ * @param int $id ID admin vendeur
+ * @param array $data Clés : boutique_logo (?string), boutique_couleur_principale, boutique_couleur_accent, boutique_adresse
+ * @return bool
+ */
+function update_admin_boutique_branding($id, array $data)
+{
+    global $db;
+
+    try {
+        $stmt = $db->prepare("
+            UPDATE admin SET
+                boutique_logo = :boutique_logo,
+                boutique_couleur_principale = :boutique_couleur_principale,
+                boutique_couleur_accent = :boutique_couleur_accent,
+                boutique_adresse = :boutique_adresse
+            WHERE id = :id AND role = 'vendeur'
+        ");
+
+        return $stmt->execute([
+            'id' => (int) $id,
+            'boutique_logo' => $data['boutique_logo'] !== null && $data['boutique_logo'] !== ''
+                ? (string) $data['boutique_logo']
+                : null,
+            'boutique_couleur_principale' => $data['boutique_couleur_principale'] !== null && $data['boutique_couleur_principale'] !== ''
+                ? (string) $data['boutique_couleur_principale']
+                : null,
+            'boutique_couleur_accent' => $data['boutique_couleur_accent'] !== null && $data['boutique_couleur_accent'] !== ''
+                ? (string) $data['boutique_couleur_accent']
+                : null,
+            'boutique_adresse' => $data['boutique_adresse'] !== null && trim((string) $data['boutique_adresse']) !== ''
+                ? trim((string) $data['boutique_adresse'])
+                : null,
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Met à jour le mot de passe d'un administrateur
  * @param int $admin_id L'ID de l'administrateur
  * @param string $password_hash Le nouveau mot de passe hashé

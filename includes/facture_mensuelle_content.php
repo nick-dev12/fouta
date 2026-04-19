@@ -24,8 +24,8 @@ $notes_facture = $notes_facture ?? 'Montants exprimés en HT (hors TVA), conform
 $detail_bls = isset($detail_bls) && is_array($detail_bls) ? $detail_bls : [];
 $fm_flash_success = $fm_flash_success ?? null;
 require_once __DIR__ . '/site_url.php';
-$facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - FOUTA POIDS LOURDS';
-$facture_og_desc = 'Facture FOUTA POIDS LOURDS - ' . ($entreprise_nom ?? 'FOUTA POIDS LOURDS') . ' - Montant : ' . number_format($facture['montant_total'] ?? 0, 0, ',', ' ') . ' CFA';
+$facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - COLObanes';
+$facture_og_desc = 'Facture COLObanes - ' . ($entreprise_nom ?? 'COLObanes') . ' - Montant : ' . number_format($facture['montant_total'] ?? 0, 0, ',', ' ') . ' CFA';
 $facture_og_image = get_site_base_url() . '/image/logo_market.png';
 ?>
 <!DOCTYPE html>
@@ -40,7 +40,7 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
     <meta property="og:description" content="<?php echo htmlspecialchars($facture_og_desc); ?>">
     <meta property="og:image" content="<?php echo htmlspecialchars($facture_og_image); ?>">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="FOUTA POIDS LOURDS">
+    <meta property="og:site_name" content="COLObanes">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

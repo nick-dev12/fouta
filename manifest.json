@@ -1,12 +1,12 @@
 {
-  "name": "FOUTA POIDS LOURDS - Pièces poids lourds",
-  "short_name": "FOUTA POIDS LOURDS",
-  "description": "Boutique en ligne de produits naturels - Noix, Feuilles, Fruits, Huiles, Céréales, Racines",
+  "name": "COLObanes — Marketplace Sénégal",
+  "short_name": "COLObanes",
+  "description": "COLObanes : marketplace au Sénégal. Toutes les boutiques, tous les produits — mode, alimentaire, high-tech, artisanat. Shopping en ligne à Dakar et partout au pays.",
   "start_url": "/index.php",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#E5488A",
+  "theme_color": "#3564a6",
   "background_color": "#ffffff",
   "lang": "fr",
   "icons": [
@@ -14,7 +14,7 @@
     {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ],
   "screenshots": [
-    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "form_factor": "wide", "label": "Logo FOUTA POIDS LOURDS - Pièces véhicules poids lourds"},
-    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "form_factor": "narrow", "label": "Logo FOUTA POIDS LOURDS - Pièces véhicules poids lourds"}
+    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "form_factor": "wide", "label": "COLObanes — marketplace Sénégal, boutiques en ligne"},
+    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "form_factor": "narrow", "label": "COLObanes — achat en ligne multi-boutiques"}
   ]
 }

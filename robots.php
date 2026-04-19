@@ -9,7 +9,7 @@ header('Content-Type: text/plain; charset=utf-8');
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
 
-echo "# Robots.txt pour FOUTA POIDS LOURDS - Pièces poids lourds\n";
+echo "# Robots.txt — COLObanes (marketplace Sénégal)\n";
 echo "# https://www.robotstxt.org/\n\n";
 echo "User-agent: *\n";
 echo "Allow: /\n\n";

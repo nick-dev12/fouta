@@ -148,7 +148,7 @@ if (isset($result['success']) && $result['success']) {
             <div class="form-group">
                 <label for="image">Image de la catégorie (optionnel)</label>
                 <input type="file" id="image" name="image" accept="image/*">
-                <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Formats acceptés: JPG, PNG, GIF, WEBP (max 5MB)</small>
+                <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Formats acceptés: JPG, PNG, GIF, WEBP (max. 20 Mo)</small>
             </div>
 
             <button type="submit" class="btn-primary">

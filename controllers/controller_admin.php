@@ -9,6 +9,9 @@ if (file_exists($autoload)) {
     require_once $autoload;
 }
 require_once __DIR__ . '/../models/model_admin.php';
+if (file_exists(__DIR__ . '/../models/model_vendeur_comptes_acces.php')) {
+    require_once __DIR__ . '/../models/model_vendeur_comptes_acces.php';
+}
 require_once __DIR__ . '/../includes/site_url.php';
 
 /**
@@ -135,7 +138,7 @@ function process_admin_inscription() {
  */
 function process_vendeur_pin_login() {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        return ['success' => false, 'message' => '', 'admin' => false];
+        return ['success' => false, 'message' => '', 'admin' => false, 'vendeur_collaborateur' => null];
     }
 
     $tel = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
@@ -150,22 +153,50 @@ function process_vendeur_pin_login() {
         $errors[] = 'Le code doit comporter au moins 4 caractères.';
     }
     if (!empty($errors)) {
-        return ['success' => false, 'message' => implode('<br>', $errors), 'admin' => false];
+        return ['success' => false, 'message' => implode('<br>', $errors), 'admin' => false, 'vendeur_collaborateur' => null];
     }
 
     $admin = get_admin_by_telephone($tel_norm);
-    if (!$admin) {
-        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'admin' => false];
-    }
-    if (($admin['statut'] ?? '') !== 'actif') {
-        return ['success' => false, 'message' => 'Votre compte est désactivé. Contactez la plateforme.', 'admin' => false];
-    }
-    if (!password_verify($pin, $admin['password'])) {
-        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'admin' => false];
+    if ($admin) {
+        if (($admin['statut'] ?? '') !== 'actif') {
+            return ['success' => false, 'message' => 'Votre compte est désactivé. Contactez la plateforme.', 'admin' => false, 'vendeur_collaborateur' => null];
+        }
+        if (!password_verify($pin, $admin['password'])) {
+            return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'admin' => false, 'vendeur_collaborateur' => null];
+        }
+        update_admin_last_login($admin['id']);
+        return ['success' => true, 'message' => 'Connexion réussie !', 'admin' => $admin, 'vendeur_collaborateur' => null];
     }
 
-    update_admin_last_login($admin['id']);
-    return ['success' => true, 'message' => 'Connexion réussie !', 'admin' => $admin];
+    if (!function_exists('get_vendeur_compte_acces_by_telephone')) {
+        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'admin' => false, 'vendeur_collaborateur' => null];
+    }
+
+    $collab = get_vendeur_compte_acces_by_telephone($tel_norm);
+    if (!$collab) {
+        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'admin' => false, 'vendeur_collaborateur' => null];
+    }
+    if (($collab['statut'] ?? '') !== 'actif') {
+        return ['success' => false, 'message' => 'Ce compte d’accès est désactivé. Contactez le gérant de la boutique.', 'admin' => false, 'vendeur_collaborateur' => null];
+    }
+    if (!password_verify($pin, $collab['password'])) {
+        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'admin' => false, 'vendeur_collaborateur' => null];
+    }
+
+    $owner = get_admin_by_id((int) ($collab['vendeur_admin_id'] ?? 0));
+    if (!$owner || ($owner['statut'] ?? '') !== 'actif' || ($owner['role'] ?? '') !== 'vendeur') {
+        return ['success' => false, 'message' => 'Boutique indisponible. Contactez la plateforme.', 'admin' => false, 'vendeur_collaborateur' => null];
+    }
+
+    update_vendeur_compte_acces_last_login((int) $collab['id']);
+    update_admin_last_login($owner['id']);
+
+    return [
+        'success' => true,
+        'message' => 'Connexion réussie !',
+        'admin' => $owner,
+        'vendeur_collaborateur' => $collab,
+    ];
 }
 
 function process_admin_login() {

@@ -32,9 +32,11 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = 'Catalogue pièces poids lourds - FOUTA POIDS LOURDS';
-$seo_description = 'Catalogue de pièces de véhicules poids lourds : camions, bus, tracteurs, remorques, cylindres. Pièces détachées de qualité pour l\'entretien et la réparation.';
+$seo_title = 'Catalogue produits — ' . SITE_BRAND_NAME . ' | Marketplace Sénégal';
+$seo_description = 'Parcourez le catalogue ' . SITE_BRAND_NAME . ' : produits de centaines de boutiques au Sénégal. Mode, maison, high-tech, alimentaire, artisanat. Achat en ligne, multi-vendeurs.';
+$seo_keywords = site_brand_seo_keywords_default() . ', catalogue produits, catalogue en ligne Sénégal';
 $seo_canonical = $base . '/produits.php';
 ?>
 

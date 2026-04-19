@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($up) {
                     $img = $up;
                 } else {
-                    $flash_err = 'Image non valide (format JPEG, PNG, GIF, WebP — max. 5 Mo).';
+                    $flash_err = 'Image non valide (format JPEG, PNG, GIF, WebP — max. 20 Mo).';
                 }
             }
             if ($flash_err === '') {
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         $img = $up;
                     } else {
-                        $flash_err = 'Image non valide (format JPEG, PNG, GIF, WebP — max. 5 Mo).';
+                        $flash_err = 'Image non valide (format JPEG, PNG, GIF, WebP — max. 20 Mo).';
                     }
                 }
                 if ($flash_err === '') {

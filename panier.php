@@ -76,7 +76,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
-    <title>Mon Panier - FOUTA POIDS LOURDS</title>
+    <title>Mon Panier - COLObanes</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -87,7 +87,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <style>
-        /* Styles panier - Palette FOUTA POIDS LOURDS */
+        /* Styles panier - Palette COLObanes */
         .panier-container {
             max-width: 1200px;
             margin: 40px auto;

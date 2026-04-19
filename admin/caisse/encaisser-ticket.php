@@ -184,7 +184,7 @@ $auto_print = isset($_GET['imprimer']) && $_GET['imprimer'] === '1';
             </div>
             <div class="caisse-encaisseur-wrap caisse-encaisseur-wrap--in-modal">
             <div class="caisse-ticket-card" id="ticket-print-zone">
-                <div class="caisse-ticket-brand">FOUTA POIDS LOURDS</div>
+                <div class="caisse-ticket-brand">COLObanes</div>
                 <div class="caisse-ticket-head">
                     <strong><?php echo htmlspecialchars(caisse_ticket_numero_date_public($vente)); ?></strong>
                     <span><?php echo isset($vente['date_vente']) ? htmlspecialchars(date('d/m/Y H:i', strtotime($vente['date_vente']))) : ''; ?></span>

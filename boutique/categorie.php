@@ -52,7 +52,9 @@ if ($generale_row) {
     $desc_cat = !empty($generale_row['description']) ? strip_tags((string) $generale_row['description']) : 'Catalogue « ' . $categorie_nom . ' » — ' . BOUTIQUE_NOM . '.';
     $seo_canonical = $base . boutique_url('categorie.php?generale=' . (int) $generale_id, BOUTIQUE_SLUG);
 } else {
-    $desc_cat = !empty($categorie['description']) ? strip_tags((string) $categorie['description']) : 'Pièces de véhicules ' . $categorie_nom . ' : camions, bus, tracteurs, remorques. FOUTA POIDS LOURDS - Pièces détachées poids lourds.';
+    $desc_cat = !empty($categorie['description'])
+        ? strip_tags((string) $categorie['description'])
+        : 'Catégorie « ' . $categorie_nom . ' » chez ' . BOUTIQUE_NOM . ' sur COLObanes, marketplace des boutiques du Sénégal.';
     $seo_canonical = $base . boutique_url('categorie.php?id=' . (int) $categorie_id, BOUTIQUE_SLUG);
 }
 $seo_description = mb_substr($desc_cat, 0, 160);

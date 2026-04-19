@@ -35,14 +35,14 @@ $mois = ['janvier','février','mars','avril','mai','juin','juillet','août','sep
 $d_facture = strtotime($facture['date_facture']);
 $date_facture_aff = date('j', $d_facture) . ' ' . $mois[(int)date('n', $d_facture) - 1] . ' ' . date('Y', $d_facture);
 
-$entreprise_nom = 'FOUTA POIDS LOURDS';
+$entreprise_nom = 'COLObanes';
 $entreprise_rc = 'SN.DKR.2022.A.702';
 $entreprise_ninea = '009116684';
 $entreprise_adresse = 'Rond point ZAC MBAO, Dakar';
 $entreprise_tel1 = '338700070';
 $entreprise_tel2 = '';
-$entreprise_site = 'https://www.foutapoidslourds.com';
-$entreprise_email = 'info@foutapoidslourds.com';
+$entreprise_site = 'https://www.colobanes.sn';
+$entreprise_email = 'contact@colobanes.sn';
 
 $whatsapp_url = '';
 $is_public = true;

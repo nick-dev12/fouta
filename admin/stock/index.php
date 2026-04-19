@@ -890,7 +890,7 @@ if (function_exists('get_categories_generales_avec_produits_actifs')) {
                         <div class="stock-cat-file">
                             <i class="fas fa-cloud-arrow-up" style="font-size:1.35rem;color:var(--couleur-dominante);margin-bottom:0.35rem;"></i>
                             <div><strong>Glissez une image</strong> ou cliquez pour parcourir</div>
-                            <p class="stock-cat-file__hint">JPG, PNG, GIF ou WEBP — max. 5 Mo</p>
+                            <p class="stock-cat-file__hint">JPG, PNG, GIF ou WEBP — max. 20 Mo</p>
                             <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp">
                         </div>
                     </div>

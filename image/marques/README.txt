@@ -1,4 +1,4 @@
-Logos des marques de camions - FOUTA POIDS LOURDS
+Logos des marques de camions - COLObanes
 =================================================
 
 Ce dossier contient les logos des marques de véhicules poids lourds affichés dans le carrousel de la page d'accueil.

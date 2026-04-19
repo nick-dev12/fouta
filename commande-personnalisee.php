@@ -34,9 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = 'Demande de pièces sur mesure - FOUTA POIDS LOURDS';
-$seo_description = 'Demande de pièces de véhicules sur mesure. FOUTA POIDS LOURDS : pièces poids lourds, camions, bus, tracteurs, remorques, cylindres. Devis personnalisé.';
+$seo_title = 'Demande personnalisée — ' . SITE_BRAND_NAME . ' | Devis marketplace';
+$seo_description = 'Formulaire de demande personnalisée sur ' . SITE_BRAND_NAME . '. Décrivez votre besoin : nos vendeurs et l’équipe plateforme vous répondent.';
+$seo_keywords = site_brand_seo_keywords_default() . ', demande sur mesure, devis produits Sénégal';
 $seo_canonical = $base . '/commande-personnalisee.php';
 ?>
 <!DOCTYPE html>

@@ -39,7 +39,7 @@ function mail_create_instance() {
     $from = $config['from'] ?? [];
     $mail->setFrom(
         $from['email'] ?? 'noreply@localhost',
-        $from['name'] ?? 'FOUTA POIDS LOURDS'
+        $from['name'] ?? 'COLObanes'
     );
 
     if (($config['debug'] ?? false) === true) {
@@ -134,7 +134,7 @@ function mail_send_contact($nom, $email, $sujet, $message) {
     $result = mail_send($contact, "[Contact] " . $sujet, $body, true);
     if ($result['success']) {
         $reply = "Merci pour votre message. Nous vous répondrons rapidement.";
-        mail_send($email, "Confirmation - FOUTA POIDS LOURDS", "<p>" . htmlspecialchars($reply) . "</p>", true);
+        mail_send($email, "Confirmation - COLObanes", "<p>" . htmlspecialchars($reply) . "</p>", true);
     }
     return $result;
 }
@@ -158,7 +158,7 @@ function mail_send_reset_link($email, $reset_link, $type = 'user') {
     $body .= '<p style="font-size: 13px; color: #666;">Ou copiez ce lien dans votre navigateur :<br><span style="word-break: break-all;">' . htmlspecialchars($reset_link) . '</span></p>';
     $body .= '<p style="font-size: 12px; color: #999; margin-top: 30px;">Ce lien expire dans 2 heures. Si vous n\'avez pas fait cette demande, ignorez cet email.</p>';
     $body .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
-    $body .= '<p style="font-size: 12px; color: #999;">FOUTA POIDS LOURDS - Pièces poids lourds</p>';
+    $body .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
     $body .= '</div>';
 
     return mail_send($email, $sujet, $body, true);

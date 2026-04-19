@@ -41,6 +41,13 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
     $_SESSION['admin_boutique_nom'] = trim((string) ($result['admin']['boutique_nom'] ?? ''));
     $_SESSION['admin_boutique_slug'] = trim((string) ($result['admin']['boutique_slug'] ?? ''));
 
+    if (!empty($result['vendeur_collaborateur']) && is_array($result['vendeur_collaborateur'])) {
+        $_SESSION['vendeur_collaborateur_id'] = (int) ($result['vendeur_collaborateur']['id'] ?? 0);
+        $_SESSION['vendeur_collaborateur_nom'] = trim((string) ($result['vendeur_collaborateur']['nom'] ?? ''));
+    } else {
+        unset($_SESSION['vendeur_collaborateur_id'], $_SESSION['vendeur_collaborateur_nom']);
+    }
+
     // Redirection vers l'espace admin. Si l'admin utilise "retour", connexion.php le redirigera à nouveau.
     header('Location: /admin/dashboard.php');
     exit;
@@ -76,7 +83,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
-    <title>Connexion - FOUTA POIDS LOURDS</title>
+    <title>Connexion - COLObanes</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -533,6 +540,9 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
+                    <p style="font-size: 12px; color: var(--texte-mute); margin-top: 8px; line-height: 1.45;">
+                        Équipe boutique : PIN vendeur ou <strong>compte d’accès</strong> (téléphone + mot de passe défini par le gérant). Client : mot de passe du compte acheteur (case conditions à cocher).
+                    </p>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="accepte_conditions_phone" name="accepte_conditions_phone" value="1" <?php echo (isset($_POST['accepte_conditions_phone']) && $_POST['accepte_conditions_phone'] === '1') ? 'checked' : ''; ?>>

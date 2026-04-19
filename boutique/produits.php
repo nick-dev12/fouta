@@ -32,9 +32,11 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/../includes/site_url.php';
+require_once __DIR__ . '/../includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = 'Catalogue - ' . BOUTIQUE_NOM;
-$seo_description = 'Catalogue de pièces de véhicules poids lourds : camions, bus, tracteurs, remorques, cylindres. Pièces détachées de qualité pour l\'entretien et la réparation.';
+$seo_title = 'Catalogue — ' . BOUTIQUE_NOM . ' | ' . SITE_BRAND_NAME;
+$seo_description = 'Catalogue produits de la boutique ' . BOUTIQUE_NOM . ' sur ' . SITE_BRAND_NAME . '. Achat en ligne, vendeur au Sénégal, marketplace multi-boutiques.';
+$seo_keywords = site_brand_seo_keywords_default() . ', ' . BOUTIQUE_NOM;
 $seo_canonical = $base . boutique_url('produits.php', BOUTIQUE_SLUG);
 ?>
 

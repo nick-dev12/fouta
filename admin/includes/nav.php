@@ -29,7 +29,7 @@ $admin_role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin')
 $is_vendeur_menu = ($admin_role === 'vendeur');
 
 /** Titre marque dans la sidebar : nom commercial de la boutique si vendeur, sinon plateforme. */
-$admin_sidebar_brand_title = 'FOUTA POIDS LOURDS';
+$admin_sidebar_brand_title = 'COLObanes';
 if ($is_vendeur_menu && !empty(
     $_SESSION['admin_id'])) {
     $bn_nav = trim((string) ($_SESSION['admin_boutique_nom'] ?? ''));

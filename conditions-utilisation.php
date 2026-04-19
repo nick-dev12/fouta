@@ -4,8 +4,8 @@ session_start();
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
-$seo_title = "Conditions d'Utilisation - FOUTA POIDS LOURDS";
-$seo_description = "Conditions générales d'utilisation du site FOUTA POIDS LOURDS. Règles et modalités de notre boutique de pièces de véhicules poids lourds.";
+$seo_title = "Conditions d'Utilisation - COLObanes";
+$seo_description = "Conditions générales d'utilisation de COLObanes, marketplace multi-boutiques au Sénégal. Règles d'achat, vendeurs et plateforme.";
 $seo_canonical = $base . '/conditions-utilisation.php';
 ?>
 <!DOCTYPE html>
@@ -95,7 +95,7 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         
         <h2>1. Acceptation des Conditions</h2>
         <p>
-            En accédant et en utilisant le site <strong>FOUTA POIDS LOURDS</strong>, boutique en ligne spécialisée dans la vente de pièces de véhicules poids lourds (camions, bus, tracteurs, remorques, cylindres), vous acceptez d'être lié par ces conditions d'utilisation. 
+            En accédant et en utilisant le site <strong>COLObanes</strong>, marketplace en ligne qui met en relation des boutiques et vendeurs au Sénégal avec des acheteurs (produits de toutes catégories), vous acceptez d'être lié par ces conditions d'utilisation.
             Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser notre site.
         </p>
         
@@ -110,18 +110,18 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         
         <h2>3. Commandes et Paiements</h2>
         <p>
-            Toutes les commandes de pièces de véhicules sont soumises à notre acceptation. 
-            Nous nous réservons le droit de refuser ou d'annuler toute commande en cas de stock insuffisant, 
-            d'erreur de prix ou pour toute autre raison légitime. Les prix sont indiqués en FCFA et peuvent 
-            être modifiés à tout moment. Le montant total inclut le sous-total des produits et les frais de 
+            Toutes les commandes passées via la plateforme sont soumises à l’acceptation du vendeur concerné et aux règles affichées sur la fiche produit.
+            Nous nous réservons le droit de refuser ou d'annuler toute commande en cas de stock insuffisant,
+            d'erreur de prix ou pour toute autre raison légitime. Les prix sont indiqués en FCFA et peuvent
+            être modifiés à tout moment. Le montant total inclut le sous-total des produits et les frais de
             livraison selon la zone sélectionnée.
         </p>
         
         <h2>4. Produits et Personnalisation</h2>
         <p>
-            Nous nous efforçons d'afficher nos pièces de véhicules avec précision. 
-            Les produits personnalisés sont réalisés selon vos indications ; toutefois, une légère 
-            variation par rapport à la description ou à l'image peut survenir. Nous ne garantissons pas 
+            Nous nous efforçons d’afficher les produits des vendeurs avec précision.
+            Les articles personnalisés ou sur commande sont réalisés selon vos indications ; une légère
+            variation par rapport à la description ou à l'image peut survenir. Les vendeurs et la plateforme ne garantissent pas
             que les descriptions, images ou autres contenus sont exacts, complets ou à jour en permanence.
         </p>
         
@@ -135,22 +135,20 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         
         <h2>6. Annulation et Retours</h2>
         <p>
-            Les produits alimentaires (gâteaux) ne peuvent généralement pas être repris pour des raisons 
-            d'hygiène. Pour les accessoires de pâtisserie non alimentaires, les retours peuvent être 
-            envisagés sous conditions. Contactez-nous avant toute démarche. En cas d'annulation de commande 
-            par le client, celle-ci doit être effectuée avant la préparation du produit.
+            Les modalités d’annulation, d’échange et de retour dépendent du type de produit, du vendeur et de la loi applicable (notamment pour les denrées périssables ou les articles d’hygiène).
+            Contactez le vendeur ou le service client avant toute démarche. En cas d'annulation par le client, elle doit intervenir dans les délais indiqués sur la commande ou par le vendeur.
         </p>
         
         <h2>7. Propriété Intellectuelle</h2>
         <p>
-            Tout le contenu du site (textes, images, logos, recettes, créations) est la propriété de 
-            <strong>Sugar Paper</strong> et est protégé par les lois sur la propriété intellectuelle. 
-            Toute reproduction sans autorisation préalable est interdite.
+            Le contenu éditorial de la plateforme <strong>COLObanes</strong> (identité visuelle, textes génériques, structure du site) est protégé par les lois sur la propriété intellectuelle.
+            Les contenus publiés par les vendeurs (photos, descriptions de produits) restent de leur responsabilité et demeurent leur propriété sauf mention contraire.
+            Toute reproduction non autorisée du contenu de la plateforme est interdite.
         </p>
         
         <h2>8. Limitation de Responsabilité</h2>
         <p>
-            FOUTA POIDS LOURDS ne sera pas responsable des dommages directs, indirects, accessoires ou 
+            COLObanes ne sera pas responsable des dommages directs, indirects, accessoires ou 
             consécutifs résultant de l'utilisation ou de l'impossibilité d'utiliser le site, 
             sauf en cas de faute lourde ou de manquement à une obligation essentielle du contrat.
         </p>
@@ -165,7 +163,7 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         <h2>10. Contact</h2>
         <p>
             Pour toute question concernant ces conditions d'utilisation, contactez-nous à : 
-<a href="mailto:info@foutapoidslourds.com">info@foutapoidslourds.com</a>
+<a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a>
             ou par téléphone au <a href="tel:+221338700070">+221 33 870 00 70</a>.
         </p>
         

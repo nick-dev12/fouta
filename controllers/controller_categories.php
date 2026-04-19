@@ -4,6 +4,7 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/upload_image_limits.php';
 require_once __DIR__ . '/../models/model_categories.php';
 if (file_exists(__DIR__ . '/../includes/admin_route_access.php')) {
     require_once __DIR__ . '/../includes/admin_route_access.php';
@@ -27,7 +28,7 @@ function upload_categorie_image($file) {
     }
     
     $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = 5 * 1024 * 1024; // 5MB
+    $max_size = UPLOAD_MAX_IMAGE_BYTES;
     
     $file_info = $file['image'];
     
@@ -70,7 +71,7 @@ function upload_genre_image($file) {
     }
 
     $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = 5 * 1024 * 1024;
+    $max_size = UPLOAD_MAX_IMAGE_BYTES;
 
     $file_info = $file['image'];
     if (!in_array($file_info['type'], $allowed_types, true)) {

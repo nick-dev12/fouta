@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../includes/barcode_fpl.php';
+require_once __DIR__ . '/../includes/upload_image_limits.php';
 
 /**
  * Génère et sauvegarde le QR code d'un produit (pointant vers stock-info.php)
@@ -66,6 +67,10 @@ function upload_produit_image($file, $field_name = 'image') {
     
     // Vérifier le type
     if (!in_array($file_info['type'], $allowed_types)) {
+        return false;
+    }
+
+    if ((int) ($file_info['size'] ?? 0) > UPLOAD_MAX_IMAGE_BYTES) {
         return false;
     }
     

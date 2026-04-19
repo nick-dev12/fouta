@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
+require_once __DIR__ . '/../../includes/upload_image_limits.php';
+
 // Récupérer la configuration actuelle
 require_once __DIR__ . '/../../models/model_trending.php';
 require_once __DIR__ . '/../../includes/admin_param_boutique_scope.php';
@@ -83,7 +85,7 @@ if (isset($_SESSION['success_message'])) {
 
         <div class="form-add-container param-form-container">
             <form method="POST" action="" enctype="multipart/form-data" class="form-add">
-                <input type="hidden" name="MAX_FILE_SIZE" value="52428800">
+                <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo (int) UPLOAD_MAX_IMAGE_BYTES; ?>">
                 <div class="form-group">
                     <label for="label">
                         <i class="fas fa-tag"></i> Label (petit texte)
@@ -125,7 +127,7 @@ if (isset($_SESSION['success_message'])) {
 
                 <div class="form-group">
                     <label for="image"><i class="fas fa-image"></i> Image</label>
-                    <small class="form-help">Formats acceptés: JPEG, JPG, PNG, GIF, WEBP (max 50MB - Images 4K acceptées)</small>
+                    <small class="form-help">Formats acceptés: JPEG, JPG, PNG, GIF, WEBP (max. 20 Mo)</small>
                     
                     <?php if (!empty($config['image'])): ?>
                         <div class="current-image">

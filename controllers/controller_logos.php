@@ -4,6 +4,7 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/upload_image_limits.php';
 require_once __DIR__ . '/../models/model_logos.php';
 require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
 require_once __DIR__ . '/../includes/db_schema_helpers.php';
@@ -38,7 +39,7 @@ function upload_logo_image($file, $field = 'image') {
         mkdir($upload_dir, 0755, true);
     }
     $allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = 2 * 1024 * 1024; // 2MB
+    $max_size = UPLOAD_MAX_IMAGE_BYTES;
     $info = $file[$field];
     if (!in_array($info['type'], $allowed) || $info['size'] > $max_size) {
         return false;
@@ -61,7 +62,7 @@ function process_add_logo() {
     }
     $image = upload_logo_image($_FILES, 'image');
     if (!$image) {
-        return ['success' => false, 'message' => 'Veuillez sélectionner une image valide (JPG, PNG, GIF, WebP, max 2 Mo).'];
+        return ['success' => false, 'message' => 'Veuillez sélectionner une image valide (JPG, PNG, GIF, WebP, max 20 Mo).'];
     }
     $ordre = isset($_POST['ordre']) ? (int) $_POST['ordre'] : 0;
     $scope = admin_param_boutique_scope_id();

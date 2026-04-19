@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
+require_once __DIR__ . '/../../includes/upload_image_limits.php';
+
 // Récupérer la configuration actuelle
 require_once __DIR__ . '/../../models/model_section4.php';
 $config = get_section4_config();
@@ -226,7 +228,7 @@ if (isset($_SESSION['success_message'])) {
                     <input type="text" id="titre" name="titre" 
                            value="<?php echo isset($_POST['titre']) ? htmlspecialchars($_POST['titre']) : htmlspecialchars($config['titre']); ?>" 
                            required
-                           placeholder="Ex: Bienvenue chez FOUTA POIDS LOURDS">
+                           placeholder="Ex: Bienvenue sur votre vitrine (COLObanes)">
                 </div>
 
                 <div class="form-group">
@@ -244,7 +246,7 @@ if (isset($_SESSION['success_message'])) {
                         <i class="fas fa-image"></i> Image de fond
                     </label>
                     <small style="display: block; color: #666; font-size: 12px; margin-bottom: 8px;">
-                        Formats acceptés: JPG, PNG, GIF, WEBP (max 5MB)
+                        Formats acceptés: JPG, PNG, GIF, WEBP (max. 20 Mo)
                     </small>
                     
                     <?php if (!empty($config['image_fond'])): ?>

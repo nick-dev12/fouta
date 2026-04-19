@@ -1,4 +1,7 @@
 <?php
+if (!defined('SITE_BRAND_TAGLINE')) {
+    require_once __DIR__ . '/includes/site_brand.php';
+}
 if (!function_exists('get_asset_version')) {
     require_once __DIR__ . '/includes/asset_version.php';
 }
@@ -93,6 +96,9 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         width: auto;
         max-width: 160px;
         object-fit: contain;
+
+        transform: scale(2);
+        margin-left: 20px;
     }
 
     .nav-top-row {
@@ -524,6 +530,7 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         .nav-planete-gateau .logo img {
             height: 40px;
             max-width: 100px;
+            object-fit: contain;
         }
 
         .nav-compte-btn {
@@ -564,7 +571,16 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
 <nav class="nav-planete-gateau">
     <div class="nav-top-row">
         <a class="logo" href="<?php echo htmlspecialchars($u_home); ?>">
-            <img src="/image/logo_market.png" alt="COLObanes">
+            <?php
+            $__nav_logo_src = '/image/logo_market.png';
+            $__nav_logo_alt = SITE_BRAND_NAME;
+            if (!empty($GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']['boutique_logo'])) {
+                $__nav_logo_src = '/upload/' . str_replace('\\', '/', $GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']['boutique_logo']);
+                $__bn = trim((string) ($GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']['boutique_nom'] ?? ''));
+                $__nav_logo_alt = $__bn !== '' ? $__bn : 'Boutique';
+            }
+            ?>
+            <img src="<?php echo htmlspecialchars($__nav_logo_src, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($__nav_logo_alt, ENT_QUOTES, 'UTF-8'); ?>">
         </a>
         <a href="<?php echo isset($_SESSION['user_id']) ? htmlspecialchars($u_panier) : '/choix-connexion.php?redirect=' . rawurlencode($nav_panier_connect_redirect); ?>"
             class="nav-panier-link"
@@ -598,7 +614,8 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
     </div>
 
     <div class="nav-search-wrapper">
-        <form class="nav-search-form" action="<?php echo htmlspecialchars($u_produits); ?>" method="get" id="nav-search-form">
+        <form class="nav-search-form" action="<?php echo htmlspecialchars($u_produits); ?>" method="get"
+            id="nav-search-form">
             <button type="submit" class="nav-search-btn" aria-label="Rechercher">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
@@ -646,20 +663,20 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
                                 $gid = (int) $g['id'];
                                 ?>
                                 <?php if (empty($subs)): ?>
-                                <option value="<?php echo $gid; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $gid) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($g['nom']); ?>
-                                </option>
-                                <?php else: ?>
-                                <optgroup label="<?php echo htmlspecialchars($g['nom']); ?>">
                                     <option value="<?php echo $gid; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $gid) ? 'selected' : ''; ?>>
-                                        Tout le rayon
+                                        <?php echo htmlspecialchars($g['nom']); ?>
                                     </option>
-                                    <?php foreach ($subs as $s): ?>
-                                    <option value="<?php echo (int) $s['id']; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $s['id']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($s['nom']); ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
+                                <?php else: ?>
+                                    <optgroup label="<?php echo htmlspecialchars($g['nom']); ?>">
+                                        <option value="<?php echo $gid; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $gid) ? 'selected' : ''; ?>>
+                                            Tout le rayon
+                                        </option>
+                                        <?php foreach ($subs as $s): ?>
+                                            <option value="<?php echo (int) $s['id']; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $s['id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($s['nom']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
                                 <?php endif; ?>
                             <?php endforeach; ?>
                         <?php elseif (!empty($categories_menu)): ?>
@@ -740,9 +757,9 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
 <aside class="nav-sidebar" id="navSidebar">
     <div class="nav-sidebar-header">
         <a href="<?php echo htmlspecialchars($u_home); ?>" class="nav-sidebar-logo">
-            <img src="/image/logo_market.png" alt="COLObanes">
+            <img src="/image/logo_market.png" alt="<?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?>">
         </a>
-        <p class="nav-sidebar-slogan">FOUTA POIDS LOURDS</p>
+        <p class="nav-sidebar-slogan"><?php echo htmlspecialchars(SITE_BRAND_TAGLINE, ENT_QUOTES, 'UTF-8'); ?></p>
     </div>
     <div class="nav-sidebar-content">
         <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-sidebar-item nav-sidebar-nouveautes">
@@ -757,28 +774,31 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             <?php if (!empty($nav_megamenu)): ?>
                 <p class="nav-sidebar-section-label">Nos rayons</p>
                 <ul class="nav-glass-rayons-list" role="list">
-                <?php foreach ($nav_megamenu as $mega): ?>
-                    <?php
-                    $g = $mega['general'];
-                    $gid = (int) $g['id'];
-                    $ic_class = function_exists('categorie_fa_icon_class') ? categorie_fa_icon_class($g) : 'fa-solid fa-layer-group';
-                    $rayon_href = function_exists('nav_categorie_generale_href')
-                        ? nav_categorie_generale_href($gid)
-                        : nav_categorie_href($gid);
-                    ?>
-                    <li>
-                        <a class="nav-glass-rayon-card" href="<?php echo htmlspecialchars($rayon_href); ?>">
-                            <span class="nav-glass-rayon-icon" aria-hidden="true"><i class="<?php echo htmlspecialchars($ic_class); ?>"></i></span>
-                            <span class="nav-glass-rayon-label"><?php echo htmlspecialchars($g['nom']); ?></span>
-                            <span class="nav-glass-rayon-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
-                        </a>
-                    </li>
-                <?php endforeach; ?>
+                    <?php foreach ($nav_megamenu as $mega): ?>
+                        <?php
+                        $g = $mega['general'];
+                        $gid = (int) $g['id'];
+                        $ic_class = function_exists('categorie_fa_icon_class') ? categorie_fa_icon_class($g) : 'fa-solid fa-layer-group';
+                        $rayon_href = function_exists('nav_categorie_generale_href')
+                            ? nav_categorie_generale_href($gid)
+                            : nav_categorie_href($gid);
+                        ?>
+                        <li>
+                            <a class="nav-glass-rayon-card" href="<?php echo htmlspecialchars($rayon_href); ?>">
+                                <span class="nav-glass-rayon-icon" aria-hidden="true"><i
+                                        class="<?php echo htmlspecialchars($ic_class); ?>"></i></span>
+                                <span class="nav-glass-rayon-label"><?php echo htmlspecialchars($g['nom']); ?></span>
+                                <span class="nav-glass-rayon-arrow" aria-hidden="true"><i
+                                        class="fa-solid fa-arrow-right"></i></span>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
                 </ul>
             <?php elseif (!empty($categories_menu)): ?>
                 <p class="nav-sidebar-section-label">Catégories</p>
                 <?php foreach ($categories_menu as $categorie): ?>
-                    <a href="<?php echo htmlspecialchars(nav_categorie_href($categorie['id'])); ?>" class="nav-sidebar-category">
+                    <a href="<?php echo htmlspecialchars(nav_categorie_href($categorie['id'])); ?>"
+                        class="nav-sidebar-category">
                         <span><?php echo htmlspecialchars($categorie['nom']); ?></span>
                         <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
                     </a>
@@ -816,6 +836,13 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             <span>MENU</span>
         </button>
     </div>
+    <?php if (isset($section1_mp_page_title) && trim((string) $section1_mp_page_title) !== ''): ?>
+        <div class="section1-center section1-center--mp-title">
+            <h1 class="section1-page-title">
+                <?php echo htmlspecialchars(trim((string) $section1_mp_page_title), ENT_QUOTES, 'UTF-8'); ?>
+            </h1>
+        </div>
+    <?php endif; ?>
     <div class="section1-right">
         <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-action-btn nav-btn-nouveautes">
             <i class="fa-solid fa-gift"></i>
@@ -843,14 +870,21 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             if (overlay) overlay.classList.add('show');
             document.body.style.overflow = 'hidden';
             var icon = toggle ? toggle.querySelector('i') : null;
-            if (icon) { icon.classList.remove('fa-bars'); icon.classList.add('fa-times'); }
+            if (icon) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            }
         }
+
         function closeMenu() {
             if (sidebar) sidebar.classList.remove('open');
             if (overlay) overlay.classList.remove('show');
             document.body.style.overflow = '';
             var icon = toggle ? toggle.querySelector('i') : null;
-            if (icon) { icon.classList.remove('fa-times'); icon.classList.add('fa-bars'); }
+            if (icon) {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
         }
 
         if (toggle) toggle.addEventListener('click', function () {

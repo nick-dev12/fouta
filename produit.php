@@ -119,10 +119,14 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = $produit['nom'] . ' - FOUTA POIDS LOURDS';
-$desc = !empty($produit['description']) ? strip_tags($produit['description']) : $produit['nom'] . ' - Pièce de véhicule poids lourd FOUTA POIDS LOURDS. Pièces détachées camion, bus, tracteur, remorque.';
+$seo_title = $produit['nom'] . ' — ' . SITE_BRAND_NAME . ' | ' . $produit_boutique_nom;
+$desc = !empty($produit['description'])
+    ? strip_tags($produit['description'])
+    : $produit['nom'] . ' — en vente sur ' . SITE_BRAND_NAME . ' (boutique ' . $produit_boutique_nom . '). Marketplace Sénégal, achat en ligne.';
 $seo_description = mb_substr($desc, 0, 160);
+$seo_keywords = site_brand_seo_keywords_default() . ', ' . $produit['nom'] . ', ' . $produit_boutique_nom;
 $seo_canonical = $base . '/produit.php?id=' . (int) $produit['id'];
 $seo_og_type = 'product';
 $img = !empty($produit['image_principale']) ? $produit['image_principale'] : '';

@@ -27,7 +27,7 @@ $result = process_forgot_password();
     <?php include __DIR__ . '/../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mot de passe oublié - Admin FOUTA POIDS LOURDS</title>
+    <title>Mot de passe oublié - Admin COLObanes</title>
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

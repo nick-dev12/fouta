@@ -1,6 +1,6 @@
 <?php
 /**
- * Affichage d'une facture (admin, design FOUTA POIDS LOURDS)
+ * Affichage d'une facture (admin, design COLObanes)
  */
 session_start();
 
@@ -73,17 +73,17 @@ $msg_whatsapp = "Bonjour " . $client_nom . ",\n\n"
     . "Montant total : " . number_format($facture['montant_total'], 0, ',', ' ') . " CFA\n"
     . "Date : " . $date_facture_aff . "\n\n"
     . "Consultez votre facture en ligne :\n" . $facture_url . "\n\n"
-    . "Cordialement,\nFOUTA POIDS LOURDS";
+    . "Cordialement,\nCOLObanes";
 $whatsapp_url = !empty($tel_whatsapp) ? 'https://wa.me/' . $tel_whatsapp . '?text=' . urlencode($msg_whatsapp) : '';
 
-$entreprise_nom = 'FOUTA POIDS LOURDS';
+$entreprise_nom = 'COLObanes';
 $entreprise_rc = 'SN.DKR.2022.A.702';
 $entreprise_ninea = '009116684';
 $entreprise_adresse = 'Rond point ZAC MBAO, Dakar';
 $entreprise_tel1 = '338700070';
 $entreprise_tel2 = '';
-$entreprise_site = 'https://www.foutapoidslourds.com';
-$entreprise_email = 'info@foutapoidslourds.com';
+$entreprise_site = 'https://www.colobanes.sn';
+$entreprise_email = 'contact@colobanes.sn';
 
 $is_public = false;
 require __DIR__ . '/../../includes/facture_content.php';

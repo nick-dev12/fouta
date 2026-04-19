@@ -16,7 +16,7 @@ $vq = asset_version_query();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Créer un compte — FOUTA POIDS LOURDS</title>
+    <title>Créer un compte — COLObanes</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo $vq; ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="

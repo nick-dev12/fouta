@@ -18,9 +18,11 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/../includes/site_url.php';
+require_once __DIR__ . '/../includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = 'Nouveautés - ' . BOUTIQUE_NOM;
-$seo_description = 'Découvrez les dernières pièces de véhicules poids lourds : camions, bus, tracteurs, remorques, cylindres. Pièces détachées de qualité.';
+$seo_title = 'Nouveautés — ' . BOUTIQUE_NOM . ' | ' . SITE_BRAND_NAME;
+$seo_description = 'Derniers produits de ' . BOUTIQUE_NOM . ' sur ' . SITE_BRAND_NAME . '. Nouveautés marketplace Sénégal, achat en ligne.';
+$seo_keywords = site_brand_seo_keywords_default() . ', nouveautés, ' . BOUTIQUE_NOM;
 $seo_canonical = $base . boutique_url('nouveautes.php', BOUTIQUE_SLUG);
 ?>
 <!DOCTYPE html>

@@ -105,7 +105,7 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 $facture_url = $base . '/facture-cp.php?token=' . $token;
                 $client_nom = trim(($cp['prenom'] ?? '') . ' ' . ($cp['nom'] ?? ''));
                 $montant_aff = ($facture_cp['montant_total'] ?? 0) > 0 ? number_format($facture_cp['montant_total'], 0, ',', ' ') . ' CFA' : 'À définir';
-                $msg_wa = "Bonjour " . $client_nom . ",\n\nVotre devis/facture n°" . ($facture_cp['numero_facture'] ?? '') . " pour la demande #" . $cp['id'] . " est prête.\n\nMontant : " . $montant_aff . "\n\nConsultez : " . $facture_url . "\n\nCordialement, FOUTA POIDS LOURDS";
+                $msg_wa = "Bonjour " . $client_nom . ",\n\nVotre devis/facture n°" . ($facture_cp['numero_facture'] ?? '') . " pour la demande #" . $cp['id'] . " est prête.\n\nMontant : " . $montant_aff . "\n\nConsultez : " . $facture_url . "\n\nCordialement, COLObanes";
                 $wa_url = !empty($tel) ? 'https://wa.me/' . $tel . '?text=' . urlencode($msg_wa) : '';
                 ?>
                 <?php if (!empty($wa_url)): ?>

@@ -36,6 +36,7 @@ $valeur_stock_actuel = $stock_actuel * $prix_produit;
 $valeur_ventes = $quantite_vendue * $prix_produit;
 
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
 ?>
 <!DOCTYPE html>
@@ -44,7 +45,7 @@ $base = get_site_base_url();
     <?php include __DIR__ . '/includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock - <?php echo htmlspecialchars($produit['nom']); ?> - FOUTA POIDS LOURDS</title>
+    <title>Stock - <?php echo htmlspecialchars($produit['nom']); ?> — <?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -171,7 +172,7 @@ $base = get_site_base_url();
             </div>
         </div>
 
-        <p class="brand">FOUTA POIDS LOURDS — Pièces poids lourds</p>
+        <p class="brand"><?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?> — marketplace Sénégal</p>
     </div>
 </body>
 </html>

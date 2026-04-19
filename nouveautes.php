@@ -17,9 +17,11 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 }
 
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = 'Nouveautés pièces poids lourds - FOUTA POIDS LOURDS';
-$seo_description = 'Découvrez les dernières pièces de véhicules poids lourds : camions, bus, tracteurs, remorques, cylindres. Pièces détachées de qualité.';
+$seo_title = 'Nouveautés — ' . SITE_BRAND_NAME . ' | Produits des boutiques Sénégal';
+$seo_description = 'Derniers produits ajoutés sur ' . SITE_BRAND_NAME . ' : découvrez les nouveautés des vendeurs du marketplace, toutes catégories, achat en ligne.';
+$seo_keywords = site_brand_seo_keywords_default() . ', nouveautés produits, nouveautés e-commerce Sénégal';
 $seo_canonical = $base . '/nouveautes.php';
 
 $return_url_list = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/nouveautes.php';

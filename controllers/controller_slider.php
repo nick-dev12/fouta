@@ -4,6 +4,7 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/upload_image_limits.php';
 require_once __DIR__ . '/../models/model_slider.php';
 
 /**
@@ -34,9 +35,8 @@ function upload_slider_image($file_input_name, $current_image = null) {
         return false;
     }
     
-    // Vérifier la taille (max 50MB pour permettre les images 4K)
-    if ($file['size'] > 52428800) { // 50MB
-        $_SESSION['upload_error'] = 'Le fichier est trop volumineux. Taille maximale: 50MB';
+    if ((int) ($file['size'] ?? 0) > UPLOAD_MAX_IMAGE_BYTES) {
+        $_SESSION['upload_error'] = 'Le fichier est trop volumineux. Taille maximale : 20 Mo';
         return false;
     }
     
@@ -98,7 +98,7 @@ function process_add_slide() {
                 $errors[] = $_SESSION['upload_error'];
                 unset($_SESSION['upload_error']);
             } else {
-                $errors[] = 'Erreur lors de l\'upload de l\'image. Vérifiez que le fichier est au format JPEG, JPG, PNG, GIF, WEBP ou AVIF et ne dépasse pas 50MB.';
+                $errors[] = 'Erreur lors de l\'upload de l\'image. Vérifiez que le fichier est au format JPEG, JPG, PNG, GIF, WEBP ou AVIF et ne dépasse pas 20 Mo.';
             }
         }
     }
@@ -174,7 +174,7 @@ function process_update_slide($slide_id) {
                 $errors[] = $_SESSION['upload_error'];
                 unset($_SESSION['upload_error']);
             } else {
-                $errors[] = 'Erreur lors de l\'upload de l\'image. Vérifiez que le fichier est au format JPEG, JPG, PNG, GIF, WEBP ou AVIF et ne dépasse pas 50MB.';
+                $errors[] = 'Erreur lors de l\'upload de l\'image. Vérifiez que le fichier est au format JPEG, JPG, PNG, GIF, WEBP ou AVIF et ne dépasse pas 20 Mo.';
             }
             // Garder l'ancienne image en cas d'erreur
             $image = $current_slide['image'];

@@ -58,16 +58,22 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = $categorie_nom . ' - FOUTA POIDS LOURDS';
+$seo_title = $categorie_nom . ' — catalogue ' . SITE_BRAND_NAME . ' | Marketplace Sénégal';
 if ($generale_row) {
-    $desc_cat = !empty($generale_row['description']) ? strip_tags((string) $generale_row['description']) : 'Catalogue « ' . $categorie_nom . ' » — FOUTA POIDS LOURDS.';
+    $desc_cat = !empty($generale_row['description'])
+        ? strip_tags((string) $generale_row['description'])
+        : 'Rayon « ' . $categorie_nom . ' » sur ' . SITE_BRAND_NAME . ' : produits de boutiques sénégalaises, achat en ligne.';
     $seo_canonical = $base . '/categorie.php?generale=' . (int) $generale_id;
 } else {
-    $desc_cat = !empty($categorie['description']) ? strip_tags((string) $categorie['description']) : 'Pièces de véhicules ' . $categorie_nom . ' : camions, bus, tracteurs, remorques. FOUTA POIDS LOURDS - Pièces détachées poids lourds.';
+    $desc_cat = !empty($categorie['description'])
+        ? strip_tags((string) $categorie['description'])
+        : 'Catégorie « ' . $categorie_nom . ' » sur ' . SITE_BRAND_NAME . ', marketplace multi-boutiques au Sénégal.';
     $seo_canonical = $base . '/categorie.php?id=' . (int) $categorie_id;
 }
 $seo_description = mb_substr($desc_cat, 0, 160);
+$seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', catalogue ' . $categorie_nom;
 ?>
 
 <!DOCTYPE html>

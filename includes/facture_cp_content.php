@@ -20,8 +20,8 @@ $prix_commande_aff = $prix_commande > 0 ? number_format($prix_commande, 0, ',', 
 $frais_livraison_aff = $frais_livraison > 0 ? number_format($frais_livraison, 0, ',', ' ') . ' CFA' : null;
 $zone_libelle = (!empty($cp['zone_ville']) || !empty($cp['zone_quartier'])) ? trim(($cp['zone_ville'] ?? '') . ' - ' . ($cp['zone_quartier'] ?? ''), ' -') : '';
 require_once __DIR__ . '/site_url.php';
-$facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - FOUTA POIDS LOURDS';
-$facture_og_desc = 'Facture FOUTA POIDS LOURDS - Demande personnalisée - Montant : ' . $montant_aff;
+$facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - COLObanes';
+$facture_og_desc = 'Facture COLObanes - Demande personnalisée - Montant : ' . $montant_aff;
 $facture_og_image = get_site_base_url() . '/image/logo_market.png';
 ?>
 <!DOCTYPE html>
@@ -35,7 +35,7 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
     <meta property="og:description" content="<?php echo htmlspecialchars($facture_og_desc); ?>">
     <meta property="og:image" content="<?php echo htmlspecialchars($facture_og_image); ?>">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="FOUTA POIDS LOURDS">
+    <meta property="og:site_name" content="COLObanes">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <style>

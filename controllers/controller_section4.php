@@ -4,6 +4,7 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/upload_image_limits.php';
 require_once __DIR__ . '/../models/model_section4.php';
 require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
 
@@ -84,10 +85,9 @@ function upload_section4_image($file) {
         return ['success' => false, 'filename' => null, 'message' => 'Type de fichier non autorisé. Formats acceptés: JPEG, JPG, PNG, GIF, WEBP'];
     }
     
-    // Vérifier la taille (max 50MB pour permettre les images 4K)
-    $max_size = 50 * 1024 * 1024; // 50MB
-    if ($file['size'] > $max_size) {
-        return ['success' => false, 'filename' => null, 'message' => 'Le fichier est trop volumineux. Taille maximale: 50MB'];
+    $max_size = UPLOAD_MAX_IMAGE_BYTES;
+    if ((int) ($file['size'] ?? 0) > $max_size) {
+        return ['success' => false, 'filename' => null, 'message' => 'Le fichier est trop volumineux. Taille maximale : 20 Mo'];
     }
     
     // Générer un nom de fichier unique

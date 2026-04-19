@@ -18,9 +18,11 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/../includes/site_url.php';
+require_once __DIR__ . '/../includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = 'Promotions - ' . BOUTIQUE_NOM;
-$seo_description = 'Promotions sur les pièces de véhicules poids lourds : camions, bus, tracteurs, remorques, cylindres. Pièces détachées à prix réduits.';
+$seo_title = 'Promotions — ' . BOUTIQUE_NOM . ' | ' . SITE_BRAND_NAME;
+$seo_description = 'Promotions et offres de la boutique ' . BOUTIQUE_NOM . ' sur ' . SITE_BRAND_NAME . ', marketplace au Sénégal.';
+$seo_keywords = site_brand_seo_keywords_default() . ', promotions, ' . BOUTIQUE_NOM;
 $seo_canonical = $base . boutique_url('promo.php', BOUTIQUE_SLUG);
 ?>
 <!DOCTYPE html>

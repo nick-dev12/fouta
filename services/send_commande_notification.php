@@ -51,7 +51,7 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
             require_once $autoload;
         }
         if (function_exists('mail_send')) {
-            $sujet = "[FOUTA POIDS LOURDS] Mise à jour de votre commande #{$numero_commande}";
+            $sujet = "[COLObanes] Mise à jour de votre commande #{$numero_commande}";
             $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
             $body_html .= '<h2 style="color: #918a44;">Mise à jour de votre commande</h2>';
             $body_html .= '<p>Bonjour,</p>';
@@ -59,7 +59,7 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
             $body_html .= '<p><strong>Nouveau statut :</strong> <span style="color: #6b2f20; font-weight: 600;">' . htmlspecialchars($label) . '</span></p>';
             $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Voir mes commandes</a></p>';
             $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
-            $body_html .= '<p style="font-size: 12px; color: #999;">FOUTA POIDS LOURDS - Pièces poids lourds</p>';
+            $body_html .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
             $body_html .= '</div>';
 
             mail_send($user_email, $sujet, $body_html, true);

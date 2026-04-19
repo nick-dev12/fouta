@@ -1,42 +1,58 @@
 <?php
 /**
- * Sitemap XML pour le référencement
- * Accessible via /sitemap.php ou /sitemap.xml (avec rewrite)
- * Catégories exclues : les IDs peuvent changer. Produits et pages statiques uniquement.
+ * Sitemap XML dynamique — COLObanes (marketplace Sénégal)
+ * Accessible via /sitemap.xml (réécriture .htaccess → ce script)
  */
 header('Content-Type: application/xml; charset=utf-8');
 
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 require_once __DIR__ . '/models/model_produits.php';
+require_once __DIR__ . '/models/model_categories.php';
 
 $base = get_site_base_url();
 $logo_url = $base . '/image/logo_market.png';
+$home_image_title = SITE_BRAND_NAME . ' — marketplace Sénégal, boutiques en ligne, tous produits';
 
-// Pages statiques (logo inclus pour la page d'accueil)
 $static_pages = [
-    ['loc' => '/', 'priority' => '1.0', 'changefreq' => 'daily', 'image' => $logo_url, 'image_title' => 'FOUTA POIDS LOURDS - Pièces de véhicules poids lourds'],
+    ['loc' => '/', 'priority' => '1.0', 'changefreq' => 'daily', 'image' => $logo_url, 'image_title' => $home_image_title],
     ['loc' => '/contact.php', 'priority' => '0.8', 'changefreq' => 'monthly'],
-    ['loc' => '/produits.php', 'priority' => '0.9', 'changefreq' => 'daily'],
+    ['loc' => '/produits.php', 'priority' => '0.95', 'changefreq' => 'daily'],
     ['loc' => '/nouveautes.php', 'priority' => '0.9', 'changefreq' => 'daily'],
     ['loc' => '/promo.php', 'priority' => '0.9', 'changefreq' => 'daily'],
-    ['loc' => '/commande-personnalisee.php', 'priority' => '0.7', 'changefreq' => 'monthly'],
-    ['loc' => '/politique-confidentialite.php', 'priority' => '0.4', 'changefreq' => 'yearly'],
-    ['loc' => '/conditions-utilisation.php', 'priority' => '0.4', 'changefreq' => 'yearly'],
+    ['loc' => '/commande-personnalisee.php', 'priority' => '0.65', 'changefreq' => 'monthly'],
+    ['loc' => '/politique-confidentialite.php', 'priority' => '0.35', 'changefreq' => 'yearly'],
+    ['loc' => '/conditions-utilisation.php', 'priority' => '0.35', 'changefreq' => 'yearly'],
+    ['loc' => '/choix-inscription.php', 'priority' => '0.5', 'changefreq' => 'monthly'],
 ];
 
-// Produits actifs (catégories retirées : IDs peuvent changer)
+$category_pages = [];
+if (function_exists('get_all_categories')) {
+    foreach (get_all_categories() as $cat) {
+        if (empty($cat['nom'])) {
+            continue;
+        }
+        $category_pages[] = [
+            'loc' => '/categorie.php?id=' . (int) $cat['id'],
+            'priority' => '0.85',
+            'changefreq' => 'weekly',
+            'lastmod' => $cat['date_modification'] ?? $cat['date_creation'] ?? null,
+        ];
+    }
+}
+
 $produits = get_all_produits('actif');
 $product_pages = [];
 foreach ($produits as $p) {
     $product_pages[] = [
-        'loc' => '/produit.php?id=' . (int)$p['id'],
+        'loc' => '/produit.php?id=' . (int) $p['id'],
         'priority' => '0.8',
         'changefreq' => 'weekly',
-        'lastmod' => isset($p['date_modification']) ? $p['date_modification'] : ($p['date_creation'] ?? null)
+        'lastmod' => isset($p['date_modification']) ? $p['date_modification'] : ($p['date_creation'] ?? null),
     ];
 }
 
-$urls = array_merge($static_pages, $product_pages);
+$urls = array_merge($static_pages, $category_pages, $product_pages);
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 ?>
@@ -52,15 +68,15 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
     }
 ?>
     <url>
-        <loc><?php echo htmlspecialchars($loc); ?></loc>
-        <lastmod><?php echo $lastmod; ?></lastmod>
-        <changefreq><?php echo htmlspecialchars($u['changefreq'] ?? 'weekly'); ?></changefreq>
-        <priority><?php echo htmlspecialchars($u['priority'] ?? '0.5'); ?></priority>
+        <loc><?php echo htmlspecialchars($loc, ENT_XML1 | ENT_QUOTES, 'UTF-8'); ?></loc>
+        <lastmod><?php echo htmlspecialchars($lastmod, ENT_XML1 | ENT_QUOTES, 'UTF-8'); ?></lastmod>
+        <changefreq><?php echo htmlspecialchars($u['changefreq'] ?? 'weekly', ENT_XML1 | ENT_QUOTES, 'UTF-8'); ?></changefreq>
+        <priority><?php echo htmlspecialchars($u['priority'] ?? '0.5', ENT_XML1 | ENT_QUOTES, 'UTF-8'); ?></priority>
         <?php if (!empty($u['image'])): ?>
         <image:image>
-            <image:loc><?php echo htmlspecialchars($u['image']); ?></image:loc>
+            <image:loc><?php echo htmlspecialchars($u['image'], ENT_XML1 | ENT_QUOTES, 'UTF-8'); ?></image:loc>
             <?php if (!empty($u['image_title'])): ?>
-            <image:title><?php echo htmlspecialchars($u['image_title']); ?></image:title>
+            <image:title><?php echo htmlspecialchars($u['image_title'], ENT_XML1 | ENT_QUOTES, 'UTF-8'); ?></image:title>
             <?php endif; ?>
         </image:image>
         <?php endif; ?>

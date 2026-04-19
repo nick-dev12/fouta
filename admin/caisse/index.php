@@ -148,7 +148,7 @@ if ($preview_recu !== null && $total_ttc > 0) {
 
         <?php if ($ticket_data && $ticket_dec): ?>
         <div class="caisse-ticket-card" id="ticket-print-zone">
-            <div class="caisse-ticket-brand">FOUTA POIDS LOURDS</div>
+            <div class="caisse-ticket-brand">COLObanes</div>
             <div class="caisse-ticket-head">
                 <strong><?php echo htmlspecialchars(caisse_ticket_numero_date_public($ticket_data)); ?></strong>
                 <span><?php echo isset($ticket_data['date_vente']) ? htmlspecialchars(date('d/m/Y H:i', strtotime($ticket_data['date_vente']))) : ''; ?></span>

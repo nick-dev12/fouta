@@ -12,11 +12,14 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/../includes/site_url.php';
+require_once __DIR__ . '/../includes/site_brand.php';
 $base = get_site_base_url();
-$seo_title = 'FOUTA POIDS LOURDS - Pièces de véhicules poids lourds et cylindres';
-$seo_description = 'FOUTA POIDS LOURDS : vente de pièces de véhicules poids lourds, camions, bus, tracteurs, remorques et petits cylindres. Pièces détachées de qualité pour tous types de véhicules.';
-$seo_keywords = 'pièces poids lourds, pièces camion, pièces bus, pièces tracteur, pièces remorque, cylindres véhicule, pièces détachées camion, FOUTA POIDS LOURDS, pièces véhicule';
-$seo_canonical = $base . '/';
+$__bn = defined('BOUTIQUE_NOM') ? (string) BOUTIQUE_NOM : 'Boutique';
+$__slug = defined('BOUTIQUE_SLUG') ? (string) BOUTIQUE_SLUG : '';
+$seo_title = $__bn . ' — boutique sur ' . SITE_BRAND_NAME . ' | Marketplace Sénégal';
+$seo_description = 'Achetez chez ' . $__bn . ' sur ' . SITE_BRAND_NAME . ', le marketplace qui regroupe les boutiques du Sénégal. Produits variés, vendeurs locaux, commande en ligne.';
+$seo_keywords = site_brand_seo_keywords_default() . ', ' . $__bn . ', boutique ' . $__bn . ', vitrine en ligne Sénégal';
+$seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : ($base . '/');
 ?>
 
 
@@ -471,7 +474,7 @@ $seo_canonical = $base . '/';
     <?php
     // Récupérer la configuration de la section4
     $section4_config = [
-        'titre' => 'Bienvenue chez FOUTA POIDS LOURDS',
+        'titre' => 'Bienvenue chez ' . (defined('BOUTIQUE_NOM') ? BOUTIQUE_NOM : 'votre boutique'),
         'texte' => 'Tous les produits a petit prix',
         'image_fond' => 'market.png',
         'statut' => 'actif'

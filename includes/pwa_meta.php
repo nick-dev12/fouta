@@ -9,10 +9,12 @@ if (!function_exists('get_asset_version')) {
 $asset_version = get_asset_version();
 ?>
 <?php include __DIR__ . '/favicon.php'; ?>
-<meta name="theme-color" content="#E5488A">
+<meta name="theme-color" content="#3564a6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="FOUTA POIDS LOURDS">
+<?php if (!defined('SITE_BRAND_NAME')) { require_once __DIR__ . '/site_brand.php'; } ?>
+<meta name="apple-mobile-web-app-title" content="<?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?>">
+<meta name="application-name" content="<?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?>">
 <link rel="manifest" href="/manifest.json">
 <script>
 (function() {
