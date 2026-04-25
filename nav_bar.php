@@ -142,19 +142,22 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
 
     .nav-language-switcher {
         margin-left: 8px;
-        min-width: 112px;
-        min-height: 45px;
-        padding: 0 12px;
-        background: var(--bleu-pale);
-        border: 2px solid var(--border-input);
-        border-radius: 12px;
+        width: 90px;
+        height: 36px;
+        padding: 0 8px;
+        background: var(--blanc);
+        border: 1px solid rgba(13, 13, 13, 0.08);
+        border-radius: 10px;
         color: var(--couleur-dominante);
         transition: all 0.3s;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 6px;
         flex-shrink: 0;
         box-shadow: 0 2px 8px rgba(53, 100, 166, 0.06);
+        position: relative;
+        overflow: hidden;
     }
 
     .nav-language-switcher:hover {
@@ -162,23 +165,50 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         border-color: var(--couleur-dominante);
     }
 
-    .nav-language-switcher .gtranslate_wrapper,
-    .nav-language-switcher .gt_switcher,
-    .nav-language-switcher select {
-        width: 100%;
+    .nav-language-switcher .gtranslate_wrapper {
+        display: none;
     }
 
-    .nav-language-switcher select,
-    .nav-language-switcher .gt_selector {
+    .nav-lang-flag {
+        display: block;
+        width: 24px;
+        height: 18px;
+        border-radius: 2px;
+        background-image: url('https://flagcdn.com/w40/fr.png');
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+        flex-shrink: 0;
+    }
+
+    .nav-lang-code {
+        font: 800 12px/1 var(--font-corps);
+        color: var(--texte-fonce);
+        letter-spacing: 0.02em;
+        min-width: 20px;
+        text-transform: uppercase;
+    }
+
+    .nav-lang-chevron {
+        color: var(--gris-fonce);
+        font-size: 12px;
+        margin-left: auto;
+        pointer-events: none;
+    }
+
+    .nav-lang-select {
+        position: absolute;
+        inset: 0;
         width: 100%;
-        min-height: 37px;
-        padding: 0 28px 0 8px;
+        height: 100%;
+        opacity: 0;
         border: 0;
         outline: none;
         background: transparent;
-        color: var(--couleur-dominante);
-        font: 700 13px/1 var(--font-corps);
+        font: 800 12px/1 var(--font-corps);
         cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
     }
 
     .nav-search-btn {
@@ -318,9 +348,10 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         }
 
         .nav-language-switcher {
-            min-width: 104px;
-            min-height: 41px;
-            padding: 0 10px;
+            width: 88px;
+            height: 35px;
+            min-width: 0;
+            padding: 0 7px;
         }
 
         .nav-search-input {
@@ -427,9 +458,10 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         }
 
         .nav-language-switcher {
-            min-width: 96px;
-            min-height: 41px;
-            padding: 0 8px;
+            width: 84px;
+            height: 34px;
+            padding: 0 7px;
+            gap: 5px;
         }
     }
 
@@ -472,14 +504,28 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         }
 
         .nav-language-switcher {
-            min-width: 88px;
-            min-height: 37px;
+            width: 78px;
+            height: 32px;
             padding: 0 6px;
+            gap: 5px;
         }
 
-        .nav-language-switcher select,
-        .nav-language-switcher .gt_selector {
-            font-size: 12px;
+        .nav-lang-flag {
+            width: 22px;
+            height: 16px;
+        }
+
+        .nav-lang-code {
+            font-size: 11px;
+            min-width: 18px;
+        }
+
+        .nav-lang-chevron {
+            font-size: 11px;
+        }
+
+        .nav-lang-select {
+            font-size: 11px;
         }
     }
 </style>
@@ -551,6 +597,16 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
                 value="<?php echo isset($_GET['tri']) ? htmlspecialchars($_GET['tri']) : ''; ?>">
         </form>
         <div class="nav-language-switcher" aria-label="Sélection de la langue" title="Changer la langue">
+            <span class="nav-lang-flag" id="navLangFlag" aria-hidden="true"></span>
+            <span class="nav-lang-code" id="navLangCode" aria-hidden="true">FR</span>
+            <i class="fa-solid fa-chevron-up nav-lang-chevron" aria-hidden="true"></i>
+            <select class="nav-lang-select" id="navLangSelect" aria-label="Changer la langue">
+                <option value="fr" data-flag-src="https://flagcdn.com/w40/fr.png">FR</option>
+                <option value="en" data-flag-src="https://flagcdn.com/w40/gb.png">EN</option>
+                <option value="es" data-flag-src="https://flagcdn.com/w40/es.png">ES</option>
+                <option value="pt" data-flag-src="https://flagcdn.com/w40/pt.png">PT</option>
+                <option value="ar" data-flag-src="https://flagcdn.com/w40/sa.png">AR</option>
+            </select>
             <div class="gtranslate_wrapper"></div>
         </div>
     </div>
@@ -562,6 +618,70 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             languages: ['fr', 'en', 'es', 'pt', 'ar'],
             wrapper_selector: '.gtranslate_wrapper'
         };
+
+        (function () {
+            var select = document.getElementById('navLangSelect');
+            var flag = document.getElementById('navLangFlag');
+            var code = document.getElementById('navLangCode');
+            if (!select || !flag || !code) {
+                return;
+            }
+
+            function getCookie(name) {
+                var parts = ('; ' + document.cookie).split('; ' + name + '=');
+                if (parts.length === 2) {
+                    return parts.pop().split(';').shift();
+                }
+                return '';
+            }
+
+            function setCookie(name, value) {
+                var expires = '; expires=' + new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+                document.cookie = name + '=' + value + expires + '; path=/';
+                if (location.hostname.indexOf('.') !== -1) {
+                    document.cookie = name + '=' + value + expires + '; path=/; domain=.' + location.hostname.replace(/^www\./, '');
+                }
+            }
+
+            function currentLangFromCookie() {
+                var raw = decodeURIComponent(getCookie('googtrans') || '');
+                var match = raw.match(/\/fr\/([a-z-]+)/i) || raw.match(/\/auto\/([a-z-]+)/i);
+                return match ? match[1].toLowerCase() : 'fr';
+            }
+
+            function syncFlag() {
+                var opt = select.options[select.selectedIndex];
+                flag.style.backgroundImage = 'url("' + (opt ? (opt.getAttribute('data-flag-src') || 'https://flagcdn.com/w40/fr.png') : 'https://flagcdn.com/w40/fr.png') + '")';
+                code.textContent = opt ? opt.textContent.trim().toUpperCase() : 'FR';
+            }
+
+            function applyLanguage(lang) {
+                setCookie('googtrans', '/fr/' + lang);
+                syncFlag();
+
+                var gtSelect = document.querySelector('.gtranslate_wrapper select');
+                if (gtSelect) {
+                    gtSelect.value = lang;
+                    if (gtSelect.value !== lang) {
+                        gtSelect.value = '/fr/' + lang;
+                    }
+                    gtSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    return;
+                }
+
+                window.location.reload();
+            }
+
+            var initial = currentLangFromCookie();
+            if (select.querySelector('option[value="' + initial + '"]')) {
+                select.value = initial;
+            }
+            syncFlag();
+
+            select.addEventListener('change', function () {
+                applyLanguage(select.value);
+            });
+        })();
     </script>
     <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
 </nav>
