@@ -2,6 +2,9 @@
 if (!defined('SITE_BRAND_NAME')) {
     require_once __DIR__ . '/includes/site_brand.php';
 }
+if (!function_exists('asset_version_query')) {
+    require_once __DIR__ . '/includes/asset_version.php';
+}
 if (!function_exists('boutique_url')) {
     require_once __DIR__ . '/includes/marketplace_helpers.php';
 }
@@ -44,7 +47,17 @@ if ($__footer_is_boutique) {
     $__footer_mail = 'contact@colobanes.sn';
     $__footer_addr = 'Rond point ZAC MBAO, Dakar';
 }
+
+$__footer_social_cfg = file_exists(__DIR__ . '/config/social.php') ? require __DIR__ . '/config/social.php' : [];
+$__footer_social_cfg = is_array($__footer_social_cfg) ? $__footer_social_cfg : [];
+$__wa_t = trim((string) ($__footer_social_cfg['whatsapp'] ?? ''));
+$__ig_t = trim((string) ($__footer_social_cfg['instagram'] ?? ''));
+$__fb_t = trim((string) ($__footer_social_cfg['facebook'] ?? ''));
+$__footer_show_social = ($__wa_t !== '' && preg_replace('/[^0-9]/', '', $__wa_t) !== '') || $__ig_t !== '' || $__fb_t !== '';
 ?>
+<?php if ($__footer_show_social): ?>
+<link rel="stylesheet" href="/css/site-social-links.css<?php echo asset_version_query(); ?>">
+<?php endif; ?>
 <footer class="footer">
     <div class="container footer_container">
         <div class="footer_item">
@@ -116,6 +129,17 @@ if ($__footer_is_boutique) {
             </ul>
         </div>
     </div>
+    <?php if ($__footer_show_social): ?>
+    <div class="footer_social_wrap">
+        <div class="container footer_social_inner">
+            <p class="footer_social_title">Suivez-nous</p>
+            <?php
+            $social_config = $__footer_social_cfg;
+            include __DIR__ . '/includes/social_links_block.php';
+            ?>
+        </div>
+    </div>
+    <?php endif; ?>
     <div class="footer_bottom">
         <div class="container footer_bottom_container">
             <p class="footer_copy">

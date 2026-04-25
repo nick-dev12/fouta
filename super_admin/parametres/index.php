@@ -40,10 +40,6 @@ require_once __DIR__ . '/../includes/require_login.php';
                         Paramètres
                         <span class="sa-param-hero__badge">Hub</span>
                     </h1>
-                    <p class="sa-param-hero__lead">
-                        Centralisez la configuration du marketplace : structure du catalogue visible par les vendeurs
-                        et mise en avant visuelle de la page d’accueil. Chaque section ouvre un espace dédié.
-                    </p>
                 </div>
                 <div class="sa-param-hero__stamp" aria-hidden="true">
                     <div class="sa-param-hero__stamp-box">
@@ -58,9 +54,6 @@ require_once __DIR__ . '/../includes/require_login.php';
                 <i class="fas fa-bolt" aria-hidden="true"></i>
                 Accès aux sections
             </h2>
-            <p class="sa-param-section__subtitle">
-                Choisissez ce que vous souhaitez configurer. Les changements s’appliquent à l’ensemble des boutiques du marketplace.
-            </p>
         </section>
 
         <div class="sa-param-cards" role="navigation" aria-label="Sections paramètres">
@@ -70,9 +63,6 @@ require_once __DIR__ . '/../includes/require_login.php';
                     <span class="sa-param-card__tag">Catalogue</span>
                 </div>
                 <h3 class="sa-param-card__title">Rayons (menu)</h3>
-                <p class="sa-param-card__desc">
-                    Définissez les catégories générales affichées dans la navigation du marketplace (grands rayons).
-                </p>
                 <div class="sa-param-card__footer">
                     <span>Ouvrir l’espace <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
                 </div>
@@ -84,9 +74,17 @@ require_once __DIR__ . '/../includes/require_login.php';
                     <span class="sa-param-card__tag">Catalogue</span>
                 </div>
                 <h3 class="sa-param-card__title">Genres produits</h3>
-                <p class="sa-param-card__desc">
-                    Listes de genres indépendantes des rayons : les vendeurs les cochent pour classer leurs fiches (lorsque le mode genres est actif).
-                </p>
+                <div class="sa-param-card__footer">
+                    <span>Ouvrir l’espace <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                </div>
+            </a>
+
+            <a class="sa-param-card" href="sous-categories-catalogue.php">
+                <div class="sa-param-card__top">
+                    <span class="sa-param-card__icon" aria-hidden="true"><i class="fas fa-sitemap"></i></span>
+                    <span class="sa-param-card__tag">Catalogue</span>
+                </div>
+                <h3 class="sa-param-card__title">Sous-catégories</h3>
                 <div class="sa-param-card__footer">
                     <span>Ouvrir l’espace <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
                 </div>
@@ -98,26 +96,11 @@ require_once __DIR__ . '/../includes/require_login.php';
                     <span class="sa-param-card__tag">Accueil</span>
                 </div>
                 <h3 class="sa-param-card__title">Hero &amp; bannières</h3>
-                <p class="sa-param-card__desc">
-                    Gérez les images du carrousel en tête de la page d’accueil marketplace : ordre, textes alternatifs et impact visuel pour les visiteurs.
-                </p>
                 <div class="sa-param-card__footer">
                     <span>Ouvrir l’espace <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
                 </div>
             </a>
         </div>
-
-        <aside class="sa-param-tips" aria-labelledby="sa-param-tips-title">
-            <p class="sa-param-tips__head" id="sa-param-tips-title">
-                <i class="fas fa-lightbulb" aria-hidden="true"></i>
-                Bonnes pratiques
-            </p>
-            <ul>
-                <li>Les <strong>rayons</strong> structurent le menu ; les <strong>genres</strong> servent au classement des fiches vendeurs et ne sont pas liés aux rayons.</li>
-                <li>Avant de supprimer un genre ou une catégorie plateforme, vérifiez qu’aucun produit ne l’utilise encore.</li>
-                <li>Pour le hero, privilégiez des visuels légers (formats WebP ou JPEG optimisés) pour un chargement fluide.</li>
-            </ul>
-        </aside>
     </div>
 
     <?php include __DIR__ . '/../includes/footer.php'; ?>

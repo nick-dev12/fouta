@@ -47,6 +47,13 @@ $email_contact = 'contact@colobanes.sn';
 $telephones_contact = ['+221 33 870 00 70'];
 $adresse_contact = 'Rond point ZAC MBAO, Dakar';
 
+$contact_social_cfg = file_exists(__DIR__ . '/config/social.php') ? require __DIR__ . '/config/social.php' : [];
+$contact_social_cfg = is_array($contact_social_cfg) ? $contact_social_cfg : [];
+$__wa_s = trim((string) ($contact_social_cfg['whatsapp'] ?? ''));
+$__ig_s = trim((string) ($contact_social_cfg['instagram'] ?? ''));
+$__fb_s = trim((string) ($contact_social_cfg['facebook'] ?? ''));
+$contact_show_social = ($__wa_s !== '' && preg_replace('/[^0-9]/', '', $__wa_s) !== '') || $__ig_s !== '' || $__fb_s !== '';
+
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
 require_once __DIR__ . '/includes/site_brand.php';
@@ -68,6 +75,9 @@ $seo_canonical = $base . '/contact.php';
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <?php if (!empty($contact_show_social)): ?>
+    <link rel="stylesheet" href="/css/site-social-links.css<?php echo asset_version_query(); ?>">
+    <?php endif; ?>
     <style>
         .contact-page {
             max-width: 900px;
@@ -285,6 +295,16 @@ $seo_canonical = $base . '/contact.php';
                         <a href="mailto:<?php echo htmlspecialchars($email_contact); ?>"><?php echo htmlspecialchars($email_contact); ?></a>
                     </div>
                 </div>
+                <?php if (!empty($contact_show_social)): ?>
+                <div class="contact-social">
+                    <h4><i class="fas fa-share-alt" aria-hidden="true"></i> Suivez-nous</h4>
+                    <p>Rejoignez la communauté sur les réseaux sociaux.</p>
+                    <?php
+                    $social_config = $contact_social_cfg;
+                    include __DIR__ . '/includes/social_links_block.php';
+                    ?>
+                </div>
+                <?php endif; ?>
             </div>
 
 

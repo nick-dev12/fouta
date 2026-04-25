@@ -3,6 +3,7 @@
  * Classification vendeur : genres (cases à cocher) ou ancien couple rayon + sous-catégorie.
  * Variables optionnelles : $vcat_prefill_sub, $vcat_prefill_generale, $vendeur_subcats_for_form,
  * $vendeur_genre_ids_prefill (tableau d’IDs pour édition).
+ * $vendeur_sous_categorie_ids_prefill (tableau d’IDs sous-cat. pour édition).
  */
 if (!function_exists('get_plateforme_sous_categories_for_form')) {
     require_once __DIR__ . '/../../models/model_categories.php';
@@ -16,12 +17,21 @@ $vcat_g = isset($vcat_prefill_generale) ? (int) $vcat_prefill_generale : (int) (
 $vendeur_genre_ids_prefill = isset($vendeur_genre_ids_prefill) && is_array($vendeur_genre_ids_prefill)
     ? array_map('intval', $vendeur_genre_ids_prefill)
     : [];
+$vendeur_sous_categorie_ids_prefill = isset($vendeur_sous_categorie_ids_prefill) && is_array($vendeur_sous_categorie_ids_prefill)
+    ? array_values(array_filter(array_map('intval', $vendeur_sous_categorie_ids_prefill), function ($x) {
+        return (int) $x > 0;
+    }))
+    : [];
 
 if (function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif()) {
     $rayons_liste = (function_exists('categories_generales_table_exists') && categories_generales_table_exists())
         ? get_general_categories_ordered() : [];
     $genres_liste = genres_list_all();
     $genres_wrap_hidden = (!function_exists('genres_cg_links_table_exists') || !genres_cg_links_table_exists());
+    $vendeur_subcats_for_form = [];
+    if (function_exists('get_plateforme_sous_categories_for_form')) {
+        $vendeur_subcats_for_form = get_plateforme_sous_categories_for_form();
+    }
     ?>
 <div class="fap-field fap-field-cat-generale fap-field-cat-vendeur-only">
     <label for="categorie_generale_id">Catégorie principale <span class="required">*</span></label>
@@ -73,6 +83,36 @@ if (function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif())
     </fieldset>
 </div>
 
+<?php if (!empty($vendeur_subcats_for_form)): ?>
+<div id="fap-souscats-wrap" class="fap-field fap-field-souscats fap-field-cat-vendeur-only" hidden>
+    <fieldset class="fap-fieldset-genres fap-fieldset-souscats">
+        <legend>Sous-catégories <span class="required" id="fap-souscats-legend-required" hidden aria-hidden="true">*</span></legend>
+        <p class="fap-hint">Cochez une ou plusieurs rubriques proposées pour le rayon choisi (configuration super administrateur).</p>
+        <div class="fap-genres-grid" role="group" aria-label="Sous-catégories du produit" id="fap-souscats-grid-inner">
+            <?php foreach ($vendeur_subcats_for_form as $srow):
+                $sid = (int) ($srow['id'] ?? 0);
+                if ($sid <= 0) {
+                    continue;
+                }
+                $ray_sous = function_exists('plateforme_get_rayons_ids_for_categorie') ? plateforme_get_rayons_ids_for_categorie($sid) : [];
+                $ray_sous_attr = implode(',', $ray_sous);
+                $s_checked = false;
+                if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sous_categorie_ids']) && is_array($_POST['sous_categorie_ids'])) {
+                    $s_checked = in_array($sid, array_map('intval', $_POST['sous_categorie_ids']), true);
+                } else {
+                    $s_checked = in_array($sid, $vendeur_sous_categorie_ids_prefill, true);
+                }
+                ?>
+            <label class="fap-genre-label fap-sousc-label" data-sousc-rayons="<?php echo htmlspecialchars($ray_sous_attr, ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="checkbox" name="sous_categorie_ids[]" value="<?php echo $sid; ?>" <?php echo $s_checked ? 'checked' : ''; ?> disabled>
+                <span><?php echo htmlspecialchars((string) ($srow['nom'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
+            </label>
+            <?php endforeach; ?>
+        </div>
+    </fieldset>
+</div>
+<?php endif; ?>
+
 <script>
 (function () {
     var sel = document.getElementById('categorie_generale_id');
@@ -111,6 +151,46 @@ if (function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif())
     syncGenresVisibility();
 })();
 </script>
+<?php if (!empty($vendeur_subcats_for_form)): ?>
+<script>
+(function () {
+    var sel = document.getElementById('categorie_generale_id');
+    var wrap = document.getElementById('fap-souscats-wrap');
+    var reqS = document.getElementById('fap-souscats-legend-required');
+    if (!sel || !wrap) return;
+    var labels = wrap.querySelectorAll('.fap-sousc-label');
+    function syncSouscats() {
+        var cg = parseInt(sel.value, 10) || 0;
+        var anyVisible = false;
+        for (var i = 0; i < labels.length; i++) {
+            var lab = labels[i];
+            var raw = lab.getAttribute('data-sousc-rayons') || '';
+            var parts = raw.split(',');
+            var ids = [];
+            for (var j = 0; j < parts.length; j++) {
+                var n = parseInt(parts[j].trim(), 10);
+                if (n > 0) ids.push(n);
+            }
+            var ok = cg > 0 && ids.indexOf(cg) !== -1;
+            lab.style.display = ok ? '' : 'none';
+            var inp = lab.querySelector('input[type="checkbox"]');
+            if (inp) {
+                inp.disabled = !ok;
+                if (!ok) inp.checked = false;
+            }
+            if (ok) anyVisible = true;
+        }
+        wrap.hidden = !anyVisible;
+        if (reqS) {
+            reqS.hidden = !anyVisible;
+            reqS.setAttribute('aria-hidden', anyVisible ? 'false' : 'true');
+        }
+    }
+    sel.addEventListener('change', syncSouscats);
+    syncSouscats();
+})();
+</script>
+<?php endif; ?>
     <?php
     return;
 }
@@ -145,66 +225,77 @@ $afficher_rayon = !empty($rayons_liste);
 </div>
 <?php endif; ?>
 
-<div class="fap-field fap-field-cat-sub fap-field-cat-vendeur-only">
-    <label for="categorie_id">Sous-catégorie <span class="required">*</span></label>
-    <select id="categorie_id" name="categorie_id" required>
-        <option value=""><?php echo !empty($vendeur_subcats_for_form) ? 'Choisir une sous-catégorie' : 'Aucune sous-catégorie — contactez la plateforme'; ?></option>
-        <?php foreach ($vendeur_subcats_for_form as $row): ?>
-            <?php
-            $opt_id = (int) ($row['id'] ?? 0);
-            if ($opt_id <= 0) {
-                continue;
-            }
-            $opt_label = (string) ($row['nom'] ?? '');
-            $data_cg = 0;
-            if (isset($row['categorie_generale_id']) && $row['categorie_generale_id'] !== null && $row['categorie_generale_id'] !== '') {
-                $data_cg = (int) $row['categorie_generale_id'];
-            }
-            ?>
-        <option value="<?php echo $opt_id; ?>"
-            data-categorie-generale-id="<?php echo $data_cg; ?>"
-            <?php echo ($vcat_s === $opt_id) ? 'selected' : ''; ?>>
-            <?php echo htmlspecialchars($opt_label); ?>
-        </option>
-        <?php endforeach; ?>
-    </select>
-</div>
+<?php if (empty($vendeur_sous_categorie_ids_prefill) && $vcat_s > 0): ?>
+    <?php $vendeur_sous_categorie_ids_prefill = [$vcat_s]; ?>
+<?php endif; ?>
 
-<?php if ($afficher_rayon): ?>
+<?php if (!empty($vendeur_subcats_for_form)): ?>
+<div id="fap-souscats-wrap" class="fap-field fap-field-souscats fap-field-cat-vendeur-only"<?php echo $afficher_rayon ? ' hidden' : ''; ?>>
+    <fieldset class="fap-fieldset-genres fap-fieldset-souscats">
+        <legend>Sous-catégories <span class="required" id="fap-souscats-legend-required" hidden aria-hidden="true">*</span></legend>
+        <p class="fap-hint">Cochez une ou plusieurs rubriques pour le rayon choisi. Au moins une case lorsque le rayon comporte des sous-catégories.</p>
+        <div class="fap-genres-grid" role="group" aria-label="Sous-catégories du produit" id="fap-souscats-grid-inner">
+            <?php foreach ($vendeur_subcats_for_form as $srow):
+                $sid = (int) ($srow['id'] ?? 0);
+                if ($sid <= 0) {
+                    continue;
+                }
+                $ray_sous = function_exists('plateforme_get_rayons_ids_for_categorie') ? plateforme_get_rayons_ids_for_categorie($sid) : [];
+                $ray_sous_attr = implode(',', $ray_sous);
+                $s_checked = false;
+                if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sous_categorie_ids']) && is_array($_POST['sous_categorie_ids'])) {
+                    $s_checked = in_array($sid, array_map('intval', $_POST['sous_categorie_ids']), true);
+                } else {
+                    $s_checked = in_array($sid, $vendeur_sous_categorie_ids_prefill, true);
+                }
+                ?>
+            <label class="fap-genre-label fap-sousc-label" data-sousc-rayons="<?php echo htmlspecialchars($ray_sous_attr, ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="checkbox" name="sous_categorie_ids[]" value="<?php echo $sid; ?>" <?php echo $s_checked ? 'checked' : ''; ?><?php echo $afficher_rayon ? ' disabled' : ''; ?>>
+                <span><?php echo htmlspecialchars((string) ($srow['nom'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
+            </label>
+            <?php endforeach; ?>
+        </div>
+    </fieldset>
+</div>
+<?php endif; ?>
+
+<?php if ($afficher_rayon && !empty($vendeur_subcats_for_form)): ?>
 <script>
 (function () {
-    var selG = document.getElementById('categorie_generale_id');
-    var selS = document.getElementById('categorie_id');
-    if (!selG || !selS) return;
-
-    function filterSubOptions() {
-        var gid = parseInt(selG.value, 10) || 0;
-        var i;
-        var opts = selS.options;
-        var hadSelection = false;
-        for (i = 0; i < opts.length; i++) {
-            var o = opts[i];
-            if (!o.value) {
-                o.disabled = false;
-                continue;
+    var sel = document.getElementById('categorie_generale_id');
+    var wrap = document.getElementById('fap-souscats-wrap');
+    var reqS = document.getElementById('fap-souscats-legend-required');
+    if (!sel || !wrap) return;
+    var labels = wrap.querySelectorAll('.fap-sousc-label');
+    function syncSouscatsHier() {
+        var cg = parseInt(sel.value, 10) || 0;
+        var anyVisible = false;
+        for (var i = 0; i < labels.length; i++) {
+            var lab = labels[i];
+            var raw = lab.getAttribute('data-sousc-rayons') || '';
+            var parts = raw.split(',');
+            var ids = [];
+            for (var j = 0; j < parts.length; j++) {
+                var n = parseInt(parts[j].trim(), 10);
+                if (n > 0) ids.push(n);
             }
-            var cg = parseInt(o.getAttribute('data-categorie-generale-id'), 10);
-            if (isNaN(cg)) cg = 0;
-            var ok = gid > 0 && (cg === 0 || cg === gid);
-            o.disabled = !ok;
-            if (o.selected && ok) hadSelection = true;
+            var ok = cg > 0 && ids.indexOf(cg) !== -1;
+            lab.style.display = ok ? '' : 'none';
+            var inp = lab.querySelector('input[type="checkbox"]');
+            if (inp) {
+                inp.disabled = !ok;
+                if (!ok) inp.checked = false;
+            }
+            if (ok) anyVisible = true;
         }
-        if (!hadSelection && gid > 0) {
-            for (i = 0; i < opts.length; i++) {
-                if (opts[i].value && !opts[i].disabled) {
-                    selS.selectedIndex = i;
-                    break;
-                }
-            }
+        wrap.hidden = !anyVisible;
+        if (reqS) {
+            reqS.hidden = !anyVisible;
+            reqS.setAttribute('aria-hidden', anyVisible ? 'false' : 'true');
         }
     }
-    selG.addEventListener('change', filterSubOptions);
-    filterSubOptions();
+    sel.addEventListener('change', syncSouscatsHier);
+    syncSouscatsHier();
 })();
 </script>
 <?php endif; ?>

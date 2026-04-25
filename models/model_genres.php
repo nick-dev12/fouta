@@ -268,6 +268,33 @@ function count_genres_linked_to_categorie_generale($categorie_generale_id) {
     }
 }
 
+/**
+ * Genres (table genres) liés à un rayon plateforme via genres_categories_generales.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function get_genres_linked_to_categorie_generale($categorie_generale_id) {
+    global $db;
+    $categorie_generale_id = (int) $categorie_generale_id;
+    if ($categorie_generale_id <= 0 || !genres_cg_links_table_exists() || !genres_table_exists()) {
+        return [];
+    }
+    try {
+        $st = $db->prepare('
+            SELECT g.*
+            FROM `genres` g
+            INNER JOIN `genres_categories_generales` gcg ON gcg.genre_id = g.id
+            WHERE gcg.categorie_generale_id = :c
+            ORDER BY g.sort_ordre ASC, g.nom ASC
+        ');
+        $st->execute(['c' => $categorie_generale_id]);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+        return is_array($rows) ? $rows : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
 function genre_id_is_allowed_for_categorie_generale($genre_id, $categorie_generale_id) {
     global $db;
     $genre_id = (int) $genre_id;

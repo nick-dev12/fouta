@@ -9,22 +9,62 @@ require_once __DIR__ . '/includes/produit_boutique_line.php';
 // Rayon plateforme (categories_generales) ou catégorie feuille
 $generale_id = isset($_GET['generale']) ? (int) $_GET['generale'] : 0;
 $categorie_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$filter_genre_id = isset($_GET['genre']) ? (int) $_GET['genre'] : 0;
+$filter_sous_categorie_id = 0;
 
 unset($categorie);
 $categorie = null;
 $generale_row = null;
 $categorie_nom = 'Catégorie';
 $produits = [];
+$genres_pour_filtre_rayon = [];
 
 if ($generale_id > 0) {
+    $filter_sous_categorie_id = isset($_GET['sous_categorie']) ? (int) $_GET['sous_categorie'] : 0;
     $generale_row = get_categorie_generale_by_id($generale_id);
     if (!$generale_row || empty($generale_row['nom'])) {
         header('Location: index.php');
         exit;
     }
     $categorie_nom = (string) $generale_row['nom'];
-    $produits = get_produits_by_categorie_generale($generale_id, null);
+
+    require_once __DIR__ . '/models/model_genres.php';
+    if (function_exists('count_genres_linked_to_categorie_generale')
+        && count_genres_linked_to_categorie_generale($generale_id) > 0
+        && function_exists('get_genres_linked_to_categorie_generale')) {
+        $genres_pour_filtre_rayon = get_genres_linked_to_categorie_generale($generale_id);
+        if ($filter_genre_id > 0) {
+            $genre_ok = false;
+            foreach ($genres_pour_filtre_rayon as $grow) {
+                if ((int) ($grow['id'] ?? 0) === $filter_genre_id) {
+                    $genre_ok = true;
+                    break;
+                }
+            }
+            if (!$genre_ok) {
+                $filter_genre_id = 0;
+            }
+        }
+    } else {
+        $filter_genre_id = 0;
+    }
+
+    if ($filter_sous_categorie_id > 0) {
+        if (!function_exists('categorie_plateforme_liee_au_rayon')
+            || !categorie_plateforme_liee_au_rayon($filter_sous_categorie_id, $generale_id)) {
+            $filter_sous_categorie_id = 0;
+        }
+    }
+
+    $produits = get_produits_by_categorie_generale(
+        $generale_id,
+        null,
+        $filter_genre_id > 0 ? $filter_genre_id : null,
+        $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : null
+    );
 } elseif ($categorie_id > 0) {
+    $filter_genre_id = 0;
+    $filter_sous_categorie_id = 0;
     $categorie = get_categorie_by_id($categorie_id);
     if (!$categorie || !is_array($categorie) || empty($categorie['nom'])) {
         header('Location: index.php');
@@ -38,6 +78,15 @@ if ($generale_id > 0) {
 } else {
     header('Location: index.php');
     exit;
+}
+
+if (!empty($produits) && is_array($produits)) {
+    if (function_exists('random_int')) {
+        mt_srand((int) (microtime(true) * 1000000) + random_int(0, 9999));
+    } else {
+        mt_srand((int) (microtime(true) * 1000000));
+    }
+    shuffle($produits);
 }
 
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)
@@ -66,6 +115,12 @@ if ($generale_row) {
         ? strip_tags((string) $generale_row['description'])
         : 'Rayon « ' . $categorie_nom . ' » sur ' . SITE_BRAND_NAME . ' : produits de boutiques sénégalaises, achat en ligne.';
     $seo_canonical = $base . '/categorie.php?generale=' . (int) $generale_id;
+    if (!empty($filter_genre_id)) {
+        $seo_canonical .= '&genre=' . (int) $filter_genre_id;
+    }
+    if (!empty($filter_sous_categorie_id)) {
+        $seo_canonical .= '&sous_categorie=' . (int) $filter_sous_categorie_id;
+    }
 } else {
     $desc_cat = !empty($categorie['description'])
         ? strip_tags((string) $categorie['description'])
@@ -126,32 +181,97 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
                 <?php endif; ?>
             </header>
 
-            <?php if ($generale_id > 0 && !empty($sous_categories_rayon)): ?>
-            <section class="cat-subs" aria-labelledby="cat-subs-heading">
-                <div class="cat-subs-inner">
-                    <div class="cat-subs-head">
-                        <div class="cat-subs-head-text">
-                            <span class="cat-subs-kicker" id="cat-subs-heading">Affiner</span>
-                            <h2 class="cat-subs-title">Sous-catégories</h2>
-                        </div>
-                        <p class="cat-subs-hint">Choisissez une rubrique pour voir uniquement les produits associés.</p>
+            <?php if ($generale_id > 0 && (!empty($sous_categories_rayon) || !empty($genres_pour_filtre_rayon))): ?>
+            <section class="cat-filters" aria-labelledby="cat-filters-heading">
+                <div class="cat-filters-inner">
+                    <div class="cat-filters-head">
+                        <span class="cat-subs-kicker">Affiner</span>
+                        <h2 class="cat-subs-title" id="cat-filters-heading">Filtres</h2>
                     </div>
-                    <div class="cat-subs-scroller">
-                        <a class="cat-sub-chip cat-sub-chip--all is-active" href="<?php echo htmlspecialchars(nav_categorie_generale_href($generale_id)); ?>">
-                            <i class="fas fa-border-all" aria-hidden="true"></i> Tout le rayon
-                        </a>
-                        <?php foreach ($sous_categories_rayon as $sc): ?>
-                            <?php
-                            $sid = (int) ($sc['id'] ?? 0);
-                            if ($sid <= 0) {
-                                continue;
-                            }
-                            ?>
-                        <a class="cat-sub-chip" href="<?php echo htmlspecialchars(nav_categorie_href($sid)); ?>">
-                            <i class="fas fa-tag" aria-hidden="true"></i>
-                            <?php echo htmlspecialchars((string) ($sc['nom'] ?? '')); ?>
-                        </a>
-                        <?php endforeach; ?>
+
+                    <div class="cat-filters-controls">
+                        <?php if (!empty($sous_categories_rayon)): ?>
+                        <label class="cat-filter-select-wrap" for="cat-filter-sous-categorie">
+                            <span class="cat-filter-select-label">
+                                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                                Sous-catégorie
+                            </span>
+                            <span class="cat-filter-select-shell">
+                                <select id="cat-filter-sous-categorie" class="cat-filter-select" aria-label="Filtrer par sous-catégorie"
+                                    onchange="if (this.value) window.location.href = this.value;">
+                                    <?php
+                                    $h_ref_tout = function_exists('nav_categorie_generale_filtre_href')
+                                        ? nav_categorie_generale_filtre_href($generale_id, $filter_genre_id > 0 ? $filter_genre_id : 0, 0)
+                                        : nav_categorie_generale_href($generale_id);
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($h_ref_tout); ?>" <?php echo $filter_sous_categorie_id === 0 ? 'selected' : ''; ?>>
+                                        Toutes les sous-catégories
+                                    </option>
+                                    <?php foreach ($sous_categories_rayon as $sc): ?>
+                                        <?php
+                                        $sid = (int) ($sc['id'] ?? 0);
+                                        if ($sid <= 0) {
+                                            continue;
+                                        }
+                                        $h_sub = function_exists('nav_categorie_generale_filtre_href')
+                                            ? nav_categorie_generale_filtre_href(
+                                                $generale_id,
+                                                $filter_genre_id > 0 ? $filter_genre_id : 0,
+                                                $sid
+                                            )
+                                            : nav_categorie_href($sid);
+                                        ?>
+                                    <option value="<?php echo htmlspecialchars($h_sub); ?>" <?php echo $filter_sous_categorie_id === $sid ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars((string) ($sc['nom'] ?? '')); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                            </span>
+                        </label>
+                        <?php endif; ?>
+
+                        <?php if (!empty($genres_pour_filtre_rayon) && function_exists('nav_categorie_generale_genre_href')): ?>
+                        <label class="cat-filter-select-wrap" for="cat-filter-genre">
+                            <span class="cat-filter-select-label">
+                                <i class="fas fa-tags" aria-hidden="true"></i>
+                                Genre
+                            </span>
+                            <span class="cat-filter-select-shell">
+                                <select id="cat-filter-genre" class="cat-filter-select" aria-label="Filtrer par genre"
+                                    onchange="if (this.value) window.location.href = this.value;">
+                                    <?php
+                                    $g_href0 = function_exists('nav_categorie_generale_filtre_href')
+                                        ? nav_categorie_generale_filtre_href($generale_id, 0, $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : 0)
+                                        : nav_categorie_generale_genre_href($generale_id, 0);
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($g_href0); ?>" <?php echo $filter_genre_id === 0 ? 'selected' : ''; ?>>
+                                        Tous les genres
+                                    </option>
+                                    <?php foreach ($genres_pour_filtre_rayon as $grow): ?>
+                                    <?php
+                                    $gpid = (int) ($grow['id'] ?? 0);
+                                    if ($gpid <= 0) {
+                                        continue;
+                                    }
+                                    $gn = trim((string) ($grow['nom'] ?? ''));
+                                    $g_href = function_exists('nav_categorie_generale_filtre_href')
+                                        ? nav_categorie_generale_filtre_href(
+                                            $generale_id,
+                                            $gpid,
+                                            $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : 0
+                                        )
+                                        : nav_categorie_generale_genre_href($generale_id, $gpid);
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($g_href); ?>" <?php echo $filter_genre_id === $gpid ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($gn !== '' ? $gn : 'Genre'); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                            </span>
+                        </label>
+                        <?php endif; ?>
                     </div>
                 </div>
             </section>

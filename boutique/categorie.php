@@ -5,25 +5,63 @@ require_once __DIR__ . '/_init.php';
 // Inclusion des modèles
 require_once __DIR__ . '/../models/model_categories.php';
 require_once __DIR__ . '/../models/model_produits.php';
+require_once __DIR__ . '/../models/model_genres.php';
 
 $generale_id = isset($_GET['generale']) ? (int) $_GET['generale'] : 0;
 $categorie_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$filter_genre_id = isset($_GET['genre']) ? (int) $_GET['genre'] : 0;
+$filter_sous_categorie_id = 0;
 
 unset($categorie);
 $categorie = null;
 $generale_row = null;
 $categorie_nom = 'Catégorie';
 $produits = [];
+$genres_pour_filtre_rayon = [];
 
 if ($generale_id > 0) {
+    $filter_sous_categorie_id = isset($_GET['sous_categorie']) ? (int) $_GET['sous_categorie'] : 0;
     $generale_row = get_categorie_generale_by_id($generale_id);
     if (!$generale_row || empty($generale_row['nom'])) {
         header('Location: ' . boutique_url('index.php', BOUTIQUE_SLUG));
         exit;
     }
     $categorie_nom = (string) $generale_row['nom'];
-    $produits = get_produits_by_categorie_generale($generale_id, BOUTIQUE_ADMIN_ID);
+
+    if (function_exists('count_genres_linked_to_categorie_generale')
+        && count_genres_linked_to_categorie_generale($generale_id) > 0) {
+        $genres_pour_filtre_rayon = get_genres_linked_to_categorie_generale($generale_id);
+        if ($filter_genre_id > 0) {
+            $genre_ok = false;
+            foreach ($genres_pour_filtre_rayon as $grow) {
+                if ((int) ($grow['id'] ?? 0) === $filter_genre_id) {
+                    $genre_ok = true;
+                    break;
+                }
+            }
+            if (!$genre_ok) {
+                $filter_genre_id = 0;
+            }
+        }
+    } else {
+        $filter_genre_id = 0;
+    }
+
+    if ($filter_sous_categorie_id > 0) {
+        if (!function_exists('categorie_plateforme_liee_au_rayon')
+            || !categorie_plateforme_liee_au_rayon($filter_sous_categorie_id, $generale_id)) {
+            $filter_sous_categorie_id = 0;
+        }
+    }
+    $produits = get_produits_by_categorie_generale(
+        $generale_id,
+        BOUTIQUE_ADMIN_ID,
+        $filter_genre_id > 0 ? $filter_genre_id : null,
+        $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : null
+    );
 } elseif ($categorie_id > 0) {
+    $filter_genre_id = 0;
+    $filter_sous_categorie_id = 0;
     $categorie = get_categorie_by_id($categorie_id);
     if (!$categorie || !is_array($categorie) || empty($categorie['nom'])) {
         header('Location: ' . boutique_url('index.php', BOUTIQUE_SLUG));
@@ -46,11 +84,19 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/../includes/site_url.php';
+require_once __DIR__ . '/../includes/marketplace_helpers.php';
 $base = get_site_base_url();
 $seo_title = $categorie_nom . ' - ' . BOUTIQUE_NOM;
 if ($generale_row) {
     $desc_cat = !empty($generale_row['description']) ? strip_tags((string) $generale_row['description']) : 'Catalogue « ' . $categorie_nom . ' » — ' . BOUTIQUE_NOM . '.';
-    $seo_canonical = $base . boutique_url('categorie.php?generale=' . (int) $generale_id, BOUTIQUE_SLUG);
+    $seo_q = 'categorie.php?generale=' . (int) $generale_id;
+    if (!empty($filter_genre_id)) {
+        $seo_q .= '&genre=' . (int) $filter_genre_id;
+    }
+    if (!empty($filter_sous_categorie_id)) {
+        $seo_q .= '&sous_categorie=' . (int) $filter_sous_categorie_id;
+    }
+    $seo_canonical = $base . boutique_url($seo_q, BOUTIQUE_SLUG);
 } else {
     $desc_cat = !empty($categorie['description'])
         ? strip_tags((string) $categorie['description'])
@@ -109,6 +155,41 @@ $seo_description = mb_substr($desc_cat, 0, 160);
             <div class="box1">
                 <h1><?php echo htmlspecialchars($categorie_nom); ?></h1>
             </div>
+
+            <?php if ($generale_id > 0 && !empty($genres_pour_filtre_rayon) && function_exists('nav_categorie_generale_genre_href')): ?>
+            <div class="boutique-cat-genre-filtres" style="max-width: 1200px; margin: 0 auto 18px; padding: 0 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--texte-mute); width: 100%; text-align: center;">Par genre</span>
+                <?php
+                $g_h0 = function_exists('nav_categorie_generale_filtre_href')
+                    ? nav_categorie_generale_filtre_href($generale_id, 0, $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : 0)
+                    : nav_categorie_generale_genre_href($generale_id, 0);
+                ?>
+                <a href="<?php echo htmlspecialchars($g_h0); ?>"
+                    style="padding: 8px 14px; border-radius: 999px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1px solid var(--border-input, #ddd);
+                    <?php echo $filter_genre_id === 0 ? 'background: var(--couleur-dominante); color: #fff; border-color: transparent;' : 'background: var(--fond-secondaire, #f5f5f5); color: var(--titres);'; ?>">Tous</a>
+                <?php foreach ($genres_pour_filtre_rayon as $grow): ?>
+                <?php
+                $gpid = (int) ($grow['id'] ?? 0);
+                if ($gpid <= 0) {
+                    continue;
+                }
+                $active = $filter_genre_id === $gpid;
+                $g_h = function_exists('nav_categorie_generale_filtre_href')
+                    ? nav_categorie_generale_filtre_href(
+                        $generale_id,
+                        $gpid,
+                        $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : 0
+                    )
+                    : nav_categorie_generale_genre_href($generale_id, $gpid);
+                ?>
+                <a href="<?php echo htmlspecialchars($g_h); ?>"
+                    style="padding: 8px 14px; border-radius: 999px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1px solid var(--border-input, #ddd);
+                    <?php echo $active ? 'background: var(--couleur-dominante); color: #fff; border-color: transparent;' : 'background: var(--fond-secondaire, #f5f5f5); color: var(--titres);'; ?>">
+                    <?php echo htmlspecialchars((string) ($grow['nom'] ?? 'Genre')); ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
 
             <?php if (empty($produits)): ?>
                 <div style="text-align: center; padding: 40px; color: var(--gris-moyen);">

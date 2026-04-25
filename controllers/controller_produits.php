@@ -206,11 +206,23 @@ function process_add_produit() {
 
     require_once __DIR__ . '/../models/model_categories.php';
     require_once __DIR__ . '/../models/model_genres.php';
+    require_once __DIR__ . '/../models/model_produits_sous_categories.php';
     $role_admin = $_SESSION['admin_role'] ?? 'admin';
     $admin_id_sess = (int) ($_SESSION['admin_id'] ?? 0);
     $categorie_generale_id_val = null;
     $genre_ids_for_save = [];
     $categorie_id_for_db = $categorie_id;
+    $sous_categorie_ids_for_save = [];
+    if (isset($_POST['sous_categorie_ids']) && is_array($_POST['sous_categorie_ids'])) {
+        foreach ($_POST['sous_categorie_ids'] as $sc) {
+            $isc = (int) $sc;
+            if ($isc > 0) {
+                $sous_categorie_ids_for_save[] = $isc;
+            }
+        }
+        $sous_categorie_ids_for_save = array_values(array_unique($sous_categorie_ids_for_save, SORT_REGULAR));
+        sort($sous_categorie_ids_for_save, SORT_NUMERIC);
+    }
 
     if ($role_admin === 'vendeur' && function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif()) {
         $categorie_generale_id_val = isset($_POST['categorie_generale_id']) ? (int) $_POST['categorie_generale_id'] : 0;
@@ -245,16 +257,30 @@ function process_add_produit() {
         } else {
             $genre_ids_for_save = [];
         }
-        $categorie_id_for_db = null;
-    } elseif ($role_admin === 'vendeur' && function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()) {
-        $categorie_id = isset($_POST['categorie_id']) ? (int) $_POST['categorie_id'] : 0;
-        if ($categorie_id <= 0) {
-            $errors[] = 'Choisissez une sous-catégorie.';
-        } elseif (!function_exists('categorie_est_utilisable_par_vendeur')
-            || !categorie_est_utilisable_par_vendeur($categorie_id, $admin_id_sess)) {
-            $errors[] = 'Sous-catégorie invalide ou non autorisée pour votre compte.';
-            $categorie_id = 0;
+        $rayon_sous_n = $categorie_generale_id_val > 0
+            && function_exists('plateforme_sous_categorie_count_for_rayon')
+            ? plateforme_sous_categorie_count_for_rayon($categorie_generale_id_val) : 0;
+        if ($rayon_sous_n > 0) {
+            if (empty($sous_categorie_ids_for_save)) {
+                $errors[] = 'Cochez au moins une sous-catégorie pour ce rayon.';
+            } else {
+                foreach ($sous_categorie_ids_for_save as $scid) {
+                    if (!categorie_est_utilisable_par_vendeur($scid, $admin_id_sess)
+                        || !categorie_plateforme_liee_au_rayon($scid, $categorie_generale_id_val)) {
+                        $errors[] = 'Une ou plusieurs sous-catégories ne sont pas valides pour le rayon choisi.';
+                        $sous_categorie_ids_for_save = [];
+                        break;
+                    }
+                }
+            }
+        } else {
+            $sous_categorie_ids_for_save = [];
         }
+        $categorie_id_for_db = null;
+        if (!empty($sous_categorie_ids_for_save)) {
+            $categorie_id_for_db = (int) $sous_categorie_ids_for_save[0];
+        }
+    } elseif ($role_admin === 'vendeur' && function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()) {
         $generales_rayons = (function_exists('categories_generales_table_exists') && categories_generales_table_exists())
             ? get_general_categories_ordered() : [];
         if (!empty($generales_rayons)) {
@@ -265,8 +291,29 @@ function process_add_produit() {
                 $errors[] = 'Catégorie générale invalide.';
                 $categorie_generale_id_val = 0;
             }
+        } else {
+            $categorie_generale_id_val = isset($_POST['categorie_generale_id']) ? (int) $_POST['categorie_generale_id'] : 0;
         }
-        $categorie_id_for_db = $categorie_id;
+        $rayon_sous_n = $categorie_generale_id_val > 0
+            && function_exists('plateforme_sous_categorie_count_for_rayon')
+            ? plateforme_sous_categorie_count_for_rayon($categorie_generale_id_val) : 0;
+        if ($rayon_sous_n > 0) {
+            if (empty($sous_categorie_ids_for_save)) {
+                $errors[] = 'Cochez au moins une sous-catégorie.';
+            } else {
+                foreach ($sous_categorie_ids_for_save as $scid) {
+                    if (!categorie_est_utilisable_par_vendeur($scid, $admin_id_sess)
+                        || !categorie_plateforme_liee_au_rayon($scid, (int) $categorie_generale_id_val)) {
+                        $errors[] = 'Une ou plusieurs sous-catégories ne sont pas valides pour le rayon choisi.';
+                        $sous_categorie_ids_for_save = [];
+                        break;
+                    }
+                }
+            }
+        } else {
+            $sous_categorie_ids_for_save = [];
+        }
+        $categorie_id_for_db = !empty($sous_categorie_ids_for_save) ? (int) $sous_categorie_ids_for_save[0] : null;
     } else {
         if ($categorie_id <= 0) {
             $errors[] = 'Veuillez sélectionner une catégorie.';
@@ -366,6 +413,11 @@ function process_add_produit() {
                     save_produits_genres_for_produit((int) $produit_id, $genre_ids_for_save);
                 } elseif ($categorie_generale_id_val !== null && $categorie_generale_id_val > 0 && function_exists('vendeur_align_subcategorie_generale') && $categorie_id_for_db !== null) {
                     vendeur_align_subcategorie_generale((int) $categorie_id_for_db, $categorie_generale_id_val, $owner_admin);
+                }
+                if ($role_admin === 'vendeur' && produits_sous_categories_table_exists()
+                    && ((function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif())
+                        || (function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()))) {
+                    save_produits_sous_categories_for_produit((int) $produit_id, $sous_categorie_ids_for_save);
                 }
                 $success = true;
                 $message = 'Produit ajouté avec succès !';
@@ -523,11 +575,23 @@ function process_update_produit($produit_id) {
 
     require_once __DIR__ . '/../models/model_categories.php';
     require_once __DIR__ . '/../models/model_genres.php';
+    require_once __DIR__ . '/../models/model_produits_sous_categories.php';
     $role_admin = $_SESSION['admin_role'] ?? 'admin';
     $admin_id_sess = (int) ($_SESSION['admin_id'] ?? 0);
     $categorie_generale_id_val = null;
     $genre_ids_for_save = [];
     $categorie_id_for_db = $categorie_id;
+    $sous_categorie_ids_for_save = [];
+    if (isset($_POST['sous_categorie_ids']) && is_array($_POST['sous_categorie_ids'])) {
+        foreach ($_POST['sous_categorie_ids'] as $sc) {
+            $isc = (int) $sc;
+            if ($isc > 0) {
+                $sous_categorie_ids_for_save[] = $isc;
+            }
+        }
+        $sous_categorie_ids_for_save = array_values(array_unique($sous_categorie_ids_for_save, SORT_REGULAR));
+        sort($sous_categorie_ids_for_save, SORT_NUMERIC);
+    }
 
     if ($role_admin === 'vendeur' && function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif()) {
         $categorie_generale_id_val = isset($_POST['categorie_generale_id']) ? (int) $_POST['categorie_generale_id'] : 0;
@@ -562,16 +626,30 @@ function process_update_produit($produit_id) {
         } else {
             $genre_ids_for_save = [];
         }
-        $categorie_id_for_db = null;
-    } elseif ($role_admin === 'vendeur' && function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()) {
-        $categorie_id = isset($_POST['categorie_id']) ? (int) $_POST['categorie_id'] : 0;
-        if ($categorie_id <= 0) {
-            $errors[] = 'Choisissez une sous-catégorie.';
-        } elseif (!function_exists('categorie_est_utilisable_par_vendeur')
-            || !categorie_est_utilisable_par_vendeur($categorie_id, $admin_id_sess)) {
-            $errors[] = 'Sous-catégorie invalide ou non autorisée pour votre compte.';
-            $categorie_id = 0;
+        $rayon_sous_n = $categorie_generale_id_val > 0
+            && function_exists('plateforme_sous_categorie_count_for_rayon')
+            ? plateforme_sous_categorie_count_for_rayon($categorie_generale_id_val) : 0;
+        if ($rayon_sous_n > 0) {
+            if (empty($sous_categorie_ids_for_save)) {
+                $errors[] = 'Cochez au moins une sous-catégorie pour ce rayon.';
+            } else {
+                foreach ($sous_categorie_ids_for_save as $scid) {
+                    if (!categorie_est_utilisable_par_vendeur($scid, $admin_id_sess)
+                        || !categorie_plateforme_liee_au_rayon($scid, $categorie_generale_id_val)) {
+                        $errors[] = 'Une ou plusieurs sous-catégories ne sont pas valides pour le rayon choisi.';
+                        $sous_categorie_ids_for_save = [];
+                        break;
+                    }
+                }
+            }
+        } else {
+            $sous_categorie_ids_for_save = [];
         }
+        $categorie_id_for_db = null;
+        if (!empty($sous_categorie_ids_for_save)) {
+            $categorie_id_for_db = (int) $sous_categorie_ids_for_save[0];
+        }
+    } elseif ($role_admin === 'vendeur' && function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()) {
         $generales_rayons = (function_exists('categories_generales_table_exists') && categories_generales_table_exists())
             ? get_general_categories_ordered() : [];
         if (!empty($generales_rayons)) {
@@ -582,8 +660,29 @@ function process_update_produit($produit_id) {
                 $errors[] = 'Catégorie générale invalide.';
                 $categorie_generale_id_val = 0;
             }
+        } else {
+            $categorie_generale_id_val = isset($_POST['categorie_generale_id']) ? (int) $_POST['categorie_generale_id'] : 0;
         }
-        $categorie_id_for_db = $categorie_id;
+        $rayon_sous_n = $categorie_generale_id_val > 0
+            && function_exists('plateforme_sous_categorie_count_for_rayon')
+            ? plateforme_sous_categorie_count_for_rayon($categorie_generale_id_val) : 0;
+        if ($rayon_sous_n > 0) {
+            if (empty($sous_categorie_ids_for_save)) {
+                $errors[] = 'Cochez au moins une sous-catégorie.';
+            } else {
+                foreach ($sous_categorie_ids_for_save as $scid) {
+                    if (!categorie_est_utilisable_par_vendeur($scid, $admin_id_sess)
+                        || !categorie_plateforme_liee_au_rayon($scid, (int) $categorie_generale_id_val)) {
+                        $errors[] = 'Une ou plusieurs sous-catégories ne sont pas valides pour le rayon choisi.';
+                        $sous_categorie_ids_for_save = [];
+                        break;
+                    }
+                }
+            }
+        } else {
+            $sous_categorie_ids_for_save = [];
+        }
+        $categorie_id_for_db = !empty($sous_categorie_ids_for_save) ? (int) $sous_categorie_ids_for_save[0] : null;
     } else {
         if ($categorie_id <= 0) {
             $errors[] = 'Veuillez sélectionner une catégorie.';
@@ -691,6 +790,11 @@ function process_update_produit($produit_id) {
                 save_produits_genres_for_produit((int) $produit_id, $genre_ids_for_save);
             } elseif ($categorie_generale_id_val !== null && $categorie_generale_id_val > 0 && function_exists('vendeur_align_subcategorie_generale') && $categorie_id_for_db !== null) {
                 vendeur_align_subcategorie_generale((int) $categorie_id_for_db, $categorie_generale_id_val, $admin_id_sess);
+            }
+            if ($role_admin === 'vendeur' && function_exists('produits_sous_categories_table_exists') && produits_sous_categories_table_exists()
+                && ((function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif())
+                    || (function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()))) {
+                save_produits_sous_categories_for_produit((int) $produit_id, $sous_categorie_ids_for_save);
             }
             $success = true;
             $message = 'Produit modifié avec succès !';

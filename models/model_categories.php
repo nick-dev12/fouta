@@ -848,6 +848,38 @@ function plateforme_get_rayons_ids_for_categorie($categorie_id) {
 }
 
 /**
+ * La sous-catégorie plateforme est liée au rayon (categories_generales) donné.
+ */
+function categorie_plateforme_liee_au_rayon($categorie_id, $generale_id) {
+    $categorie_id = (int) $categorie_id;
+    $generale_id = (int) $generale_id;
+    if ($categorie_id <= 0 || $generale_id <= 0) {
+        return false;
+    }
+    $rayons = plateforme_get_rayons_ids_for_categorie($categorie_id);
+    return in_array($generale_id, $rayons, true);
+}
+
+/**
+ * Nombre de sous-catégories plateforme rattachées à un rayon (pour validation formulaire vendeur).
+ */
+function plateforme_sous_categorie_count_for_rayon($generale_id) {
+    $generale_id = (int) $generale_id;
+    if ($generale_id <= 0) {
+        return 0;
+    }
+    $rows = get_plateforme_sous_categories_for_form();
+    $n = 0;
+    foreach ($rows as $r) {
+        $cid = (int) ($r['id'] ?? 0);
+        if ($cid > 0 && categorie_plateforme_liee_au_rayon($cid, $generale_id)) {
+            $n++;
+        }
+    }
+    return $n;
+}
+
+/**
  * Enregistre les rayons liés à une sous-catégorie (et synchronise categories.categorie_generale_id sur le 1er id).
  *
  * @param int[] $generale_ids
@@ -1194,23 +1226,49 @@ function get_subcategories_with_active_products_for_general($general_id, $boutiq
     }
     $boutique_admin_id = $boutique_admin_id !== null && $boutique_admin_id !== '' ? (int) $boutique_admin_id : null;
     $use_cg = categories_has_categorie_generale_id_column() && categories_generales_table_exists();
+    require_once __DIR__ . '/model_produits_sous_categories.php';
+    $psc_ok = function_exists('produits_sous_categories_table_exists') && produits_sous_categories_table_exists();
     try {
         if ($use_cg) {
             if ($boutique_admin_id !== null && $boutique_admin_id > 0) {
+                $psc_sql = $psc_ok ? "
+                    OR EXISTS (
+                        SELECT 1 FROM `produits_sous_categories` psc
+                        INNER JOIN `produits` p2 ON p2.`id` = psc.`produit_id` AND p2.`statut` = 'actif' AND p2.`admin_id` = :aid2
+                        WHERE psc.`categorie_id` = c.`id`
+                    )" : '';
                 $st = $db->prepare("
                     SELECT DISTINCT c.`id`, c.`nom`
                     FROM `categories` c
-                    INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`statut` = 'actif' AND p.`admin_id` = :aid
                     WHERE c.`categorie_generale_id` = :gid
+                      AND (
+                        EXISTS (
+                            SELECT 1 FROM `produits` p
+                            WHERE p.`categorie_id` = c.`id` AND p.`statut` = 'actif' AND p.`admin_id` = :aid
+                        )
+                        $psc_sql
+                      )
                     ORDER BY c.`nom` ASC
                 ");
-                $st->execute(['gid' => $general_id, 'aid' => $boutique_admin_id]);
+                $st->execute(['gid' => $general_id, 'aid' => $boutique_admin_id, 'aid2' => $boutique_admin_id]);
             } else {
+                $psc_sql = $psc_ok ? "
+                    OR EXISTS (
+                        SELECT 1 FROM `produits_sous_categories` psc
+                        INNER JOIN `produits` p2 ON p2.`id` = psc.`produit_id` AND p2.`statut` = 'actif'
+                        WHERE psc.`categorie_id` = c.`id`
+                    )" : '';
                 $st = $db->prepare("
                     SELECT DISTINCT c.`id`, c.`nom`
                     FROM `categories` c
-                    INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`statut` = 'actif'
                     WHERE c.`categorie_generale_id` = :gid
+                      AND (
+                        EXISTS (
+                            SELECT 1 FROM `produits` p
+                            WHERE p.`categorie_id` = c.`id` AND p.`statut` = 'actif'
+                        )
+                        $psc_sql
+                      )
                     ORDER BY c.`nom` ASC
                 ");
                 $st->execute(['gid' => $general_id]);

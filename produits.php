@@ -24,6 +24,11 @@ if (file_exists(__DIR__ . '/models/model_produits.php')) {
         $total_produits = count_all_produits_actifs();
     }
 }
+if ($recherche_actuelle !== '' && file_exists(__DIR__ . '/models/model_recherches_catalogue.php')) {
+    require_once __DIR__ . '/models/model_recherches_catalogue.php';
+    $uid_log = !empty($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    log_recherche_catalogue($recherche_actuelle, $uid_log);
+}
 
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {

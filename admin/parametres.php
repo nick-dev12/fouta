@@ -290,7 +290,7 @@ if (isset($_SESSION['success_message'])) {
                 <div class="parametre-icon">
                     <i class="fas fa-sliders-h"></i>
                 </div>
-                <h3 class="parametre-title">Slider Principal</h3>
+                <h3 class="parametre-title">Images d'affiche pub</h3>
                 <?php if ($__param_role !== 'vendeur'): ?>
                 <p class="parametre-description">
                     Gérez le slider d'images en haut de la page d'accueil : ajoutez, modifiez ou supprimez les slides
@@ -340,9 +340,6 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-truck"></i>
                 </div>
                 <h3 class="parametre-title">Zones de livraison</h3>
-                <p class="parametre-description">
-                    Définissez les zones géographiques, tarifs et modalités de livraison pour vos commandes en ligne.
-                </p>
                 <a href="zones-livraison/index.php" class="parametre-link">
                     <i class="fas fa-edit" aria-hidden="true"></i> Gérer les zones
                 </a>

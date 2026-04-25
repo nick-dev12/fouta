@@ -411,7 +411,7 @@ body {
   font-family: var(--font-titres);
 }
 
-/* Grille de produits */
+/* Grille de produits : desktop en flexe ; <768px → grille 2 col (min ~160px par carte) */
 .produits-grid {
   display: flex;
   flex-wrap: wrap;
@@ -420,6 +420,8 @@ body {
   align-items: center;
   margin-top: 20px;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 /* Cards de produits */
@@ -1274,13 +1276,17 @@ body {
   .stats-grid,
   .commandes-stats,
   .users-stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 1.5vw, 15px) clamp(8px, 1.2vw, 12px);
   }
 
   .stat-card,
   .stat-box {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 15px;
+    overflow: hidden;
   }
 
   .stat-card .stat-value,
@@ -1292,14 +1298,77 @@ body {
     padding: 20px 15px;
   }
 
+  .contents-container,
+  .produits-section,
   .produits-grid {
-    gap: 15px;
-    justify-content: center;
+    min-width: 0;
+  }
+
+  /* 2 col : piste min 0 + clamp → pas de superposition (seuil 1 col : 360px) */
+  .produits-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(6px, 1.5vw, 12px) clamp(6px, 1.2vw, 10px);
+    justify-content: stretch;
+    align-items: start;
   }
 
   .produit-card {
-    min-width: 200px !important;
-    max-width: 220px;
+    min-width: 0 !important;
+    min-height: 0;
+    max-width: 100% !important;
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .produit-card-body {
+    min-width: 0;
+    padding: clamp(8px, 2.2vw, 14px) clamp(8px, 2vw, 15px) clamp(10px, 2.2vw, 15px);
+  }
+
+  .produit-card-nom {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    font-size: clamp(12px, 3.2vw, 15px);
+  }
+
+  .produit-card-image {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: clamp(110px, 34vw, 200px);
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+  }
+
+  .produit-card-categorie,
+  .produit-card-prix,
+  .produit-card-stock {
+    font-size: clamp(10px, 2.6vw, 12px);
+  }
+
+  .produit-card-actions {
+    flex-wrap: wrap;
+    gap: clamp(4px, 1.2vw, 8px);
+  }
+
+  .produit-card-actions .btn-card {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: clamp(9px, 2.4vw, 11px);
+    padding: clamp(4px, 1.2vw, 6px) clamp(4px, 1vw, 8px);
+  }
+
+  @media (min-width: 361px) {
+    .produits-grid {
+      grid-template-columns: repeat(2, minmax(160px, 1fr));
+    }
   }
 
   .section-title h2 {
@@ -1380,17 +1449,33 @@ body {
     justify-content: center;
   }
 
+  /* 2 mini-cartes par ligne, plus compactes (tableau de bord vendeur) */
   .stats-grid,
   .commandes-stats,
   .users-stats {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(6px, 1.5vw, 10px) clamp(6px, 1.2vw, 8px);
     margin-bottom: 20px;
+  }
+
+  .stat-card,
+  .stat-box {
+    min-width: 0;
+    max-width: 100%;
+    padding: clamp(8px, 2.2vw, 12px) clamp(8px, 1.8vw, 10px);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .stat-card h3 {
+    font-size: 12px;
+    margin-bottom: 6px;
+    line-height: 1.25;
   }
 
   .stat-card .stat-value,
   .stat-box .stat-value {
-    font-size: 28px;
+    font-size: 22px;
   }
 
   .produits-section,
@@ -1398,14 +1483,11 @@ body {
     padding: 15px 10px;
   }
 
-  .produits-grid {
-    gap: 8px;
-  }
-
-  .produit-card {
-    max-width: 200px;
-    min-width: 200px;
-    width: 100%;
+  .stat-card h3,
+  .stat-box h3,
+  .stat-card .stat-label {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .section-title {
@@ -1543,11 +1625,21 @@ body {
   .slide-card {
     max-width: 100%;
   }
+
   .produit-card-actions {
     flex-direction: column;
+    align-items: stretch;
   }
-  .produit-card-image {
-    height: 180px;
+}
+
+/* < 360px : une colonne (≥ 2×160px + gouttière non tenu) — évite cartes < 160px côte à côte */
+@media (max-width: 360px) {
+  .produits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .produit-card {
+    max-width: 100% !important;
   }
 }
 
@@ -1559,8 +1651,8 @@ body {
   }
 
   .produit-card {
-    max-width: 300px !important;
-    min-width: 270px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     width: 100%;
   }
 

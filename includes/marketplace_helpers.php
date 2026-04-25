@@ -122,6 +122,58 @@ if (!function_exists('nav_categorie_generale_href')) {
     }
 }
 
+if (!function_exists('nav_categorie_generale_genre_href')) {
+    /**
+     * Lien liste rayon avec filtre de genre (GET genre=) ou sans filtre si $genre_id = 0.
+     */
+    function nav_categorie_generale_genre_href($generale_id, $genre_id = 0) {
+        $id = (int) $generale_id;
+        $g = (int) $genre_id;
+        if ($id <= 0) {
+            return function_exists('nav_categorie_generale_href') ? nav_categorie_generale_href(0) : '/categorie.php';
+        }
+        $qs = 'generale=' . $id;
+        if ($g > 0) {
+            $qs .= '&genre=' . $g;
+        }
+        if (defined('BOUTIQUE_SLUG')) {
+            return boutique_url('categorie.php?' . $qs, BOUTIQUE_SLUG);
+        }
+        return '/categorie.php?' . $qs;
+    }
+}
+
+if (!function_exists('nav_categorie_generale_filtre_href')) {
+    /**
+     * Lien liste rayon (generale=) avec filtres optionnels genre= et sous_categorie=.
+     *
+     * @param int $generale_id
+     * @param int $genre_id 0 = sans filtre genre
+     * @param int $sous_categorie_id 0 = sans filtre sous-catégorie
+     */
+    function nav_categorie_generale_filtre_href($generale_id, $genre_id = 0, $sous_categorie_id = 0) {
+        $g = (int) $generale_id;
+        if ($g <= 0) {
+            return defined('BOUTIQUE_SLUG')
+                ? boutique_url('categorie.php', BOUTIQUE_SLUG)
+                : '/categorie.php';
+        }
+        $qs = 'generale=' . $g;
+        $ge = (int) $genre_id;
+        if ($ge > 0) {
+            $qs .= '&genre=' . $ge;
+        }
+        $sc = (int) $sous_categorie_id;
+        if ($sc > 0) {
+            $qs .= '&sous_categorie=' . $sc;
+        }
+        if (defined('BOUTIQUE_SLUG')) {
+            return boutique_url('categorie.php?' . $qs, BOUTIQUE_SLUG);
+        }
+        return '/categorie.php?' . $qs;
+    }
+}
+
 if (!function_exists('boutique_add_to_panier_hidden_fields')) {
     /**
      * Champs cachés pour add-to-panier.php (redirection vers le panier de la vitrine).

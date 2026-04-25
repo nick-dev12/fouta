@@ -46,8 +46,21 @@ $categories = admin_categories_list_for_session();
 $__role_mod = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
 $fap_use_category_hierarchy = categories_hierarchy_enabled() && ($__role_mod === 'vendeur');
 $vendeur_genre_ids_prefill = [];
+$vendeur_sous_categorie_ids_prefill = [];
 if ($fap_use_category_hierarchy && function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif()) {
     $vendeur_genre_ids_prefill = get_genre_ids_for_produit($produit_id);
+    require_once __DIR__ . '/../../models/model_produits_sous_categories.php';
+    if (function_exists('get_sous_categorie_ids_for_produit')) {
+        $vendeur_sous_categorie_ids_prefill = get_sous_categorie_ids_for_produit($produit_id);
+    }
+} elseif ($fap_use_category_hierarchy) {
+    require_once __DIR__ . '/../../models/model_produits_sous_categories.php';
+    if (function_exists('get_sous_categorie_ids_for_produit') && function_exists('produits_sous_categories_table_exists') && produits_sous_categories_table_exists()) {
+        $vendeur_sous_categorie_ids_prefill = get_sous_categorie_ids_for_produit($produit_id);
+    }
+    if (empty($vendeur_sous_categorie_ids_prefill) && (int) ($produit['categorie_id'] ?? 0) > 0) {
+        $vendeur_sous_categorie_ids_prefill = [(int) $produit['categorie_id']];
+    }
 }
 $vcat_prefill_sub = 0;
 $vcat_prefill_generale = 0;

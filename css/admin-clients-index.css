@@ -5,8 +5,10 @@
 
 .admin-clients-page .admin-clients-shell {
   max-width: 1180px;
+  width: 100%;
   margin: 0 auto;
   padding: 1rem 1.25rem 3rem;
+  box-sizing: border-box;
 }
 
 .admin-clients-hero {
@@ -190,12 +192,20 @@
   border-radius: 18px;
   padding: 1.35rem 1.35rem 1.5rem;
   box-shadow: var(--glass-shadow);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .admin-clients-panel__head {
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-input);
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-clients-panel__head h2 {
@@ -207,6 +217,9 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-clients-panel__head h2 i {
@@ -225,6 +238,12 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   gap: 1.15rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  justify-items: stretch;
 }
 
 .admin-client-card {
@@ -355,39 +374,76 @@
   margin-bottom: 0.15rem;
 }
 
+/* Ligne 1 : commandes + livrées côte à côte ; ligne 2 : montant total (pleine largeur) */
 .admin-client-card__metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.35rem 0.4rem;
 }
 
 .admin-client-card__metric {
   text-align: center;
-  padding: 0.65rem 0.4rem;
+  padding: 0.45rem 0.3rem;
   background: var(--bleu-pale);
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border-input);
 }
 
+.admin-client-card__metric--total {
+  grid-column: 1 / -1;
+  padding: 0.4rem 0.45rem;
+  background: rgba(255, 107, 53, 0.08);
+  border-color: rgba(255, 107, 53, 0.22);
+}
+
 .admin-client-card__metric-label {
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--couleur-dominante);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.1rem;
+  line-height: 1.2;
 }
 
 .admin-client-card__metric-value {
-  font-size: 1.05rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--titres);
   line-height: 1.2;
 }
 
-.admin-client-card__metric-value--sm {
-  font-size: 0.82rem;
+.admin-client-card__metric-label--total,
+.admin-client-card__metric-value--total {
+  color: var(--accent-promo, #ff6b35);
 }
+
+.admin-client-card__metric-label--total {
+  text-transform: none;
+  font-size: 0.6rem;
+  letter-spacing: 0.02em;
+}
+
+.admin-client-card__metric-value--total {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.25rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.admin-client-card__metric-unit {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent-promo, #ff6b35);
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 
 .admin-client-card__actions {
   display: flex;
@@ -495,8 +551,41 @@
 }
 
 @media (max-width: 640px) {
+  /* KPI : 2 blocs sur la 1ʳᵉ ligne (200px min en desktop empêchait 2 col sur mobile) */
+  .admin-clients-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem 0.55rem;
+  }
+
+  .admin-clients-kpi {
+    min-width: 0;
+    padding: 0.7rem 0.55rem 0.75rem 0.65rem;
+    gap: 0.5rem 0.55rem;
+  }
+
+  .admin-clients-kpi__icon {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  .admin-clients-kpi__label {
+    font-size: 0.62rem;
+  }
+
+  .admin-clients-kpi__value {
+    font-size: 1.28rem;
+  }
+
+  /* 3ᵉ synthèse : pleine largeur sous les deux premières, plus lisible */
+  .admin-clients-kpi:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  /* Même logique 2+1 (pas une colonne par métrique) */
   .admin-client-card__metrics {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .admin-clients-hero__actions {
@@ -506,5 +595,83 @@
   .admin-clients-btn {
     flex: 1 1 auto;
     justify-content: center;
+  }
+
+  /* Section liste clients : centrage, padding symétrique, cartes stables en largeur */
+  .admin-clients-page .admin-clients-shell {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .admin-clients-panel {
+    text-align: center;
+    padding: 1.1rem max(0.75rem, 2.5vw) 1.35rem;
+  }
+
+  .admin-clients-panel__head {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .admin-clients-panel__head h2 {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .admin-clients-grid {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+
+  .admin-client-card {
+    width: 100%;
+    max-width: 28rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .admin-client-card__top {
+    padding: 2.15rem 1rem 1.15rem;
+  }
+
+  .admin-client-card__badge {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    top: 0.7rem;
+  }
+
+  .admin-client-card__identity {
+    justify-content: center;
+    text-align: center;
+    padding-right: 0;
+  }
+
+  .admin-client-card__body {
+    text-align: center;
+    padding: 0.95rem 0.9rem 1.05rem;
+  }
+
+  .admin-client-card__phone {
+    justify-content: center;
+  }
+
+  .admin-client-card__phone > div {
+    text-align: center;
+  }
+
+  .admin-client-card__actions {
+    justify-content: center;
+  }
+
+  .admin-client-card__actions a.admin-client-btn-detail,
+  .admin-client-card__actions form {
+    min-width: 0;
+  }
+
+  .admin-clients-empty {
+    text-align: center;
+    max-width: 100%;
   }
 }

@@ -169,13 +169,24 @@ function get_produits_by_categorie($categorie_id, $boutique_admin_id = null)
  *
  * @param int $generale_id ID categories_generales
  * @param int|null $boutique_admin_id Filtre vendeur (boutique) ou null = marketplace
+ * @param int|null $filter_genre_id Si > 0 : uniquement produits ayant ce genre (pivot) — le genre doit être autorisé pour ce rayon
+ * @param int|null $filter_sous_categorie_id Si > 0 : produits ayant cette sous-catégorie (categorie_id ou pivot produits_sous_categories)
  * @return array
  */
-function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = null) {
+function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = null, $filter_genre_id = null, $filter_sous_categorie_id = null) {
     global $db;
     $generale_id = (int) $generale_id;
     if ($generale_id <= 0) {
         return [];
+    }
+    $filter_genre_id = (isset($filter_genre_id) && (int) $filter_genre_id > 0) ? (int) $filter_genre_id : 0;
+    $filter_sous_categorie_id = (isset($filter_sous_categorie_id) && (int) $filter_sous_categorie_id > 0) ? (int) $filter_sous_categorie_id : 0;
+    if ($filter_genre_id > 0) {
+        require_once __DIR__ . '/model_genres.php';
+        if (!produits_genres_table_exists() || !function_exists('genre_id_is_allowed_for_categorie_generale')
+            || !genre_id_is_allowed_for_categorie_generale($filter_genre_id, $generale_id)) {
+            $filter_genre_id = 0;
+        }
     }
     require_once __DIR__ . '/model_categories.php';
     if (!function_exists('categories_generales_table_exists') || !categories_generales_table_exists()) {
@@ -214,6 +225,22 @@ function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = n
     if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
         $where .= ' AND p.admin_id = ?';
         $exec_params[] = (int) $boutique_admin_id;
+    }
+    if ($filter_genre_id > 0) {
+        $where .= ' AND EXISTS (SELECT 1 FROM `produits_genres` pgf WHERE pgf.produit_id = p.id AND pgf.genre_id = ?)';
+        $exec_params[] = $filter_genre_id;
+    }
+
+    if ($filter_sous_categorie_id > 0) {
+        require_once __DIR__ . '/model_produits_sous_categories.php';
+        if (produits_sous_categories_table_exists()) {
+            $where .= ' AND (p.`categorie_id` = ? OR EXISTS (SELECT 1 FROM `produits_sous_categories` psc WHERE psc.`produit_id` = p.`id` AND psc.`categorie_id` = ?))';
+            $exec_params[] = $filter_sous_categorie_id;
+            $exec_params[] = $filter_sous_categorie_id;
+        } else {
+            $where .= ' AND p.`categorie_id` = ?';
+            $exec_params[] = $filter_sous_categorie_id;
+        }
     }
 
     try {
@@ -1453,6 +1480,70 @@ function search_produits_en_stock_commande_manuelle($recherche = '', $limit = 30
 function get_produits_by_stock_article($stock_article_id)
 {
     return [];
+}
+
+/**
+ * Produits les plus vendus (quantités sur commandes, hors commandes annulées).
+ * Retourne une liste riche (catégorie, vendeur) pour affichage marketplace.
+ *
+ * @param int $max_rows Nombre max de produits « candidats » (avant mélange côté accueil)
+ * @return array
+ */
+function get_produits_plus_vendus_marketplace($max_rows = 60)
+{
+    global $db;
+    $max_rows = max(10, (int) $max_rows);
+    try {
+        $vj = produits_sql_vendeur_fragment();
+        $sql = "
+            SELECT p.*, c.nom AS categorie_nom, COALESCE(v.qte, 0) AS qte_vendue
+            " . $vj['select'] . "
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $vj['join'] . "
+            INNER JOIN (
+                SELECT cp.produit_id, SUM(cp.quantite) AS qte
+                FROM commande_produits cp
+                INNER JOIN commandes co ON co.id = cp.commande_id
+                WHERE co.statut <> 'annulee'
+                GROUP BY cp.produit_id
+            ) v ON v.produit_id = p.id
+            WHERE p.statut = 'actif'
+            ORDER BY v.qte DESC, p.id DESC
+            LIMIT " . (int) $max_rows;
+        $stmt = $db->query($sql);
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $produits ? $produits : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Récupère des nouveautés (récent) puis mélange — pour panneau « Nouveautés » accueil.
+ *
+ * @param int $retour  Ex. 4
+ * @param int $pool    Taille du pool le plus récent
+ * @return array
+ */
+function get_produits_nouveautes_aleatoires_panneau($retour = 4, $pool = 50)
+{
+    $retour = max(1, (int) $retour);
+    $pool = max($retour, (int) $pool);
+    $rows = get_produits_nouveautes_paginated(0, $pool, null);
+    if (empty($rows) || !is_array($rows)) {
+        $rows = get_all_produits_paginated(0, max(30, $pool), null);
+    }
+    if (empty($rows)) {
+        return [];
+    }
+    if (function_exists('random_int')) {
+        mt_srand((int) (microtime(true) * 1000000) + random_int(0, 9999));
+    } else {
+        mt_srand((int) (microtime(true) * 1000000));
+    }
+    shuffle($rows);
+    return array_slice($rows, 0, $retour);
 }
 
 ?>

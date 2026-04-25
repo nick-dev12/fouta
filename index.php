@@ -1114,6 +1114,36 @@ $seo_canonical = $base . '/';
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 28px rgba(53, 100, 166, 0.08);
         }
 
+        .mp-sp-slides-stack {
+            display: grid;
+            grid-template-areas: "mpSpotStack";
+            width: 100%;
+            min-height: 100px;
+            place-items: center;
+        }
+
+        .mp-sp-slide {
+            grid-area: mpSpotStack;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            opacity: 0;
+            transition: opacity 0.45s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .mp-sp-slide.is-active {
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        .mp-sp-grid--single {
+            grid-template-columns: 1fr;
+            max-width: 180px;
+        }
+
         .mp-sp-visual img {
             max-width: 100%;
             width: auto;
@@ -1130,6 +1160,32 @@ $seo_canonical = $base . '/';
             opacity: 0.35;
         }
 
+        .mp-sp-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .mp-sp-tile {
+            display: block;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 1 / 1;
+            border: 1px solid rgba(53, 100, 166, 0.15);
+        }
+
+        .mp-sp-tile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            max-height: none;
+            filter: none;
+            display: block;
+        }
+
         .mp-sp-dots {
             display: flex;
             gap: 8px;
@@ -1140,16 +1196,20 @@ $seo_canonical = $base . '/';
             padding: 4px 0 0;
         }
 
-        .mp-sp-dots span {
+        .mp-sp-dots button.mp-sp-dot {
             width: 8px;
             height: 8px;
+            padding: 0;
+            border: none;
             border-radius: 50%;
             background: var(--gris-clair);
             opacity: 0.45;
+            cursor: pointer;
             transition: transform 0.2s, opacity 0.2s, background 0.2s;
         }
 
-        .mp-sp-dots span.is-active {
+        .mp-sp-dots button.mp-sp-dot.is-active,
+        .mp-sp-dots button.mp-sp-dot[aria-current="true"] {
             background: var(--couleur-dominante);
             opacity: 1;
             transform: scale(1.2);
@@ -1456,14 +1516,14 @@ $seo_canonical = $base . '/';
 
         .mp-panel-products {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 14px;
+            /* Mobile / tablette : 2×2 ; grand écran : une ligne de 4 */
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 14px;
         }
 
-        /* Tablettes / mobile : 2 produits par ligne dans chaque panneau (Top & Nouveautés) */
-        @media (max-width: 768px) {
+        @media (min-width: 900px) {
             .mp-panel-products {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 10px 12px;
             }
         }
@@ -1582,12 +1642,30 @@ $seo_canonical = $base . '/';
 
         /* Cartes nouveautés compactes */
         .mp-new-card {
+            position: relative;
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             padding: 12px;
             background: var(--blanc-casse);
             display: flex;
             flex-direction: column;
+        }
+
+        .mp-new-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 2;
+            background: var(--accent-promo);
+            color: var(--blanc);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
+            pointer-events: none;
         }
 
         .mp-new-card-link {
@@ -1787,26 +1865,50 @@ $seo_canonical = $base . '/';
 
     $mp_nav_sidebar_icons = ['fa-star', 'fa-tshirt', 'fa-headphones', 'fa-futbol', 'fa-spray-can', 'fa-gem', 'fa-laptop', 'fa-couch', 'fa-car', 'fa-mobile-alt', 'fa-heart', 'fa-cube', 'fa-tag', 'fa-th'];
 
-    $produits_tendance = [];
-    if (!empty($produits_populaires)) {
-        $produits_tendance = array_slice($produits_populaires, 0, 8);
-    } elseif (!empty($produits_nouveaux)) {
-        $produits_tendance = array_slice($produits_nouveaux, 0, 8);
-    } else {
-        $produits_tendance = array_slice($produits_tous, 0, 8);
+    require_once __DIR__ . '/includes/marketplace_home_helpers.php';
+    if (file_exists(__DIR__ . '/models/model_recherches_catalogue.php')) {
+        require_once __DIR__ . '/models/model_recherches_catalogue.php';
+    }
+    if (file_exists(__DIR__ . '/models/model_favoris.php')) {
+        require_once __DIR__ . '/models/model_favoris.php';
     }
 
-    $produits_top_trois = !empty($produits_populaires)
-        ? array_slice($produits_populaires, 0, 3)
-        : array_slice($produits_nouveaux, 0, 3);
-    $produits_new_trois = array_slice($produits_nouveaux, 0, 3);
+    /* Recherches fréquentes : produits liés au journal de recherche catalogue (mélangés, max 20) */
+    $recherche_candidats = function_exists('get_produits_lies_aux_recherches_frequentes')
+        ? get_produits_lies_aux_recherches_frequentes(40)
+        : [];
+    $produits_tendance = marketplace_produits_aleatoires_avec_seuil($recherche_candidats, 20, 5);
 
-    $produits_strip = [];
-    if (!empty($produits_populaires)) {
-        $produits_strip = array_slice($produits_populaires, 0, 4);
-    } else {
-        $produits_strip = array_slice($produits_tous, 0, 4);
+    /* 4 articles / panneau : grille 2×2 sur mobile, 4 en ligne sur grand écran */
+    $produits_top_panneau = !empty($produits_populaires)
+        ? array_slice($produits_populaires, 0, 4)
+        : array_slice($produits_nouveaux, 0, 4);
+    $produits_new_panneau = function_exists('get_produits_nouveautes_aleatoires_panneau')
+        ? get_produits_nouveautes_aleatoires_panneau(4, 50)
+        : array_slice($produits_nouveaux, 0, 4);
+
+    /* Bandeau B2B : best-sellers (quantités commandées), mélangés */
+    $vendus_candidats = function_exists('get_produits_plus_vendus_marketplace')
+        ? get_produits_plus_vendus_marketplace(60)
+        : [];
+    $produits_strip = marketplace_produits_aleatoires_avec_seuil($vendus_candidats, 8, 5);
+
+    /* Coups de cœur : carrousel — plusieurs diapos (2 produits), rotation côté client toutes les 1 min */
+    $favoris_candidats = function_exists('get_produits_plus_favoris_marketplace')
+        ? get_produits_plus_favoris_marketplace(40)
+        : [];
+    $spotlight_pool = marketplace_produits_aleatoires_avec_seuil($favoris_candidats, 12, 5);
+    if (!is_array($spotlight_pool)) {
+        $spotlight_pool = [];
     }
+    $spotlight_slides = [];
+    for ($i = 0; $i < count($spotlight_pool) - 1; $i += 2) {
+        $spotlight_slides[] = array_slice($spotlight_pool, $i, 2);
+    }
+    if (count($spotlight_pool) % 2 === 1) {
+        $spotlight_slides[] = [$spotlight_pool[count($spotlight_pool) - 1]];
+    }
+    $spotlight_slides = array_slice($spotlight_slides, 0, 5);
 
     $hero_affiches = [];
     if (file_exists(__DIR__ . '/models/model_marketplace_hero.php')) {
@@ -1889,7 +1991,7 @@ $seo_canonical = $base . '/';
                         <div class="mp-showcase-center-top">
                             <div>
                                 <h2>Recherches fréquentes</h2>
-                                <p>Sélection liée aux visites et aux rayons les plus consultés</p>
+                                <p>Articles issus des requêtes les plus saisies sur le catalogue (ordre aléatoire).</p>
                             </div>
                             <div class="mp-trend-nav">
                                 <button type="button" class="mp-trend-prev" aria-label="Faire défiler vers la gauche">
@@ -1916,7 +2018,7 @@ $seo_canonical = $base . '/';
                                         : (function_exists('mb_substr') ? mb_substr($_nom_raw, 0, 32) : substr($_nom_raw, 0, 32));
                                     ?>
                                     <div class="mp-trend-card">
-                                        <span class="mp-trend-label">Tendances</span>
+                                        <span class="mp-trend-label">Recherché</span>
                                         <span class="mp-trend-sub"><?php echo htmlspecialchars($tsub); ?></span>
                                         <a class="mp-trend-img-link" href="produit.php?id=<?php echo $tid; ?>">
                                             <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
@@ -1930,24 +2032,88 @@ $seo_canonical = $base . '/';
 
                     <aside class="mp-showcase-spotlight" aria-labelledby="mp-sp-title">
                         <div class="mp-sp-content">
-                            <span class="mp-sp-badge"><i class="fas fa-heart" aria-hidden="true"></i> Sélection</span>
-                            <h2 id="mp-sp-title">Coups de cœur</h2>
-                            <p>Une sélection d’articles phares de la plateforme, proposés par nos vendeurs partenaires.
-                            </p>
+                            <span class="mp-sp-badge"><i class="fas fa-star" aria-hidden="true"></i> Communauté</span>
+                            <h2 id="mp-sp-title">Mieux notés</h2>
                         </div>
-                        <div class="mp-sp-visual">
-                            <?php if ($mp_spotlight_img): ?>
+                        <div class="mp-sp-visual" id="mpSpotlightVisual">
+                            <?php if (!empty($spotlight_slides)): ?>
+                            <div class="mp-sp-slides-stack" id="mpSpotlightSlides" data-spotlight-interval="60000" role="region" aria-label="Produits mis en avant" aria-live="polite">
+                                <?php foreach ($spotlight_slides as $sidx => $slide_products): ?>
+                                <div class="mp-sp-slide<?php echo (int) $sidx === 0 ? ' is-active' : ''; ?>"
+                                    data-spotlight-slide="<?php echo (int) $sidx; ?>"
+                                    <?php if ((int) $sidx !== 0): ?>aria-hidden="true"<?php else: ?>aria-hidden="false"<?php endif; ?>>
+                                    <div class="mp-sp-grid<?php echo count($slide_products) < 2 ? ' mp-sp-grid--single' : ''; ?>" role="list">
+                                        <?php foreach ($slide_products as $sp):
+                                            $spid = (int) ($sp['id'] ?? 0);
+                                            if ($spid <= 0) {
+                                                continue;
+                                            }
+                                            ?>
+                                        <a class="mp-sp-tile" role="listitem" href="produit.php?id=<?php echo $spid; ?>">
+                                            <img src="/upload/<?php echo htmlspecialchars($sp['image_principale'] ?? 'produit1.jpg'); ?>"
+                                                alt="<?php echo htmlspecialchars($sp['nom'] ?? 'Produit'); ?>"
+                                                loading="<?php echo (int) $sidx === 0 ? 'eager' : 'lazy'; ?>"
+                                                onerror="this.src='/image/produit1.jpg'">
+                                        </a>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php elseif ($mp_spotlight_img): ?>
                                 <img src="<?php echo htmlspecialchars($mp_spotlight_img, ENT_QUOTES, 'UTF-8'); ?>"
-                                    alt="Aperçu de la sélection Coups de cœur" onerror="this.style.display='none'">
+                                    alt="Aperçu de la sélection" onerror="this.style.display='none'">
                             <?php else: ?>
                                 <span class="mp-sp-fallback-ico" aria-hidden="true"><i class="fas fa-store"></i></span>
                             <?php endif; ?>
                         </div>
                         <a class="mp-sp-cta" href="produits.php"><span>En savoir plus</span><i
                                 class="fas fa-arrow-right" aria-hidden="true"></i></a>
-                        <div class="mp-sp-dots" aria-hidden="true">
-                            <span class="is-active"></span><span></span><span></span>
+                        <?php if (!empty($spotlight_slides) && count($spotlight_slides) > 1): ?>
+                        <div class="mp-sp-dots" id="mpSpotlightDots" role="group" aria-label="Navigation des sélections de produits">
+                            <?php foreach ($spotlight_slides as $didx => $_s): ?>
+                            <button type="button" class="mp-sp-dot<?php echo (int) $didx === 0 ? ' is-active' : ''; ?>"
+                                id="mpSpotlightDot<?php echo (int) $didx; ?>"
+                                data-slide-to="<?php echo (int) $didx; ?>"
+                                aria-selected="<?php echo (int) $didx === 0 ? 'true' : 'false'; ?>"
+                                aria-label="Sélection <?php echo (int) $didx + 1; ?> sur <?php echo (int) count($spotlight_slides); ?>"></button>
+                            <?php endforeach; ?>
                         </div>
+                        <?php endif; ?>
+                    <?php if (!empty($spotlight_slides) && count($spotlight_slides) > 1): ?>
+                    <script>
+                    (function () {
+                        var stack = document.getElementById('mpSpotlightSlides');
+                        if (!stack) { return; }
+                        var ms = parseInt(stack.getAttribute('data-spotlight-interval') || '60000', 10);
+                        if (isNaN(ms) || ms < 5000) { ms = 60000; }
+                        var slides = stack.querySelectorAll('.mp-sp-slide');
+                        var dots = document.querySelectorAll('#mpSpotlightDots .mp-sp-dot');
+                        if (slides.length < 2) { return; }
+                        var n = slides.length;
+                        var cur = 0;
+                        function go(i) {
+                            i = ((i % n) + n) % n;
+                            cur = i;
+                            for (var j = 0; j < n; j++) {
+                                var on = (j === i);
+                                slides[j].classList.toggle('is-active', on);
+                                slides[j].setAttribute('aria-hidden', on ? 'false' : 'true');
+                                if (dots[j]) {
+                                    dots[j].classList.toggle('is-active', on);
+                                    dots[j].setAttribute('aria-selected', on ? 'true' : 'false');
+                                }
+                            }
+                        }
+                        setInterval(function () { go(cur + 1); }, ms);
+                        for (var d = 0; d < dots.length; d++) {
+                            (function (idx) {
+                                dots[idx].addEventListener('click', function () { go(idx); });
+                            })(d);
+                        }
+                    })();
+                    </script>
+                    <?php endif; ?>
                     </aside>
                 </div>
             </section>
@@ -1957,12 +2123,12 @@ $seo_canonical = $base . '/';
             <section class="mp-promo-b2b" aria-labelledby="mp-b2b-title">
                 <div class="mp-promo-b2b-inner">
                     <div class="mp-promo-copy">
-                        <span class="mp-promo-ico" aria-hidden="true"><i class="fas fa-pencil-ruler"></i></span>
-                        <h2 id="mp-b2b-title">Commande pro &amp; réassort</h2>
+                        <span class="mp-promo-ico" aria-hidden="true"><i class="fas fa-trophy"></i></span>
+                        <h2 id="mp-b2b-title">Top des ventes</h2>
                         <ul class="mp-promo-list">
-                            <li><i class="fas fa-check" aria-hidden="true"></i> Devis et commandes simplifiés</li>
-                            <li><i class="fas fa-check" aria-hidden="true"></i> Suivi des stocks en temps réel</li>
-                            <li><i class="fas fa-check" aria-hidden="true"></i> Multi-vendeurs sur un seul panier</li>
+                            <li><i class="fas fa-check" aria-hidden="true"></i> Articles les plus commandés sur la marketplace (volumes réels de vente)</li>
+                            <li><i class="fas fa-check" aria-hidden="true"></i> Découvrez ce que les professionnels et particuliers achètent le plus</li>
+                            <li><i class="fas fa-check" aria-hidden="true"></i> Sélection mélangée aléatoirement à chaque visite</li>
                         </ul>
                         <a class="mp-promo-cta" href="produits.php">Découvrir dès maintenant</a>
                     </div>
@@ -2054,12 +2220,12 @@ $seo_canonical = $base . '/';
                             <a class="mp-panel-more" href="produits.php">En savoir plus &gt;</a>
                         </header>
                         <div class="mp-panel-products">
-                            <?php if (empty($produits_top_trois)): ?>
+                            <?php if (empty($produits_top_panneau)): ?>
                                 <p class="mp-empty" style="grid-column:1/-1;">Aucun produit à mettre en avant pour le
                                     moment.</p>
                             <?php else: ?>
                                 <?php
-                                foreach ($produits_top_trois as $produit) {
+                                foreach ($produits_top_panneau as $produit) {
                                     $return_url = $return_url_mp;
                                     require $partial_top;
                                 }
@@ -2077,11 +2243,11 @@ $seo_canonical = $base . '/';
                             <a class="mp-panel-more" href="produits.php?tri=date">En savoir plus &gt;</a>
                         </header>
                         <div class="mp-panel-products">
-                            <?php if (empty($produits_new_trois)): ?>
+                            <?php if (empty($produits_new_panneau)): ?>
                                 <p class="mp-empty" style="grid-column:1/-1;">Pas de nouveautés pour le moment.</p>
                             <?php else: ?>
                                 <?php
-                                foreach ($produits_new_trois as $produit) {
+                                foreach ($produits_new_panneau as $produit) {
                                     $return_url = $return_url_mp;
                                     require $partial_newc;
                                 }

@@ -9,6 +9,14 @@ $limit = 20;
 $offset = ($page - 1) * $limit;
 
 $produits = get_produits_en_promo($offset, $limit);
+if (!empty($produits) && is_array($produits)) {
+    if (function_exists('random_int')) {
+        mt_srand((int) (microtime(true) * 1000000) + random_int(0, 9999));
+    } else {
+        mt_srand((int) (microtime(true) * 1000000));
+    }
+    shuffle($produits);
+}
 $total_produits = count_produits_en_promo();
 $total_pages = $total_produits > 0 ? (int) ceil($total_produits / $limit) : 1;
 

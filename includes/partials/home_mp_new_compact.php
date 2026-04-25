@@ -18,6 +18,7 @@ $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'
 $stock = isset($produit['stock']) ? (int) $produit['stock'] : null;
 ?>
 <article class="mp-new-card">
+    <span class="mp-new-badge" aria-label="Nouveau">Nouveau</span>
     <a href="produit.php?id=<?php echo $pid; ?>" class="mp-new-card-link">
         <div class="mp-new-card-img">
             <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"

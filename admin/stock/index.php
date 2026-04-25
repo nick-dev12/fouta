@@ -430,6 +430,74 @@ if (function_exists('get_categories_generales_avec_produits_actifs')) {
                 flex: 1 1 auto;
                 justify-content: center;
             }
+
+            .stock-cat-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.65rem 0.5rem;
+            }
+
+            .stock-cat-card {
+                min-width: 0;
+            }
+
+            .stock-cat-card__media {
+                aspect-ratio: 1 / 1;
+                max-height: 7.5rem;
+            }
+
+            .stock-cat-card__placeholder {
+                font-size: 1.1rem;
+            }
+
+            .stock-cat-card__body {
+                padding: 0.4rem 0.4rem 0.5rem;
+                gap: 0.28rem;
+            }
+
+            .stock-cat-card__body h3 {
+                font-size: 0.72rem;
+                font-weight: 700;
+                line-height: 1.2;
+            }
+
+            .stock-cat-card__desc {
+                font-size: 0.6rem;
+                line-height: 1.28;
+                -webkit-line-clamp: 2;
+                line-clamp: 2;
+            }
+
+            .stock-cat-card .stock-rayon-count {
+                font-size: 0.58rem;
+                line-height: 1.2;
+                margin: 0;
+                font-weight: 600;
+            }
+
+            .stock-cat-card .stock-rayon-count i {
+                font-size: 0.7em;
+                margin-right: 0.15em;
+            }
+
+            .stock-cat-card__actions {
+                flex-direction: column;
+                align-items: stretch;
+                margin-top: 0.1rem;
+                gap: 0.28rem;
+            }
+
+            .stock-cat-card__actions a {
+                min-width: 0;
+                font-size: 0.55rem;
+                font-weight: 600;
+                padding: 0.3rem 0.32rem;
+                border-radius: 8px;
+                gap: 0.2rem;
+            }
+
+            .stock-cat-card__actions a i {
+                font-size: 0.75em;
+            }
         }
 
         button.stock-btn {

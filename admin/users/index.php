@@ -74,18 +74,6 @@ $users_inactifs = count(array_filter($users, function ($u) { return $u['statut']
         <header class="admin-clients-hero">
             <div class="admin-clients-hero__text">
                 <h1><i class="fas fa-store" aria-hidden="true"></i> <?php echo $vf_clients ? 'Clients de votre boutique' : 'Clients du site'; ?></h1>
-                <p class="admin-clients-hero__lead">
-                    <?php if ($vf_clients): ?>
-                    Comptes clients ayant passé au moins une commande contenant <strong>vos produits</strong> — commandes, livraisons et CA (hors annulées) sont limités à ces ventes. Ouvrez la fiche pour le détail.
-                    <?php else: ?>
-                    Comptes clients inscrits sur la boutique — statistiques de commandes et chiffre d’affaires (hors commandes annulées). Accédez à la fiche détail pour l’historique complet.
-                    <?php endif; ?>
-                </p>
-            </div>
-            <div class="admin-clients-hero__actions">
-                <a href="../contacts/index.php" class="admin-clients-btn admin-clients-btn--primary">
-                    <i class="fas fa-address-book" aria-hidden="true"></i> Contacts
-                </a>
             </div>
         </header>
 
@@ -128,11 +116,6 @@ $users_inactifs = count(array_filter($users, function ($u) { return $u['statut']
         <section class="admin-clients-panel" aria-labelledby="clients-list-title">
             <div class="admin-clients-panel__head">
                 <h2 id="clients-list-title"><i class="fas fa-list" aria-hidden="true"></i> Liste des clients (<?php echo count($users); ?>)</h2>
-                <p class="admin-clients-panel__sub">
-                    <?php echo $vf_clients
-                        ? 'Tri par nombre de commandes concernant vos produits. CA = somme des lignes de vos articles (hors commandes annulées).'
-                        : 'Tri par nombre de commandes boutique. Chaque carte résume les commandes, livraisons et CA HT.'; ?>
-                </p>
             </div>
 
             <?php if (empty($users)): ?>
@@ -181,25 +164,19 @@ $users_inactifs = count(array_filter($users, function ($u) { return $u['statut']
                                 <div class="admin-client-card__metric-label">Livrées</div>
                                 <div class="admin-client-card__metric-value"><?php echo (int) ($user['nb_commandes_livrees'] ?? 0); ?></div>
                             </div>
-                            <div class="admin-client-card__metric">
-                                <div class="admin-client-card__metric-label">CA (HT)</div>
-                                <div class="admin-client-card__metric-value admin-client-card__metric-value--sm"><?php echo htmlspecialchars($ca_ht); ?></div>
+                            <div class="admin-client-card__metric admin-client-card__metric--total">
+                                <div class="admin-client-card__metric-label admin-client-card__metric-label--total">Montant total</div>
+                                <div class="admin-client-card__metric-value admin-client-card__metric-value--total">
+                                    <?php echo htmlspecialchars($ca_ht); ?>
+                                    <span class="admin-client-card__metric-unit" aria-label="francs CFA"> FCFA</span>
+                                </div>
                             </div>
                         </div>
                         <div class="admin-client-card__actions">
                             <a href="details.php?id=<?php echo (int) $user['id']; ?>" class="admin-client-btn-detail">
                                 <i class="fas fa-id-card" aria-hidden="true"></i> Fiche détail
                             </a>
-                            <?php if ($is_actif): ?>
-                            <form method="post" action="">
-                                <input type="hidden" name="user_id" value="<?php echo (int) $user['id']; ?>">
-                                <input type="hidden" name="nouveau_statut" value="inactif">
-                                <button type="submit" name="toggle_statut" class="admin-client-btn-off"
-                                    onclick="return confirm('Désactiver cet utilisateur ?');">
-                                    <i class="fas fa-ban" aria-hidden="true"></i> Désactiver
-                                </button>
-                            </form>
-                            <?php else: ?>
+                            <?php if (!$is_actif): ?>
                             <form method="post" action="">
                                 <input type="hidden" name="user_id" value="<?php echo (int) $user['id']; ?>">
                                 <input type="hidden" name="nouveau_statut" value="actif">

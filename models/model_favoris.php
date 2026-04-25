@@ -117,5 +117,36 @@ function count_favoris_by_user($user_id) {
     }
 }
 
+/**
+ * Produits les plus mis en favori (proxy « coups de cœur / mieux notés » par la communauté).
+ *
+ * @param int $max_rows Candidats max avant mélange accueil
+ * @return array
+ */
+function get_produits_plus_favoris_marketplace($max_rows = 60) {
+    global $db;
+    $max_rows = max(5, (int) $max_rows);
+    try {
+        require_once __DIR__ . '/model_produits.php';
+        $vj = produits_sql_vendeur_fragment();
+        $sql = "
+            SELECT p.*, MAX(c.nom) AS categorie_nom, COUNT(f.id) AS nb_favoris
+            " . $vj['select'] . "
+            FROM produits p
+            INNER JOIN favoris f ON f.produit_id = p.id
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $vj['join'] . "
+            WHERE p.statut = 'actif'
+            GROUP BY p.id
+            ORDER BY nb_favoris DESC, p.id DESC
+            LIMIT " . (int) $max_rows;
+        $stmt = $db->query($sql);
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $produits ? $produits : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
 ?>
 

@@ -163,6 +163,13 @@
   }
 }
 
+/* Mobile : masque les indicateurs KPI (grille trop haute / redondante sur petit écran) */
+@media (max-width: 600px) {
+  .cmd-list-page .cmd-kpi-section {
+    display: none;
+  }
+}
+
 .cmd-kpi {
   display: flex;
   flex-direction: column;

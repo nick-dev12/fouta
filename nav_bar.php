@@ -140,130 +140,45 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         box-shadow: var(--ombre-douce);
     }
 
-    .nav-search-filters-btn {
+    .nav-language-switcher {
         margin-left: 8px;
-        padding: 12px 14px;
+        min-width: 112px;
+        min-height: 45px;
+        padding: 0 12px;
         background: var(--bleu-pale);
         border: 2px solid var(--border-input);
         border-radius: 12px;
         color: var(--couleur-dominante);
-        cursor: pointer;
         transition: all 0.3s;
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(53, 100, 166, 0.06);
     }
 
-    .nav-search-filters-btn:hover,
-    .nav-search-filters-btn.active {
-        background: var(--couleur-dominante);
-        color: var(--texte-clair);
+    .nav-language-switcher:hover {
+        background: var(--blanc);
         border-color: var(--couleur-dominante);
     }
 
-    .nav-search-filters-panel {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        margin-top: 10px;
-        background: var(--blanc);
-        border-radius: 14px;
-        box-shadow: var(--glass-shadow);
-        padding: 20px;
-        z-index: 10001;
-        display: none;
-        border: 1px solid var(--border-input);
-    }
-
-    .nav-search-filters-panel.show {
-        display: block;
-    }
-
-    .nav-search-filters-panel h4 {
-        font-size: 14px;
-        color: var(--titres);
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .nav-search-filters-panel h4 i {
-        color: var(--couleur-dominante);
-    }
-
-    .nav-search-filters-row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 15px;
-    }
-
-    .nav-search-filters-row:last-of-type {
-        margin-bottom: 0;
-    }
-
-    .nav-search-filters-group {
-        flex: 1;
-        min-width: 120px;
-    }
-
-    .nav-search-filters-group label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--texte-fonce);
-        margin-bottom: 6px;
-    }
-
-    .nav-search-filters-group input,
-    .nav-search-filters-group select {
+    .nav-language-switcher .gtranslate_wrapper,
+    .nav-language-switcher .gt_switcher,
+    .nav-language-switcher select {
         width: 100%;
-        padding: 10px 12px;
-        border: 2px solid var(--border-input);
-        border-radius: 8px;
-        font-size: 14px;
     }
 
-    .nav-search-filters-group input:focus,
-    .nav-search-filters-group select:focus {
+    .nav-language-switcher select,
+    .nav-language-switcher .gt_selector {
+        width: 100%;
+        min-height: 37px;
+        padding: 0 28px 0 8px;
+        border: 0;
         outline: none;
-        border-color: var(--couleur-dominante);
-    }
-
-    .nav-search-filters-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .nav-search-filters-actions button {
-        padding: 10px 18px;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
+        background: transparent;
+        color: var(--couleur-dominante);
+        font: 700 13px/1 var(--font-corps);
         cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .nav-search-filters-actions .btn-apply {
-        background: var(--couleur-dominante);
-        color: var(--texte-clair);
-    }
-
-    .nav-search-filters-actions .btn-apply:hover {
-        background: var(--couleur-dominante-hover);
-    }
-
-    .nav-search-filters-actions .btn-reset {
-        background: var(--blanc);
-        color: var(--texte-fonce);
-    }
-
-    .nav-search-filters-actions .btn-reset:hover {
-        background: var(--blanc-neige);
     }
 
     .nav-search-btn {
@@ -402,8 +317,10 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             max-width: 320px;
         }
 
-        .nav-search-filters-btn {
-            padding: 10px 12px;
+        .nav-language-switcher {
+            min-width: 104px;
+            min-height: 41px;
+            padding: 0 10px;
         }
 
         .nav-search-input {
@@ -509,15 +426,10 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             font-size: 14px;
         }
 
-        .nav-search-filters-btn {
-            padding: 10px 12px;
-            flex-shrink: 0;
-        }
-
-        .nav-search-filters-panel {
-            left: 0;
-            right: 0;
-            padding: 15px;
+        .nav-language-switcher {
+            min-width: 96px;
+            min-height: 41px;
+            padding: 0 8px;
         }
     }
 
@@ -559,8 +471,15 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             font-size: 13px;
         }
 
-        .nav-search-filters-btn {
-            padding: 8px 10px;
+        .nav-language-switcher {
+            min-width: 88px;
+            min-height: 37px;
+            padding: 0 6px;
+        }
+
+        .nav-language-switcher select,
+        .nav-language-switcher .gt_selector {
+            font-size: 12px;
         }
     }
 </style>
@@ -631,125 +550,20 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             <input type="hidden" name="tri" id="nav-tri"
                 value="<?php echo isset($_GET['tri']) ? htmlspecialchars($_GET['tri']) : ''; ?>">
         </form>
-        <button type="button" class="nav-search-filters-btn" id="nav-filters-toggle" aria-label="Filtres"
-            title="Filtres de recherche">
-            <i class="fa-solid fa-sliders"></i>
-        </button>
-        <div class="nav-search-filters-panel" id="nav-filters-panel">
-            <h4><i class="fa-solid fa-filter"></i> Filtres</h4>
-            <div class="nav-search-filters-row">
-                <div class="nav-search-filters-group">
-                    <label for="filter-prix-min">Prix min (FCFA)</label>
-                    <input type="number" id="filter-prix-min" name="prix_min" placeholder="0" min="0" step="100"
-                        value="<?php echo isset($_GET['prix_min']) ? htmlspecialchars($_GET['prix_min']) : ''; ?>">
-                </div>
-                <div class="nav-search-filters-group">
-                    <label for="filter-prix-max">Prix max (FCFA)</label>
-                    <input type="number" id="filter-prix-max" name="prix_max" placeholder="Aucune limite" min="0"
-                        step="100"
-                        value="<?php echo isset($_GET['prix_max']) ? htmlspecialchars($_GET['prix_max']) : ''; ?>">
-                </div>
-            </div>
-            <div class="nav-search-filters-row">
-                <div class="nav-search-filters-group" style="flex: 1;">
-                    <label for="filter-categorie">Catégorie</label>
-                    <select id="filter-categorie" name="categorie">
-                        <option value="">Toutes les catégories</option>
-                        <?php if (!empty($nav_megamenu)): ?>
-                            <?php foreach ($nav_megamenu as $mega): ?>
-                                <?php
-                                $g = $mega['general'];
-                                $subs = $mega['subcategories'];
-                                $gid = (int) $g['id'];
-                                ?>
-                                <?php if (empty($subs)): ?>
-                                    <option value="<?php echo $gid; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $gid) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($g['nom']); ?>
-                                    </option>
-                                <?php else: ?>
-                                    <optgroup label="<?php echo htmlspecialchars($g['nom']); ?>">
-                                        <option value="<?php echo $gid; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $gid) ? 'selected' : ''; ?>>
-                                            Tout le rayon
-                                        </option>
-                                        <?php foreach ($subs as $s): ?>
-                                            <option value="<?php echo (int) $s['id']; ?>" <?php echo (isset($_GET['categorie']) && (string) $_GET['categorie'] === (string) $s['id']) ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($s['nom']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        <?php elseif (!empty($categories_menu)): ?>
-                            <?php foreach ($categories_menu as $cat): ?>
-                                <option value="<?php echo $cat['id']; ?>" <?php echo (isset($_GET['categorie']) && $_GET['categorie'] == $cat['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($cat['nom']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                </div>
-            </div>
-            <div class="nav-search-filters-row">
-                <div class="nav-search-filters-group" style="flex: 1;">
-                    <label for="filter-tri">Trier par</label>
-                    <select id="filter-tri" name="tri">
-                        <option value="">Plus récents</option>
-                        <option value="prix_asc" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'prix_asc') ? 'selected' : ''; ?>>Prix
-                            croissant</option>
-                        <option value="prix_desc" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'prix_desc') ? 'selected' : ''; ?>>Prix
-                            décroissant</option>
-                        <option value="nom" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'nom') ? 'selected' : ''; ?>>Nom A-Z
-                        </option>
-                    </select>
-                </div>
-            </div>
-            <div class="nav-search-filters-actions">
-                <button type="button" class="btn-apply" onclick="appliquerFiltres()"><i class="fa-solid fa-check"></i>
-                    Appliquer</button>
-                <button type="button" class="btn-reset" onclick="reinitialiserFiltres()"><i
-                        class="fa-solid fa-rotate-left"></i> Réinitialiser</button>
-            </div>
+        <div class="nav-language-switcher" aria-label="Sélection de la langue" title="Changer la langue">
+            <div class="gtranslate_wrapper"></div>
         </div>
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var toggle = document.getElementById('nav-filters-toggle');
-            var panel = document.getElementById('nav-filters-panel');
-            if (toggle && panel) {
-                toggle.addEventListener('click', function () {
-                    panel.classList.toggle('show');
-                    toggle.classList.toggle('active', panel.classList.contains('show'));
-                });
-                document.addEventListener('click', function (e) {
-                    if (!toggle.contains(e.target) && !panel.contains(e.target)) {
-                        panel.classList.remove('show');
-                        toggle.classList.remove('active');
-                    }
-                });
-            }
-        });
-
-        function appliquerFiltres() {
-            document.getElementById('nav-prix-min').value = document.getElementById('filter-prix-min').value;
-            document.getElementById('nav-prix-max').value = document.getElementById('filter-prix-max').value;
-            document.getElementById('nav-categorie').value = document.getElementById('filter-categorie').value;
-            document.getElementById('nav-tri').value = document.getElementById('filter-tri').value;
-            document.getElementById('nav-search-form').submit();
-        }
-
-        function reinitialiserFiltres() {
-            document.getElementById('filter-prix-min').value = '';
-            document.getElementById('filter-prix-max').value = '';
-            document.getElementById('filter-categorie').value = '';
-            document.getElementById('filter-tri').value = '';
-            document.getElementById('nav-prix-min').value = '';
-            document.getElementById('nav-prix-max').value = '';
-            document.getElementById('nav-categorie').value = '';
-            document.getElementById('nav-tri').value = '';
-            document.getElementById('nav-search').value = '';
-            document.getElementById('nav-search-form').submit();
-        }
+        window.gtranslateSettings = {
+            default_language: 'fr',
+            native_language_names: true,
+            detect_browser_language: false,
+            languages: ['fr', 'en', 'es', 'pt', 'ar'],
+            wrapper_selector: '.gtranslate_wrapper'
+        };
     </script>
+    <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
 </nav>
 
 <!-- Overlay et sidebar menu latéral (apparaît au clic sur MENU) -->

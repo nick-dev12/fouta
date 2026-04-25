@@ -63,6 +63,10 @@
   margin: 22px 0 8px;
 }
 
+.cat-subs + .cat-subs--genres {
+  margin-top: 10px;
+}
+
 .cat-subs-inner {
   padding: 20px 22px 22px;
   border-radius: 20px;
@@ -170,6 +174,99 @@
   opacity: 1;
 }
 
+.cat-filters {
+  margin: 22px 0 8px;
+}
+
+.cat-filters-inner {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.28fr) 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(250, 252, 255, 0.94));
+  border: 1px solid rgba(53, 100, 166, 0.12);
+  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+
+.cat-filters-head {
+  padding-right: 18px;
+  border-right: 1px solid rgba(53, 100, 166, 0.12);
+}
+
+.cat-filters-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.cat-filter-select-wrap {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cat-filter-select-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texte-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cat-filter-select-label i {
+  color: var(--couleur-dominante);
+}
+
+.cat-filter-select-shell {
+  position: relative;
+  display: block;
+}
+
+.cat-filter-select-shell > i {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--couleur-dominante);
+  pointer-events: none;
+  font-size: 12px;
+}
+
+.cat-filter-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 48px;
+  padding: 0 44px 0 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(53, 100, 166, 0.18);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--titres);
+  font: 700 14px/1.2 var(--font-corps);
+  box-shadow: 0 4px 14px rgba(53, 100, 166, 0.08);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.cat-filter-select:hover {
+  transform: translateY(-1px);
+  border-color: rgba(53, 100, 166, 0.34);
+  box-shadow: var(--ombre-douce);
+}
+
+.cat-filter-select:focus {
+  outline: none;
+  border-color: var(--couleur-dominante);
+  box-shadow: 0 0 0 4px var(--focus-ring), var(--ombre-douce);
+}
+
 /* Sections produits (comme index marketplace) */
 .mp-block {
   margin: 22px 0 0;
@@ -202,6 +299,31 @@
 @media (min-width: 1400px) {
   .mp-grid {
     grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Petits écrans : 2 produits par ligne (même logique que index.php — .mp-block #produits-container) */
+@media (max-width: 576px) {
+  .cat-filters-inner {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .cat-filters-head {
+    padding-right: 0;
+    padding-bottom: 12px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(53, 100, 166, 0.12);
+  }
+
+  .cat-filters-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .mp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 }
 

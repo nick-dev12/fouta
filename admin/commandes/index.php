@@ -68,9 +68,6 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                 <div>
                     <p class="cmd-hero__eyebrow"><i class="fas fa-bolt" aria-hidden="true"></i> File active</p>
                     <h1 class="cmd-hero__title" id="cmd-page-title">Commandes à traiter</h1>
-                    <p class="cmd-hero__lead">
-                        Visualisez l’activité globale, le montant cumulé des commandes en cours, puis ouvrez chaque fiche pour préparer ou livrer.
-                    </p>
                 </div>
                 <div class="cmd-hero__actions">
                     <?php if (admin_has_full_admin_menu()): ?>
