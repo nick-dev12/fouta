@@ -165,8 +165,17 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         border-color: var(--couleur-dominante);
     }
 
+    /* Ne pas utiliser display:none : le script GTranslate n’initialise pas le <select> correctement. */
     .nav-language-switcher .gtranslate_wrapper {
-        display: none;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
     }
 
     .nav-lang-flag {
@@ -643,6 +652,14 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
                 }
             }
 
+            function clearCookie(name) {
+                var past = '; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                document.cookie = name + '=' + past + '; path=/';
+                if (location.hostname.indexOf('.') !== -1) {
+                    document.cookie = name + '=' + past + '; path=/; domain=.' + location.hostname.replace(/^www\./, '');
+                }
+            }
+
             function currentLangFromCookie() {
                 var raw = decodeURIComponent(getCookie('googtrans') || '');
                 var match = raw.match(/\/fr\/([a-z-]+)/i) || raw.match(/\/auto\/([a-z-]+)/i);
@@ -656,19 +673,11 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             }
 
             function applyLanguage(lang) {
-                setCookie('googtrans', '/fr/' + lang);
-                syncFlag();
-
-                var gtSelect = document.querySelector('.gtranslate_wrapper select');
-                if (gtSelect) {
-                    gtSelect.value = lang;
-                    if (gtSelect.value !== lang) {
-                        gtSelect.value = '/fr/' + lang;
-                    }
-                    gtSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                    return;
+                if (lang === 'fr') {
+                    clearCookie('googtrans');
+                } else {
+                    setCookie('googtrans', '/fr/' + lang);
                 }
-
                 window.location.reload();
             }
 
