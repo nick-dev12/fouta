@@ -60,9 +60,19 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier.php';
+$nav_compte_href = '/choix-connexion.php';
+if (isset($_SESSION['commercant_id'])) {
+    $nav_compte_href = '/view/profil_commercent.php';
+} elseif (isset($_SESSION['user_id'])) {
+    $nav_compte_href = '/user/mon-compte.php';
+}
+$nav_panier_href = isset($_SESSION['user_id'])
+    ? $u_panier
+    : '/choix-connexion.php?redirect=' . rawurlencode($nav_panier_connect_redirect);
 ?>
 <link rel="stylesheet" href="/css/variables.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="/css/nabare.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
+<link rel="stylesheet" href="/css/shop-bottom-nav.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -554,9 +564,10 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
                 $__nav_logo_alt = $__bn !== '' ? $__bn : 'Boutique';
             }
             ?>
-            <img src="<?php echo htmlspecialchars($__nav_logo_src, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($__nav_logo_alt, ENT_QUOTES, 'UTF-8'); ?>">
+            <img src="<?php echo htmlspecialchars($__nav_logo_src, ENT_QUOTES, 'UTF-8'); ?>"
+                alt="<?php echo htmlspecialchars($__nav_logo_alt, ENT_QUOTES, 'UTF-8'); ?>">
         </a>
-        <a href="<?php echo isset($_SESSION['user_id']) ? htmlspecialchars($u_panier) : '/choix-connexion.php?redirect=' . rawurlencode($nav_panier_connect_redirect); ?>"
+        <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
             class="nav-panier-link"
             title="<?php echo isset($_SESSION['user_id']) ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Se connecter pour voir le panier'; ?>">
             <i class="fa-solid fa-cart-shopping"></i>
@@ -564,14 +575,7 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
                 <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
             <?php endif; ?>
         </a>
-        <a href="<?php
-        if (isset($_SESSION['commercant_id']))
-            echo '/view/profil_commercent.php';
-        elseif (isset($_SESSION['user_id']))
-            echo '/user/mon-compte.php';
-        else
-            echo '/choix-connexion.php';
-        ?>" class="nav-compte-btn">
+        <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>" class="nav-compte-btn">
             <span class="nav-compte-title">Mon compte</span>
             <span class="nav-compte-subtitle"><?php
             if (isset($_SESSION['commercant_id']) && isset($commercant) && !empty($commercant['nom'])) {
@@ -700,13 +704,14 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
 <aside class="nav-sidebar" id="navSidebar">
     <div class="nav-sidebar-header">
         <a href="<?php echo htmlspecialchars($u_home); ?>" class="nav-sidebar-logo">
-            <img src="/image/logo_market.png" alt="<?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?>">
+            <img src="/image/logo_market.png"
+                alt="<?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?>">
         </a>
         <p class="nav-sidebar-slogan"><?php echo htmlspecialchars(SITE_BRAND_TAGLINE, ENT_QUOTES, 'UTF-8'); ?></p>
     </div>
     <div class="nav-sidebar-content">
         <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-sidebar-item nav-sidebar-nouveautes">
-            <i class="fa-solid fa-cake-candles"></i>
+            <i class="fa-solid fa-sparkles" aria-hidden="true"></i>
             <span>NOUVEAUTÉS</span>
         </a>
         <a href="<?php echo htmlspecialchars($u_promo); ?>" class="nav-sidebar-item nav-sidebar-promo">
@@ -772,6 +777,76 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
     </div>
 </aside>
 
+<!-- Dock bas boutique (tablet/mobile) — 4 raccourcis + feuille « Menu », comme espace client -->
+<div class="shop-bottom-dock" id="shopBottomDock" aria-label="Navigation boutique rapide">
+    <nav class="shop-dock-strip" aria-label="Raccourcis boutique">
+        <a class="shop-dock-item" href="<?php echo htmlspecialchars($u_home, ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
+            <span class="shop-dock-lb">Accueil</span>
+        </a>
+        <a class="shop-dock-item" href="<?php echo htmlspecialchars($u_produits, ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-store"></i></span>
+            <span class="shop-dock-lb">Catalogue</span>
+        </a>
+        <a class="shop-dock-item shop-dock-item--accent"
+            href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
+            title="<?php echo isset($_SESSION['user_id']) ? 'Panier' : 'Se connecter — panier'; ?>">
+            <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+                <span class="shop-dock-badge" aria-hidden="true"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
+            <?php endif; ?>
+            <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-cart-shopping"></i></span>
+            <span class="shop-dock-lb">Panier</span>
+        </a>
+        <a class="shop-dock-item" href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
+            <span class="shop-dock-lb">Compte</span>
+        </a>
+    </nav>
+    <button type="button"
+        class="shop-dock-more"
+        id="shopDockMoreBtn"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="shopDockSheetPanel">
+        <span class="shop-dock-more-ic" aria-hidden="true"><i class="fa-solid fa-th"></i></span>
+        <span class="shop-dock-lb">Menu</span>
+    </button>
+</div>
+<div class="shop-dock-sheet-layer" id="shopDockSheetLayer" aria-hidden="true">
+    <div class="shop-dock-sheet-backdrop" id="shopDockSheetBackdrop" role="presentation"></div>
+    <div class="shop-dock-sheet-panel"
+        role="dialog"
+        aria-modal="true"
+        id="shopDockSheetPanel"
+        aria-labelledby="shopDockSheetTitle">
+        <header class="shop-dock-sheet-hd">
+            <strong id="shopDockSheetTitle">Plus de liens</strong>
+            <button type="button" class="shop-dock-sheet-close" id="shopDockSheetClose" aria-label="Fermer le menu">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </header>
+        <div class="shop-dock-sheet-nav">
+            <a class="shop-dock-sheet-link" href="<?php echo htmlspecialchars($u_nouveautes, ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="fa-solid fa-gift"></i><span>Nouveautés</span>
+            </a>
+            <a class="shop-dock-sheet-link" href="<?php echo htmlspecialchars($u_promo, ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="fa-solid fa-percent"></i><span>Promotions</span>
+            </a>
+            <a class="shop-dock-sheet-link" href="<?php echo htmlspecialchars($u_contact, ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="fa-solid fa-phone"></i><span>Contact</span>
+            </a>
+            <button type="button" class="shop-dock-sidebar-trigger" id="shopDockSidebarTrigger">
+                <i class="fa-solid fa-bars"></i>
+                <span>Rayons &amp; catégories</span>
+            </button>
+            <div class="shop-dock-sheet-divider" role="presentation"></div>
+            <a class="shop-dock-sheet-link" href="<?php echo htmlspecialchars($u_contact, ENT_QUOTES, 'UTF-8'); ?>#livraison">
+                <i class="fa-solid fa-truck"></i><span>Livraison &amp; expédition</span>
+            </a>
+        </div>
+    </div>
+</div>
+
 <section class="section1">
     <div class="section1-left">
         <button type="button" class="toggle-categories-btn" id="navMenuToggle" aria-label="Ouvrir le menu">
@@ -788,7 +863,7 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
     <?php endif; ?>
     <div class="section1-right">
         <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-action-btn nav-btn-nouveautes">
-            <i class="fa-solid fa-gift"></i>
+            <i class="fa-solid fa-sparkles" aria-hidden="true"></i>
             <span>NOUVEAUTÉS</span>
         </a>
         <a href="<?php echo htmlspecialchars($u_promo); ?>" class="nav-action-btn nav-btn-promo">
@@ -808,9 +883,10 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
         var sidebar = document.getElementById('navSidebar');
         var overlay = document.getElementById('navSidebarOverlay');
 
-        function openMenu() {
+        function openSidebarMenu() {
             if (sidebar) sidebar.classList.add('open');
             if (overlay) overlay.classList.add('show');
+            document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
             var icon = toggle ? toggle.querySelector('i') : null;
             if (icon) {
@@ -819,9 +895,10 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             }
         }
 
-        function closeMenu() {
+        function closeSidebarMenu() {
             if (sidebar) sidebar.classList.remove('open');
             if (overlay) overlay.classList.remove('show');
+            document.documentElement.style.overflow = '';
             document.body.style.overflow = '';
             var icon = toggle ? toggle.querySelector('i') : null;
             if (icon) {
@@ -830,14 +907,69 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
             }
         }
 
+        window.openBoutiqueNavSidebar = openSidebarMenu;
+        window.closeBoutiqueNavSidebar = closeSidebarMenu;
+
         if (toggle) toggle.addEventListener('click', function () {
-            if (sidebar && sidebar.classList.contains('open')) closeMenu();
-            else openMenu();
+            if (sidebar && sidebar.classList.contains('open')) closeSidebarMenu();
+            else openSidebarMenu();
         });
-        if (overlay) overlay.addEventListener('click', closeMenu);
+        if (overlay) overlay.addEventListener('click', closeSidebarMenu);
+
+        var shopLayer = document.getElementById('shopDockSheetLayer');
+        var shopBtn = document.getElementById('shopDockMoreBtn');
+        var shopBackdrop = document.getElementById('shopDockSheetBackdrop');
+        var shopCloseBtn = document.getElementById('shopDockSheetClose');
+        var shopSidebarTrig = document.getElementById('shopDockSidebarTrigger');
+
+        function isShopDockMedia() {
+            return window.matchMedia('(max-width: 1024px)').matches;
+        }
+
+        function openShopSheet() {
+            if (!shopLayer || !isShopDockMedia()) return;
+            shopLayer.classList.add('is-open');
+            shopLayer.setAttribute('aria-hidden', 'false');
+            if (shopBtn) shopBtn.setAttribute('aria-expanded', 'true');
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeShopSheet() {
+            if (!shopLayer) return;
+            shopLayer.classList.remove('is-open');
+            shopLayer.setAttribute('aria-hidden', 'true');
+            if (shopBtn) shopBtn.setAttribute('aria-expanded', 'false');
+            if (!sidebar || !sidebar.classList.contains('open')) {
+                document.documentElement.style.overflow = '';
+                document.body.style.overflow = '';
+            }
+        }
 
         window.addEventListener('resize', function () {
-            if (window.innerWidth > 992 && sidebar && sidebar.classList.contains('open')) closeMenu();
+            if (window.innerWidth <= 1024) return;
+            if (sidebar && sidebar.classList.contains('open')) {
+                closeSidebarMenu();
+            }
+            closeShopSheet();
+        });
+
+        if (shopBtn) shopBtn.addEventListener('click', openShopSheet);
+        if (shopBackdrop) shopBackdrop.addEventListener('click', closeShopSheet);
+        if (shopCloseBtn) shopCloseBtn.addEventListener('click', closeShopSheet);
+
+        if (shopSidebarTrig) shopSidebarTrig.addEventListener('click', function () {
+            closeShopSheet();
+            openSidebarMenu();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            if (shopLayer && shopLayer.classList.contains('is-open')) {
+                closeShopSheet();
+                return;
+            }
+            closeSidebarMenu();
         });
     });
 </script>

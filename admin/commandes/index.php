@@ -34,13 +34,9 @@ $commandes = array_filter($toutes_commandes, function($commande) {
     return $commande['statut'] !== 'livree' && $commande['statut'] !== 'paye' && $commande['statut'] !== 'annulee';
 });
 
-// Statistiques
+// Statistiques (KPI raccourcis : total et livrées / payées seulement)
 $total_commandes = count_commandes_by_statut(null, $vf_cmd);
-$en_attente = count_commandes_by_statut('en_attente', $vf_cmd);
-$confirmees = count_commandes_by_statut('confirmee', $vf_cmd);
 $livrees = count_commandes_by_statut('livree', $vf_cmd) + count_commandes_by_statut('paye', $vf_cmd);
-$prise_en_charge = count_commandes_by_statut('prise_en_charge', $vf_cmd);
-$livraison_en_cours = count_commandes_by_statut('livraison_en_cours', $vf_cmd);
 
 // Comptabilité : montant total des commandes à traiter
 $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
@@ -94,26 +90,6 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                     <span class="cmd-kpi__value"><?php echo (int) $total_commandes; ?></span>
                 </article>
                 <article class="cmd-kpi">
-                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-hourglass-half"></i></span>
-                    <span class="cmd-kpi__label">En attente</span>
-                    <span class="cmd-kpi__value"><?php echo (int) $en_attente; ?></span>
-                </article>
-                <article class="cmd-kpi">
-                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-check-double"></i></span>
-                    <span class="cmd-kpi__label">Confirmées</span>
-                    <span class="cmd-kpi__value"><?php echo (int) $confirmees; ?></span>
-                </article>
-                <article class="cmd-kpi">
-                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-hand-holding-box"></i></span>
-                    <span class="cmd-kpi__label">Prise en charge</span>
-                    <span class="cmd-kpi__value"><?php echo (int) $prise_en_charge; ?></span>
-                </article>
-                <article class="cmd-kpi">
-                    <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-truck-fast"></i></span>
-                    <span class="cmd-kpi__label">Livraison en cours</span>
-                    <span class="cmd-kpi__value"><?php echo (int) $livraison_en_cours; ?></span>
-                </article>
-                <article class="cmd-kpi">
                     <span class="cmd-kpi__icon" aria-hidden="true"><i class="fas fa-circle-check"></i></span>
                     <span class="cmd-kpi__label">Livrées / payées</span>
                     <span class="cmd-kpi__value"><?php echo (int) $livrees; ?></span>
@@ -127,7 +103,6 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                 Montant total — commandes affichées ci‑dessous
             </div>
             <div class="cmd-montant-card__value"><?php echo number_format($montant_total_a_traiter, 0, ',', ' '); ?> FCFA</div>
-            <p class="cmd-montant-card__hint">Somme des commandes non livrées, non payées et non annulées (file à traiter).</p>
         </div>
 
         <section class="cmd-main-section" aria-labelledby="cmd-list-heading">
@@ -166,6 +141,14 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                     if ($client_nom_complet === '') {
                         $client_nom_complet = 'Client inconnu';
                     }
+                    $trim_nom = trim($client_nom_complet);
+                    if ($trim_nom === '') {
+                        $avatar_letter = '?';
+                    } elseif (function_exists('mb_substr')) {
+                        $avatar_letter = mb_strtoupper(mb_substr($trim_nom, 0, 1), 'UTF-8');
+                    } else {
+                        $avatar_letter = strtoupper(substr($trim_nom, 0, 1));
+                    }
                     ?>
                     <article class="commande-item cmd-card">
                         <div class="cmd-card__top">
@@ -174,30 +157,25 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                                 <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $commande['statut']))); ?>
                             </span>
                         </div>
-                        <div class="cmd-card__client">
-                            <p class="cmd-card__client-name"><?php echo htmlspecialchars($client_nom_complet); ?></p>
-                            <span class="cmd-card__client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : 'Pas d’e-mail'; ?></span>
-                            <p class="cmd-card__meta">
-                                <i class="far fa-clock" aria-hidden="true"></i>
-                                <?php echo date('d/m/Y · H:i', strtotime($commande['date_commande'])); ?>
-                            </p>
-                        </div>
-                        <div class="commande-details cmd-card__details">
-                            <div class="detail-item">
-                                <label>Montant</label>
-                                <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
+                        <div class="cmd-card__body">
+                            <div class="cmd-card__identity">
+                                <span class="cmd-card__avatar" aria-hidden="true"><?php echo htmlspecialchars($avatar_letter, ENT_QUOTES, 'UTF-8'); ?></span>
+                                <div class="cmd-card__identity-main">
+                                    <span class="cmd-card__client-name"><?php echo htmlspecialchars($client_nom_complet); ?></span>
+                                    <p class="cmd-card__meta">
+                                        <i class="far fa-clock" aria-hidden="true"></i>
+                                        <?php echo date('d/m/Y · H:i', strtotime($commande['date_commande'])); ?>
+                                    </p>
+                                </div>
                             </div>
-                            <div class="detail-item">
-                                <label>Téléphone</label>
-                                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Livraison</label>
-                                <div class="value small"><?php echo htmlspecialchars($commande['adresse_livraison']); ?></div>
+                            <div class="cmd-card__amount-chip">
+                                <span class="cmd-card__amount-label">Montant</span>
+                                <strong class="cmd-card__amount-value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</strong>
                             </div>
                         </div>
                         <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="btn-view">
-                            <i class="fas fa-arrow-right"></i> Ouvrir la fiche
+                            <span class="btn-view__text"><i class="fas fa-eye" aria-hidden="true"></i> Voir la fiche</span>
+                            <span class="btn-view__chevron" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
                         </a>
                     </article>
                     <?php endforeach; ?>

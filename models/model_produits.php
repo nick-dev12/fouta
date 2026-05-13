@@ -54,6 +54,42 @@ function produits_sql_vendeur_fragment() {
 }
 
 /**
+ * Fragment SQL : nom affiché = catégorie générale (rayon categories_generales) si liée au produit
+ * ou à la catégorie feuille, avec repli sur le nom de la catégorie SQL (c.nom).
+ *
+ * @return array{join: string, categorie_nom_sql: string}
+ */
+function produits_sql_rayon_categorie_nom_fragment() {
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    require_once __DIR__ . '/model_categories.php';
+    if (!function_exists('categories_generales_table_exists') || !categories_generales_table_exists()) {
+        $cached = ['join' => '', 'categorie_nom_sql' => 'c.nom'];
+        return $cached;
+    }
+    $has_pc = produits_has_column('categorie_generale_id');
+    $has_cc = function_exists('categories_has_categorie_generale_id_column') && categories_has_categorie_generale_id_column();
+    if (!$has_pc && !$has_cc) {
+        $cached = ['join' => '', 'categorie_nom_sql' => 'c.nom'];
+        return $cached;
+    }
+    if ($has_pc && $has_cc) {
+        $id_expr = 'COALESCE(NULLIF(p.categorie_generale_id, 0), NULLIF(c.categorie_generale_id, 0))';
+    } elseif ($has_pc) {
+        $id_expr = 'NULLIF(p.categorie_generale_id, 0)';
+    } else {
+        $id_expr = 'NULLIF(c.categorie_generale_id, 0)';
+    }
+    $cached = [
+        'join' => ' LEFT JOIN categories_generales cg_rayon ON cg_rayon.id = ' . $id_expr . ' ',
+        'categorie_nom_sql' => 'COALESCE(cg_rayon.nom, c.nom)',
+    ];
+    return $cached;
+}
+
+/**
  * Génère le prochain identifiant interne FPLXXXXXX (6 chiffres)
  */
 function generate_next_identifiant_interne_produit() {
@@ -605,14 +641,16 @@ function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id
 
     try {
         $vj = produits_sql_vendeur_fragment();
+        $rj = produits_sql_rayon_categorie_nom_fragment();
         $where = "p.statut = 'actif'";
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
+            SELECT p.*, " . $rj['categorie_nom_sql'] . " as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
+            " . $rj['join'] . "
             " . $vj['join'] . "
             WHERE $where
             ORDER BY p.date_creation DESC
@@ -664,10 +702,12 @@ function search_produits($recherche, $offset = 0, $limit = 20, $boutique_admin_i
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
         $vj = produits_sql_vendeur_fragment();
+        $rj = produits_sql_rayon_categorie_nom_fragment();
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
+            SELECT p.*, " . $rj['categorie_nom_sql'] . " as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
+            " . $rj['join'] . "
             " . $vj['join'] . "
             WHERE $where
             ORDER BY p.date_creation DESC
@@ -812,10 +852,12 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
         $params['offset'] = $offset;
 
         $vj = produits_sql_vendeur_fragment();
+        $rj = produits_sql_rayon_categorie_nom_fragment();
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
+            SELECT p.*, " . $rj['categorie_nom_sql'] . " as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
+            " . $rj['join'] . "
             " . $vj['join'] . "
             WHERE $where
             ORDER BY $order
@@ -1051,10 +1093,12 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_a
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
         $vj = produits_sql_vendeur_fragment();
+        $rj = produits_sql_rayon_categorie_nom_fragment();
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
+            SELECT p.*, " . $rj['categorie_nom_sql'] . " as categorie_nom " . $vj['select'] . "
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
+            " . $rj['join'] . "
             " . $vj['join'] . "
             WHERE $where
             ORDER BY p.date_creation DESC, p.date_modification DESC
@@ -1495,11 +1539,13 @@ function get_produits_plus_vendus_marketplace($max_rows = 60)
     $max_rows = max(10, (int) $max_rows);
     try {
         $vj = produits_sql_vendeur_fragment();
+        $rj = produits_sql_rayon_categorie_nom_fragment();
         $sql = "
-            SELECT p.*, c.nom AS categorie_nom, COALESCE(v.qte, 0) AS qte_vendue
+            SELECT p.*, " . $rj['categorie_nom_sql'] . " AS categorie_nom, COALESCE(v.qte, 0) AS qte_vendue
             " . $vj['select'] . "
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $rj['join'] . "
             " . $vj['join'] . "
             INNER JOIN (
                 SELECT cp.produit_id, SUM(cp.quantite) AS qte

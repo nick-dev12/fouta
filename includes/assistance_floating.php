@@ -17,5 +17,12 @@ $jotform_embed = isset($assistance_config['jotform_embed_js']) ? trim((string) $
 if ($jotform_embed === '') {
     return;
 }
+
+require_once __DIR__ . '/asset_version.php';
 ?>
+<link rel="stylesheet" href="<?php echo htmlspecialchars(
+    '/css/jotform-agent-stack.css' . asset_version_query(),
+    ENT_QUOTES,
+    'UTF-8'
+); ?>">
 <script src="<?php echo htmlspecialchars($jotform_embed, ENT_QUOTES, 'UTF-8'); ?>" defer></script>

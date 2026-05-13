@@ -15,11 +15,17 @@ body.user-page-mon-compte .user-sidebar {
   border-right-color: var(--glass-border);
 }
 
-body.user-page-mon-compte .menu-item:hover,
-body.user-page-mon-compte .menu-item.active {
-  background: rgba(53, 100, 166, 0.1);
-  border-color: rgba(53, 100, 166, 0.22);
+body.user-page-mon-compte .menu-item:hover {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: transparent;
   color: var(--titres);
+}
+
+body.user-page-mon-compte .menu-item.active {
+  background: rgba(53, 100, 166, 0.09);
+  border-color: transparent;
+  color: var(--titres);
+  box-shadow: inset 3px 0 0 var(--couleur-dominante);
 }
 
 body.user-page-mon-compte .user-content {

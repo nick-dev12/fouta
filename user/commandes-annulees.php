@@ -109,8 +109,6 @@ $nb_annulees = count($commandes_annulees);
                     <span class="mc-hero-icon" aria-hidden="true"><i class="fas fa-ban"></i></span>
                     Commandes annulées
                 </h1>
-                <p class="mc-orders-lead">Retrouvez ici les commandes que vous avez annulées. Vous pouvez consulter le
-                    détail des articles ou les remettre au panier si les produits sont encore disponibles.</p>
             </div>
             <div class="mc-orders-stats">
                 <div class="mc-stat-pill">
@@ -130,7 +128,6 @@ $nb_annulees = count($commandes_annulees);
                 </div>
                 <div class="mc-continue-text">
                     <strong>Vos commandes en cours</strong>
-                    <p>Passez à vos commandes actives ou continuez vos achats sur la boutique.</p>
                 </div>
                 <div class="mc-continue-actions">
                     <a href="mes-commandes.php" class="mc-btn mc-btn--primary">

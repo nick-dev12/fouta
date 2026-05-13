@@ -15,7 +15,6 @@ $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion
     ? (float) $produit['prix_promotion']
     : (float) ($produit['prix'] ?? 0);
 $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-$stock = isset($produit['stock']) ? (int) $produit['stock'] : null;
 ?>
 <article class="mp-new-card">
     <span class="mp-new-badge" aria-label="Nouveau">Nouveau</span>
@@ -30,7 +29,6 @@ $stock = isset($produit['stock']) ? (int) $produit['stock'] : null;
         <p class="mp-new-promo">Promotion en cours</p>
         <?php endif; ?>
         <p class="mp-new-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> <span>FCFA</span></p>
-        <p class="mp-new-moq"><?php echo $stock !== null && $stock > 0 ? 'En stock : ' . $stock : 'Réf. marketplace'; ?></p>
     </a>
     <form method="POST" action="/add-to-panier.php" class="mp-new-cart">
         <input type="hidden" name="produit_id" value="<?php echo $pid; ?>">

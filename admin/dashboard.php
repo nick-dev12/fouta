@@ -272,9 +272,6 @@ if (!empty($produits)) {
                     <i class="fas fa-chart-line" aria-hidden="true"></i>
                     <span>Tableau de bord</span>
                 </h1>
-                <p class="dashboard-page-header__lead">
-                    Suivez les commandes, gérez le catalogue et accédez en un geste aux réglages courants.
-                </p>
             </div>
             <div class="dashboard-page-header__toolbar" role="group" aria-label="Actions rapides">
                 <button type="button" id="btn-install-pwa" class="dash-tool-btn dash-tool-btn--ghost"

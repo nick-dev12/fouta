@@ -695,3 +695,271 @@
   background: transparent;
   margin-bottom: 0.35rem;
 }
+
+/* ——— Suivi (bloc repris depuis l’espace client, surchargé uniquement dans .cmd-suivi-admin-embed) ——— */
+.cmd-suivi-espace-client {
+  margin-bottom: 1.35rem;
+}
+
+/* Ancien titre / aide (non rendus avec admin_hint=false ; masquage défensif) */
+.cmd-detail-page .cmd-suivi-heading,
+.cmd-detail-page .cc-admin-hint-msg {
+  display: none !important;
+}
+
+.cmd-detail-page .commande-suivi-detail {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Grille générale plus serrée */
+.cmd-detail-page .cmd-suivi-admin-embed.commande-suivi-detail {
+  gap: 0.85rem;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-meta-row {
+  padding: 0.1rem 0 0.28rem;
+  font-size: 0.74rem;
+  gap: 0.45rem;
+}
+
+/* Carte LIVE : plus compacte + bande coordonnées */
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-card {
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-badge {
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-row {
+  margin-top: 0.52rem;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-status {
+  font-size: clamp(0.95rem, 3.2vw, 1.2rem);
+  margin: 0 0 0.45rem;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-bar-track {
+  height: 5px;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-sub {
+  font-size: 0.74rem;
+  margin: 0.42rem 0 0;
+  line-height: 1.4;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-ring-wrap {
+  width: 72px;
+  height: 72px;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-icon-disk {
+  width: 46px;
+  height: 46px;
+  font-size: 1.1rem;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-admin-contact {
+  margin-top: 0.75rem;
+  padding-top: 0.68rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-admin-contact__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem 0.65rem;
+}
+
+@media (max-width: 460px) {
+  .cmd-detail-page .cmd-suivi-admin-embed .cc-live-admin-contact__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-admin-contact__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.38rem 0.48rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-admin-contact__cell:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-admin-contact__lab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-admin-contact__lab i {
+  font-size: 0.65rem;
+  opacity: 0.95;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-live-admin-contact__val {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.94);
+  line-height: 1.35;
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Timeline progression : plus dense */
+.cmd-detail-page .cmd-suivi-admin-embed .cc-progress-card {
+  padding: 0.72rem 0.82rem 0.85rem;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.07);
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-progress-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 0 0.55rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-mute, #737373);
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-step {
+  gap: 0.55rem;
+  padding-bottom: 0.75rem;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-step::after {
+  left: 8px;
+  top: 20px;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-step-mark {
+  width: 18px;
+  height: 18px;
+  font-size: 0.52rem;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-step-label {
+  font-size: 0.78rem;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-step-desc {
+  font-size: 0.68rem;
+  margin: 0.22rem 0 0;
+  line-height: 1.38;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-pill {
+  font-size: 0.54rem;
+  padding: 0.15rem 0.42rem;
+}
+
+.cmd-detail-page .cmd-suivi-admin-embed .cc-step-time {
+  font-size: 0.66rem;
+}
+
+/* Slot Statut placé après la carte progression */
+.cmd-suivi-status-slot {
+  margin-top: 0.05rem;
+}
+
+.cmd-status-embed-shell {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(53, 100, 166, 0.14);
+  background: linear-gradient(180deg, rgba(250, 250, 252, 0.98) 0%, var(--blanc, #fff) 55%);
+  box-shadow:
+    0 4px 22px rgba(53, 100, 166, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.cmd-status-embed-hd {
+  padding: 0.5rem 0.82rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.055);
+  background: linear-gradient(90deg, rgba(53, 100, 166, 0.08), rgba(53, 100, 166, 0.02));
+}
+
+.cmd-status-embed-hd h3 {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--titres, #0d0d0d);
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.cmd-status-embed-hd h3 i {
+  color: var(--couleur-dominante, #3564a6);
+  font-size: 0.88em;
+}
+
+.cmd-status-embed-bd {
+  padding: 0.65rem 0.82rem 0.78rem;
+}
+
+.cmd-status-embed-bd .statut-form.cmd-statut-form {
+  max-width: none;
+}
+
+.cmd-status-embed-bd .cmd-alert {
+  border-radius: 11px;
+  padding: 0.52rem 0.62rem;
+}
+
+.cmd-status-embed-bd .cmd-alert h3 {
+  font-size: 0.8rem;
+}
+
+.cmd-status-embed-bd .cmd-alert p {
+  font-size: 0.74rem;
+}
+
+.cmd-status-embed-bd .cmd-statut-form .form-group {
+  margin-bottom: 0.55rem;
+}
+
+.cmd-status-embed-bd .cmd-actions-divider {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+}
+
+.cmd-status-embed-bd .cmd-statut-form select {
+  font-size: 0.78rem;
+  padding: 0.38rem 0.48rem;
+  border-radius: 8px;
+}
+
+.cmd-detail-page .cmd-status-embed-bd .notes-box {
+  font-size: 0.72rem;
+  padding: 0.42rem 0.55rem;
+}

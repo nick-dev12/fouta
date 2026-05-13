@@ -63,12 +63,12 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
 
 ?>
 <!-- Bouton menu mobile -->
-<button class="mobile-menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">
+<button class="mobile-menu-toggle<?php echo $is_vendeur_menu ? ' admin-vendeur-nav-hide-under-1024' : ''; ?>" id="menuToggle" type="button" aria-label="Ouvrir le menu">
     <i class="fas fa-bars"></i>
 </button>
 
 <!-- Overlay pour mobile -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar-overlay<?php echo $is_vendeur_menu ? ' admin-vendeur-nav-hide-under-1024' : ''; ?>" id="sidebarOverlay"></div>
 
 <script>
     (function () {
@@ -91,14 +91,15 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
     })();
 </script>
 
-<div class="admin-container">
+<div class="admin-container<?php echo $is_vendeur_menu ? ' admin-shell--vendeur-dock' : ''; ?>">
     <!-- Barre de navigation verticale -->
-    <aside class="admin-sidebar" id="adminSidebar">
+    <aside class="admin-sidebar<?php echo $is_vendeur_menu ? ' admin-sidebar--vendeur' : ''; ?>" id="adminSidebar">
         <div class="sidebar-header">
             <i class="fas fa-store logo-icon"></i>
             <h2><?php echo htmlspecialchars($admin_sidebar_brand_title, ENT_QUOTES, 'UTF-8'); ?></h2>
         </div>
-        <nav class="sidebar-menu" aria-label="Navigation administration">
+        <nav class="sidebar-menu<?php echo $is_vendeur_menu ? ' sidebar-menu--rail' : ''; ?>"
+            aria-label="Navigation administration">
             <?php if (in_array($admin_role, ['admin', 'plateforme', 'vendeur'], true)): ?>
             <a href="<?php echo $base_path; ?>dashboard.php"
                 class="menu-item <?php echo ($current_page == 'dashboard.php' || ($is_vendeur_menu && $is_produits && $current_page == 'index.php')) ? 'active' : ''; ?>">
@@ -169,7 +170,14 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 <span class="menu-item__text">Clients</span>
             </a>
             <a href="<?php echo $base_path; ?>parametres.php"
-                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || strpos($current_dir, '/parametres') !== false || $is_zones_livraison || $is_comptes) ? 'active' : ''; ?>">
+                class="menu-item <?php echo (
+                    $current_page == 'parametres.php' ||
+                    $current_page == 'profil.php' ||
+                    $current_page == 'parametres-boutique-vendeur.php' ||
+                    strpos($current_dir, '/parametres') !== false ||
+                    $is_zones_livraison ||
+                    $is_comptes
+                ) ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
                 <span class="menu-item__text">Paramètres</span>
             </a>
@@ -264,7 +272,163 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 <span class="menu-item__text">Déconnexion</span>
             </a>
         </nav>
+
+        <?php if ($is_vendeur_menu):
+            $vd_cmd_active_nav = (
+                $is_commandes &&
+                in_array(
+                    $current_page,
+                    ['index.php', 'livrees.php', 'annulees.php', 'details.php', 'historique-ventes.php'],
+                    true
+                )
+            );
+            $vd_param_sheet_active = (
+                $current_page === 'parametres.php' ||
+                $current_page === 'profil.php' ||
+                $current_page === 'parametres-boutique-vendeur.php' ||
+                strpos($current_dir, '/parametres') !== false ||
+                $is_zones_livraison ||
+                $is_comptes
+            );
+            $vd_dashboard_dock_act = (($current_page === 'dashboard.php') || ($is_produits && $current_page === 'index.php'));
+            $vd_stock_dock_act = $is_stock;
+            $vd_caisse_dock_act = ($is_caisse && !$is_caisse_encaisser);
+            $vd_clients_dock_act = $is_users;
+            $vdock_menu_hint_sheet = (
+                $vd_clients_dock_act ||
+                $vd_param_sheet_active
+            );
+            ?>
+        <!-- Bas d’écran vendeur : 4 raccourcis + Menu (≤1024px) -->
+        <div class="admin-vendeur-dock-bar" id="adminVendeurDockBar" aria-label="Navigation vendeur réduite" hidden>
+            <nav class="admin-vendeur-dock-primary" aria-label="Raccourcis">
+                <a href="<?php echo $base_path; ?>dashboard.php"
+                    class="menu-item menu-item--dock-mini<?php echo $vd_dashboard_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-home"></i></span>
+                    <span class="menu-item__text">Tableau de bord</span>
+                </a>
+                <a href="<?php echo $base_path; ?>stock/index.php"
+                    class="menu-item menu-item--dock-mini<?php echo $vd_stock_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
+                    <span class="menu-item__text">Stock</span>
+                </a>
+                <a href="<?php echo $base_path; ?>commandes/index.php"
+                    class="menu-item menu-item--dock-mini menu-item--has-badge<?php echo $vd_cmd_active_nav ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-shopping-cart"></i></span>
+                    <span class="menu-item__text">Commandes</span>
+                    <?php if ($nav_commandes_en_traitement > 0): ?>
+                    <span class="menu-item__badge menu-item__badge--dock" title="<?php echo (int) $nav_commandes_en_traitement; ?> commande<?php echo $nav_commandes_en_traitement > 1 ? 's' : ''; ?> en cours de traitement" aria-label="<?php echo (int) $nav_commandes_en_traitement; ?> commande<?php echo $nav_commandes_en_traitement > 1 ? 's' : ''; ?> en cours de traitement"><?php echo (int) $nav_commandes_en_traitement; ?></span>
+                    <?php endif; ?>
+                </a>
+                <a href="<?php echo $base_path; ?>caisse/index.php"
+                    class="menu-item menu-item--dock-mini<?php echo $vd_caisse_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
+                    <span class="menu-item__text">Caisse</span>
+                </a>
+            </nav>
+            <button type="button"
+                class="admin-vendeur-dock-menu-btn<?php echo $vdock_menu_hint_sheet ? ' admin-vendeur-dock-menu-btn--hint' : ''; ?>"
+                id="adminVendeurDockMenuBtn"
+                aria-expanded="false"
+                aria-haspopup="dialog"
+                aria-controls="adminVendeurDockMenuPanel">
+                <span class="admin-vendeur-dock-menu-btn__icon" aria-hidden="true"><i class="fas fa-th"></i></span>
+                <span class="admin-vendeur-dock-menu-btn__label">Menu</span>
+            </button>
+        </div>
+        <?php endif; ?>
     </aside>
+
+    <?php if ($is_vendeur_menu): ?>
+    <div class="admin-vendeur-dock-menu-layer" id="adminVendeurDockMenuLayer" aria-hidden="true">
+        <div class="admin-vendeur-dock-menu-backdrop" id="adminVendeurDockMenuBackdrop" role="presentation"></div>
+        <div class="admin-vendeur-dock-menu-panel" id="adminVendeurDockMenuPanel" role="dialog" aria-modal="true"
+            aria-labelledby="adminVendeurDockMenuTitle">
+            <header class="admin-vendeur-dock-menu-panel-hd">
+                <strong id="adminVendeurDockMenuTitle">Autres liens</strong>
+                <button type="button" class="admin-vendeur-dock-menu-close" id="adminVendeurDockMenuClose"
+                    aria-label="Fermer le menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </header>
+            <nav class="admin-vendeur-dock-menu-panel-nav" aria-label="Menu étendu">
+                <a href="<?php echo $base_path; ?>users/index.php"
+                    class="menu-item menu-item--dock-sheet-row<?php echo $vd_clients_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-store"></i></span>
+                    <span class="menu-item__text">Clients</span>
+                </a>
+                <a href="<?php echo $base_path; ?>parametres.php"
+                    class="menu-item menu-item--dock-sheet-row<?php echo $vd_param_sheet_active ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
+                    <span class="menu-item__text">Paramètres</span>
+                </a>
+                <div class="admin-vendeur-dock-menu-divider" role="presentation"></div>
+                <a href="<?php echo $base_path; ?>logout.php"
+                    class="menu-item menu-item--dock-sheet-row menu-item--dock-sheet-logout">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-sign-out-alt"></i></span>
+                    <span class="menu-item__text">Déconnexion</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            function adminVdockQs() {
+                return {
+                    dockBar: document.getElementById('adminVendeurDockBar'),
+                    menuLayer: document.getElementById('adminVendeurDockMenuLayer'),
+                    backdrop: document.getElementById('adminVendeurDockMenuBackdrop'),
+                    btn: document.getElementById('adminVendeurDockMenuBtn'),
+                    closeBtn: document.getElementById('adminVendeurDockMenuClose'),
+                    panel: document.getElementById('adminVendeurDockMenuPanel'),
+                };
+            }
+            function isAdminVdockMq() {
+                return window.matchMedia('(max-width: 1024px)').matches;
+            }
+            function openAdminVdockMenu() {
+                var q = adminVdockQs();
+                if (!q.menuLayer || !q.btn || !isAdminVdockMq()) return;
+                q.menuLayer.classList.add('is-open');
+                q.menuLayer.setAttribute('aria-hidden', 'false');
+                q.btn.setAttribute('aria-expanded', 'true');
+                document.documentElement.style.overflow = 'hidden';
+            }
+            function shutAdminVdockMenu() {
+                var q = adminVdockQs();
+                if (!q.menuLayer || !q.btn) return;
+                q.menuLayer.classList.remove('is-open');
+                q.menuLayer.setAttribute('aria-hidden', 'true');
+                q.btn.setAttribute('aria-expanded', 'false');
+                document.documentElement.style.overflow = '';
+            }
+            function toggleAdminVdockBarVisibility() {
+                var q = adminVdockQs();
+                if (!q.dockBar) return;
+                if (isAdminVdockMq()) {
+                    q.dockBar.removeAttribute('hidden');
+                } else {
+                    q.dockBar.setAttribute('hidden', '');
+                    shutAdminVdockMenu();
+                }
+            }
+            document.addEventListener('DOMContentLoaded', function () {
+                toggleAdminVdockBarVisibility();
+                var q = adminVdockQs();
+                if (q.btn) q.btn.addEventListener('click', openAdminVdockMenu);
+                if (q.backdrop) q.backdrop.addEventListener('click', shutAdminVdockMenu);
+                if (q.closeBtn) q.closeBtn.addEventListener('click', shutAdminVdockMenu);
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') shutAdminVdockMenu();
+                });
+                window.addEventListener('resize', function () {
+                    toggleAdminVdockBarVisibility();
+                });
+            });
+        })();
+    </script>
+    <?php endif; ?>
 
     <!-- Contenu principal -->
     <main class="admin-content" id="adminContent">

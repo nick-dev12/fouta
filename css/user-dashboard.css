@@ -33,7 +33,7 @@ body {
 
 /* Barre de navigation verticale — glassmorphism + pastilles couleur */
 .user-sidebar {
-    width: 288px;
+    width: var(--sidebar-nav-width);
     min-height: 100vh;
     max-height: 100vh;
     overflow-y: auto;
@@ -63,9 +63,9 @@ body {
 }
 
 .sidebar-header {
-    padding: 22px 18px 20px;
-    border-bottom: 1px solid rgba(53, 100, 166, 0.12);
-    background: rgba(255, 255, 255, 0.45);
+    padding: 18px 16px 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    background: rgba(255, 255, 255, 0.55);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }
@@ -78,17 +78,17 @@ body {
 
 .sidebar-brand-icon {
     flex-shrink: 0;
-    width: 52px;
-    height: 52px;
-    border-radius: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
-    color: var(--couleur-dominante);
-    background: var(--bleu-pale);
-    border: 1px solid rgba(53, 100, 166, 0.18);
-    box-shadow: var(--ombre-douce);
+    font-size: 1.25rem;
+    color: var(--nav-soft-fg-1);
+    background: var(--nav-soft-bg-1);
+    border: none;
+    box-shadow: none;
 }
 
 .sidebar-brand-text {
@@ -108,23 +108,23 @@ body {
 
 .sidebar-header h2 {
     color: var(--titres);
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: 1.05rem;
+    font-weight: 600;
     font-family: var(--font-titres);
     line-height: 1.25;
     margin: 0;
 }
 
 .sidebar-menu {
-    padding: 14px 12px 24px;
+    padding: 10px 10px 18px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .sidebar-menu-split {
     height: 0;
-    margin: 10px 14px 12px;
+    margin: 8px 12px 10px;
     border: none;
     border-top: 1px solid rgba(53, 100, 166, 0.14);
     flex-shrink: 0;
@@ -133,17 +133,15 @@ body {
 .menu-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
+    gap: 14px;
+    padding: 8px 10px;
     margin: 0 2px;
     color: var(--texte-fonce);
     text-decoration: none;
     transition:
-        background 0.25s ease,
-        transform 0.2s ease,
-        box-shadow 0.25s ease,
-        border-color 0.25s ease;
-    border-radius: 14px;
+        background 0.2s ease,
+        border-color 0.2s ease;
+    border-radius: 12px;
     border: 1px solid transparent;
     outline: none;
 }
@@ -155,17 +153,16 @@ body {
 
 .menu-item-icon {
     flex-shrink: 0;
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
-    transition:
-        transform 0.25s ease,
-        box-shadow 0.25s ease;
-    border: 1px solid transparent;
+    font-size: 0.95rem;
+    transition: transform 0.2s ease;
+    border: none;
+    box-shadow: none;
 }
 
 .menu-item-icon i {
@@ -173,84 +170,74 @@ body {
 }
 
 .menu-item-text {
-    font-size: 15px;
+    font-size: 0.875rem;
     font-weight: 500;
     letter-spacing: 0.01em;
     flex: 1;
     min-width: 0;
+    color: var(--titres);
 }
 
-/* Pastilles harmonisées (palette variables.css) */
+/* Pastilles soft UI (alignées admin / variables --nav-soft-*) */
 .menu-item--dashboard .menu-item-icon {
-    background: var(--bleu-pale);
-    color: var(--couleur-dominante);
-    border-color: rgba(53, 100, 166, 0.2);
+    background: var(--nav-soft-bg-1);
+    color: var(--nav-soft-fg-1);
 }
 
 .menu-item--cart .menu-item-icon {
-    background: var(--orange-pale);
-    color: var(--orange);
-    border-color: rgba(255, 107, 53, 0.22);
+    background: var(--nav-soft-bg-3);
+    color: var(--nav-soft-fg-3);
 }
 
 .menu-item--orders .menu-item-icon {
-    background: var(--bleu-pale);
-    color: var(--bleu-fonce);
-    border-color: rgba(53, 100, 166, 0.18);
+    background: var(--nav-soft-bg-4);
+    color: var(--nav-soft-fg-4);
 }
 
 .menu-item--cancelled .menu-item-icon {
-    background: rgba(255, 107, 53, 0.14);
-    color: var(--orange-fonce);
-    border-color: rgba(255, 107, 53, 0.25);
+    background: var(--nav-soft-bg-out);
+    color: var(--nav-soft-fg-out);
 }
 
 .menu-item--delivered .menu-item-icon {
-    background: var(--success-bg);
-    color: var(--bleu-clair);
-    border-color: rgba(53, 100, 166, 0.22);
+    background: var(--nav-soft-bg-2);
+    color: var(--nav-soft-fg-2);
 }
 
 .menu-item--visited .menu-item-icon {
-    background: var(--orange-pale);
-    color: var(--orange-clair);
-    border-color: rgba(255, 143, 101, 0.28);
+    background: var(--nav-soft-bg-6);
+    color: var(--nav-soft-fg-6);
 }
 
 .menu-item--profile .menu-item-icon {
-    background: var(--bleu-pale);
-    color: var(--bleu-clair);
-    border-color: rgba(74, 122, 184, 0.25);
+    background: var(--nav-soft-bg-5);
+    color: var(--nav-soft-fg-5);
 }
 
 .menu-item--logout .menu-item-icon {
-    background: rgba(255, 107, 53, 0.1);
-    color: var(--accent-promo);
-    border-color: rgba(255, 107, 53, 0.2);
+    background: var(--nav-soft-bg-out);
+    color: var(--nav-soft-fg-out);
 }
 
 .menu-item:hover {
-    background: rgba(255, 255, 255, 0.65);
-    border-color: rgba(53, 100, 166, 0.12);
-    box-shadow: var(--ombre-douce);
-    transform: translateX(2px);
+    background: rgba(15, 23, 42, 0.04);
+    border-color: transparent;
+    box-shadow: none;
 }
 
 .menu-item:hover .menu-item-icon {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(53, 100, 166, 0.12);
+    transform: none;
 }
 
 .menu-item.active {
-    background: rgba(53, 100, 166, 0.1);
-    border-color: rgba(53, 100, 166, 0.22);
+    background: rgba(53, 100, 166, 0.09);
+    border-color: transparent;
     color: var(--titres);
-    box-shadow: var(--ombre-douce);
+    box-shadow: inset 3px 0 0 var(--couleur-dominante);
 }
 
 .menu-item.active .menu-item-icon {
-    border-color: rgba(53, 100, 166, 0.35);
-    box-shadow: 0 2px 10px rgba(53, 100, 166, 0.15);
+    box-shadow: none;
 }
 
 .menu-item--logout:hover {
@@ -259,7 +246,7 @@ body {
 }
 
 .menu-item--logout:hover .menu-item-icon {
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
+    box-shadow: none;
 }
 
 /* Bouton menu mobile — même langage visuel */
@@ -300,7 +287,7 @@ body {
 /* Contenu principal */
 .user-content {
     flex: 1;
-    margin-left: 288px;
+    margin-left: var(--sidebar-nav-width);
     padding: 30px;
     transition: margin-left 0.3s ease;
 }
@@ -1070,22 +1057,422 @@ body {
     background: var(--couleur-dominante);
 }
 
-/* Responsive Design */
-@media (max-width: 600px) {
-    .user-sidebar {
-        transform: translateX(-100%);
+/* --- Tablettes & mobiles : navigation bas d’écran (type barre WhatsApp) --- */
+@media (max-width: 1024px) {
+    :root {
+        --user-bottom-nav-clearance: 5.9rem;
     }
 
-    .user-sidebar.show {
-        transform: translateX(0);
-    }
-
-    .user-content {
-        margin-left: 0;
+    .sidebar-overlay {
+        display: none !important;
+        pointer-events: none !important;
     }
 
     .mobile-menu-toggle {
+        display: none !important;
+    }
+
+    body {
+        padding-bottom: 0;
+    }
+
+    /* Barre dock — fixed pour rester visible au scroll ; pleine largeur, glass élégant */
+    .user-sidebar.user-sidebar--glass {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100vw;
+        min-height: unset;
+        max-height: none;
+        height: auto;
+        flex-direction: column;
+        transform: none !important;
+        transition: none;
+        z-index: 1000;
+        border-right: none;
+        border-radius: 20px 20px 0 0;
+        border-top: 1px solid rgba(53, 100, 166, 0.14);
+        box-shadow:
+            0 -8px 36px rgba(15, 23, 42, 0.1),
+            0 -2px 0 rgba(255, 255, 255, 0.75) inset;
+        backdrop-filter: blur(22px) saturate(1.45);
+        -webkit-backdrop-filter: blur(22px) saturate(1.45);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Poignée visuelle façon dock mobile */
+    .user-sidebar.user-sidebar--glass::before {
+        content: "";
         display: block;
+        flex-shrink: 0;
+        width: 42px;
+        height: 4px;
+        margin: 8px auto 2px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.1);
+        order: -1;
+    }
+
+    /* Ancien mode tiroir : plus utilisé sous 1025px */
+    .user-sidebar.show {
+        transform: none !important;
+    }
+
+    .user-sidebar.hidden {
+        transform: translateY(calc(100% + 12px)) !important;
+    }
+
+    .user-sidebar .sidebar-header {
+        display: none;
+    }
+
+    /* Rail gauche desktop masqué : remplacé par le dock compact */
+    .user-sidebar .sidebar-menu.sidebar-menu--rail {
+        display: none !important;
+    }
+
+    .user-sidebar .user-dock-bar:not([hidden]) {
+        box-sizing: border-box;
+        display: flex !important;
+        align-items: stretch;
+        gap: clamp(4px, 1.8vw, 10px);
+        width: 100%;
+        flex-shrink: 0;
+        padding:
+            0 clamp(10px, 3vw, 14px)
+            calc(10px + env(safe-area-inset-bottom, 0px))
+            clamp(10px, 3vw, 14px);
+    }
+
+    .user-sidebar .user-dock-primary {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: clamp(3px, 1.2vw, 6px);
+        min-width: 0;
+    }
+
+    .user-sidebar .user-dock-menu-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: clamp(4px, 1vw, 6px);
+        flex: 0 0 auto;
+        min-width: clamp(54px, 14vw, 68px);
+        max-width: 4.85rem;
+        margin: 0;
+        padding: clamp(6px, 1.8vw, 9px) clamp(6px, 1.4vw, 10px)
+            clamp(7px, 1.8vw, 11px);
+        border-radius: 14px;
+        border: 1px solid rgba(53, 100, 166, 0.18);
+        background: rgba(53, 100, 166, 0.08);
+        color: var(--couleur-dominante);
+        font-family: var(--font-corps);
+        font-size: clamp(0.58rem, 2.05vw + 0.06rem, 0.6875rem);
+        font-weight: 700;
+        line-height: 1.15;
+        cursor: pointer;
+        transition:
+            background 0.18s ease,
+            border-color 0.18s ease,
+            box-shadow 0.18s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .user-sidebar .user-dock-menu-btn:hover {
+        background: rgba(53, 100, 166, 0.14);
+        border-color: rgba(53, 100, 166, 0.28);
+    }
+
+    .user-sidebar .user-dock-menu-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .user-sidebar .user-dock-menu-btn--hint {
+        box-shadow: inset 0 0 0 1px rgba(53, 100, 166, 0.28);
+        background: rgba(53, 100, 166, 0.12);
+    }
+
+    .user-sidebar .user-dock-menu-btn--hint .user-dock-menu-btn__icon::after {
+        content: "";
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent-promo);
+        border: 1.5px solid var(--blanc);
+    }
+
+    .user-sidebar .user-dock-menu-btn__icon {
+        position: relative;
+        width: clamp(34px, 10vw, 40px);
+        height: clamp(34px, 10vw, 40px);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.75);
+        display: grid;
+        place-items: center;
+        font-size: clamp(1rem, 3.2vw, 1.15rem);
+    }
+
+    .user-sidebar .user-dock-menu-btn__label {
+        text-align: center;
+        max-width: 4.85rem;
+    }
+
+    .user-sidebar .menu-item--dock-mini {
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: clamp(4px, 1vw, 6px);
+        padding: clamp(6px, 1.8vw, 9px) clamp(5px, 1vw, 8px)
+            clamp(7px, 1.8vw, 11px);
+        margin: 0;
+        border-radius: 14px;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .user-sidebar .menu-item--dock-mini .menu-item-icon {
+        width: clamp(34px, 10vw, 40px);
+        height: clamp(34px, 10vw, 40px);
+        border-radius: 12px;
+        font-size: clamp(1rem, 3.2vw, 1.1rem);
+    }
+
+    .user-sidebar .menu-item--dock-mini .menu-item-text {
+        flex: 0 1 auto;
+        font-size: clamp(0.58rem, 2.05vw + 0.06rem, 0.6875rem);
+        font-weight: 600;
+        line-height: 1.15;
+        text-align: center;
+        hyphens: auto;
+        max-width: none;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        overflow: hidden;
+    }
+
+    /* Panneau « Menu » plein écran (hors aside, z sous les modales produits ~4800) */
+    .user-dock-menu-layer {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 4400;
+        pointer-events: none;
+    }
+
+    .user-dock-menu-layer.is-open {
+        display: block;
+        pointer-events: auto;
+    }
+
+    .user-dock-menu-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.38);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        opacity: 0;
+        transition: opacity 0.22s ease;
+    }
+
+    .user-dock-menu-layer.is-open .user-dock-menu-backdrop {
+        opacity: 1;
+    }
+
+    .user-dock-menu-panel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        max-height: min(78vh, 540px);
+        background: rgba(253, 253, 255, 0.97);
+        backdrop-filter: blur(18px) saturate(1.25);
+        -webkit-backdrop-filter: blur(18px) saturate(1.25);
+        border-radius: 20px 20px 0 0;
+        border: 1px solid rgba(53, 100, 166, 0.12);
+        box-shadow:
+            0 -12px 42px rgba(15, 23, 42, 0.12),
+            0 -1px 0 rgba(255, 255, 255, 0.85) inset;
+        transform: translateY(100%);
+        transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .user-dock-menu-layer.is-open .user-dock-menu-panel {
+        transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .user-dock-menu-panel,
+        .user-dock-menu-backdrop {
+            transition: none !important;
+        }
+
+        .user-dock-menu-backdrop {
+            opacity: 1;
+        }
+
+        .user-dock-menu-panel {
+            transform: translateY(0);
+        }
+    }
+
+    .user-dock-menu-panel-hd {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        flex-shrink: 0;
+    }
+
+    .user-dock-menu-panel-hd strong {
+        font-family: var(--font-titres);
+        font-size: 1.08rem;
+        font-weight: 700;
+        color: var(--titres);
+        letter-spacing: -0.02em;
+    }
+
+    .user-dock-menu-close {
+        width: 42px;
+        height: 42px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(53, 100, 166, 0.1);
+        color: var(--couleur-dominante);
+        font-size: 1.08rem;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        transition: background 0.18s ease;
+    }
+
+    .user-dock-menu-close:hover {
+        background: rgba(53, 100, 166, 0.18);
+    }
+
+    .user-dock-menu-close:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .user-dock-menu-panel-nav {
+        padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .user-dock-menu-divider {
+        height: 1px;
+        margin: 6px 0 4px;
+        background: linear-gradient(
+            to right,
+            transparent,
+            rgba(53, 100, 166, 0.18),
+            transparent
+        );
+    }
+
+    .user-dock-menu-panel-nav .menu-item--dock-sheet-row {
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        padding: 10px 12px;
+        margin: 0;
+        border-radius: 13px;
+        min-height: 48px;
+        box-sizing: border-box;
+    }
+
+    .user-dock-menu-panel-nav .menu-item--dock-sheet-row.active {
+        box-shadow: inset 4px 0 0 var(--couleur-dominante);
+        background: rgba(53, 100, 166, 0.08);
+    }
+
+    body.user-page-mon-compte .user-dock-menu-panel-nav .menu-item--dock-sheet-row.active {
+        box-shadow: inset 4px 0 0 var(--couleur-dominante);
+    }
+
+    .user-dock-menu-panel-nav .menu-item--dock-sheet-row .menu-item-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+    }
+
+    .user-dock-menu-panel-nav .menu-item--dock-sheet-row .menu-item-text {
+        flex: 1;
+        text-align: left;
+        font-size: 0.9rem;
+        font-weight: 600;
+        line-height: 1.28;
+        max-width: none;
+        white-space: normal;
+        display: block;
+    }
+
+    .user-dock-menu-panel-nav .menu-item--dock-sheet-logout:hover {
+        background: rgba(255, 107, 53, 0.08);
+        border-color: rgba(255, 107, 53, 0.16);
+    }
+
+    .user-sidebar .menu-item.active {
+        background: rgba(53, 100, 166, 0.12);
+        border-color: rgba(53, 100, 166, 0.15);
+        box-shadow: inset 0 -3px 0 var(--couleur-dominante);
+        color: var(--titres);
+    }
+
+    body.user-page-mon-compte .user-sidebar .menu-item.active {
+        box-shadow: inset 0 -3px 0 var(--couleur-dominante);
+    }
+
+    .user-content {
+        margin-left: 0 !important;
+    }
+
+    /* Zone de réservation pour barre dock (prioritaire sur shorthand padding des pages client) */
+    main#userContent.user-content,
+    #userContent.user-content {
+        padding-bottom: calc(var(--user-bottom-nav-clearance) + env(safe-area-inset-bottom, 0px) + 0.85rem)
+            !important;
+    }
+}
+
+/* Desktop : dock + feuille menu masqués (évite classe is-open résiduelle) */
+@media (min-width: 1025px) {
+    .user-dock-menu-layer {
+        display: none !important;
+        pointer-events: none !important;
+    }
+
+    .user-sidebar .user-dock-bar {
+        display: none !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .user-content {
+        margin-left: 0;
     }
 
     .produits-grid {

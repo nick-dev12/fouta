@@ -95,4 +95,27 @@
   );
   --admin-nav-icon-7: var(--orange-fonce);
   --admin-nav-icon-out: var(--orange-fonce);
+
+  /* Navigation — pastilles soft UI (fond pastel + icône foncée, ombre légère) */
+  --nav-soft-shadow: 0 2px 8px rgba(15, 23, 42, 0.07);
+  --nav-soft-shadow-hover: 0 4px 14px rgba(15, 23, 42, 0.1);
+  --nav-soft-bg-1: #eef2ff;
+  --nav-soft-fg-1: #1e3a8a;
+  --nav-soft-bg-2: #ecfdf5;
+  --nav-soft-fg-2: #0f766e;
+  --nav-soft-bg-3: #fff7ed;
+  --nav-soft-fg-3: #c2410c;
+  --nav-soft-bg-4: #f0f9ff;
+  --nav-soft-fg-4: #0369a1;
+  --nav-soft-bg-5: #fdf4ff;
+  --nav-soft-fg-5: #86198f;
+  --nav-soft-bg-6: #fef9c3;
+  --nav-soft-fg-6: #a16207;
+  --nav-soft-bg-7: #e0e7ff;
+  --nav-soft-fg-7: #312e81;
+  --nav-soft-bg-out: #ffedd5;
+  --nav-soft-fg-out: #9a3412;
+
+  /* Sidebars (admin / super admin / espace client) — largeur compacte */
+  --sidebar-nav-width: 264px;
 }

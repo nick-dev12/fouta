@@ -259,8 +259,9 @@ if (function_exists('get_categories_generales_avec_produits_actifs')) {
 
         .stock-cat-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
-            gap: 1.15rem;
+            grid-template-columns: repeat(auto-fill, minmax(152px, 250px));
+            gap: 1rem;
+            justify-content: start;
         }
 
         .stock-cat-card {
@@ -272,59 +273,72 @@ if (function_exists('get_categories_generales_avec_produits_actifs')) {
             box-shadow: 0 2px 14px rgba(53, 100, 166, 0.06);
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             border: 1px solid var(--border-input);
+            max-width: 250px;
+            width: 100%;
+            min-width: 0;
+            justify-self: center;
         }
 
         .stock-cat-card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-3px);
             box-shadow: var(--ombre-gourmande);
             border-color: rgba(53, 100, 166, 0.35);
         }
 
         .stock-cat-card__media {
             position: relative;
-            aspect-ratio: 16 / 10;
+            flex-shrink: 0;
+            height: 120px;
+            max-height: 120px;
             background: linear-gradient(180deg, var(--fond-secondaire) 0%, var(--blanc-neige) 100%);
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .stock-cat-card__media img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 100%;
+            max-height: 120px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
             display: block;
         }
 
         .stock-cat-card__placeholder {
             width: 100%;
-            height: 100%;
+            max-height: 120px;
+            height: 120px;
+            box-sizing: border-box;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--couleur-dominante);
-            font-size: 2.25rem;
+            font-size: clamp(1.35rem, 5vw, 1.85rem);
             opacity: 0.55;
         }
 
         .stock-cat-card__body {
-            padding: 1.1rem 1.15rem 1.15rem;
+            padding: 0.75rem 0.82rem 0.85rem;
             display: flex;
             flex-direction: column;
             flex: 1;
-            gap: 0.65rem;
+            gap: 0.45rem;
         }
 
         .stock-cat-card__body h3 {
             margin: 0;
-            font-size: 1.05rem;
+            font-size: 0.92rem;
             font-weight: 700;
             color: var(--titres);
-            line-height: 1.3;
+            line-height: 1.28;
         }
 
         .stock-cat-card__desc {
             margin: 0;
-            font-size: 0.86rem;
-            line-height: 1.45;
+            font-size: 0.78rem;
+            line-height: 1.38;
             color: var(--texte-mute);
             flex: 1;
             display: -webkit-box;
@@ -342,14 +356,14 @@ if (function_exists('get_categories_generales_avec_produits_actifs')) {
 
         .stock-cat-card__actions a {
             flex: 1 1 auto;
-            min-width: 6.5rem;
+            min-width: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.4rem;
-            padding: 0.5rem 0.65rem;
-            border-radius: 10px;
-            font-size: 0.78rem;
+            gap: 0.35rem;
+            padding: 0.42rem 0.5rem;
+            border-radius: 9px;
+            font-size: 0.72rem;
             font-weight: 600;
             text-decoration: none;
             transition: background 0.15s, color 0.15s, transform 0.15s;
@@ -433,20 +447,24 @@ if (function_exists('get_categories_generales_avec_produits_actifs')) {
 
             .stock-cat-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 0.65rem 0.5rem;
+                gap: 0.55rem 0.45rem;
+                justify-content: stretch;
             }
 
             .stock-cat-card {
                 min-width: 0;
+                max-width: min(250px, 100%);
             }
 
             .stock-cat-card__media {
-                aspect-ratio: 1 / 1;
-                max-height: 7.5rem;
+                height: 120px;
+                max-height: 120px;
             }
 
             .stock-cat-card__placeholder {
-                font-size: 1.1rem;
+                height: 120px;
+                max-height: 120px;
+                font-size: 1.15rem;
             }
 
             .stock-cat-card__body {

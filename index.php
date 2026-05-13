@@ -1423,35 +1423,15 @@ $seo_canonical = $base . '/';
             object-fit: cover;
         }
 
-        .mp-strip-pill {
-            margin: -14px 8px 8px;
-            position: relative;
-            z-index: 1;
-            background: rgba(13, 13, 13, 0.82);
-            color: var(--texte-clair);
-            font-size: 10px;
-            font-weight: 600;
-            padding: 5px 8px;
-            border-radius: 999px;
-            text-align: center;
-            line-height: 1.2;
-        }
-
         .mp-strip-body {
-            padding: 0 10px 12px;
+            padding: 12px 10px 14px;
         }
 
         .mp-strip-price {
             font-size: 15px;
             font-weight: 700;
             color: var(--titres);
-            margin: 0 0 4px;
-        }
-
-        .mp-strip-moq {
             margin: 0;
-            font-size: 11px;
-            color: var(--gris-moyen);
         }
 
         /* Deux panneaux : Top + Nouveautés */
@@ -1539,10 +1519,6 @@ $seo_canonical = $base . '/';
 
             .mp-new-price {
                 font-size: 14px;
-            }
-
-            .mp-new-moq {
-                font-size: 10px;
             }
 
             .mp-new-cart-btn {
@@ -1706,12 +1682,6 @@ $seo_canonical = $base . '/';
         .mp-new-price span {
             font-size: 12px;
             font-weight: 600;
-            color: var(--gris-moyen);
-        }
-
-        .mp-new-moq {
-            margin: 0;
-            font-size: 11px;
             color: var(--gris-moyen);
         }
 
@@ -1991,7 +1961,6 @@ $seo_canonical = $base . '/';
                         <div class="mp-showcase-center-top">
                             <div>
                                 <h2>Recherches fréquentes</h2>
-                                <p>Articles issus des requêtes les plus saisies sur le catalogue (ordre aléatoire).</p>
                             </div>
                             <div class="mp-trend-nav">
                                 <button type="button" class="mp-trend-prev" aria-label="Faire défiler vers la gauche">
@@ -2012,14 +1981,13 @@ $seo_canonical = $base . '/';
                                     if ($tid <= 0) {
                                         continue;
                                     }
-                                    $_nom_raw = (string) ($produit['nom'] ?? '');
-                                    $tsub = !empty($produit['categorie_nom'])
-                                        ? (string) $produit['categorie_nom']
-                                        : (function_exists('mb_substr') ? mb_substr($_nom_raw, 0, 32) : substr($_nom_raw, 0, 32));
+                                    $tsub = trim((string) ($produit['categorie_nom'] ?? ''));
                                     ?>
                                     <div class="mp-trend-card">
                                         <span class="mp-trend-label">Recherché</span>
+                                        <?php if ($tsub !== ''): ?>
                                         <span class="mp-trend-sub"><?php echo htmlspecialchars($tsub); ?></span>
+                                        <?php endif; ?>
                                         <a class="mp-trend-img-link" href="produit.php?id=<?php echo $tid; ?>">
                                             <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
                                                 alt="" loading="lazy" onerror="this.src='/image/produit1.jpg'">
@@ -2128,7 +2096,6 @@ $seo_canonical = $base . '/';
                         <ul class="mp-promo-list">
                             <li><i class="fas fa-check" aria-hidden="true"></i> Articles les plus commandés sur la marketplace (volumes réels de vente)</li>
                             <li><i class="fas fa-check" aria-hidden="true"></i> Découvrez ce que les professionnels et particuliers achètent le plus</li>
-                            <li><i class="fas fa-check" aria-hidden="true"></i> Sélection mélangée aléatoirement à chaque visite</li>
                         </ul>
                         <a class="mp-promo-cta" href="produits.php">Découvrir dès maintenant</a>
                     </div>
@@ -2139,27 +2106,16 @@ $seo_canonical = $base . '/';
                             if ($sid <= 0) {
                                 continue;
                             }
-                            $slabel = !empty($sproduit['categorie_nom'])
-                                ? (string) $sproduit['categorie_nom']
-                                : 'Pièce détachée';
                             $spx = !empty($sproduit['prix_promotion']) && $sproduit['prix_promotion'] < $sproduit['prix']
                                 ? (float) $sproduit['prix_promotion'] : (float) ($sproduit['prix'] ?? 0);
-                            $sstock = isset($sproduit['stock']) ? (int) $sproduit['stock'] : null;
                             ?>
                             <a class="mp-strip-card" href="produit.php?id=<?php echo $sid; ?>">
                                 <div class="mp-strip-card-img">
                                     <img src="/upload/<?php echo htmlspecialchars($sproduit['image_principale'] ?? 'produit1.jpg'); ?>"
                                         alt="" loading="lazy" onerror="this.src='/image/produit1.jpg'">
                                 </div>
-                                <div class="mp-strip-pill"><?php
-                                $sl_short = function_exists('mb_substr') ? mb_substr($slabel, 0, 22) : substr($slabel, 0, 22);
-                                echo htmlspecialchars($sl_short);
-                                ?></div>
                                 <div class="mp-strip-body">
                                     <p class="mp-strip-price"><?php echo number_format($spx, 0, ',', ' '); ?> FCFA</p>
-                                    <p class="mp-strip-moq">
-                                        <?php echo ($sstock !== null && $sstock >= 0) ? 'Stock : ' . $sstock : 'Marketplace'; ?>
-                                    </p>
                                 </div>
                             </a>
                         <?php endforeach; ?>
@@ -2215,7 +2171,6 @@ $seo_canonical = $base . '/';
                         <header class="mp-panel-head">
                             <div>
                                 <h2>Produits au top du classement</h2>
-                                <p>Suivez les tendances grâce aux articles les plus consultés sur la plateforme.</p>
                             </div>
                             <a class="mp-panel-more" href="produits.php">En savoir plus &gt;</a>
                         </header>
@@ -2237,8 +2192,6 @@ $seo_canonical = $base . '/';
                         <header class="mp-panel-head">
                             <div>
                                 <h2>Nouveautés</h2>
-                                <p>Les derniers articles publiés par les vendeurs — restez en avance sur les arrivages.
-                                </p>
                             </div>
                             <a class="mp-panel-more" href="produits.php?tri=date">En savoir plus &gt;</a>
                         </header>

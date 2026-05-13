@@ -27,6 +27,7 @@ require_once __DIR__ . '/../../models/model_commandes_admin.php';
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_factures.php';
 require_once __DIR__ . '/../../includes/format_commande_options.php';
+require_once __DIR__ . '/../../includes/commande_suivi_ui.php';
 $commande = get_commande_by_id($commande_id);
 $produits = get_produits_by_commande($commande_id);
 $produits = is_array($produits) ? $produits : [];
@@ -113,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-suivi-page.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-commandes-details.css<?php echo asset_version_query(); ?>">
 </head>
 
@@ -171,53 +173,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         </div>
     <?php endif; ?>
 
-    <div class="cmd-detail-grid">
-        <div class="cmd-detail-panel">
-            <h3 class="cmd-detail-panel__head"><i class="fas fa-user" aria-hidden="true"></i> Client</h3>
-            <div class="detail-item">
-                <label>Nom complet</label>
-                <div class="value">
-                    <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?>
+    <?php
+    ob_start();
+        ?>
+        <div class="cmd-suivi-status-slot">
+            <div class="cmd-status-embed-shell" aria-labelledby="cmd-status-embed-title">
+                <div class="cmd-status-embed-hd">
+                    <h3 id="cmd-status-embed-title"><i class="fas fa-sliders-h" aria-hidden="true"></i> Statut &amp; actions</h3>
                 </div>
+                <div class="cmd-status-embed-bd">
+        <?php if ($is_annulee): ?>
+            <div class="cmd-alert cmd-alert--danger" role="status">
+                <h3><i class="fas fa-ban" aria-hidden="true"></i> Commande annulée</h3>
+                <p>Cette commande a été annulée. Aucune modification n’est possible ; vous pouvez consulter les informations ci-dessus.</p>
             </div>
-            <div class="detail-item">
-                <label>Email</label>
-                <div class="value"><?php echo htmlspecialchars($commande['user_email'] ?? ''); ?></div>
+        <?php elseif ($is_livree): ?>
+            <div class="cmd-alert cmd-alert--success" role="status">
+                <h3><i class="fas fa-check-circle" aria-hidden="true"></i> Commande livrée</h3>
+                <p>Le client a confirmé la réception. La commande est terminée.</p>
             </div>
-            <div class="detail-item">
-                <label>Téléphone</label>
-                <div class="value"><?php echo htmlspecialchars($commande['user_telephone'] ?? ''); ?></div>
+        <?php elseif ($is_paye): ?>
+            <div class="cmd-alert cmd-alert--success" role="status">
+                <h3><i class="fas fa-money-bill-wave" aria-hidden="true"></i> Commande payée</h3>
+                <p>Le paiement est enregistré et le stock a été mis à jour. La commande est terminée.</p>
             </div>
-        </div>
+        <?php else: ?>
+            <div class="statut-form cmd-statut-form">
+                <div class="form-group">
+                    <label>Statut actuel</label>
+                    <div class="statut-current-wrap cmd-statut-current">
+                        <span class="commande-statut statut-<?php echo $statut_safe_class; ?>">
+                            <?php echo htmlspecialchars($statut_display); ?>
+                        </span>
+                    </div>
+                </div>
 
-        <div class="cmd-detail-panel">
-            <h3 class="cmd-detail-panel__head"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Livraison</h3>
-            <div class="detail-item">
-                <label>Adresse</label>
-                <div class="value"><?php echo nl2br(htmlspecialchars($commande['adresse_livraison'] ?? '')); ?></div>
-            </div>
-            <div class="detail-item">
-                <label>Téléphone livraison</label>
-                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison'] ?? ''); ?></div>
-            </div>
-            <?php if (!empty($commande['frais_livraison'])): ?>
-                <div class="detail-item">
-                    <label>Frais de livraison</label>
-                    <div class="value"><?php echo number_format($commande['frais_livraison'], 0, ',', ' '); ?> FCFA</div>
+                <div class="form-group">
+                    <?php if (in_array($commande['statut'], ['en_attente', 'confirmee'])): ?>
+                        <form method="POST" action="">
+                            <button type="submit" name="prendre_en_charge" class="btn-primary btn-prise-charge">
+                                <i class="fas fa-hand-paper"></i> Prendre en charge la commande
+                            </button>
+                        </form>
+
+                    <?php elseif ($commande['statut'] == 'prise_en_charge'): ?>
+                        <form method="POST" action="">
+                            <button type="submit" name="expedier" class="btn-primary btn-expedier">
+                                <i class="fas fa-shipping-fast"></i> Mettre en livraison
+                            </button>
+                        </form>
+
+                    <?php elseif ($commande['statut'] == 'livraison_en_cours'): ?>
+                        <div class="alert-livraison">
+                            <p><i class="fas fa-truck" aria-hidden="true"></i> Livraison en cours</p>
+                            <p class="sub">Choisissez <strong>Payée</strong> dans le changement manuel de statut après confirmation du règlement (mise à jour du stock).</p>
+                        </div>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
-            <div class="detail-item">
-                <label>Date commande</label>
-                <div class="value"><?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></div>
-            </div>
-            <?php if ($commande['date_livraison']): ?>
-                <div class="detail-item">
-                    <label>Date livraison</label>
-                    <div class="value"><?php echo date('d/m/Y à H:i', strtotime($commande['date_livraison'])); ?></div>
+
+                <div class="actions-divider cmd-actions-divider">
+                    <h3>Changement manuel de statut</h3>
+                    <form method="POST" action="">
+                        <div class="form-group">
+                            <label for="statut">Nouveau statut</label>
+                            <select id="statut" name="statut" required>
+                                <option value="en_attente" <?php echo $commande['statut'] == 'en_attente' ? 'selected' : ''; ?>>En Attente</option>
+                                <option value="prise_en_charge" <?php echo $commande['statut'] == 'prise_en_charge' ? 'selected' : ''; ?>>Prise en charge</option>
+                                <option value="en_preparation" <?php echo $commande['statut'] == 'en_preparation' ? 'selected' : ''; ?>>En Préparation</option>
+                                <option value="livraison_en_cours" <?php echo $commande['statut'] == 'livraison_en_cours' ? 'selected' : ''; ?>>Livraison en cours</option>
+                                <option value="paye" <?php echo $commande['statut'] == 'paye' ? 'selected' : ''; ?>>Payée (décrémente le stock)</option>
+                                <option value="annulee" <?php echo $commande['statut'] == 'annulee' ? 'selected' : ''; ?>>Annulée</option>
+                            </select>
+                        </div>
+                        <?php if ($commande['notes']): ?>
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <div class="notes-box">
+                                    <?php echo nl2br(htmlspecialchars($commande['notes'] ?? '')); ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        <button type="submit" name="changer_statut" class="btn-primary">
+                            <i class="fas fa-save"></i> Mettre à jour le statut
+                        </button>
+                    </form>
                 </div>
-            <?php endif; ?>
+            </div>
+        <?php endif; ?>
+                </div>
+            </div>
         </div>
-    </div>
+        <?php
+    $cmd_suivi_status_slot_html = ob_get_clean();
+    ?>
+
+    <section class="cmd-suivi-espace-client" aria-label="Suivi commande">
+        <?php
+        commande_suivi_render_dashboard($commande, [
+            'show_client_actions_bar' => false,
+            'admin_hint' => false,
+            'admin_contact_in_live' => true,
+            'admin_compact_meta_row' => true,
+            'wrap_class' => 'cc-products-anchor commande-suivi-detail cmd-suivi-admin-embed',
+            'slot_after_suivi_body_html' => $cmd_suivi_status_slot_html,
+        ]);
+        ?>
+    </section>
 
     <section class="cmd-products-section" aria-labelledby="cmd-products-heading">
         <div class="cmd-products-section__head">
@@ -323,93 +384,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 <h3>Total commande <span class="total-value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</span></h3>
             </div>
             <?php endif; ?>
-        </div>
-    </section>
-
-    <section class="cmd-status-section" aria-labelledby="cmd-status-heading">
-        <div class="cmd-status-section__head">
-            <h2 id="cmd-status-heading"><i class="fas fa-sliders-h" aria-hidden="true"></i> Statut &amp; actions</h2>
-        </div>
-        <div class="cmd-status-body">
-
-        <?php if ($is_annulee): ?>
-            <div class="cmd-alert cmd-alert--danger" role="status">
-                <h3><i class="fas fa-ban" aria-hidden="true"></i> Commande annulée</h3>
-                <p>Cette commande a été annulée. Aucune modification n’est possible ; vous pouvez consulter les informations ci-dessus.</p>
-            </div>
-        <?php elseif ($is_livree): ?>
-            <div class="cmd-alert cmd-alert--success" role="status">
-                <h3><i class="fas fa-check-circle" aria-hidden="true"></i> Commande livrée</h3>
-                <p>Le client a confirmé la réception. La commande est terminée.</p>
-            </div>
-        <?php elseif ($is_paye): ?>
-            <div class="cmd-alert cmd-alert--success" role="status">
-                <h3><i class="fas fa-money-bill-wave" aria-hidden="true"></i> Commande payée</h3>
-                <p>Le paiement est enregistré et le stock a été mis à jour. La commande est terminée.</p>
-            </div>
-        <?php else: ?>
-            <div class="statut-form cmd-statut-form">
-                <div class="form-group">
-                    <label>Statut actuel</label>
-                    <div class="statut-current-wrap cmd-statut-current">
-                        <span class="commande-statut statut-<?php echo $statut_safe_class; ?>">
-                            <?php echo htmlspecialchars($statut_display); ?>
-                        </span>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <?php if (in_array($commande['statut'], ['en_attente', 'confirmee'])): ?>
-                        <form method="POST" action="">
-                            <button type="submit" name="prendre_en_charge" class="btn-primary btn-prise-charge">
-                                <i class="fas fa-hand-paper"></i> Prendre en charge la commande
-                            </button>
-                        </form>
-
-                    <?php elseif ($commande['statut'] == 'prise_en_charge'): ?>
-                        <form method="POST" action="">
-                            <button type="submit" name="expedier" class="btn-primary btn-expedier">
-                                <i class="fas fa-shipping-fast"></i> Mettre en livraison
-                            </button>
-                        </form>
-
-                    <?php elseif ($commande['statut'] == 'livraison_en_cours'): ?>
-                        <div class="alert-livraison">
-                            <p><i class="fas fa-truck" aria-hidden="true"></i> Livraison en cours</p>
-                            <p class="sub">Utilisez le menu ci-dessous pour passer à <strong>Payée</strong> une fois le règlement confirmé (mise à jour du stock).</p>
-                        </div>
-                    <?php endif; ?>
-                </div>
-
-                <div class="actions-divider cmd-actions-divider">
-                    <h3>Changement manuel de statut</h3>
-                    <form method="POST" action="">
-                        <div class="form-group">
-                            <label for="statut">Nouveau statut</label>
-                            <select id="statut" name="statut" required>
-                                <option value="en_attente" <?php echo $commande['statut'] == 'en_attente' ? 'selected' : ''; ?>>En Attente</option>
-                                <option value="prise_en_charge" <?php echo $commande['statut'] == 'prise_en_charge' ? 'selected' : ''; ?>>Prise en charge</option>
-                                <option value="en_preparation" <?php echo $commande['statut'] == 'en_preparation' ? 'selected' : ''; ?>>En Préparation</option>
-                                <option value="livraison_en_cours" <?php echo $commande['statut'] == 'livraison_en_cours' ? 'selected' : ''; ?>>Livraison en cours</option>
-                                <option value="paye" <?php echo $commande['statut'] == 'paye' ? 'selected' : ''; ?>>Payée (décrémente le stock)</option>
-                                <option value="annulee" <?php echo $commande['statut'] == 'annulee' ? 'selected' : ''; ?>>Annulée</option>
-                            </select>
-                        </div>
-                        <?php if ($commande['notes']): ?>
-                            <div class="form-group">
-                                <label>Notes</label>
-                                <div class="notes-box">
-                                    <?php echo nl2br(htmlspecialchars($commande['notes'] ?? '')); ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                        <button type="submit" name="changer_statut" class="btn-primary">
-                            <i class="fas fa-save"></i> Mettre à jour le statut
-                        </button>
-                    </form>
-                </div>
-            </div>
-        <?php endif; ?>
         </div>
     </section>
 

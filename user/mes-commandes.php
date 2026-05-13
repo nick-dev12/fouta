@@ -201,7 +201,6 @@ $nb_commandes_actives = count($commandes_actives);
                         </div>
                     </div>
                 </div>
-                <p class="mc-orders-lead">Suivez vos commandes en cours et repassez commande depuis le catalogue.</p>
             </div>
         </header>
 
@@ -212,7 +211,6 @@ $nb_commandes_actives = count($commandes_actives);
                 </div>
                 <div class="mc-continue-text">
                     <strong>Continuer vos achats</strong>
-                    <p>Retournez à l’accueil ou parcourez le catalogue pour compléter vos courses.</p>
                 </div>
                 <div class="mc-continue-actions">
                     <a href="/index.php" class="mc-btn mc-btn--primary">
@@ -267,13 +265,18 @@ $nb_commandes_actives = count($commandes_actives);
             <?php else: ?>
             <div class="mc-commandes-grid">
                 <?php foreach ($commandes_actives as $commande): ?>
-                <article class="mc-commande-card">
+                <article class="mc-commande-card mc-commande-card--streamlined">
                     <div class="mc-commande-card__top">
-                        <div>
-                            <h3 class="mc-commande-card__ref">Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
+                        <div class="mc-commande-card__identity">
+                            <h3 class="mc-commande-card__ref"
+                                title="Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?>">
+                                #<?php echo htmlspecialchars($commande['numero_commande']); ?>
+                            </h3>
                             <p class="mc-commande-card__date">
                                 <i class="fas fa-clock" aria-hidden="true"></i>
-                                <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?>
+                                <time datetime="<?php echo htmlspecialchars(date('c', strtotime($commande['date_commande']))); ?>">
+                                    <?php echo date('d/m/Y · H:i', strtotime($commande['date_commande'])); ?>
+                                </time>
                             </p>
                         </div>
                         <span class="commande-statut statut-<?php echo htmlspecialchars($commande['statut']); ?> mc-badge">
@@ -290,27 +293,29 @@ $nb_commandes_actives = count($commandes_actives);
                         </span>
                     </div>
                     <div class="mc-commande-card__body">
-                        <div class="mc-detail-row">
-                            <label>Montant</label>
-                            <div class="value value--montant">
-                                <?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
+                        <dl class="mc-order-facts" aria-label="Montant et contact livraison">
+                            <div class="mc-order-facts__item">
+                                <dt>Montant</dt>
+                                <dd class="mc-order-facts__amount">
+                                    <?php echo number_format($commande['montant_total'], 0, ',', ' '); ?>
+                                    <span class="mc-order-facts__unit">FCFA</span>
+                                </dd>
                             </div>
-                        </div>
-                        <div class="mc-detail-row">
-                            <label>Adresse</label>
-                            <div class="value value--address">
-                                <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 80)); ?><?php echo strlen($commande['adresse_livraison']) > 80 ? '…' : ''; ?>
+                            <div class="mc-order-facts__item">
+                                <dt>Tél.</dt>
+                                <dd>
+                                    <a class="mc-order-facts__tel"
+                                        href="tel:<?php echo htmlspecialchars(preg_replace('/\s+/', '', $commande['telephone_livraison'])); ?>">
+                                        <?php echo htmlspecialchars($commande['telephone_livraison']); ?>
+                                    </a>
+                                </dd>
                             </div>
-                        </div>
-                        <div class="mc-detail-row">
-                            <label>Téléphone</label>
-                            <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
-                        </div>
+                        </dl>
                         <?php if ($commande['date_livraison']): ?>
-                        <div class="mc-detail-row">
-                            <label>Livraison</label>
-                            <div class="value"><?php echo date('d/m/Y', strtotime($commande['date_livraison'])); ?></div>
-                        </div>
+                        <p class="mc-order-facts__foot">
+                            <i class="fas fa-truck" aria-hidden="true"></i>
+                            Livraison <?php echo date('d/m/Y', strtotime($commande['date_livraison'])); ?>
+                        </p>
                         <?php endif; ?>
                     </div>
 
