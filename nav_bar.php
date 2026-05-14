@@ -777,7 +777,7 @@ $nav_panier_href = isset($_SESSION['user_id'])
     </div>
 </aside>
 
-<!-- Dock bas boutique (tablet/mobile) — 4 raccourcis + feuille « Menu », comme espace client -->
+<!-- Dock bas boutique (tablet/mobile) — 4 raccourcis pleine largeur ; Nouveautés / Promo / Contact restent en section1 -->
 <div class="shop-bottom-dock" id="shopBottomDock" aria-label="Navigation boutique rapide">
     <nav class="shop-dock-strip" aria-label="Raccourcis boutique">
         <a class="shop-dock-item" href="<?php echo htmlspecialchars($u_home, ENT_QUOTES, 'UTF-8'); ?>">
@@ -786,7 +786,7 @@ $nav_panier_href = isset($_SESSION['user_id'])
         </a>
         <a class="shop-dock-item" href="<?php echo htmlspecialchars($u_produits, ENT_QUOTES, 'UTF-8'); ?>">
             <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-store"></i></span>
-            <span class="shop-dock-lb">Catalogue</span>
+            <span class="shop-dock-lb">Produits</span>
         </a>
         <a class="shop-dock-item shop-dock-item--accent"
             href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
@@ -802,49 +802,6 @@ $nav_panier_href = isset($_SESSION['user_id'])
             <span class="shop-dock-lb">Compte</span>
         </a>
     </nav>
-    <button type="button"
-        class="shop-dock-more"
-        id="shopDockMoreBtn"
-        aria-haspopup="dialog"
-        aria-expanded="false"
-        aria-controls="shopDockSheetPanel">
-        <span class="shop-dock-more-ic" aria-hidden="true"><i class="fa-solid fa-th"></i></span>
-        <span class="shop-dock-lb">Menu</span>
-    </button>
-</div>
-<div class="shop-dock-sheet-layer" id="shopDockSheetLayer" aria-hidden="true">
-    <div class="shop-dock-sheet-backdrop" id="shopDockSheetBackdrop" role="presentation"></div>
-    <div class="shop-dock-sheet-panel"
-        role="dialog"
-        aria-modal="true"
-        id="shopDockSheetPanel"
-        aria-labelledby="shopDockSheetTitle">
-        <header class="shop-dock-sheet-hd">
-            <strong id="shopDockSheetTitle">Plus de liens</strong>
-            <button type="button" class="shop-dock-sheet-close" id="shopDockSheetClose" aria-label="Fermer le menu">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </header>
-        <div class="shop-dock-sheet-nav">
-            <a class="shop-dock-sheet-link" href="<?php echo htmlspecialchars($u_nouveautes, ENT_QUOTES, 'UTF-8'); ?>">
-                <i class="fa-solid fa-gift"></i><span>Nouveautés</span>
-            </a>
-            <a class="shop-dock-sheet-link" href="<?php echo htmlspecialchars($u_promo, ENT_QUOTES, 'UTF-8'); ?>">
-                <i class="fa-solid fa-percent"></i><span>Promotions</span>
-            </a>
-            <a class="shop-dock-sheet-link" href="<?php echo htmlspecialchars($u_contact, ENT_QUOTES, 'UTF-8'); ?>">
-                <i class="fa-solid fa-phone"></i><span>Contact</span>
-            </a>
-            <button type="button" class="shop-dock-sidebar-trigger" id="shopDockSidebarTrigger">
-                <i class="fa-solid fa-bars"></i>
-                <span>Rayons &amp; catégories</span>
-            </button>
-            <div class="shop-dock-sheet-divider" role="presentation"></div>
-            <a class="shop-dock-sheet-link" href="<?php echo htmlspecialchars($u_contact, ENT_QUOTES, 'UTF-8'); ?>#livraison">
-                <i class="fa-solid fa-truck"></i><span>Livraison &amp; expédition</span>
-            </a>
-        </div>
-    </div>
 </div>
 
 <section class="section1">
@@ -916,59 +873,15 @@ $nav_panier_href = isset($_SESSION['user_id'])
         });
         if (overlay) overlay.addEventListener('click', closeSidebarMenu);
 
-        var shopLayer = document.getElementById('shopDockSheetLayer');
-        var shopBtn = document.getElementById('shopDockMoreBtn');
-        var shopBackdrop = document.getElementById('shopDockSheetBackdrop');
-        var shopCloseBtn = document.getElementById('shopDockSheetClose');
-        var shopSidebarTrig = document.getElementById('shopDockSidebarTrigger');
-
-        function isShopDockMedia() {
-            return window.matchMedia('(max-width: 1024px)').matches;
-        }
-
-        function openShopSheet() {
-            if (!shopLayer || !isShopDockMedia()) return;
-            shopLayer.classList.add('is-open');
-            shopLayer.setAttribute('aria-hidden', 'false');
-            if (shopBtn) shopBtn.setAttribute('aria-expanded', 'true');
-            document.documentElement.style.overflow = 'hidden';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeShopSheet() {
-            if (!shopLayer) return;
-            shopLayer.classList.remove('is-open');
-            shopLayer.setAttribute('aria-hidden', 'true');
-            if (shopBtn) shopBtn.setAttribute('aria-expanded', 'false');
-            if (!sidebar || !sidebar.classList.contains('open')) {
-                document.documentElement.style.overflow = '';
-                document.body.style.overflow = '';
-            }
-        }
-
         window.addEventListener('resize', function () {
             if (window.innerWidth <= 1024) return;
             if (sidebar && sidebar.classList.contains('open')) {
                 closeSidebarMenu();
             }
-            closeShopSheet();
-        });
-
-        if (shopBtn) shopBtn.addEventListener('click', openShopSheet);
-        if (shopBackdrop) shopBackdrop.addEventListener('click', closeShopSheet);
-        if (shopCloseBtn) shopCloseBtn.addEventListener('click', closeShopSheet);
-
-        if (shopSidebarTrig) shopSidebarTrig.addEventListener('click', function () {
-            closeShopSheet();
-            openSidebarMenu();
         });
 
         document.addEventListener('keydown', function (e) {
             if (e.key !== 'Escape') return;
-            if (shopLayer && shopLayer.classList.contains('is-open')) {
-                closeShopSheet();
-                return;
-            }
             closeSidebarMenu();
         });
     });

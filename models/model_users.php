@@ -154,7 +154,7 @@ function update_user($id, $data) {
             'id' => $id,
             'nom' => $data['nom'],
             'prenom' => $data['prenom'],
-            'email' => $data['email'],
+            'email' => ($data['email'] === null || $data['email'] === '') ? null : $data['email'],
             'telephone' => $data['telephone']
         ]);
     } catch (PDOException $e) {

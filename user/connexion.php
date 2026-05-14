@@ -91,6 +91,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
     <title>Connexion - COLObanes</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/auth-connexion.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../includes/auth_intl_tel_head.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -217,10 +218,9 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                 <fieldset class="login-fieldset"<?php echo $login_locked ? ' disabled' : ''; ?>>
                 <div class="form-group">
                     <label for="telephone"><i class="fas fa-phone"></i> Numéro de téléphone *</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="telephone" name="telephone" placeholder="Ex. 77 123 45 67" autocomplete="tel"
+                    <div class="input-wrapper input-wrapper--intl-tel">
+                        <input type="tel" id="telephone" name="telephone" placeholder="77 123 45 67" autocomplete="tel"
                             value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
-                        <i class="fas fa-phone"></i>
                     </div>
                 </div>
                 <div class="form-group">
@@ -300,6 +300,14 @@ echo $rsafe !== '' ? htmlspecialchars('?' . http_build_query(['redirect' => $rsa
                 icon.classList.add('fa-eye');
             }
         }
+    </script>
+    <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.initAuthIntlTel === 'function') {
+                window.initAuthIntlTel('telephone');
+            }
+        });
     </script>
     <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>

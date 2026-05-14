@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
     $prenom = isset($_POST['prenom']) ? trim($_POST['prenom']) : '';
     $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+    $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
     
     $errors = [];
     
@@ -68,13 +69,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
         }
     }
     
+    // Validation du téléphone (obligatoire)
+    if (empty($telephone)) {
+        $errors[] = 'Le téléphone est obligatoire.';
+    } elseif (!preg_match('/^[0-9+\-\s()]+$/', $telephone)) {
+        $errors[] = 'Le format du téléphone n\'est pas valide.';
+    }
+    
     // Si aucune erreur, procéder à la mise à jour
     if (empty($errors)) {
         // Préparer les données à mettre à jour
         $data = [
             'nom' => $nom,
             'prenom' => $prenom,
-            'email' => $email
+            'email' => $email,
+            'telephone' => $telephone
         ];
 
         // Mettre à jour les informations de base
@@ -160,6 +169,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../includes/auth_intl_tel_head.php'; ?>
+    <style>
+        /* intl-tel-input styles pour profil admin */
+        .input-wrapper--intl-tel {
+            display: block;
+            position: relative;
+        }
+        .input-wrapper--intl-tel > .iti {
+            width: 100%;
+            display: block;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        .input-wrapper--intl-tel .iti__tel-input {
+            width: 100% !important;
+            padding: 0.75rem 1rem !important;
+            padding-left: 3.4rem !important;
+            font-size: 1rem !important;
+            font-family: inherit !important;
+            border: none !important;
+            border-radius: 0 !important;
+            background: #fff !important;
+            color: #333 !important;
+            box-shadow: none !important;
+        }
+        .input-wrapper--intl-tel .iti__selected-country {
+            width: auto;
+            min-width: 2.6rem;
+            max-width: 3rem;
+        }
+        .input-wrapper--intl-tel .iti__selected-country-primary {
+            font-size: 0;
+            visibility: hidden;
+        }
+        .input-wrapper--intl-tel .iti__selected-country-primary .iti__flag {
+            visibility: visible;
+            margin-right: 0;
+        }
+        .input-wrapper--intl-tel .iti:focus-within {
+            border-color: var(--couleur-dominante, #3564a6);
+            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.15);
+        }
+        .input-wrapper--intl-tel .iti__country-list {
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+    </style>
 </head>
 
 <body>
@@ -238,6 +296,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
                         <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($admin['email']); ?>" required>
                     </div>
 
+                    <div class="form-group">
+                        <label for="telephone">Téléphone <span class="required">*</span></label>
+                        <div class="input-wrapper input-wrapper--intl-tel">
+                            <input type="tel" id="telephone" name="telephone"
+                                value="<?php echo htmlspecialchars((string) ($admin['telephone'] ?? '')); ?>"
+                                placeholder="77 123 45 67"
+                                required autocomplete="tel">
+                        </div>
+                        <small style="color: #666; font-size: 0.85rem;">Indicatif pays au choix (défaut Sénégal)</small>
+                    </div>
+
                     <div class="form-actions">
                         <button type="submit" name="modifier_profil" class="btn-submit">
                             <i class="fas fa-save"></i> Enregistrer les modifications
@@ -286,3 +355,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
 
     <?php include 'includes/footer.php'; ?>
 
+    <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.initAuthIntlTel === 'function') {
+                window.initAuthIntlTel('telephone');
+            }
+        });
+    </script>
+</body>
+</html>

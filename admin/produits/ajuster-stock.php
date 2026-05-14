@@ -128,26 +128,26 @@ if (isset($_SESSION['success_message'])) {
         }
 
         .ajuster-stock-card {
-            background: linear-gradient(135deg, #fff 0%, #fafaf8 100%);
-            border: 1px solid #e5e3d8;
+            background: linear-gradient(145deg, #ffffff 0%, var(--fond-secondaire, #fafafa) 100%);
+            border: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            box-shadow: var(--glass-shadow, 0 2px 12px rgba(0, 0, 0, 0.04));
         }
 
         .ajuster-stock-card h2 {
             margin: 0 0 20px 0;
             font-size: 16px;
-            color: #6b2f20;
+            color: var(--titres, #1a1a1a);
             display: flex;
             align-items: center;
             gap: 10px;
             padding-bottom: 12px;
-            border-bottom: 2px solid #918a44;
+            border-bottom: 2px solid var(--couleur-dominante, #3564a6);
         }
 
         .ajuster-stock-card h2 i {
-            color: #918a44;
+            color: var(--couleur-dominante, #3564a6);
         }
 
         .stock-stats-grid {
@@ -159,7 +159,7 @@ if (isset($_SESSION['success_message'])) {
 
         .stock-stat-card {
             background: #fff;
-            border: 2px solid #e5e3d8;
+            border: 2px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             border-radius: 12px;
             padding: 20px;
             text-align: center;
@@ -167,14 +167,14 @@ if (isset($_SESSION['success_message'])) {
         }
 
         .stock-stat-card:hover {
-            border-color: #918a44;
-            box-shadow: 0 4px 12px rgba(145, 138, 68, 0.15);
+            border-color: var(--couleur-dominante, #3564a6);
+            box-shadow: 0 4px 12px rgba(53, 100, 166, 0.15);
         }
 
         .stock-stat-card h4 {
             margin: 0 0 8px 0;
             font-size: 11px;
-            color: #666;
+            color: var(--gris-moyen, #737373);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -182,19 +182,19 @@ if (isset($_SESSION['success_message'])) {
         .stock-stat-card .value {
             font-size: 26px;
             font-weight: 700;
-            color: #918a44;
+            color: var(--couleur-dominante, #3564a6);
         }
 
         .stock-stat-card.stock-total .value {
-            color: #6b2f20;
+            color: var(--couleur-dominante, #3564a6);
         }
 
         .stock-stat-card.stock-vendu .value {
-            color: #c26638;
+            color: var(--orange, #FF6B35);
         }
 
         .stock-stat-card.stock-restant .value {
-            color: #155724;
+            color: var(--bleu-clair, #4a7ab8);
         }
 
         .comptabilite-grid {
@@ -205,7 +205,7 @@ if (isset($_SESSION['success_message'])) {
 
         .comptabilite-item {
             background: #fff;
-            border: 1px solid #e5e3d8;
+            border: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             border-radius: 10px;
             padding: 16px;
             display: flex;
@@ -215,40 +215,40 @@ if (isset($_SESSION['success_message'])) {
 
         .comptabilite-item label {
             font-size: 12px;
-            color: #666;
+            color: var(--gris-moyen, #737373);
         }
 
         .comptabilite-item .montant {
             font-size: 20px;
             font-weight: 700;
-            color: #6b2f20;
+            color: var(--couleur-dominante, #3564a6);
         }
 
         .comptabilite-item .detail {
             font-size: 12px;
-            color: #888;
+            color: var(--gris-clair, #a3a3a3);
         }
 
         .stock-form-block {
-            background: linear-gradient(135deg, #fff 0%, #fafaf8 100%);
-            border: 1px solid #e5e3d8;
+            background: linear-gradient(145deg, #ffffff 0%, var(--fond-secondaire, #fafafa) 100%);
+            border: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 24px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            box-shadow: var(--glass-shadow, 0 2px 12px rgba(0, 0, 0, 0.04));
         }
 
         .stock-form-block h3 {
             margin: 0 0 20px 0;
             font-size: 18px;
-            color: #333;
+            color: var(--titres, #1a1a1a);
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .stock-form-block h3 i {
-            color: #918a44;
+            color: var(--couleur-dominante, #3564a6);
         }
 
         .stock-form-block .form-group {
@@ -257,32 +257,33 @@ if (isset($_SESSION['success_message'])) {
 
         .stock-form-block input[type="number"] {
             padding: 12px 16px;
-            border: 2px solid #e5e3d8;
+            border: 2px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             border-radius: 10px;
             font-size: 16px;
             max-width: 200px;
+            transition: border-color 0.2s ease;
         }
 
         .stock-form-block input:focus {
             outline: none;
-            border-color: #918a44;
+            border-color: var(--couleur-dominante, #3564a6);
         }
 
         .mouvements-section {
             background: #fff;
-            border: 1px solid #e5e3d8;
+            border: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            box-shadow: var(--glass-shadow, 0 2px 12px rgba(0, 0, 0, 0.04));
         }
 
         .mouvements-section h2 {
             margin: 0;
             padding: 20px 24px;
             font-size: 16px;
-            color: #6b2f20;
-            background: #f8f7f2;
-            border-bottom: 2px solid #e5e3d8;
+            color: var(--titres, #1a1a1a);
+            background: var(--fond-secondaire, #fafafa);
+            border-bottom: 2px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             display: flex;
             align-items: center;
             gap: 10px;
@@ -297,24 +298,24 @@ if (isset($_SESSION['success_message'])) {
         .mouvements-produit-table td {
             padding: 14px 20px;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--noir-pale, rgba(0, 0, 0, 0.05));
         }
 
         .mouvements-produit-table th {
-            background: #f8f8f8;
+            background: var(--fond-secondaire, #fafafa);
             font-weight: 600;
-            color: #6b2f20;
+            color: var(--titres, #1a1a1a);
             font-size: 12px;
             text-transform: uppercase;
         }
 
         .mouvements-produit-table tbody tr:hover {
-            background: #fafaf8;
+            background: var(--fond-secondaire, #fafafa);
         }
 
         .badge-entree {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(53, 100, 166, 0.12);
+            color: var(--couleur-dominante, #3564a6);
             padding: 5px 12px;
             border-radius: 8px;
             font-size: 12px;
@@ -322,8 +323,8 @@ if (isset($_SESSION['success_message'])) {
         }
 
         .badge-sortie {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(255, 107, 53, 0.12);
+            color: var(--orange, #FF6B35);
             padding: 5px 12px;
             border-radius: 8px;
             font-size: 12px;
@@ -331,8 +332,8 @@ if (isset($_SESSION['success_message'])) {
         }
 
         .badge-inventaire {
-            background: #fff3cd;
-            color: #856404;
+            background: rgba(32, 197, 195, 0.12);
+            color: var(--turquoise, #20c5c3);
             padding: 5px 12px;
             border-radius: 8px;
             font-size: 12px;
@@ -344,7 +345,7 @@ if (isset($_SESSION['success_message'])) {
             align-items: center;
             gap: 16px;
             padding: 16px;
-            background: #f8f7f2;
+            background: var(--fond-secondaire, #fafafa);
             border-radius: 12px;
             margin-bottom: 24px;
         }
@@ -354,18 +355,18 @@ if (isset($_SESSION['success_message'])) {
             height: 80px;
             object-fit: cover;
             border-radius: 10px;
-            border: 2px solid #e5e3d8;
+            border: 2px solid var(--glass-border, rgba(0, 0, 0, 0.08));
         }
 
         .produit-preview-info h3 {
             margin: 0 0 4px 0;
             font-size: 18px;
-            color: #333;
+            color: var(--titres, #1a1a1a);
         }
 
         .produit-preview-info .prix {
             font-size: 14px;
-            color: #918a44;
+            color: var(--couleur-dominante, #3564a6);
             font-weight: 600;
         }
 
@@ -375,7 +376,7 @@ if (isset($_SESSION['success_message'])) {
             flex-direction: column;
             gap: 6px;
             font-size: 13px;
-            color: #444;
+            color: var(--texte-fonce, #4a4a4a);
         }
 
         .produit-preview-meta span {
@@ -385,13 +386,13 @@ if (isset($_SESSION['success_message'])) {
         }
 
         .produit-preview-meta i {
-            color: #918a44;
+            color: var(--couleur-dominante, #3564a6);
             width: 18px;
             text-align: center;
         }
 
         .produit-preview-meta strong {
-            color: #6b2f20;
+            color: var(--titres, #1a1a1a);
             font-weight: 700;
         }
 
@@ -402,19 +403,19 @@ if (isset($_SESSION['success_message'])) {
         .barcode-fpl-block h3 {
             margin: 0 0 12px 0;
             font-size: 16px;
-            color: #6b2f20;
+            color: var(--titres, #1a1a1a);
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .barcode-fpl-block h3 i {
-            color: #918a44;
+            color: var(--couleur-dominante, #3564a6);
         }
 
         .barcode-fpl-desc {
             font-size: 13px;
-            color: #666;
+            color: var(--gris-moyen, #737373);
             margin-bottom: 14px;
         }
 
@@ -423,7 +424,7 @@ if (isset($_SESSION['success_message'])) {
             padding: 16px 20px 12px;
             border-radius: 12px;
             display: inline-block;
-            border: 2px solid #e5e3d8;
+            border: 2px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             text-align: center;
         }
 
@@ -438,7 +439,7 @@ if (isset($_SESSION['success_message'])) {
             font-size: 15px;
             font-weight: 700;
             letter-spacing: 0.06em;
-            color: #000;
+            color: var(--titres, #1a1a1a);
             margin-top: 10px;
             font-family: ui-monospace, Consolas, monospace;
         }
@@ -450,7 +451,7 @@ if (isset($_SESSION['success_message'])) {
         .mouvements-produit-cards { display: none; }
         .mouvement-produit-card {
             background: #fff;
-            border: 1px solid #e5e3d8;
+            border: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 12px;
@@ -462,14 +463,14 @@ if (isset($_SESSION['success_message'])) {
             align-items: center;
             margin-bottom: 12px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--noir-pale, rgba(0, 0, 0, 0.05));
         }
-        .mouvement-produit-card-date { font-size: 13px; color: #666; font-weight: 600; }
+        .mouvement-produit-card-date { font-size: 13px; color: var(--gris-moyen, #737373); font-weight: 600; }
         .mouvement-produit-card-body { display: grid; gap: 8px; }
         .mouvement-produit-card-row { display: flex; justify-content: space-between; font-size: 13px; }
-        .mouvement-produit-card-row .label { color: #888; }
-        .mouvement-produit-card-row .value { font-weight: 600; color: #333; }
-        .mouvement-produit-card-notes { font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #eee; }
+        .mouvement-produit-card-row .label { color: var(--gris-clair, #a3a3a3); }
+        .mouvement-produit-card-row .value { font-weight: 600; color: var(--titres, #1a1a1a); }
+        .mouvement-produit-card-notes { font-size: 12px; color: var(--gris-moyen, #737373); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--noir-pale, rgba(0, 0, 0, 0.05)); }
         @media (max-width: 768px) {
             .mouvements-produit-table-wrap { display: none !important; }
             .mouvements-produit-cards { display: block; padding: 16px; }
@@ -479,24 +480,24 @@ if (isset($_SESSION['success_message'])) {
         }
 
         .qr-code-block { margin-top: 24px; }
-        .qr-code-desc { font-size: 13px; color: #666; margin-bottom: 16px; }
+        .qr-code-desc { font-size: 13px; color: var(--gris-moyen, #737373); margin-bottom: 16px; }
         .qr-code-wrap {
             background: #fff;
             padding: 16px;
             border-radius: 12px;
             display: inline-block;
-            border: 2px solid #e5e3d8;
+            border: 2px solid var(--glass-border, rgba(0, 0, 0, 0.08));
         }
         .qr-code-img { display: block; width: 180px; height: 180px; }
-        .qr-code-produit { font-size: 14px; font-weight: 600; color: #6b2f20; margin-top: 12px; }
+        .qr-code-produit { font-size: 14px; font-weight: 600; color: var(--titres, #1a1a1a); margin-top: 12px; }
         .qr-code-actions { margin-top: 16px; }
         .btn-print-qr { cursor: pointer; }
 
         @media print {
             .content-header, .message, .produit-preview, .ajuster-stock-layout,
             .mouvements-section, .btn-back, nav, footer, .qr-code-actions, .barcode-fpl-actions { display: none !important; }
-            .qr-code-block { box-shadow: none; border: 1px solid #ccc; }
-            .barcode-fpl-block { box-shadow: none; border: 1px solid #ccc; }
+            .qr-code-block { box-shadow: none; border: 1px solid var(--noir-pale, rgba(0, 0, 0, 0.08)); }
+            .barcode-fpl-block { box-shadow: none; border: 1px solid var(--noir-pale, rgba(0, 0, 0, 0.08)); }
         }
     </style>
 </head>
@@ -642,7 +643,7 @@ if (isset($_SESSION['success_message'])) {
     <section class="mouvements-section" style="margin-top: 24px;">
         <h2><i class="fas fa-history"></i> Historique des mouvements (<?php echo count($mouvements); ?>)</h2>
         <?php if (empty($mouvements)): ?>
-            <p style="padding: 24px; color: #666;">Aucun mouvement enregistré pour ce produit.</p>
+            <p style="padding: 24px; color: var(--gris-moyen, #737373);">Aucun mouvement enregistré pour ce produit.</p>
         <?php else: ?>
             <div class="mouvements-produit-table-wrap" style="overflow-x: auto;">
                 <table class="mouvements-produit-table">
@@ -728,7 +729,7 @@ if (isset($_SESSION['success_message'])) {
         var nom = block.getAttribute('data-nom') || 'Produit';
         if (!src) return;
         var w = window.open('', '_blank', 'width=420,height=360');
-        w.document.write('<!DOCTYPE html><html><head><title>Code-barres ' + code + '</title><style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;} img{max-width:100%;height:auto;} .code{font-size:18px;font-weight:700;margin-top:12px;letter-spacing:0.08em;font-family:monospace;} h2{font-size:15px;margin:0 0 8px;text-align:center;color:#333;}</style></head><body><h2>' + nom.replace(/</g,'&lt;') + '</h2><img src="' + src + '" alt="Code-barres"><div class="code">' + code.replace(/</g,'&lt;') + '</div><p style="font-size:12px;color:#666;">Référence FPL</p></body></html>');
+        w.document.write('<!DOCTYPE html><html><head><title>Code-barres ' + code + '</title><style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;} img{max-width:100%;height:auto;} .code{font-size:18px;font-weight:700;margin-top:12px;letter-spacing:0.08em;font-family:monospace;} h2{font-size:15px;margin:0 0 8px;text-align:center;color:#1a1a1a;}</style></head><body><h2>' + nom.replace(/</g,'&lt;') + '</h2><img src="' + src + '" alt="Code-barres"><div class="code">' + code.replace(/</g,'&lt;') + '</div><p style="font-size:12px;color:#737373;">Référence FPL</p></body></html>');
         w.document.close();
         w.focus();
         setTimeout(function() { w.print(); w.close(); }, 300);
@@ -739,7 +740,7 @@ if (isset($_SESSION['success_message'])) {
         var qr = block.getAttribute('data-qr');
         var nom = block.getAttribute('data-nom') || 'Produit';
         var w = window.open('', '_blank', 'width=400,height=500');
-        w.document.write('<!DOCTYPE html><html><head><title>QR Code - ' + nom + '</title><style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;} img{max-width:280px;height:auto;} h2{font-size:16px;margin-top:16px;text-align:center;}</style></head><body><img src="' + qr + '" alt="QR Code"><h2>' + nom + '</h2><p style="font-size:12px;color:#666;">Scannez pour voir le stock</p></body></html>');
+        w.document.write('<!DOCTYPE html><html><head><title>QR Code - ' + nom + '</title><style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;} img{max-width:280px;height:auto;} h2{font-size:16px;margin-top:16px;text-align:center;color:#1a1a1a;}</style></head><body><img src="' + qr + '" alt="QR Code"><h2>' + nom + '</h2><p style="font-size:12px;color:#737373;">Scannez pour voir le stock</p></body></html>');
         w.document.close();
         w.focus();
         setTimeout(function() { w.print(); w.close(); }, 300);

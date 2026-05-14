@@ -111,6 +111,11 @@ body.user-page-profil .profil-header p {
   word-break: break-word;
 }
 
+body.user-page-profil .profil-header .profil-email-vide {
+  color: var(--texte-mute);
+  font-style: normal;
+}
+
 /* Alertes — alignées sur mes-commandes */
 body.user-page-profil .mc-alert {
   display: flex;
@@ -259,6 +264,13 @@ body.user-page-profil .form-group label .required {
   margin-left: 0.15rem;
 }
 
+body.user-page-profil .form-group label .field-optional {
+  font-weight: 500;
+  font-size: 0.8em;
+  color: var(--texte-mute);
+  margin-left: 0.25rem;
+}
+
 body.user-page-profil .form-group input {
   width: 100%;
   padding: 0.7rem 0.9rem;
@@ -378,4 +390,79 @@ body.user-page-profil .security-section h3 {
 
 body.user-page-profil .security-section h3 i {
   color: var(--accent-promo);
+}
+
+/* intl-tel-input — champ téléphone profil (même logique qu’auth) */
+body.user-page-profil .input-wrapper--intl-tel--profil {
+  display: block;
+  position: relative;
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil > .iti {
+  width: 100%;
+  display: block;
+  border-radius: 11px;
+  overflow: hidden;
+  border: 1px solid var(--border-input);
+  background: rgba(255, 255, 255, 0.95);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__flag-container {
+  border-radius: 10px 0 0 10px;
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__selected-flag {
+  padding: 0 clamp(0.4rem, 1.6vw, 0.55rem);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__selected-flag:hover,
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__selected-flag:focus {
+  background: rgba(53, 100, 166, 0.06);
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__tel-input {
+  width: 100% !important;
+  padding: 0.7rem 0.9rem !important;
+  padding-left: 3.4rem !important;
+  font-size: 0.95rem !important;
+  font-family: inherit !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--titres) !important;
+  box-shadow: none !important;
+}
+
+/* Réduire le sélecteur de pays pour ne pas cacher le texte */
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__selected-country {
+  width: auto;
+  min-width: 2.6rem;
+  max-width: 3rem;
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__selected-country-primary {
+  font-size: 0;
+  visibility: hidden;
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__selected-country-primary .iti__flag {
+  visibility: visible;
+  margin-right: 0;
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti:focus-within {
+  border-color: var(--couleur-dominante);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__tel-input:focus {
+  outline: none !important;
+}
+
+body.user-page-profil .input-wrapper--intl-tel--profil .iti__country-list {
+  border-radius: 12px;
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
 }

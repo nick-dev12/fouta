@@ -31,6 +31,7 @@ require_once __DIR__ . '/../includes/asset_version.php';
     <title>Ouvrir ma boutique — inscription vendeur</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/auth-connexion.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../includes/auth_intl_tel_head.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -49,7 +50,6 @@ require_once __DIR__ . '/../includes/asset_version.php';
                     <div class="auth-card__head">
                         <div class="auth-card__icon" aria-hidden="true"><i class="fas fa-store"></i></div>
                         <h1>Créer ma boutique</h1>
-                        <p class="auth-card__lead">Identité, téléphone obligatoire, code PIN à 6 chiffres, nom de la boutique. L’URL de partage sera générée automatiquement.</p>
                     </div>
 
                     <?php if ($err): ?>
@@ -81,11 +81,10 @@ require_once __DIR__ . '/../includes/asset_version.php';
 
                         <div class="form-group">
                             <label for="telephone"><i class="fas fa-phone"></i> Téléphone (connexion) *</label>
-                            <div class="input-wrapper">
-                                <input type="tel" id="telephone" name="telephone" placeholder="+241 01 23 45 67"
+                            <div class="input-wrapper input-wrapper--intl-tel">
+                                <input type="tel" id="telephone" name="telephone" placeholder="77 123 45 67"
                                     required autocomplete="tel"
                                     value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
-                                <i class="fas fa-phone" aria-hidden="true"></i>
                             </div>
                         </div>
 
@@ -150,6 +149,21 @@ require_once __DIR__ . '/../includes/asset_version.php';
                 icon.classList.add('fa-eye');
             }
         }
+    </script>
+    <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
+    <script>
+        (function () {
+            function bootIntlTelVendeur() {
+                if (typeof window.initAuthIntlTel === 'function') {
+                    window.initAuthIntlTel('telephone');
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bootIntlTelVendeur);
+            } else {
+                bootIntlTelVendeur();
+            }
+        })();
     </script>
     <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>

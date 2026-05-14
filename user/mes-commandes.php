@@ -219,7 +219,7 @@ $nb_commandes_actives = count($commandes_actives);
                     </a>
                     <a href="/produits.php" class="mc-btn mc-btn--secondary">
                         <i class="fas fa-shopping-basket" aria-hidden="true"></i>
-                        Catalogue
+                        Produits
                     </a>
                 </div>
             </div>

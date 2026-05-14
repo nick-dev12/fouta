@@ -367,7 +367,7 @@ if (!empty($produits)) {
             <div class="produits-grid">
                 <?php foreach ($produits as $produit): ?>
                     <div class="produit-card produit-card-linkable"
-                        data-href="modifier.php?id=<?php echo (int) $produit['id']; ?>">
+                        data-href="ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
                         <?php
                         $statut_class = 'statut-actif';
                         if ($produit['statut'] == 'inactif') {
@@ -400,14 +400,11 @@ if (!empty($produits)) {
 
                             </p>
                             <div class="produit-card-actions">
-                                <a href="ajuster-stock.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-stock" title="Ajuster le stock">
-                                    <i class="fas fa-boxes-stacked"></i> Stock
-                                </a>
                                 <a href="modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
                                     <i class="fas fa-edit"></i> Modifier
                                 </a>
                                 <a href="supprimer.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-delete"
-                                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
+                                    onclick="return confirm('Supprimer ce produit ?\n\nCette action est définitive. Cliquez sur OK pour supprimer ou sur Annuler pour annuler.');">
                                     <i class="fas fa-trash"></i> Supprimer
                                 </a>
                             </div>

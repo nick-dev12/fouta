@@ -326,21 +326,33 @@ if (!empty($produits)) {
 
         <!-- Statistiques des commandes -->
         <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Commandes</h3>
-                <div class="stat-value"><?php echo $total_commandes; ?></div>
+            <div class="stat-card stat-total">
+                <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+                <div class="stat-info">
+                    <h3>Total Commandes</h3>
+                    <div class="stat-value"><?php echo $total_commandes; ?></div>
+                </div>
             </div>
             <div class="stat-card stat-en-attente">
-                <h3>En Attente</h3>
-                <div class="stat-value"><?php echo $en_attente; ?></div>
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <h3>En Attente</h3>
+                    <div class="stat-value"><?php echo $en_attente; ?></div>
+                </div>
             </div>
             <div class="stat-card stat-prise">
-                <h3>Prise en charge</h3>
-                <div class="stat-value"><?php echo $prise_en_charge; ?></div>
+                <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+                <div class="stat-info">
+                    <h3>Prise en charge</h3>
+                    <div class="stat-value"><?php echo $prise_en_charge; ?></div>
+                </div>
             </div>
             <div class="stat-card stat-livraison">
-                <h3>Livraison en cours</h3>
-                <div class="stat-value"><?php echo $livraison_en_cours; ?></div>
+                <div class="stat-icon"><i class="fas fa-truck"></i></div>
+                <div class="stat-info">
+                    <h3>Livraison en cours</h3>
+                    <div class="stat-value"><?php echo $livraison_en_cours; ?></div>
+                </div>
             </div>
         </div>
 
@@ -435,7 +447,7 @@ if (!empty($produits)) {
                         $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
                         ?>
                         <div class="produit-card produit-card-linkable"
-                            data-href="produits/modifier.php?id=<?php echo (int) $produit['id']; ?>">
+                            data-href="produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
                             <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
                             <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
@@ -464,7 +476,7 @@ if (!empty($produits)) {
                                     </a>
                                     <a href="produits/supprimer.php?id=<?php echo $produit['id']; ?>"
                                         class="btn-card btn-delete"
-                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
+                                        onclick="return confirm('Supprimer ce produit ?\n\nCette action est définitive. Cliquez sur OK pour supprimer ou sur Annuler pour annuler.');">
                                         <i class="fas fa-trash"></i> Supprimer
                                     </a>
                                 </div>

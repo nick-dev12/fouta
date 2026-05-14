@@ -58,23 +58,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
         $errors[] = 'Le nom doit contenir au moins 2 caractères.';
     }
 
-    // Validation du prénom
-    if (empty($prenom)) {
-        $errors[] = 'Le prénom est obligatoire.';
-    } elseif (strlen($prenom) < 2) {
+    // Validation du prénom (facultatif ; si renseigné, minimum 2 caractères)
+    if ($prenom !== '' && strlen($prenom) < 2) {
         $errors[] = 'Le prénom doit contenir au moins 2 caractères.';
     }
 
-    // Validation de l'email
-    if (empty($email)) {
-        $errors[] = 'L\'email est obligatoire.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'L\'email n\'est pas valide.';
-    } else {
-        // Vérifier si l'email existe déjà pour un autre utilisateur
-        $existing_user = get_user_by_email($email);
-        if ($existing_user && $existing_user['id'] != $_SESSION['user_id']) {
-            $errors[] = 'Cet email est déjà utilisé par un autre compte.';
+    // Validation de l'e-mail (facultatif)
+    $email_db = null;
+    if ($email !== '') {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'L\'email n\'est pas valide.';
+        } else {
+            $existing_user = get_user_by_email($email);
+            if ($existing_user && (int) $existing_user['id'] !== (int) $_SESSION['user_id']) {
+                $errors[] = 'Cet email est déjà utilisé par un autre compte.';
+            } else {
+                $email_db = $email;
+            }
         }
     }
 
@@ -91,14 +91,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
         $data = [
             'nom' => $nom,
             'prenom' => $prenom,
-            'email' => $email,
+            'email' => $email_db,
             'telephone' => $telephone
         ];
 
         // Mettre à jour les informations de base
         if (update_user($_SESSION['user_id'], $data)) {
-            // Mettre à jour l'email dans la session
-            $_SESSION['user_email'] = $email;
+            $_SESSION['user_email'] = $email_db !== null ? $email_db : '';
 
             // Redirection pour éviter la double soumission (pattern Post-Redirect-Get)
             $_SESSION['success_message'] = 'Vos informations personnelles ont été mises à jour avec succès !';
@@ -185,6 +184,7 @@ $compte_actif = ($user['statut'] ?? '') === 'actif';
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-mes-commandes.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-profil.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../includes/auth_intl_tel_head.php'; ?>
 </head>
 
 <body class="user-page-profil">
@@ -198,8 +198,6 @@ $compte_actif = ($user['statut'] ?? '') === 'actif';
                     <span class="mc-hero-icon" aria-hidden="true"><i class="fas fa-id-card"></i></span>
                     Mon profil
                 </h1>
-                <p class="mc-orders-lead">Mettez à jour vos coordonnées et sécurisez votre mot de passe. Les
-                    modifications sont appliquées immédiatement.</p>
             </div>
             <div class="mc-orders-stats">
                 <?php if ($compte_actif): ?>
@@ -255,8 +253,18 @@ $compte_actif = ($user['statut'] ?? '') === 'actif';
                         <?php endif; ?>
                     </div>
                     <div>
-                        <h2><?php echo htmlspecialchars($user['prenom'] . ' ' . $user['nom']); ?></h2>
-                        <p><?php echo htmlspecialchars($user['email']); ?></p>
+                        <?php
+                        $profil_nom_affiche = trim(
+                            ((string) ($user['prenom'] ?? '')) . ' ' . ((string) ($user['nom'] ?? ''))
+                        );
+                        ?>
+                        <h2><?php echo htmlspecialchars($profil_nom_affiche !== '' ? $profil_nom_affiche : 'Client'); ?></h2>
+                        <p><?php
+                            $profil_email_affiche = (string) ($user['email'] ?? '');
+                            echo $profil_email_affiche !== ''
+                                ? htmlspecialchars($profil_email_affiche)
+                                : '<span class="profil-email-vide">E-mail non renseigné</span>';
+                            ?></p>
                     </div>
                 </div>
 
@@ -300,25 +308,29 @@ $compte_actif = ($user['statut'] ?? '') === 'actif';
                             </div>
 
                             <div class="form-group">
-                                <label for="prenom">Prénom <span class="required" aria-hidden="true">*</span></label>
+                                <label for="prenom">Prénom <span class="field-optional">(optionnel)</span></label>
                                 <input type="text" id="prenom" name="prenom"
-                                    value="<?php echo htmlspecialchars($user['prenom']); ?>" required
+                                    value="<?php echo htmlspecialchars((string) ($user['prenom'] ?? '')); ?>"
                                     autocomplete="given-name">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="email">E-mail <span class="required" aria-hidden="true">*</span></label>
+                            <label for="email">E-mail <span class="field-optional">(optionnel)</span></label>
                             <input type="email" id="email" name="email"
-                                value="<?php echo htmlspecialchars($user['email']); ?>" required autocomplete="email">
+                                value="<?php echo htmlspecialchars((string) ($user['email'] ?? '')); ?>"
+                                autocomplete="email">
                         </div>
 
                         <div class="form-group">
                             <label for="telephone">Téléphone <span class="required" aria-hidden="true">*</span></label>
-                            <input type="tel" id="telephone" name="telephone"
-                                value="<?php echo htmlspecialchars($user['telephone']); ?>" required
-                                autocomplete="tel">
-                            <div class="help-text">Ex. : +225 XX XX XX XX XX ou 0X XX XX XX XX</div>
+                            <div class="input-wrapper input-wrapper--intl-tel input-wrapper--intl-tel--profil">
+                                <input type="tel" id="telephone" name="telephone"
+                                    value="<?php echo htmlspecialchars((string) ($user['telephone'] ?? '')); ?>" required
+                                    placeholder="77 123 45 67"
+                                    autocomplete="tel">
+                            </div>
+                            <div class="help-text">Indicatif pays au choix ; enregistrement au format international si possible.</div>
                         </div>
 
                         <div class="profil-form-actions">
@@ -369,5 +381,14 @@ $compte_actif = ($user['statut'] ?? '') === 'actif';
             </div>
         </section>
     </div>
+
+    <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.initAuthIntlTel === 'function') {
+                window.initAuthIntlTel('telephone');
+            }
+        });
+    </script>
 
     <?php include 'includes/user_footer.php'; ?>

@@ -136,7 +136,7 @@ $nb_annulees = count($commandes_annulees);
                     </a>
                     <a href="/produits.php" class="mc-btn mc-btn--secondary">
                         <i class="fas fa-store" aria-hidden="true"></i>
-                        Catalogue
+                        Produits
                     </a>
                 </div>
             </div>

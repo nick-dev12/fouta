@@ -791,6 +791,109 @@ body.user-page-mes-commandes .statut-acceptee {
   }
 }
 
+/* Mobile compact : bannière « continuer », pills hero — aligné sur mon-compte */
+@media (max-width: 600px) {
+  body.user-page-mes-commandes .user-content,
+  body.user-page-commandes-annulees .user-content,
+  body.user-page-produits-livres .user-content,
+  body.user-page-profil .user-content {
+    padding: clamp(0.75rem, 3vw, 1.25rem);
+  }
+
+  .mc-continue-banner {
+    padding: clamp(0.75rem, 2.8vw, 1.05rem) clamp(0.85rem, 2.5vw, 1.15rem);
+    border-radius: 14px;
+  }
+
+  .mc-continue-icon {
+    width: clamp(36px, 9vw, 44px);
+    height: clamp(36px, 9vw, 44px);
+    font-size: clamp(1rem, 2.8vw, 1.15rem);
+    border-radius: 10px;
+  }
+
+  .mc-continue-text strong {
+    font-size: clamp(0.85rem, 3.2vw, 0.95rem);
+  }
+
+  .mc-continue-text p {
+    font-size: clamp(0.7rem, 2.3vw, 0.8rem);
+  }
+
+  .mc-continue-actions {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+  }
+
+  .mc-continue-actions .mc-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 0.4rem 0.5rem;
+    font-size: clamp(0.68rem, 2.6vw, 0.76rem);
+    min-height: clamp(32px, 8vw, 36px);
+    border-radius: 9px;
+    gap: 0.35rem;
+  }
+
+  .mc-orders-hero {
+    padding: clamp(0.75rem, 2.5vw, 1.05rem) clamp(0.85rem, 2.5vw, 1rem);
+    border-radius: 14px;
+  }
+
+  .mc-stat-pill--compact {
+    padding: 0.32rem 0.5rem;
+    gap: 0.35rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mc-stat-pill--compact i {
+    font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+  }
+
+  .mc-stat-pill--compact strong {
+    font-size: clamp(0.95rem, 3vw, 1.05rem);
+  }
+
+  .mc-stat-pill--compact span {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 400px) {
+  .mc-continue-banner {
+    padding: 0.65rem 0.7rem;
+    border-radius: 12px;
+  }
+
+  .mc-continue-actions .mc-btn {
+    padding: 0.35rem 0.4rem;
+    font-size: 0.65rem;
+    min-height: 30px;
+    border-radius: 8px;
+  }
+
+  .mc-stat-pill--compact {
+    padding: 0.28rem 0.42rem;
+  }
+
+  .mc-stat-pill--compact strong {
+    font-size: 0.9rem;
+  }
+
+  .mc-stat-pill--compact span {
+    font-size: 8.5px;
+  }
+
+  .mc-orders-hero {
+    padding: 0.65rem;
+    border-radius: 12px;
+  }
+}
+
 @media (max-width: 480px) {
   .mc-stat-pill {
     min-width: 100%;

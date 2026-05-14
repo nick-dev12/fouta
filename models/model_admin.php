@@ -325,7 +325,8 @@ function update_admin($id, $data)
             UPDATE admin SET
                 nom = :nom,
                 prenom = :prenom,
-                email = :email
+                email = :email,
+                telephone = :telephone
             WHERE id = :id
         ");
 
@@ -333,7 +334,8 @@ function update_admin($id, $data)
             'id' => $id,
             'nom' => $data['nom'],
             'prenom' => $data['prenom'],
-            'email' => $data['email']
+            'email' => $data['email'],
+            'telephone' => $data['telephone'] ?? null
         ]);
     } catch (PDOException $e) {
         return false;

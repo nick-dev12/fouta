@@ -1150,8 +1150,10 @@ body {
         flex: 1;
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: clamp(3px, 1.2vw, 6px);
+        gap: clamp(2px, 1vw, 4px);
         min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
     }
 
     .user-sidebar .user-dock-menu-btn {
@@ -1229,13 +1231,14 @@ body {
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        gap: clamp(4px, 1vw, 6px);
-        padding: clamp(6px, 1.8vw, 9px) clamp(5px, 1vw, 8px)
-            clamp(7px, 1.8vw, 11px);
+        gap: clamp(3px, 0.8vw, 5px);
+        padding: clamp(5px, 1.5vw, 8px) clamp(3px, 0.8vw, 6px)
+            clamp(6px, 1.5vw, 9px);
         margin: 0;
-        border-radius: 14px;
+        border-radius: 12px;
         min-width: 0;
-        max-width: none;
+        max-width: 100%;
+        overflow: hidden;
     }
 
     .user-sidebar .menu-item--dock-mini .menu-item-icon {
@@ -1247,18 +1250,20 @@ body {
 
     .user-sidebar .menu-item--dock-mini .menu-item-text {
         flex: 0 1 auto;
-        font-size: clamp(0.58rem, 2.05vw + 0.06rem, 0.6875rem);
+        font-size: clamp(0.55rem, 1.85vw, 0.65rem);
         font-weight: 600;
-        line-height: 1.15;
+        line-height: 1.1;
         text-align: center;
-        hyphens: auto;
-        max-width: none;
-        white-space: normal;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        line-clamp: 2;
+        max-width: 100%;
+        min-width: 0;
+        white-space: nowrap;
         overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        padding: 0 2px;
+        hyphens: none;
+        -webkit-line-clamp: unset;
+        -webkit-box-orient: unset;
     }
 
     /* Panneau « Menu » plein écran (hors aside, z sous les modales produits ~4800) */
@@ -1455,6 +1460,29 @@ body {
     #userContent.user-content {
         padding-bottom: calc(var(--user-bottom-nav-clearance) + env(safe-area-inset-bottom, 0px) + 0.85rem)
             !important;
+    }
+
+    @media (max-width: 600px) {
+        .user-sidebar .menu-item--dock-mini .menu-item-text {
+            font-size: clamp(0.5rem, 1.6vw, 0.6rem);
+        }
+
+        .user-sidebar .menu-item--dock-mini {
+            padding: clamp(4px, 1.2vw, 6px) clamp(2px, 0.6vw, 4px) clamp(5px, 1.2vw, 7px);
+        }
+    }
+
+    @media (max-width: 360px) {
+        .user-sidebar .menu-item--dock-mini .menu-item-text {
+            font-size: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .user-sidebar .menu-item--dock-mini .menu-item-icon {
+            width: clamp(28px, 9vw, 32px);
+            height: clamp(28px, 9vw, 32px);
+            font-size: clamp(0.85rem, 2.8vw, 0.95rem);
+        }
     }
 }
 
