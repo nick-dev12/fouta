@@ -10,7 +10,7 @@ if (!defined('SITE_BRAND_TAGLINE')) {
     define('SITE_BRAND_TAGLINE', 'Marketplace Sénégal — toutes les boutiques, tous les produits');
 }
 if (!defined('SITE_BRAND_CONTACT_EMAIL')) {
-    define('SITE_BRAND_CONTACT_EMAIL', 'contact@colobanes.sn');
+    define('SITE_BRAND_CONTACT_EMAIL', 'contact@colobanes.com');
 }
 
 if (!function_exists('site_brand_seo_title_default')) {

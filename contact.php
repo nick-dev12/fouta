@@ -43,8 +43,7 @@ if (!isset($_SESSION['contact_csrf'])) {
     $_SESSION['contact_csrf'] = bin2hex(random_bytes(32));
 }
 
-$email_contact = 'contact@colobanes.sn';
-$telephones_contact = ['+221 33 870 00 70'];
+$email_contact = 'contact@colobanes.com';
 $adresse_contact = 'Rond Point Colobane, Dakar, Sénégal';
 
 $contact_social_cfg = file_exists(__DIR__ . '/config/social.php') ? require __DIR__ . '/config/social.php' : [];
@@ -274,13 +273,6 @@ $seo_canonical = $base . '/contact.php';
         <div class="contact-grid">
             <div class="contact-info">
                 <h3><i class="fas fa-info-circle"></i> Nos coordonnées</h3>
-                <div class="contact-item">
-                    <i class="fas fa-phone"></i>
-                    <div>
-                        <strong>Téléphone</strong><br>
-                        <a href="tel:<?php echo preg_replace('/\s+/', '', $telephones_contact[0]); ?>"><?php echo htmlspecialchars($telephones_contact[0]); ?></a>
-                    </div>
-                </div>
                 <div class="contact-item">
                     <i class="fas fa-map-marker-alt"></i>
                     <div>

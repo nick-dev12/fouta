@@ -336,6 +336,18 @@
   display: none !important;
 }
 
+/* Fieldset sans cadre navigateur (onglets téléphone / email) */
+.login-fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+#panel-phone.login-panel form {
+  gap: clamp(20px, 4.5vw, 32px);
+}
+
 .login-panel form,
 form.auth-inscription-form {
   display: flex;
@@ -655,13 +667,42 @@ form.auth-inscription-form {
   }
 
   .login-mode-tabs button {
-    padding: 12px 14px;
-    font-size: 0.85rem;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    border-radius: 12px;
+    min-height: 40px;
   }
 
   .input-wrapper > input {
     padding: 14px 16px 14px 48px;
     font-size: 16px;
+  }
+
+  /* Formulaire téléphone : éléments un peu plus compacts sur mobile */
+  #panel-phone .form-group label {
+    font-size: 0.78rem;
+    gap: 6px;
+  }
+
+  #panel-phone .input-wrapper > input {
+    padding: 11px 14px 11px 42px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+
+  #panel-phone .input-wrapper--intl-tel > .iti {
+    border-radius: 12px;
+  }
+
+  #panel-phone .btn-submit {
+    padding: 12px 18px;
+    font-size: 0.88rem;
+    border-radius: 14px;
+  }
+
+  #panel-phone .checkbox-group label {
+    font-size: 0.78rem;
+    line-height: 1.35;
   }
 
   .btn-submit {
@@ -672,6 +713,23 @@ form.auth-inscription-form {
 @media (max-width: 360px) {
   .login-mode-tabs {
     grid-template-columns: 1fr;
+  }
+
+  .login-mode-tabs button {
+    padding: 7px 10px;
+    font-size: 0.74rem;
+    min-height: 36px;
+  }
+
+  #panel-phone .input-wrapper > input {
+    padding: 10px 12px 10px 38px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  #panel-phone .btn-submit {
+    padding: 10px 16px;
+    font-size: 0.82rem;
   }
 
   .auth-card__head h1 {

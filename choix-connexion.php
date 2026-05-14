@@ -175,18 +175,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
                 <div class="form-group">
                     <label for="pin"><i class="fas fa-key"></i> Code PIN ou mot de passe *</label>
                     <div class="input-wrapper password-wrapper">
-                        <input type="password" id="pin" name="pin" placeholder="Le même secret que pour votre compte" autocomplete="current-password">
+                        <input type="password" id="pin" name="pin" placeholder="Pin ou mot de passe" autocomplete="current-password">
                         <button type="button" class="password-toggle" aria-label="Afficher le code"
                             onclick="togglePassword('pin', this)">
                             <i class="fas fa-eye"></i>
                         </button>
+                    </div>
+                    <div class="forgot-password-link">
+                        <a href="/mot-de-passe-oublie.php">Mot de passe oublié ?</a>
                     </div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="accepte_conditions_phone" name="accepte_conditions_phone" value="1" <?php echo (isset($_POST['accepte_conditions_phone']) && $_POST['accepte_conditions_phone'] === '1') ? 'checked' : ''; ?>>
                     <label for="accepte_conditions_phone">
                         J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>
-                        (obligatoire pour les comptes clients — les accès équipe ne nécessitent pas cette case)
                     </label>
                 </div>
                 <button type="submit" class="btn-submit"<?php echo $login_locked ? ' disabled' : ''; ?>>
@@ -231,7 +233,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
                     <input type="checkbox" id="accepte_conditions" name="accepte_conditions" value="1" <?php echo (isset($_POST['accepte_conditions']) && $_POST['accepte_conditions'] === '1') ? 'checked' : ''; ?>>
                     <label for="accepte_conditions">
                         J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>
-                        (obligatoire pour les comptes clients)
                     </label>
                 </div>
 

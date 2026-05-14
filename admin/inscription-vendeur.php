@@ -21,6 +21,8 @@ if (!empty($result['success'])) {
 $err = (!empty($result['message']) && empty($result['success'])) ? $result['message'] : '';
 
 require_once __DIR__ . '/../includes/asset_version.php';
+require_once __DIR__ . '/../includes/site_url.php';
+$url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -127,8 +129,7 @@ require_once __DIR__ . '/../includes/asset_version.php';
                     </form>
 
                     <div class="auth-footer">
-                        <p><a href="login.php">Déjà inscrit ? Connexion vendeur</a></p>
-                        <p><a href="/choix-connexion.php">Autres types de connexion</a> · <a href="/choix-inscription.php">Créer un autre compte</a></p>
+                        <p><a href="<?php echo htmlspecialchars($url_choix_connexion, ENT_QUOTES, 'UTF-8'); ?>">Déjà inscrit ? Connexion vendeur</a></p>
                     </div>
                 </div>
             </div>

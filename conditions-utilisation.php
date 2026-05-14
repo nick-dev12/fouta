@@ -206,8 +206,7 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         </p>
         <ul>
             <li><strong>Adresse postale d'accueil (siège d'exploitation associé au site)</strong> : Rond Point Colobane, Dakar, Sénégal ;</li>
-            <li><strong>Courriel</strong> : <a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a> ;</li>
-            <li><strong>Téléphone</strong> : <a href="tel:+221338700070">+221 33 870 00 70</a>.</li>
+            <li><strong>Courriel</strong> : <a href="mailto:contact@colobanes.com">contact@colobanes.com</a>.</li>
         </ul>
         <p>
             Les coordonnées affichées sur le site au moment de votre requête prévalent en cas de mise à jour ultérieure non encore reflétée dans le présent document.

@@ -219,8 +219,7 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         </p>
         <ul>
             <li><strong>Adresse</strong> : Rond Point Colobane, Dakar, Sénégal ;</li>
-            <li><strong>Courriel dédié vie privée / support</strong> : <a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a> (merci de préciser « Données personnelles » dans l'objet pour un traitement prioritaire) ;</li>
-            <li><strong>Téléphone</strong> : <a href="tel:+221338700070">+221 33 870 00 70</a>.</li>
+            <li><strong>Courriel dédié vie privée / support</strong> : <a href="mailto:contact@colobanes.com">contact@colobanes.com</a> (merci de préciser « Données personnelles » dans l'objet pour un traitement prioritaire).</li>
         </ul>
         <p>
             Selon l'organisation interne et la taille des opérations, COLObanes peut désigner une personne référente « correspondant vie privée » ou un service interne chargé de centraliser les demandes relatives aux droits des personnes (voir section 13).
@@ -367,7 +366,7 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         </p>
         <p>
             Aucune décision produisant des effets juridiques significatifs vis-à-vis de vous (par exemple refus systématique de tout moyen de paiement sans explication humaine) n'est prise <strong>sans possibilité d'intervention humaine</strong>, sauf obligation légale contraire.
-            Vous pouvez contester une décision vous concernant en écrivant à <a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a>.
+            Vous pouvez contester une décision vous concernant en écrivant à <a href="mailto:contact@colobanes.com">contact@colobanes.com</a>.
         </p>
 
         <h2 id="priv-6">6. Destinataires, sous-traitants et transferts</h2>
@@ -511,7 +510,7 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             <li><strong>Directives post-mortem</strong> : selon le droit applicable local quant à la transmission ou la suppression de certaines données.</li>
         </ul>
         <p>
-            Pour exercer vos droits : écrivez à <a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a> en joignant une preuve d'identité proportionnée (scan d'identité avec masquage des données non nécessaires si vous le souhaitez).
+            Pour exercer vos droits : écrivez à <a href="mailto:contact@colobanes.com">contact@colobanes.com</a> en joignant une preuve d'identité proportionnée (scan d'identité avec masquage des données non nécessaires si vous le souhaitez).
             Nous nous efforçons de répondre sous <strong>30 jours</strong> ; ce délai peut être prolongé en cas de complexité, avec information préalable.
         </p>
 

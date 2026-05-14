@@ -26,25 +26,19 @@ $__footer_home = $__footer_is_boutique ? boutique_url('index.php', $__footer_slu
 $__footer_panier = $__footer_is_boutique ? boutique_url('panier.php', $__footer_slug) : '/panier.php';
 $__footer_produits = $__footer_is_boutique ? boutique_url('produits.php', $__footer_slug) : '/produits.php';
 $__footer_contact = $__footer_is_boutique ? boutique_url('contact.php', $__footer_slug) : '/contact.php';
-$__footer_tel = '';
 $__footer_mail = '';
 $__footer_addr = '';
 if ($__footer_is_boutique) {
-    $__footer_tel = trim((string) ($__footer_vd['telephone'] ?? ''));
     $__footer_mail = trim((string) ($__footer_vd['email'] ?? ''));
     $__footer_addr = trim((string) ($__footer_vd['boutique_adresse'] ?? ''));
-    if ($__footer_tel === '') {
-        $__footer_tel = '+221 33 870 00 70';
-    }
     if ($__footer_mail === '') {
-        $__footer_mail = 'contact@colobanes.sn';
+        $__footer_mail = 'contact@colobanes.com';
     }
     if ($__footer_addr === '') {
-        $__footer_addr = 'Adresse non renseignée — contactez la boutique par téléphone ou email.';
+        $__footer_addr = 'Adresse non renseignée — contactez la boutique par courriel.';
     }
 } else {
-    $__footer_tel = '+221 33 870 00 70';
-    $__footer_mail = 'contact@colobanes.sn';
+    $__footer_mail = 'contact@colobanes.com';
     $__footer_addr = 'Rond Point Colobane, Dakar, Sénégal';
 }
 
@@ -74,10 +68,6 @@ $__footer_show_social = ($__wa_t !== '' && preg_replace('/[^0-9]/', '', $__wa_t)
         <div class="footer_item">
             <h3 class="footer_item_titl"><?php echo $__footer_is_boutique ? 'La boutique' : 'Contact'; ?></h3>
             <ul class="footer_list">
-                <li class="li footer_list_item">
-                    <i class="fas fa-phone"></i>
-                    <a href="tel:<?php echo htmlspecialchars(preg_replace('/\s+/', '', $__footer_tel), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($__footer_tel, ENT_QUOTES, 'UTF-8'); ?></a>
-                </li>
                 <li class="li footer_list_item">
                     <i class="fas fa-map-marker-alt"></i>
                     <span><?php echo nl2br(htmlspecialchars($__footer_addr, ENT_QUOTES, 'UTF-8')); ?></span>
