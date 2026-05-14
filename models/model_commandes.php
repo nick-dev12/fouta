@@ -687,6 +687,188 @@ function get_commande_produits($commande_id) {
 }
 
 /**
+ * Première image web (/upload/…) pour vignette liste commandes (vide si aucune image).
+ */
+function commande_resume_thumb_web_path($commande_id)
+{
+    $cid = (int) $commande_id;
+    if ($cid <= 0) {
+        return '';
+    }
+    foreach (get_commande_produits($cid) as $ln) {
+        $img = '';
+        if (!empty($ln['image_afficher'])) {
+            $img = trim((string) $ln['image_afficher']);
+        }
+        if ($img === '' && !empty($ln['image_principale'])) {
+            $img = trim((string) $ln['image_principale']);
+        }
+        if ($img !== '' && strpos($img, '..') === false && strpbrk($img, "\0<>") === false) {
+            return '/upload/' . str_replace('\\', '/', $img);
+        }
+    }
+    return '';
+}
+
+/**
+ * Regroupement pour filtres « Mes commandes » (client).
+ *
+ * @return 'en_cours'|'livrees'|'annulees'
+ */
+function commande_bucket_public_ui($statut)
+{
+    $s = (string) $statut;
+    if ($s === 'annulee') {
+        return 'annulees';
+    }
+    if ($s === 'livree' || $s === 'paye') {
+        return 'livrees';
+    }
+    return 'en_cours';
+}
+
+/**
+ * Date affichée type « 15 mai 2026 » (timezone serveur).
+ */
+function format_date_fr_long($datetime_str)
+{
+    if ($datetime_str === null || trim((string) $datetime_str) === '') {
+        return '';
+    }
+    $ts = strtotime((string) $datetime_str);
+    if ($ts === false) {
+        return '';
+    }
+    $months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    $m = (int) date('n', $ts);
+    return (int) date('j', $ts) . ' ' . ($months[$m - 1] ?? '') . ' ' . date('Y', $ts);
+}
+
+/**
+ * Libellés et mise en forme carte commande — espace client.
+ *
+ * @return array{status_label:string,status_mod:string,hint:string,cta_label:string,cta_icon:string,cta_track:bool,detail_href:string}
+ */
+function commande_present_ui_client(array $commande)
+{
+    $st = (string) ($commande['statut'] ?? '');
+    $cid = (int) ($commande['id'] ?? 0);
+    $detail_href = 'commande-categorie.php?commande_id=' . $cid;
+
+    if ($st === 'annulee') {
+        return [
+            'status_label' => 'Annulée',
+            'status_mod' => 'ocl-status--muted',
+            'hint' => '',
+            'cta_label' => 'Voir les détails',
+            'cta_icon' => 'fa-eye',
+            'cta_track' => false,
+            'detail_href' => $detail_href,
+        ];
+    }
+    if ($st === 'livree' || $st === 'paye') {
+        $when = !empty($commande['date_livraison'])
+            ? format_date_fr_long($commande['date_livraison'])
+            : format_date_fr_long($commande['date_commande'] ?? '');
+        return [
+            'status_label' => 'Livré',
+            'status_mod' => 'ocl-status--green',
+            'hint' => $when !== '' ? ('Livré le ' . $when) : '',
+            'cta_label' => 'Voir les détails',
+            'cta_icon' => 'fa-eye',
+            'cta_track' => false,
+            'detail_href' => $detail_href,
+        ];
+    }
+    if ($st === 'livraison_en_cours') {
+        $hint = !empty($commande['date_livraison'])
+            ? ('Livraison prévue : ' . format_date_fr_long($commande['date_livraison']))
+            : 'Votre commande est en cours de livraison.';
+        return [
+            'status_label' => 'En cours de livraison',
+            'status_mod' => 'ocl-status--blue',
+            'hint' => $hint,
+            'cta_label' => 'Suivre ma commande',
+            'cta_icon' => 'fa-truck',
+            'cta_track' => true,
+            'detail_href' => $detail_href,
+        ];
+    }
+
+    return [
+        'status_label' => 'En préparation',
+        'status_mod' => 'ocl-status--blue',
+        'hint' => 'Nous préparons votre commande.',
+        'cta_label' => 'Suivre ma commande',
+        'cta_icon' => 'fa-truck',
+        'cta_track' => true,
+        'detail_href' => $detail_href,
+    ];
+}
+
+/**
+ * Libellés carte commande — admin / vendeur (lien vers details.php).
+ *
+ * @return array{status_label:string,status_mod:string,hint:string,cta_label:string,cta_icon:string,detail_href:string}
+ */
+function commande_present_ui_vendor(array $commande)
+{
+    $st = (string) ($commande['statut'] ?? '');
+    $cid = (int) ($commande['id'] ?? 0);
+    $detail_href = 'details.php?id=' . $cid;
+    $client = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''));
+    if ($client === '') {
+        $client = 'Client';
+    }
+
+    if ($st === 'annulee') {
+        return [
+            'status_label' => 'Annulée',
+            'status_mod' => 'ocl-status--muted',
+            'hint' => $client,
+            'cta_label' => 'Voir les détails',
+            'cta_icon' => 'fa-eye',
+            'detail_href' => $detail_href,
+        ];
+    }
+    if ($st === 'livree' || $st === 'paye') {
+        $when = !empty($commande['date_livraison'])
+            ? format_date_fr_long($commande['date_livraison'])
+            : format_date_fr_long($commande['date_commande'] ?? '');
+        return [
+            'status_label' => $st === 'paye' ? 'Payée' : 'Livré',
+            'status_mod' => 'ocl-status--green',
+            'hint' => ($when !== '' ? ('Livré le ' . $when . ' · ') : '') . $client,
+            'cta_label' => 'Voir les détails',
+            'cta_icon' => 'fa-eye',
+            'detail_href' => $detail_href,
+        ];
+    }
+    if ($st === 'livraison_en_cours') {
+        $hint = !empty($commande['date_livraison'])
+            ? ('Livraison prévue : ' . format_date_fr_long($commande['date_livraison']))
+            : ('Client : ' . $client);
+        return [
+            'status_label' => 'En cours de livraison',
+            'status_mod' => 'ocl-status--blue',
+            'hint' => $hint,
+            'cta_label' => 'Voir la commande',
+            'cta_icon' => 'fa-truck',
+            'detail_href' => $detail_href,
+        ];
+    }
+
+    return [
+        'status_label' => ucfirst(str_replace('_', ' ', $st)),
+        'status_mod' => 'ocl-status--blue',
+        'hint' => 'Client : ' . $client,
+        'cta_label' => 'Voir les détails',
+        'cta_icon' => 'fa-eye',
+        'detail_href' => $detail_href,
+    ];
+}
+
+/**
  * Récupère les commandes d'un utilisateur groupées par catégorie
  * @param int $user_id L'ID de l'utilisateur
  * @param int $categorie_id L'ID de la catégorie (optionnel)

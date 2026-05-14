@@ -572,4 +572,64 @@ function update_admin_statut($id, $statut)
     }
 }
 
+/**
+ * Vendeurs avec vitrine publique (pour sitemap SEO).
+ *
+ * @return array<int, array{id:int, slug:string, boutique_nom:string, date_creation:?string, logo_rel:?string}>
+ */
+function get_actifs_vendeurs_pour_sitemap()
+{
+    global $db;
+
+    try {
+        $has_logo = false;
+        try {
+            $chk = $db->query('SHOW COLUMNS FROM `admin` LIKE ' . $db->quote('boutique_logo'));
+            $has_logo = $chk && $chk->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            $has_logo = false;
+        }
+
+        $stmt = $db->prepare('
+            SELECT id, boutique_slug AS slug, boutique_nom, date_creation ' . ($has_logo ? ', boutique_logo' : '') . "
+            FROM admin
+            WHERE statut = 'actif'
+              AND boutique_slug IS NOT NULL
+              AND TRIM(boutique_slug) <> ''
+              AND COALESCE(TRIM(role), '') = 'vendeur'
+            ORDER BY boutique_slug ASC
+        ");
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!$rows) {
+            return [];
+        }
+        $out = [];
+        foreach ($rows as $r) {
+            $slug = trim((string) ($r['slug'] ?? ''));
+            if ($slug === '') {
+                continue;
+            }
+            $item = [
+                'id' => (int) $r['id'],
+                'slug' => $slug,
+                'boutique_nom' => isset($r['boutique_nom']) ? (string) $r['boutique_nom'] : '',
+                'date_creation' => isset($r['date_creation']) ? $r['date_creation'] : null,
+                'logo_rel' => null,
+            ];
+            if ($has_logo && !empty($r['boutique_logo'])) {
+                $rel = trim((string) $r['boutique_logo']);
+                $rel = ltrim($rel, '/');
+                if ($rel !== '' && strpos($rel, '..') === false) {
+                    $item['logo_rel'] = $rel;
+                }
+            }
+            $out[] = $item;
+        }
+        return $out;
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
 ?>

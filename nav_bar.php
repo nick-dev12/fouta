@@ -61,10 +61,73 @@ if (isset($_SESSION['user_id'])) {
 }
 $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier.php';
 $nav_compte_href = '/choix-connexion.php';
+$nav_compte_btn_class = 'nav-compte-btn';
+$nav_compte_title = 'Mon compte';
+$nav_compte_subtitle = 'Identifiez-vous';
+$nav_compte_logged = false;
+
 if (isset($_SESSION['commercant_id'])) {
+    $nav_compte_logged = true;
     $nav_compte_href = '/view/profil_commercent.php';
+    if (isset($commercant) && !empty($commercant['nom'])) {
+        $explode_nom = explode(' ', $commercant['nom']);
+        $nav_compte_subtitle = htmlspecialchars($explode_nom[0] ?? $commercant['nom'], ENT_QUOTES, 'UTF-8');
+    }
+} elseif (isset($_SESSION['admin_id'])) {
+    $nav_compte_logged = true;
+    $nav_compte_href = '/admin/dashboard.php';
+    $nav_compte_btn_class .= ' nav-compte-btn--admin';
+    $__role_nav = (string) ($_SESSION['admin_role'] ?? 'admin');
+    if ($__role_nav === 'vendeur') {
+        $nav_compte_btn_class .= ' nav-compte-btn--boutique';
+        $__bn = trim((string) ($_SESSION['admin_boutique_nom'] ?? ''));
+        if ($__bn === '') {
+            $mid_nav = (int) ($_SESSION['admin_id'] ?? 0);
+            if ($mid_nav > 0 && file_exists(__DIR__ . '/models/model_admin.php')) {
+                require_once __DIR__ . '/models/model_admin.php';
+                if (function_exists('get_admin_by_id')) {
+                    $__adm_nav = get_admin_by_id($mid_nav);
+                    if ($__adm_nav) {
+                        $__bn = trim((string) ($__adm_nav['boutique_nom'] ?? ''));
+                        if ($__bn !== '') {
+                            $_SESSION['admin_boutique_nom'] = $__bn;
+                        }
+                        $__bs = trim((string) ($__adm_nav['boutique_slug'] ?? ''));
+                        if ($__bs !== '') {
+                            $_SESSION['admin_boutique_slug'] = $__bs;
+                        }
+                    }
+                }
+            }
+        }
+        if ($__bn !== '') {
+            $nav_compte_title = htmlspecialchars($__bn, ENT_QUOTES, 'UTF-8');
+            $nav_compte_subtitle = htmlspecialchars('Ma boutique', ENT_QUOTES, 'UTF-8');
+        } else {
+            $nav_compte_title = htmlspecialchars('Ma boutique', ENT_QUOTES, 'UTF-8');
+            $__nom_ad = trim((string) ($_SESSION['admin_nom'] ?? ''));
+            $nav_compte_subtitle = htmlspecialchars($__nom_ad !== '' ? $__nom_ad : 'Espace vendeur', ENT_QUOTES, 'UTF-8');
+        }
+    } else {
+        $nav_compte_title = htmlspecialchars('Espace équipe', ENT_QUOTES, 'UTF-8');
+        $__nom_ad = trim((string) ($_SESSION['admin_nom'] ?? ''));
+        $nav_compte_subtitle = htmlspecialchars($__nom_ad !== '' ? $__nom_ad : 'Administration', ENT_QUOTES, 'UTF-8');
+    }
 } elseif (isset($_SESSION['user_id'])) {
+    $nav_compte_logged = true;
     $nav_compte_href = '/user/mon-compte.php';
+    $__nom_cli = trim((string) ($_SESSION['user_nom'] ?? ''));
+    if ($__nom_cli !== '') {
+        $nav_compte_title = htmlspecialchars($__nom_cli, ENT_QUOTES, 'UTF-8');
+        $nav_compte_subtitle = htmlspecialchars('Mon compte', ENT_QUOTES, 'UTF-8');
+    } elseif (!empty($_SESSION['user_prenom'])) {
+        $nav_compte_title = htmlspecialchars(trim((string) $_SESSION['user_prenom']), ENT_QUOTES, 'UTF-8');
+        $nav_compte_subtitle = htmlspecialchars('Mon compte', ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if ($nav_compte_logged) {
+    $nav_compte_btn_class .= ' nav-compte-btn--logged';
 }
 $nav_panier_href = isset($_SESSION['user_id'])
     ? $u_panier
@@ -437,16 +500,40 @@ $nav_panier_href = isset($_SESSION['user_id'])
         .nav-compte-btn {
             min-width: auto;
             padding: 8px 12px;
-            flex-direction: row;
-            gap: 6px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
             flex-shrink: 0;
+            max-width: 140px;
         }
 
-        .nav-compte-title {
+        .nav-compte-btn:not(.nav-compte-btn--boutique):not(.nav-compte-btn--logged) .nav-compte-title {
             display: none;
         }
 
-        .nav-compte-subtitle {
+        .nav-compte-btn--boutique .nav-compte-title,
+        .nav-compte-btn--logged:not(.nav-compte-btn--boutique) .nav-compte-title {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.15;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-compte-btn--boutique .nav-compte-subtitle {
+            font-size: 10px;
+            font-weight: 500;
+            opacity: 0.92;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-compte-btn:not(.nav-compte-btn--boutique) .nav-compte-subtitle {
             font-size: 12px;
             font-weight: 600;
         }
@@ -575,18 +662,9 @@ $nav_panier_href = isset($_SESSION['user_id'])
                 <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
             <?php endif; ?>
         </a>
-        <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>" class="nav-compte-btn">
-            <span class="nav-compte-title">Mon compte</span>
-            <span class="nav-compte-subtitle"><?php
-            if (isset($_SESSION['commercant_id']) && isset($commercant) && !empty($commercant['nom'])) {
-                $explode_nom = explode(' ', $commercant['nom']);
-                echo htmlspecialchars($explode_nom[0] ?? $commercant['nom']);
-            } elseif (isset($_SESSION['user_id']) && !empty($_SESSION['user_prenom'])) {
-                echo htmlspecialchars($_SESSION['user_prenom']);
-            } else {
-                echo 'Identifiez-vous';
-            }
-            ?></span>
+        <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo htmlspecialchars($nav_compte_btn_class, ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="nav-compte-title"><?php echo $nav_compte_title; ?></span>
+            <span class="nav-compte-subtitle"><?php echo $nav_compte_subtitle; ?></span>
             <i class="fa-solid fa-chevron-down nav-compte-chevron"></i>
         </a>
     </div>

@@ -14,12 +14,17 @@ require_once __DIR__ . '/../conn/conn.php';
  */
 function user_email_exists($email) {
     global $db;
-    
+
+    $email = trim((string) $email);
+    if ($email === '') {
+        return false;
+    }
+
     try {
         $stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE email = :email");
         $stmt->execute(['email' => $email]);
         $count = $stmt->fetchColumn();
-        
+
         return $count > 0;
     } catch (PDOException $e) {
         return false;
@@ -33,12 +38,17 @@ function user_email_exists($email) {
  */
 function get_user_by_email($email) {
     global $db;
-    
+
+    $email = trim((string) $email);
+    if ($email === '') {
+        return false;
+    }
+
     try {
         $stmt = $db->prepare("SELECT * FROM users WHERE email = :email");
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         return $user ? $user : false;
     } catch (PDOException $e) {
         return false;
@@ -46,14 +56,135 @@ function get_user_by_email($email) {
 }
 
 /**
- * Récupère un utilisateur par téléphone (chiffres uniquement, format libre en saisie)
+ * Normalise un numéro saisi : uniquement les chiffres (comparaisons, doublons, insertion).
+ */
+function users_normalize_phone_digits($telephone) {
+    return preg_replace('/\D/', '', (string) $telephone);
+}
+
+/**
+ * Valeur du doublon MySQL considérée comme « vide » (email absent).
+ */
+function users_mysql_duplicate_value_is_empty($dup_val) {
+    if ($dup_val === null) {
+        return true;
+    }
+    $s = trim((string) $dup_val);
+    return $s === '' || strtoupper($s) === 'NULL';
+}
+
+/**
+ * Extrait nom de contrainte / index et valeur du message d’erreur doublon MySQL (1062).
+ *
+ * @return array{key:string,value:?string}
+ */
+function users_parse_mysql_duplicate_message(PDOException $e) {
+    $driver_msg = isset($e->errorInfo[2]) ? (string) $e->errorInfo[2] : '';
+    $blob = $driver_msg !== '' ? $driver_msg : $e->getMessage();
+
+    $key = '';
+    if (preg_match('/for key `([^`]+)`/iu', $blob, $mk)) {
+        $key = strtolower(trim($mk[1]));
+    } elseif (preg_match("/for key '([^']+)'/iu", $blob, $mk)) {
+        $key = strtolower(trim($mk[1]));
+    } elseif (preg_match('/for key "([^"]+)"/iu', $blob, $mk)) {
+        $key = strtolower(trim($mk[1]));
+    }
+    if ($key !== '' && strpos($key, '.') !== false) {
+        $parts = explode('.', $key);
+        $key = strtolower(trim(end($parts)));
+    }
+
+    $value = null;
+    if (preg_match("/duplicate entry\\s+'([^']*)'/iu", $blob, $mv)) {
+        $value = $mv[1];
+    }
+
+    return ['key' => $key, 'value' => $value];
+}
+
+/**
+ * Message utilisateur lisible à partir d'une erreur PDO lors de la création de compte.
+ */
+function users_format_create_user_exception(PDOException $e) {
+    $info = $e->errorInfo ?? [];
+    $state = isset($info[0]) ? (string) $info[0] : '';
+    $driver_code = isset($info[1]) ? (string) $info[1] : '';
+    $driver_msg = isset($info[2]) ? (string) $info[2] : '';
+    $blob_lc = strtolower($driver_msg . ' ' . $e->getMessage());
+
+    // Doublon MySQL / SQLSTATE 23000 (libellés FR possible : « Doublon »)
+    $is_dup = ($state === '23000' || $driver_code === '1062'
+        || strpos($blob_lc, 'duplicate') !== false || strpos($blob_lc, 'doublon') !== false);
+
+    if ($is_dup) {
+        $parsed = users_parse_mysql_duplicate_message($e);
+        $dup_key = $parsed['key'];
+        $dup_val = $parsed['value'];
+
+        $looks_like_email_idx = ($dup_key !== '' && (
+            preg_match('/(^|_)email($|_)/', $dup_key)
+            || strpos($dup_key, 'idx_email') !== false
+        ));
+        $looks_like_tel_idx = ($dup_key !== '' && preg_match('/tel|phone|mobile/', $dup_key));
+
+        if ($looks_like_tel_idx && !$looks_like_email_idx) {
+            return 'Ce numéro de téléphone est déjà enregistré.';
+        }
+
+        if ($looks_like_email_idx) {
+            if (users_mysql_duplicate_value_is_empty($dup_val)) {
+                return 'Inscription sans email impossible avec la configuration actuelle de la base : une contrainte unique sur l’email bloque plusieurs comptes sans email. Exécutez la migration migrations/fix_users_email_unique_optional.sql (email nullable + suppression des emails vides), ou renseignez une adresse email.';
+            }
+            return 'Cet email est déjà utilisé par un autre compte.';
+        }
+
+        // Repli si le nom de clé n’a pas été reconnu : éviter les faux positifs « email » (ex. sous-chaîne dans un autre texte)
+        if (
+            strpos($blob_lc, 'telephone') !== false || strpos($blob_lc, 'téléphone') !== false
+            || strpos($blob_lc, 'tel') !== false || strpos($blob_lc, 'phone') !== false
+        ) {
+            return 'Ce numéro de téléphone est déjà enregistré.';
+        }
+        if (strpos($blob_lc, 'idx_email') !== false || preg_match('/for key [`\'"][^`\'"]*email[^`\'"]*[`\'"]/iu', $driver_msg . $e->getMessage())) {
+            if (users_mysql_duplicate_value_is_empty($dup_val)) {
+                return 'Inscription sans email impossible avec la configuration actuelle de la base : une contrainte unique sur l’email bloque plusieurs comptes sans email. Exécutez la migration migrations/fix_users_email_unique_optional.sql (email nullable + suppression des emails vides), ou renseignez une adresse email.';
+            }
+            return 'Cet email est déjà utilisé par un autre compte.';
+        }
+
+        return 'Certaines informations sont déjà utilisées par un autre compte.';
+    }
+
+    if ($state === 'HY000' && strpos($blob_lc, 'cannot be null') !== false) {
+        return 'Une donnée obligatoire manque côté serveur (schéma base). Contactez le support.';
+    }
+
+    if (
+        strpos($blob_lc, 'data too long') !== false || strpos($blob_lc, 'too long') !== false
+        || $driver_code === '1406'
+    ) {
+        return 'Une valeur dépasse la taille maximale autorisée (nom, email ou téléphone trop long).';
+    }
+
+    if (strpos($blob_lc, 'unknown column') !== false) {
+        return 'La base de données semble incomplète (mise à jour manquante). Contactez le support.';
+    }
+
+    return 'Erreur lors de l\'enregistrement'
+        . ($state !== '' ? ' (' . $state . ').' : '.')
+        . ' Réessayez ou contactez le support.';
+}
+
+/**
+ * Récupère un utilisateur par téléphone (chiffres uniquement, format libre en saisie).
  * @param string $telephone
  * @return array|false
  */
 function get_user_by_telephone($telephone) {
     global $db;
 
-    $digits = preg_replace('/\D/', '', (string) $telephone);
+    $digits = users_normalize_phone_digits($telephone);
     if ($digits === '') {
         return false;
     }
@@ -100,12 +231,29 @@ function get_user_by_id($id) {
  * @param string $email L'email de l'utilisateur
  * @param string $telephone Le téléphone de l'utilisateur
  * @param string $password_hash Le mot de passe hashé
+ * @param string|null $creation_error Message précis si échec (référence)
  * @return int|false L'ID de l'utilisateur créé ou False en cas d'erreur
  */
-function create_user($nom, $prenom, $email, $telephone, $password_hash) {
+function create_user($nom, $prenom, $email, $telephone, $password_hash, &$creation_error = null) {
     global $db;
 
-    $email_bind = ($email === null || $email === '') ? null : $email;
+    $creation_error = null;
+
+    if (!$db) {
+        $creation_error = 'Connexion à la base de données impossible. Réessayez plus tard.';
+        return false;
+    }
+
+    $email_bind = null;
+    if ($email !== null && trim((string) $email) !== '') {
+        $email_bind = trim((string) $email);
+    }
+
+    $tel_digits = users_normalize_phone_digits($telephone);
+    if ($tel_digits === '') {
+        $creation_error = 'Numéro de téléphone invalide après normalisation.';
+        return false;
+    }
 
     try {
         $stmt = $db->prepare("
@@ -117,16 +265,18 @@ function create_user($nom, $prenom, $email, $telephone, $password_hash) {
             'nom' => $nom,
             'prenom' => $prenom,
             'email' => $email_bind,
-            'telephone' => $telephone,
+            'telephone' => $tel_digits,
             'password' => $password_hash
         ]);
         
         if ($result) {
             return $db->lastInsertId();
         }
-        
+
+        $creation_error = 'L\'enregistrement du compte a été refusé sans détail technique.';
         return false;
     } catch (PDOException $e) {
+        $creation_error = users_format_create_user_exception($e);
         return false;
     }
 }

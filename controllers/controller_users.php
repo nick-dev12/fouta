@@ -187,8 +187,10 @@ function process_user_inscription() {
     
     // Récupération et validation des données
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
-    $email = isset($_POST['email']) ? trim($_POST['email']) : '';
-    $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
+    $email_raw = isset($_POST['email']) ? trim((string) $_POST['email']) : '';
+    $email = $email_raw;
+    $telephone_raw = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
+    $telephone_digits = users_normalize_phone_digits($telephone_raw);
     $pin = isset($_POST['pin']) ? (string) $_POST['pin'] : '';
     $pin_confirm = isset($_POST['pin_confirm']) ? (string) $_POST['pin_confirm'] : '';
     $prenom = '';
@@ -209,12 +211,12 @@ function process_user_inscription() {
         }
     }
 
-    // Validation du téléphone
-    if (empty($telephone)) {
+    // Validation du téléphone (normalisation internationale → chiffres)
+    if ($telephone_raw === '' || $telephone_digits === '') {
         $errors[] = 'Le téléphone est obligatoire.';
-    } elseif (!preg_match('/^[0-9+\-\s()]+$/', $telephone)) {
-        $errors[] = 'Le format du téléphone n\'est pas valide.';
-    } elseif (get_user_by_telephone($telephone)) {
+    } elseif (strlen($telephone_digits) < 8) {
+        $errors[] = 'Le numéro de téléphone semble incomplet (trop peu de chiffres).';
+    } elseif (get_user_by_telephone($telephone_digits)) {
         $errors[] = 'Ce numéro de téléphone est déjà enregistré.';
     }
 
@@ -232,13 +234,16 @@ function process_user_inscription() {
         $password_hash = password_hash($pin, PASSWORD_BCRYPT);
         $email_db = $email !== '' ? $email : null;
 
-        $user_id = create_user($nom, $prenom, $email_db, $telephone, $password_hash);
+        $creation_err = null;
+        $user_id = create_user($nom, $prenom, $email_db, $telephone_digits, $password_hash, $creation_err);
         
         if ($user_id) {
             $success = true;
             $message = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
         } else {
-            $errors[] = 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.';
+            $errors[] = $creation_err !== null && $creation_err !== ''
+                ? $creation_err
+                : 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.';
         }
     }
     
@@ -246,7 +251,7 @@ function process_user_inscription() {
     if ($success) {
         return ['success' => true, 'message' => $message];
     } else {
-        $message = !empty($errors) ? implode('<br>', $errors) : 'Une erreur est survenue.';
+        $message = !empty($errors) ? implode("\n", $errors) : 'Une erreur est survenue.';
         return ['success' => false, 'message' => $message];
     }
 }
