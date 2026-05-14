@@ -45,7 +45,7 @@ if ($__footer_is_boutique) {
 } else {
     $__footer_tel = '+221 33 870 00 70';
     $__footer_mail = 'contact@colobanes.sn';
-    $__footer_addr = 'Rond point ZAC MBAO, Dakar';
+    $__footer_addr = 'Rond Point Colobane, Dakar, Sénégal';
 }
 
 $__footer_social_cfg = file_exists(__DIR__ . '/config/social.php') ? require __DIR__ . '/config/social.php' : [];

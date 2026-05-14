@@ -5,31 +5,50 @@
 
 @media (max-width: 1024px) {
   :root {
-    --shop-bottom-nav-clearance: 5.75rem;
+    --shop-bottom-nav-clearance: clamp(6rem, 14vw, 6.85rem);
   }
 
   html {
     scroll-padding-bottom: calc(
-      var(--shop-bottom-nav-clearance, 5.75rem) + env(safe-area-inset-bottom, 0px)
+      var(--shop-bottom-nav-clearance, 6rem) + env(safe-area-inset-bottom, 0px)
     );
   }
 
   body {
     padding-bottom: calc(
-      var(--shop-bottom-nav-clearance, 5.75rem) + env(safe-area-inset-bottom, 0px) + 10px
+      var(--shop-bottom-nav-clearance, 6rem) + env(safe-area-inset-bottom, 0px) + 10px
     );
   }
 
-  /* Masquer les actions doubles (dock remplace MENU + Nouveautés / Promo / Contact) */
-  .section1-left,
-  .section1-right {
-    display: none !important;
+  /* Dock complète la navigation ; la barre section1 reste visible (MENU + raccourcis) */
+  .section1 {
+    flex-wrap: nowrap;
+    gap: clamp(6px, 1.6vw, 14px);
+    padding-block: clamp(6px, 1.4vw, 10px);
+    padding-inline: clamp(10px, 2vw, 18px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    justify-content: flex-start;
+    align-items: center;
+    box-sizing: border-box;
   }
 
-  .section1 {
-    justify-content: center;
-    padding-block: 8px;
-    gap: 8px;
+  .section1-left,
+  .section1-right {
+    display: flex !important;
+    flex-shrink: 0;
+    align-items: center;
+  }
+
+  .section1-center {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .section1-center.section1-center--mp-title {
+    flex: 0 1 auto;
+    min-width: min(280px, 45vw);
   }
 
   /* Dock fixe */
@@ -105,14 +124,14 @@
   }
 
   .shop-dock-ic {
-    width: clamp(34px, 10vw, 40px);
-    height: clamp(34px, 10vw, 40px);
+    width: clamp(38px, 11vw, 44px);
+    height: clamp(38px, 11vw, 44px);
     border-radius: 12px;
     background: rgba(53, 100, 166, 0.1);
     color: var(--couleur-dominante);
     display: grid;
     place-items: center;
-    font-size: clamp(1rem, 3.2vw, 1.1rem);
+    font-size: clamp(1.08rem, 3.5vw, 1.2rem);
     flex-shrink: 0;
   }
 
@@ -127,7 +146,7 @@
   }
 
   .shop-dock-lb {
-    font-size: clamp(0.58rem, 2vw + 0.05rem, 0.6875rem);
+    font-size: clamp(0.65rem, 2.15vw + 0.06rem, 0.75rem);
     font-weight: 700;
     text-align: center;
     line-height: 1.15;
@@ -142,7 +161,7 @@
   .shop-dock-badge {
     position: absolute;
     top: 2px;
-    right: clamp(10%, calc(50% - 34px));
+    right: clamp(8%, calc(50% - min(40px, 11vw)));
     min-width: 17px;
     height: 17px;
     padding: 0 4px;
@@ -172,7 +191,7 @@
     background: rgba(53, 100, 166, 0.08);
     color: var(--couleur-dominante);
     font-family: var(--font-corps, sans-serif);
-    font-size: clamp(0.58rem, 2vw + 0.05rem, 0.6875rem);
+    font-size: clamp(0.65rem, 2.15vw + 0.06rem, 0.75rem);
     font-weight: 700;
     cursor: pointer;
     transition:
@@ -191,13 +210,62 @@
   }
 
   .shop-dock-more-ic {
-    width: clamp(34px, 10vw, 40px);
-    height: clamp(34px, 10vw, 40px);
+    width: clamp(38px, 11vw, 44px);
+    height: clamp(38px, 11vw, 44px);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.78);
     display: grid;
     place-items: center;
-    font-size: clamp(1rem, 3.2vw, 1.12rem);
+    font-size: clamp(1.08rem, 3.5vw, 1.22rem);
+  }
+
+  /* Tablettes : icônes et libellés plus grands ; mobile : léger gain vs ancienne base */
+  @media (min-width: 769px) {
+    .shop-bottom-dock {
+      padding-top: 20px;
+      gap: clamp(6px, 2vw, 12px);
+    }
+
+    .shop-dock-item {
+      gap: 6px;
+      padding: 8px 6px 10px;
+    }
+
+    .shop-dock-ic {
+      width: clamp(46px, 7vw, 56px);
+      height: clamp(46px, 7vw, 56px);
+      border-radius: 14px;
+      font-size: clamp(1.28rem, 2.8vw, 1.48rem);
+    }
+
+    .shop-dock-lb {
+      font-size: clamp(0.78rem, 1.55vw + 0.38rem, 0.875rem);
+      line-height: 1.2;
+    }
+
+    .shop-dock-more {
+      width: clamp(62px, 11vw, 78px);
+      max-width: 5.25rem;
+      gap: 6px;
+      padding: 8px 7px 10px;
+      font-size: clamp(0.78rem, 1.55vw + 0.38rem, 0.875rem);
+    }
+
+    .shop-dock-more-ic {
+      width: clamp(46px, 7vw, 56px);
+      height: clamp(46px, 7vw, 56px);
+      border-radius: 14px;
+      font-size: clamp(1.28rem, 2.8vw, 1.52rem);
+    }
+
+    .shop-dock-badge {
+      top: 3px;
+      right: clamp(8%, calc(50% - min(42px, 9vw)));
+      min-width: 18px;
+      height: 18px;
+      font-size: 9.5px;
+      line-height: 18px;
+    }
   }
 
   /* Feuille « Menu » (sous l’assistant Jotform si présent ~10060) */

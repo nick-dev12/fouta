@@ -5,7 +5,7 @@ session_start();
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
 $seo_title = 'Politique de Confidentialité - COLObanes';
-$seo_description = 'Politique de confidentialité COLObanes : protection des données sur notre marketplace multi-boutiques au Sénégal. Vos informations sont traitées avec sécurité.';
+$seo_description = 'Politique de confidentialité COLObanes : base légale, catégories de données, sécurité, appareils, cookies, durées de conservation, droits des personnes et sous-traitants.';
 $seo_canonical = $base . '/politique-confidentialite.php';
 ?>
 <!DOCTYPE html>
@@ -21,9 +21,9 @@ $seo_canonical = $base . '/politique-confidentialite.php';
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <style>
         .legal-page {
-            max-width: 900px;
+            max-width: 920px;
             margin: 40px auto;
-            padding: 40px 20px 80px;
+            padding: 40px 24px 80px;
             background: var(--blanc);
             border-radius: 10px;
             box-shadow: var(--ombre-douce);
@@ -31,33 +31,56 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         .legal-page h1 {
             color: var(--titres);
             font-size: 32px;
-            margin-bottom: 30px;
+            margin-bottom: 16px;
             text-align: center;
             border-bottom: 3px solid var(--couleur-dominante);
             padding-bottom: 15px;
         }
+        .legal-page .legal-updated {
+            text-align: center;
+            color: var(--gris-moyen);
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
         .legal-page h2 {
             color: var(--titres);
-            font-size: 20px;
-            margin-top: 30px;
-            margin-bottom: 15px;
+            font-size: 1.25rem;
+            margin-top: 36px;
+            margin-bottom: 14px;
+            padding-top: 8px;
+            border-top: 1px solid var(--noir-pale);
+        }
+        .legal-page h2:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+        .legal-page h3 {
+            color: var(--gris-fonce);
+            font-size: 1.05rem;
+            margin-top: 22px;
+            margin-bottom: 10px;
+        }
+        .legal-page h4 {
+            color: var(--gris-fonce);
+            font-size: 0.98rem;
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }
+        .legal-page p, .legal-page li {
+            color: var(--texte-fonce);
+            font-size: 15px;
+            line-height: 1.85;
+            margin-bottom: 12px;
         }
         .legal-page p {
-            color: var(--texte-fonce);
-            font-size: 15px;
-            line-height: 1.8;
-            margin-bottom: 15px;
             text-align: justify;
         }
-        .legal-page ul {
-            margin: 15px 0;
-            padding-left: 30px;
+        .legal-page ul, .legal-page ol {
+            margin: 12px 0 18px;
+            padding-left: 28px;
         }
         .legal-page li {
-            color: var(--texte-fonce);
-            font-size: 15px;
-            line-height: 1.8;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .legal-page a {
             color: var(--couleur-dominante);
@@ -67,6 +90,71 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             color: var(--orange);
             text-decoration: underline;
         }
+        .legal-toc {
+            background: var(--fond-secondaire);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 20px 22px;
+            margin-bottom: 32px;
+        }
+        .legal-toc strong {
+            display: block;
+            margin-bottom: 12px;
+            color: var(--titres);
+        }
+        .legal-toc ol {
+            margin: 0;
+            padding-left: 22px;
+        }
+        .legal-toc li {
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        .legal-table-wrap {
+            overflow-x: auto;
+            margin: 18px 0;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+        }
+        .legal-table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .legal-table-wrap th,
+        .legal-table-wrap td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+            vertical-align: top;
+        }
+        .legal-table-wrap th {
+            background: var(--bleu-pale);
+            color: var(--titres);
+            font-weight: 600;
+        }
+        .legal-table-wrap tr:last-child td {
+            border-bottom: none;
+        }
+        .legal-note {
+            font-size: 13px;
+            color: var(--gris-moyen);
+            font-style: italic;
+            margin-top: 20px;
+            margin-bottom: 16px;
+            padding: 14px;
+            background: var(--bleu-pale);
+            border-radius: 8px;
+            border-left: 4px solid var(--couleur-dominante);
+            text-align: left;
+        }
+        .legal-cross {
+            margin-top: 28px;
+            padding: 16px;
+            border-radius: 8px;
+            background: var(--fond-secondaire);
+            font-size: 14px;
+        }
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -74,110 +162,387 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             margin-top: 30px;
             padding: 12px 24px;
             background: var(--couleur-dominante);
-            color: var(--texte-clair);
-            text-decoration: none;
+            color: var(--texte-clair) !important;
+            text-decoration: none !important;
             border-radius: 8px;
             transition: all 0.3s ease;
         }
         .back-link:hover {
             background: var(--orange);
-            color: var(--texte-clair);
+            color: var(--texte-clair) !important;
         }
     </style>
 </head>
 <body>
     <?php include('nav_bar.php'); ?>
-    
+
     <div class="legal-page">
-        <h1><i class="fas fa-shield-alt"></i> Politique de Confidentialité</h1>
-        
-        <p><strong>Dernière mise à jour : <?php echo date('d/m/Y'); ?></strong></p>
-        
-        <h2>1. Introduction</h2>
+        <h1><i class="fas fa-shield-alt" aria-hidden="true"></i> Politique de confidentialité et de protection des données</h1>
+        <p class="legal-updated"><strong>Dernière mise à jour :</strong> <?php echo htmlspecialchars(date('d/m/Y'), ENT_QUOTES, 'UTF-8'); ?></p>
+
         <p>
-            <strong>COLObanes</strong> est une plateforme marketplace qui met en relation des boutiques et vendeurs au Sénégal avec des acheteurs. Nous nous engageons à protéger la confidentialité de vos informations personnelles.
-            Cette politique explique comment nous collectons, utilisons et protégeons vos données
-            lorsque vous utilisez le site, passez commande ou ouvrez une boutique partenaire.
+            La présente politique décrit comment <strong>COLObanes</strong> (« nous », « notre », « la Plateforme »), dans le cadre de son activité de marketplace en ligne au Sénégal,
+            <strong>collecte</strong>, <strong>utilise</strong>, <strong>conserve</strong>, <strong>partage</strong> et <strong>protège</strong> les informations relatives aux personnes physiques qui utilisent le site, l'application mobile ou les services associés
+            (visiteurs, clients, vendeurs partenaires et, le cas échéant, leurs représentants).
+            Nous nous engageons à traiter les données de manière <strong>loyale</strong>, <strong>transparente</strong> et <strong>sécurisée</strong>, et à limiter la collecte au strict nécessaire aux finalités décrites ci-dessous.
         </p>
-        
-        <h2>2. Données Collectées</h2>
-        <p>Dans le cadre de nos activités (mise en relation commerciale, commandes marketplace, espaces vendeurs), nous collectons notamment :</p>
-        <ul>
-            <li>Nom et prénom</li>
-            <li>Adresse email</li>
-            <li>Numéro de téléphone</li>
-            <li>Adresse de livraison et zone de livraison</li>
-            <li>Informations relatives à vos commandes (produits, quantités, personnalisations)</li>
-            <li>Instructions spéciales pour les livraisons (codes d'accès, étage, etc.)</li>
-            <li>Données de navigation et cookies</li>
-        </ul>
-        
-        <h2>3. Utilisation des Données</h2>
-        <p>Vos données sont utilisées pour :</p>
-        <ul>
-            <li>Traiter et suivre vos commandes auprès des vendeurs concernés</li>
-            <li>Transmettre les informations nécessaires aux vendeurs pour préparer ou expédier vos achats</li>
-            <li>Gérer la livraison et le suivi des commandes</li>
-            <li>Vous contacter concernant vos commandes (confirmation, suivi, livraison)</li>
-            <li>Améliorer nos services et votre expérience sur le site</li>
-            <li>Vous envoyer des communications marketing (uniquement avec votre consentement explicite)</li>
-        </ul>
-        
-        <h2>4. Protection des Données</h2>
         <p>
-            Nous mettons en œuvre des mesures de sécurité appropriées pour protéger vos informations personnelles 
-            contre tout accès non autorisé, modification, divulgation ou destruction. Vos données de paiement 
-            et informations sensibles sont traitées avec une attention particulière.
+            L'utilisation du Service implique la prise de connaissance de cette politique ainsi que des
+            <a href="/conditions-utilisation.php">Conditions générales d'utilisation</a>.
         </p>
-        
-        <h2>5. Partage des Données</h2>
+
+        <div class="legal-toc">
+            <strong>Sommaire</strong>
+            <ol>
+                <li><a href="#priv-1">Responsable du traitement et contact</a></li>
+                <li><a href="#priv-2">Principes et engagements</a></li>
+                <li><a href="#priv-3">Données collectées et origine</a></li>
+                <li><a href="#priv-4">Finalités et bases légales du traitement</a></li>
+                <li><a href="#priv-5">Décisions automatisées et profilage</a></li>
+                <li><a href="#priv-6">Destinataires, sous-traitants et transferts</a></li>
+                <li><a href="#priv-7">Durées de conservation</a></li>
+                <li><a href="#priv-8">Mesures de sécurité des données et des systèmes</a></li>
+                <li><a href="#priv-9">Appareils, journaux techniques et application mobile</a></li>
+                <li><a href="#priv-10">Cookies et technologies similaires</a></li>
+                <li><a href="#priv-11">Communications électroniques et notifications</a></li>
+                <li><a href="#priv-12">Mineurs</a></li>
+                <li><a href="#priv-13">Vos droits</a></li>
+                <li><a href="#priv-14">Réclamations auprès d'une autorité</a></li>
+                <li><a href="#priv-15">Évolution de cette politique</a></li>
+            </ol>
+        </div>
+
+        <h2 id="priv-1">1. Responsable du traitement et contact</h2>
         <p>
-            Nous ne vendons, n'échangeons ni ne louons vos informations personnelles à des tiers. 
-            Vos données peuvent être partagées uniquement avec :
+            Pour les traitements réalisés dans le cadre de l'exploitation de la Plateforme COLObanes, le <strong>responsable du traitement</strong> est l'entité opérant le service e-marketplace sous la marque COLObanes,
+            joignable aux coordonnées suivantes :
         </p>
         <ul>
-            <li>Les vendeurs / boutiques partenaires, dans la stricte mesure nécessaire à l’exécution de votre commande</li>
-            <li>Nos prestataires techniques ou de livraison pour l’acheminement et le bon fonctionnement du service</li>
-            <li>Les autorités compétentes en cas d'obligation légale</li>
+            <li><strong>Adresse</strong> : Rond Point Colobane, Dakar, Sénégal ;</li>
+            <li><strong>Courriel dédié vie privée / support</strong> : <a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a> (merci de préciser « Données personnelles » dans l'objet pour un traitement prioritaire) ;</li>
+            <li><strong>Téléphone</strong> : <a href="tel:+221338700070">+221 33 870 00 70</a>.</li>
         </ul>
-        
-        <h2>6. Conservation des Données</h2>
         <p>
-            Nous conservons vos données personnelles pendant la durée nécessaire à l'exécution de nos services 
-            et au respect de nos obligations légales (notamment comptables). Les données relatives aux commandes 
-            sont conservées conformément à la réglementation en vigueur.
+            Selon l'organisation interne et la taille des opérations, COLObanes peut désigner une personne référente « correspondant vie privée » ou un service interne chargé de centraliser les demandes relatives aux droits des personnes (voir section 13).
+            L'absence de titre « DPD » ou « DPO » officiel n'empêche pas l'exercice de vos droits aux adresses ci-dessus.
         </p>
-        
-        <h2>7. Vos Droits</h2>
-        <p>Conformément à la réglementation sur la protection des données, vous disposez des droits suivants :</p>
+
+        <h2 id="priv-2">2. Principes et engagements</h2>
+        <p>Nous appliquons notamment les principes suivants :</p>
         <ul>
-            <li><strong>Droit d'accès</strong> : obtenir une copie de vos données personnelles</li>
-            <li><strong>Droit de rectification</strong> : corriger vos informations inexactes ou incomplètes</li>
-            <li><strong>Droit à l'effacement</strong> : demander la suppression de votre compte et de vos données</li>
-            <li><strong>Droit d'opposition</strong> : vous opposer au traitement de vos données à des fins marketing</li>
+            <li><strong>Licéité, loyauté et transparence</strong> : chaque traitement repose sur une base légale identifiée (consentement, exécution d'un contrat, obligation légale, intérêt légitime équilibré) et vous est expliqué dans la mesure du possible sans compromettre la sécurité du site.</li>
+            <li><strong>Minimisation</strong> : nous ne collectons que les données adéquates, pertinentes et limitées à ce qui est nécessaire.</li>
+            <li><strong>Exactitude</strong> : nous vous invitons à mettre à jour vos informations ; nous pouvons corriger des erreurs manifestes signalées.</li>
+            <li><strong>Limitation de la conservation</strong> : les données ne sont pas gardées au-delà des durées indiquées à la section 7, sauf obligation légale contraire.</li>
+            <li><strong>Intégrité et confidentialité</strong> : mesures techniques et organisationnelles appropriées contre tout accès non autorisé, perte ou altération (section 8).</li>
+            <li><strong>Responsabilisation</strong> : documentation interne, contrôles d'accès, clauses de confidentialité avec les prestataires et sensibilisation des équipes habilitées.</li>
         </ul>
-        <p>Pour exercer ces droits, contactez-nous à l'adresse indiquée ci-dessous.</p>
-        
-        <h2>8. Cookies</h2>
+
+        <h2 id="priv-3">3. Données collectées et origine</h2>
+        <h3>3.1 Données d'identification et de compte</h3>
+        <ul>
+            <li>Nom, prénom ou dénomination sociale pour les professionnels ;</li>
+            <li>Identifiant de connexion (adresse électronique ou identifiant attribué) ;</li>
+            <li>Mot de passe : stocké sous forme <strong>cryptographiquement dérivée</strong> (hachage sécurisé) — nous ne conservons pas le mot de passe en clair ;</li>
+            <li>Numéro de téléphone mobile ou fixe ;</li>
+            <li>Éventuellement date de naissance ou pièce d'identité <strong>uniquement si la réglementation ou la vérification « vendeur » l'exige</strong>, avec information préalable sur la finalité.</li>
+        </ul>
+
+        <h3>3.2 Données de commande, livraison et relation commerciale</h3>
+        <ul>
+            <li>Adresses postales complètes (livraison et, le cas échéant, facturation) ;</li>
+            <li>Zone ou commune de livraison sélectionnée ;</li>
+            <li>Détails des commandes : références produits, quantités, prix, personnalisations, messages associés au panier ou à la commande ;</li>
+            <li>Historique des statuts de commande, échanges avec le support ou avec la boutique ;</li>
+            <li>Éventuellement instructions de livraison sensibles (code porte, étage) : à fournir avec discernement ; elles sont traitées pour la seule exécution de la livraison.</li>
+        </ul>
+
+        <h3>3.3 Données de paiement</h3>
         <p>
-            Notre site utilise des cookies pour améliorer votre expérience de navigation (mémorisation du panier, 
-            préférences, session). Vous pouvez configurer ou désactiver les cookies dans les paramètres de votre navigateur. 
-            Certaines fonctionnalités du site pourraient être limitées en cas de désactivation.
+            Selon le moyen de paiement, nous pouvons traiter des <strong>métadonnées de transaction</strong> (montant, devise FCFA, statut, identifiant de transaction fourni par le prestataire, moyen générique utilisé : carte, mobile money, espèces à la livraison).
+            Les <strong>numéros de carte complets</strong> sont en principe traités par des prestataires certifiés (redirection, page hébergée ou tokenisation) conformément au standard PCI-DSS applicable.
+            Nous n'imprimons pas les codes cryptogrammes sur les reçus et ne vous demandons jamais par e-mail non sécurisé de communiquer votre code de carte ou votre mot de passe.
         </p>
-        
-        <h2>9. Contact</h2>
+
+        <h3>3.4 Données relatives aux vendeurs et boutiques partenaires</h3>
+        <ul>
+            <li>Informations d'immatriculation, représentants légaux, RIB ou coordonnées bancaires pour les virements, pièces justificatives ;</li>
+            <li>Contenus publics : description de la boutique, produits, visuels ;</li>
+            <li>Données de performance agrégées (chiffre d'affaires, nombre de commandes) nécessaires aux commissions ou à la comptabilité interne.</li>
+        </ul>
+
+        <h3>3.5 Données techniques, réseau et « appareil »</h3>
         <p>
-            Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, 
-            contactez-nous à : 
-<a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a>
-            ou par téléphone au <a href="tel:+221338700070">+221 33 870 00 70</a>.
+            À chaque requête vers nos serveurs, certaines informations sont enregistrées automatiquement dans des <strong>fichiers journaux serveur</strong> ou équivalents :
         </p>
-        
+        <ul>
+            <li>Adresse IP (IPv4 ou IPv6), parfois approximativement géolocalisée au niveau région/pays ;</li>
+            <li>Horodatage de la requête ;</li>
+            <li>Type et version du navigateur ou de l'application (User-Agent) ;</li>
+            <li>URL demandée, code de réponse HTTP, volume de données transféré ;</li>
+            <li>Identifiant de session technique ou jeton d'authentification côté navigateur / application ;</li>
+            <li>Sur <strong>application mobile</strong> (par exemple application Flutter sous la marque COLObanes) : identifiant d'installation ou jetons de notification push (Firebase Cloud Messaging ou équivalent), modèle d'appareil, version du système d'exploitation (Android / iOS), éventuellement identifiant publicitaire si vous l'avez autorisé au niveau du système.</li>
+        </ul>
+        <p>
+            Ces données servent principalement à la <strong>sécurité</strong> (détection d'abus, blocage d'IPs malveillantes), au <strong>dépannage</strong>, aux <strong>statistiques d'usage agrégées</strong> et à l'<strong>amélioration des performances</strong>.
+        </p>
+
+        <h3>3.6 Cookies et stockage local côté navigateur</h3>
+        <p>
+            Voir section 10 pour le détail des finalités (session, préférences, panier, mesure d'audience, etc.).
+        </p>
+
+        <h3>3.7 Données reçues de tiers</h3>
+        <p>
+            Si vous vous connectez ou interagissez via un compte tiers (réseau social, opérateur mobile), nous pouvons recevoir un identifiant technique ou des informations de profil que <strong>vous avez autorisées</strong> côté ce tiers.
+            Nous ne fusionnons pas ces données avec des dossiers tiers achetés sur le marché.
+        </p>
+
+        <h2 id="priv-4">4. Finalités et bases légales du traitement</h2>
+        <div class="legal-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Finalité</th>
+                        <th>Exemples de données</th>
+                        <th>Base légale principale (synthèse)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Création et gestion du compte utilisateur</td>
+                        <td>Identité, e-mail, mot de passe dérivé, préférences de compte</td>
+                        <td>Exécution des mesures précontractuelles / contrat ; intérêt légitime en matière de lutte contre la fraude à l'inscription</td>
+                    </tr>
+                    <tr>
+                        <td>Passation, suivi et livraison des commandes</td>
+                        <td>Coordonnées, détail du panier, statut, échanges logistiques</td>
+                        <td>Exécution du contrat de vente / de prestation marketplace</td>
+                    </tr>
+                    <tr>
+                        <td>Paiement et prévention de la fraude</td>
+                        <td>Métadonnées de transaction, logs de sécurité, score de risque interne</td>
+                        <td>Exécution du contrat ; obligation légale (compta, lutte contre le blanchiment le cas échéant) ; intérêt légitime à sécuriser les paiements</td>
+                    </tr>
+                    <tr>
+                        <td>Support client et médiation</td>
+                        <td>Historique des tickets, enregistrements d'appel si vous y consentez</td>
+                        <td>Exécution du contrat ; intérêt légitime à améliorer le service</td>
+                    </tr>
+                    <tr>
+                        <td>Obligations comptables et fiscales</td>
+                        <td>Factures, justificatifs, données de transaction conservées légalement</td>
+                        <td>Obligation légale</td>
+                    </tr>
+                    <tr>
+                        <td>Sécurité du site, détection d'abus</td>
+                        <td>Adresse IP, journaux, empreintes techniques</td>
+                        <td>Intérêt légitime ; obligation légale en cas de réquisition</td>
+                    </tr>
+                    <tr>
+                        <td>Amélioration du produit et statistiques d'usage</td>
+                        <td>Données agrégées ou pseudonymisées, parcours de navigation</td>
+                        <td>Intérêt légitime ; consentement pour certaines couches analytiques non essentielles</td>
+                    </tr>
+                    <tr>
+                        <td>Prospection commerciale par voie électronique</td>
+                        <td>E-mail, historique d'opt-in, préférences</td>
+                        <td>Consentement préalable lorsque requis par la loi ; intérêt légitime pour clients professionnels sous réserve de droit d'opposition</td>
+                    </tr>
+                    <tr>
+                        <td>Notifications push (application mobile)</td>
+                        <td>Jeton d'appareil FCM/APNs, préférences de notification</td>
+                        <td>Consentement explicite dans l'application ou les réglages système</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>
+            Lorsque le traitement est fondé sur l'<strong>intérêt légitime</strong>, nous avons procédé à une balance d'intérêts : par exemple, la journalisation courte des adresses IP pour bloquer des attaques par déni de service est nécessaire et proportionnée à la sécurité de l'ensemble des utilisateurs.
+        </p>
+
+        <h2 id="priv-5">5. Décisions automatisées et profilage</h2>
+        <p>
+            COLObanes peut mettre en œuvre des règles automatisées à finalité <strong>non juridiquement contraignante</strong> pour l'utilisateur : détection de paniers anormaux, scoring interne simple de risque fraude, classement de résultats de recherche en fonction de pertinence commerciale ou de disponibilité.
+        </p>
+        <p>
+            Aucune décision produisant des effets juridiques significatifs vis-à-vis de vous (par exemple refus systématique de tout moyen de paiement sans explication humaine) n'est prise <strong>sans possibilité d'intervention humaine</strong>, sauf obligation légale contraire.
+            Vous pouvez contester une décision vous concernant en écrivant à <a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a>.
+        </p>
+
+        <h2 id="priv-6">6. Destinataires, sous-traitants et transferts</h2>
+        <h3>6.1 Accès internes</h3>
+        <p>
+            Seules les personnes autorisées au sein de COLObanes (support client, équipes techniques, comptabilité, opérations logistiques) accèdent aux données, dans la limite du besoin d'en connaissance (<em>need-to-know</em>), avec authentification individuelle lorsque possible.
+        </p>
+
+        <h3>6.2 Vendeurs et partenaires logistiques</h3>
+        <p>
+            Pour exécuter une commande, nous transmettons au <strong>Vendeur</strong> concerné et, si besoin, à un <strong>transporteur ou livreur</strong>, les nom, téléphone, adresse et instructions strictement nécessaires.
+            Ces partenaires sont contractuellement tenus à une utilisation limitée aux fins de livraison ou de service après-vente, mais nous vous recommandons de consulter également leurs propres politiques lorsque vous interagissez directement avec eux hors Plateforme.
+        </p>
+
+        <h3>6.3 Prestataires techniques (hébergement, e-mail, analytics, Paiement)</h3>
+                 <p>
+            Nous faisons appel à des sous-traitants pour l'hébergement web, l'envoi d'e-mails transactionnels, la sauvegarde, l'analyse d'audience ou le traitement des paiements.
+            Ces acteurs sont sélectionnés pour leurs garanties de sécurité et liés par des clauses de confidentialité et de traitement des données conformes au droit applicable.
+        </p>
+        <p>
+            Certains prestataires peuvent être situés <strong>en dehors du Sénégal</strong> (par exemple infrastructure cloud en Europe ou aux États-Unis). Le cas échéant, nous veillons à mettre en place des garanties appropriées (clauses contractuelles types, localisation dans des pays reconnus adéquats, chiffrement en transit) selon les instruments disponibles.
+        </p>
+
+        <h3>6.4 Autorités publiques</h3>
+        <p>
+            Nous pouvons communiquer des données lorsque la loi l'exige (réquisition judiciaire, réponse à une administration compétente) ou pour protéger nos droits et la sécurité des utilisateurs, dans le strict cadre légal.
+        </p>
+
+        <h2 id="priv-7">7. Durées de conservation</h2>
+        <div class="legal-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Catégorie</th>
+                        <th>Durée indicative</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Données du compte client actif</td>
+                        <td>Pendant toute la durée de vie du compte + courtes périodes techniques de réplication sauvegarde</td>
+                    </tr>
+                    <tr>
+                        <td>Données de commande et facturation</td>
+                        <td>Durée imposée par la réglementation comptable et fiscale applicable (en pratique souvent jusqu'à <strong>dix (10) ans</strong> pour les pièces justificatives de facturation, sous réserve des textes en vigueur et de l'avis de votre conseil)</td>
+                    </tr>
+                    <tr>
+                        <td>Journaux serveur et sécurité</td>
+                        <td>De quelques jours à <strong>12 mois</strong> selon la criticité (trafic HTTP vs journaux d'authentification admin)</td>
+                    </tr>
+                    <tr>
+                        <td>Cookies non essentiels / analytics</td>
+                        <td>Conformément à la durée indiquée dans le bandeau ou les paramètres (souvent <strong>6 à 13 mois</strong> maximum pour un cookie d'audience)</td>
+                    </tr>
+                    <tr>
+                        <td>Prospection : données marketing</td>
+                        <td>Jusqu'au <strong>retrait du consentement</strong> ou <strong>3 ans</strong> d'inactivité depuis le dernier contact commercial émanant du client (usage courant), selon la politique interne affinée</td>
+                    </tr>
+                    <tr>
+                        <td>Données des comptes vendeurs</td>
+                        <td>Durée du contrat partenaire + obligations légales ; certains justificatifs peuvent être archivés au-delà</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>
+            À l'issue des durées, les données sont <strong>supprimées</strong> ou <strong>anonymisées irréversiblement</strong> lorsque leur conservation n'est plus justifiée.
+        </p>
+
+        <h2 id="priv-8">8. Mesures de sécurité des données et des systèmes</h2>
+        <p>Nous mettons en œuvre une approche de sécurité en profondeur, incluant notamment :</p>
+        <ul>
+            <li><strong>Chiffrement en transit</strong> : utilisation de TLS (HTTPS) pour les échanges entre votre navigateur ou application et nos API lorsque la stack technique le permet ;</li>
+            <li><strong>Gestion des mots de passe</strong> : algorithms de hachage adaptatifs (type bcrypt / argon2 selon implémentation), politique de réinitialisation sécurisée par lien à durée limitée ;</li>
+            <li><strong>Contrôle d'accès</strong> : comptes administrateur avec moindre privilège, journaux d'accès aux back-offices ;</li>
+            <li><strong>Protection des injections</strong> : requêtes paramétrées côté base de données, échappement des sorties pour limiter les failles XSS sur les zones dynamiques ;</li>
+            <li><strong>Sauvegardes</strong> : copies régulières pour la continuité d'activité, stockées sur des environnements distincts avec accès restreint ;</li>
+            <li><strong>Mises à jour</strong> : application de correctifs de sécurité sur les composants serveurs et dépendances dans des délais raisonnables ;</li>
+            <li><strong>Sensibilisation</strong> : consignes internes sur la lutte contre l'hameçonnage et la fraude au président (BEC).</li>
+        </ul>
+        <p>
+            Malgré ces mesures, <strong>aucune transmission sur Internet ne peut être garantie à 100&nbsp;% inviolable</strong>. Nous vous invitons à protéger vos terminaux (code de déverrouillage, antivirus à jour, méfiance vis-à-vis des liens suspects prétendant provenir de COLObanes).
+        </p>
+
+        <h2 id="priv-9">9. Appareils, journaux techniques et application mobile</h2>
+        <h3>9.1 Identifiants d'appareil et notifications</h3>
+        <p>
+            Lorsque vous installez l'application COLObanes et acceptez les notifications, un <strong>jeton unique</strong> est attribué par les services de Google (FCM sur Android) ou Apple (APNs sur iOS).
+            Ce jeton permet uniquement d'acheminer des messages (statut de commande, promotions si vous les avez acceptées) vers votre installation ; il peut être révoqué en désactivant les notifications dans les réglages de l'application ou du système.
+        </p>
+        <h3>9.2 Permissions matérielles</h3>
+        <p>
+            Selon les fonctions activées (ex. : scan d'un justificatif, choix d'photo de profil), l'application peut demander l'accès à la <strong>caméra</strong> ou à la <strong>galerie</strong>.
+            Ces accès ne sont sollicités qu'au moment de l'usage correspondant et peuvent être révoqués dans les paramètres Android / iOS.
+        </p>
+        <h3>9.3 Mode Web (PWA)</h3>
+        <p>
+            Si vous utilisez COLObanes via un navigateur en mode installable (PWA), des technologies similaires aux cookies et au cache local peuvent stocker des ressources pour le fonctionnement hors ligne partiel ; aucune donnée bancaire n'y est conservée en clair.
+        </p>
+
+        <h2 id="priv-10">10. Cookies et technologies similaires</h2>
+        <p>Nous pouvons utiliser :</p>
+        <ul>
+            <li><strong>Cookies strictement nécessaires</strong> : maintien de session, panier, équilibrage de charge, prévention CSRF ;</li>
+            <li><strong>Cookies de préférences</strong> : langue, choix d'affichage ;</li>
+            <li><strong>Cookies de mesure d'audience</strong> (si activés et consentis) : statistiques de fréquentation anonymisées ou pseudonymisées ;</li>
+            <li><strong>Stockage local / sessionStorage</strong> pour optimiser les performances côté client.</li>
+        </ul>
+        <p>
+            Vous pouvez configurer votre navigateur pour refuser certains cookies non essentiels ; le site peut alors perdre des fonctionnalités (ex. : panier persistant entre sessions).
+            Pour l'Union européenne ou d'autres juridictions imposant un consentement préalable aux traceurs non essentiels, COLObanes s'efforce d'afficher un mécanisme de choix conforme lorsque le Service cible ces utilisateurs.
+        </p>
+
+        <h2 id="priv-11">11. Communications électroniques et notifications</h2>
+        <ul>
+            <li><strong>E-mails transactionnels</strong> (confirmation de commande, réinitialisation de mot de passe) : envoyés sur la base de l'exécution du contrat ou de mesures précontractuelles ;</li>
+            <li><strong>Newsletters ou offres</strong> : uniquement avec votre accord préalable lorsque la loi l'exige, avec lien de désinscription clair dans chaque message ;</li>
+            <li><strong>SMS ou WhatsApp</strong> (si utilisés) : dans le cadre logistique ou avec consentement marketing distinct.</li>
+        </ul>
+
+        <h2 id="priv-12">12. Mineurs</h2>
+        <p>
+            Le Service est destiné aux personnes capables juridiquement de contracter. Les mineurs doivent utiliser la Plateforme sous la <strong>supervision et avec l'accord</strong> de leurs titulaires de l'autorité parentale.
+            Nous ne collectons pas sciemment de données à des fins commerciales directes auprès d'enfants sans base légale et autorisation appropriées.
+        </p>
+
+        <h2 id="priv-13">13. Vos droits</h2>
+        <p>
+            Conformément aux principes de protection des données reconnus au Sénégal (notamment la <strong>Loi n° 2008-12 du 25 janvier 2008</strong> d'orientation relative aux données à caractère personnel, dans les conditions et exceptions prévues par les textes d'application)
+            et, le cas échéant, au RGPD pour les personnes concernées situées dans l'Union européenne, vous pouvez exercer les droits suivants, sous réserve des exceptions légales :
+        </p>
+        <ul>
+            <li><strong>Droit d'information</strong> : la présente politique et les notices courtes au moment de la collecte ;</li>
+            <li><strong>Droit d'accès</strong> : obtenir une copie de vos données traitées ;</li>
+            <li><strong>Droit de rectification</strong> : corriger des inexactitudes via votre compte ou par e-mail ;</li>
+            <li><strong>Droit à l'effacement (« droit à l'oubli »)</strong> : lorsque le traitement n'est plus nécessaire au regard des finalités, sous réserve des motifs de conservation légale (ex. facturation) ;</li>
+            <li><strong>Droit à la limitation</strong> : gel temporaire du traitement en cas de contestation ;</li>
+            <li><strong>Droit à la portabilité</strong> : lorsque le traitement est fondé sur le consentement ou le contrat et réalisé par des moyens automatisés — nous fournissons les données dans un format structuré couramment utilisé lorsque c'est techniquement possible ;</li>
+            <li><strong>Droit d'opposition</strong> : notamment pour le marketing direct ;</li>
+            <li><strong>Retrait du consentement</strong> : lorsque le traitement est fondé sur le consentement, sans affecter la licéité des traitements antérieurs ;</li>
+            <li><strong>Directives post-mortem</strong> : selon le droit applicable local quant à la transmission ou la suppression de certaines données.</li>
+        </ul>
+        <p>
+            Pour exercer vos droits : écrivez à <a href="mailto:contact@colobanes.sn">contact@colobanes.sn</a> en joignant une preuve d'identité proportionnée (scan d'identité avec masquage des données non nécessaires si vous le souhaitez).
+            Nous nous efforçons de répondre sous <strong>30 jours</strong> ; ce délai peut être prolongé en cas de complexité, avec information préalable.
+        </p>
+
+        <h2 id="priv-14">14. Réclamations auprès d'une autorité</h2>
+        <p>
+            Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation auprès de l'autorité de protection des données compétente.
+
+            Au Sénégal, l'autorité historiquement désignée pour accompagner la mise en œuvre du cadre des données personnelles est la <strong>Commission de protection des données personnelles (CDP)</strong>
+            (vérifiez l'adresse et les modalités de saisine à jour sur les sites officiels de l'État du Sénégal).
+        </p>
+
+        <h2 id="priv-15">15. Évolution de cette politique</h2>
+        <p>
+            Nous pouvons modifier cette politique pour refléter l'évolution du Service, des outils technologiques (nouvelle application, nouveau prestataire de paiement) ou du cadre juridique.
+            La date de « dernière mise à jour » en tête de page sera ajustée ; pour les changements majeurs, une notification sur le site ou par e-mail pourra être utilisée lorsque cela est possible.
+        </p>
+
+        <p class="legal-note">
+            Ce document vise une transparence maximale sur nos pratiques. Il ne remplace pas un audit juridique ou une analyse sectorielle spécifique (santé, finance, enfants). Pour toute activité de traitement à haut risque, COLObanes peut réaliser ou faire réaliser une analyse d'impact (PIA / AIPD) conformément aux bonnes pratiques.
+        </p>
+
+        <div class="legal-cross">
+            <strong>Document associé :</strong>
+            <a href="/conditions-utilisation.php">Conditions générales d'utilisation</a>
+        </div>
+
         <a href="javascript:history.back()" class="back-link">
-            <i class="fas fa-arrow-left"></i> Retour
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Retour
         </a>
     </div>
-    
+
     <?php include('footer.php'); ?>
 </body>
 </html>

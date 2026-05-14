@@ -138,7 +138,7 @@ class FCMService {
 
   /// Code JavaScript à injecter dans la WebView pour enregistrer le token
   static String getTokenRegistrationScript(String token) {
-    final serverUrl = _serverUrl ?? 'https://samapiece.it.com';
+    final serverUrl = _serverUrl ?? 'https://colobanes.com';
     return '''
       (function() {
         const token = '$token';

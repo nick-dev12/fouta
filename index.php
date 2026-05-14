@@ -868,10 +868,60 @@ $seo_canonical = $base . '/';
         }
 
         .mp-showcase-nav-list .mp-sn-ico {
-            width: 28px;
-            text-align: center;
-            color: var(--bleu-clair);
-            font-size: 15px;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: var(--nav-soft-bg-1);
+            color: var(--nav-soft-fg-1);
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            box-shadow: var(--nav-soft-shadow);
+            transition:
+                box-shadow 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .mp-showcase-nav-list li:nth-child(7n + 2) .mp-sn-ico {
+            background: var(--nav-soft-bg-2);
+            color: var(--nav-soft-fg-2);
+        }
+
+        .mp-showcase-nav-list li:nth-child(7n + 3) .mp-sn-ico {
+            background: var(--nav-soft-bg-3);
+            color: var(--nav-soft-fg-3);
+        }
+
+        .mp-showcase-nav-list li:nth-child(7n + 4) .mp-sn-ico {
+            background: var(--nav-soft-bg-4);
+            color: var(--nav-soft-fg-4);
+        }
+
+        .mp-showcase-nav-list li:nth-child(7n + 5) .mp-sn-ico {
+            background: var(--nav-soft-bg-5);
+            color: var(--nav-soft-fg-5);
+        }
+
+        .mp-showcase-nav-list li:nth-child(7n + 6) .mp-sn-ico {
+            background: var(--nav-soft-bg-6);
+            color: var(--nav-soft-fg-6);
+        }
+
+        .mp-showcase-nav-list li:nth-child(7n + 7) .mp-sn-ico {
+            background: var(--nav-soft-bg-7);
+            color: var(--nav-soft-fg-7);
+        }
+
+        .mp-showcase-nav-list a:hover .mp-sn-ico {
+            box-shadow: var(--nav-soft-shadow-hover);
+            transform: scale(1.02);
+        }
+
+        .mp-showcase-nav-list .mp-sn-ico i {
+            font-size: 17px;
+            line-height: 1;
         }
 
         .mp-showcase-nav-list .mp-sn-chev {
@@ -1833,8 +1883,6 @@ $seo_canonical = $base . '/';
         $mp_nav_is_generale = false;
     }
 
-    $mp_nav_sidebar_icons = ['fa-star', 'fa-tshirt', 'fa-headphones', 'fa-futbol', 'fa-spray-can', 'fa-gem', 'fa-laptop', 'fa-couch', 'fa-car', 'fa-mobile-alt', 'fa-heart', 'fa-cube', 'fa-tag', 'fa-th'];
-
     require_once __DIR__ . '/includes/marketplace_home_helpers.php';
     if (file_exists(__DIR__ . '/models/model_recherches_catalogue.php')) {
         require_once __DIR__ . '/models/model_recherches_catalogue.php';
@@ -1926,24 +1974,30 @@ $seo_canonical = $base . '/';
                                 <i class="fas fa-star" aria-hidden="true"></i> Catégories pour vous
                             </div>
                             <ul class="mp-showcase-nav-list">
-                                <?php foreach ($mp_nav_cats as $ni => $nrow): ?>
+                                <?php foreach ($mp_nav_cats as $nrow): ?>
                                     <?php
                                     $nlabel = (string) ($nrow['nom'] ?? '');
                                     if ($nlabel === '') {
                                         continue;
                                     }
-                                    $sn_ico = $mp_nav_sidebar_icons[$ni % count($mp_nav_sidebar_icons)];
+                                    $sn_ic_class = function_exists('categorie_fa_icon_class')
+                                        ? categorie_fa_icon_class($nrow)
+                                        : 'fa-solid fa-layer-group';
+                                    $nid_nav = (int) ($nrow['id'] ?? 0);
                                     if ($mp_nav_is_generale) {
-                                        $nhref = 'produits.php?recherche=' . rawurlencode($nlabel);
+                                        $nhref = $nid_nav > 0 && function_exists('nav_categorie_generale_href')
+                                            ? nav_categorie_generale_href($nid_nav)
+                                            : ('produits.php?recherche=' . rawurlencode($nlabel));
                                     } else {
-                                        $nid = (int) ($nrow['id'] ?? 0);
-                                        $nhref = $nid > 0 ? 'categorie.php?id=' . $nid : 'produits.php';
+                                        $nhref = $nid_nav > 0 && function_exists('nav_categorie_href')
+                                            ? nav_categorie_href($nid_nav)
+                                            : 'produits.php';
                                     }
                                     ?>
                                     <li>
-                                        <a href="<?php echo htmlspecialchars($nhref); ?>">
-                                            <span class="mp-sn-ico"><i class="fas <?php echo htmlspecialchars($sn_ico); ?>"
-                                                    aria-hidden="true"></i></span>
+                                        <a href="<?php echo htmlspecialchars($nhref, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <span class="mp-sn-ico" aria-hidden="true"><i
+                                                    class="<?php echo htmlspecialchars($sn_ic_class, ENT_QUOTES, 'UTF-8'); ?>"></i></span>
                                             <?php echo htmlspecialchars($nlabel); ?>
                                             <span class="mp-sn-chev" aria-hidden="true"><i
                                                     class="fas fa-chevron-right"></i></span>

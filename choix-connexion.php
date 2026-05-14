@@ -24,6 +24,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
 }
 
 require_once __DIR__ . '/controllers/controller_users.php';
+login_attempt_unlock_if_expired();
 $result = process_unified_login();
 
 if (isset($result['success']) && $result['success'] && $result['type'] === 'admin' && $result['admin']) {
@@ -51,7 +52,7 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'user
     $_SESSION['user_id'] = $result['user']['id'];
     $_SESSION['user_nom'] = $result['user']['nom'];
     $_SESSION['user_prenom'] = $result['user']['prenom'];
-    $_SESSION['user_email'] = $result['user']['email'];
+    $_SESSION['user_email'] = (string) ($result['user']['email'] ?? '');
     $_SESSION['user_telephone'] = $result['user']['telephone'];
     $_SESSION['user_statut'] = $result['user']['statut'];
 
@@ -65,7 +66,14 @@ if (isset($_SESSION['inscription_success'])) {
     unset($_SESSION['inscription_success']);
 }
 
-$active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode'] === 'phone') ? 'phone' : 'email';
+login_attempt_unlock_if_expired();
+$login_remaining_seconds = login_attempt_remaining_seconds();
+$login_locked = $login_remaining_seconds > 0;
+
+$active_login_mode = 'phone';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (string) $_POST['login_mode'] === 'email') {
+    $active_login_mode = 'email';
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -77,354 +85,45 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
     <title>Connexion - COLObanes</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/auth-connexion.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: var(--font-corps);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-            background-color: var(--fond-page);
-        }
-
-        .auth-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 12px 30px;
-            background: #ffffff;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-            z-index: 100;
-        }
-
-        .auth-header .logo {
-            display: inline-block;
-        }
-
-        .auth-header .logo img {
-            height: 55px;
-            width: auto;
-            max-width: 140px;
-            object-fit: contain;
-        }
-
-        .auth-header .logo:hover {
-            opacity: 0.9;
-        }
-
-        .auth-content {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex: 1;
-            padding-top: 80px;
-        }
-
-        .container {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: var(--glass-shadow);
-            width: 100%;
-            max-width: 450px;
-            padding: 40px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: var(--couleur-dominante);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header .icon {
-            width: 70px;
-            height: 70px;
-            background: var(--couleur-dominante);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            color: var(--texte-clair);
-            font-size: 30px;
-        }
-
-        .header h1 {
-            color: var(--titres);
-            font-size: 28px;
-            margin-bottom: 10px;
-            font-weight: 600;
-            font-family: var(--font-titres);
-        }
-
-        .header p {
-            color: var(--texte-fonce);
-            font-size: 14px;
-            opacity: 0.85;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group label {
-            display: block;
-            color: var(--titres);
-            font-weight: 500;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid rgba(53, 100, 166, 0.2);
-            border-radius: 8px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
-            color: var(--texte-fonce);
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.15);
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--couleur-dominante);
-            font-size: 16px;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--couleur-dominante);
-            font-size: 16px;
-            cursor: pointer;
-            padding: 0;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            transition: color 0.3s ease;
-        }
-
-        .password-toggle:hover {
-            color: var(--titres);
-        }
-
-        .input-wrapper.password-wrapper input {
-            padding-right: 45px;
-        }
-
-        .error-message {
-            background: rgba(53, 100, 166, 0.1);
-            border-left: 4px solid var(--couleur-dominante);
-            color: var(--titres);
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .success-message {
-            background: rgba(32, 197, 199, 0.12);
-            border-left: 4px solid var(--turquoise);
-            color: var(--titres);
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: var(--couleur-dominante);
-            color: var(--texte-clair);
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-            box-shadow: var(--ombre-douce);
-        }
-
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--ombre-promo);
-            background: rgba(53, 100, 166, 0.9);
-        }
-
-        .footer-text {
-            text-align: center;
-            margin-top: 25px;
-            color: var(--texte-fonce);
-            font-size: 14px;
-            opacity: 0.85;
-        }
-
-        .footer-text a {
-            color: var(--couleur-dominante);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .footer-text a:hover {
-            text-decoration: underline;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-            margin-top: 3px;
-            cursor: pointer;
-            accent-color: var(--couleur-dominante);
-        }
-
-        .checkbox-group label {
-            font-weight: normal;
-            cursor: pointer;
-            font-size: 14px;
-            line-height: 1.5;
-            color: var(--texte-fonce);
-        }
-
-        .checkbox-group label a {
-            color: var(--couleur-dominante);
-            text-decoration: underline;
-        }
-
-        .forgot-password-link {
-            margin-top: 8px;
-            text-align: right;
-        }
-
-        .forgot-password-link a {
-            color: var(--couleur-dominante);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .forgot-password-link a:hover {
-            text-decoration: underline;
-        }
-
-        .login-mode-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            padding: 4px;
-            background: var(--fond-secondaire, #fafafa);
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-        }
-
-        .login-mode-tabs button {
-            flex: 1;
-            padding: 12px 14px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: var(--font-corps);
-            cursor: pointer;
-            background: transparent;
-            color: var(--texte-mute, #737373);
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-
-        .login-mode-tabs button[aria-selected="true"] {
-            background: var(--couleur-dominante);
-            color: var(--texte-clair);
-            box-shadow: var(--ombre-douce);
-        }
-
-        .login-mode-tabs button:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 3px var(--focus-ring);
-        }
-
-        .login-panel[hidden] {
-            display: none !important;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 30px 20px;
-            }
-        }
-    </style>
 </head>
 
-<body>
+<body class="auth-page auth-page--<?php echo $active_login_mode === 'phone' ? 'phone' : 'email'; ?>">
     <header class="auth-header">
         <a class="logo" href="/index.php">
             <img src="/image/logo_market.png" alt="COLObanes">
         </a>
     </header>
 
-    <div class="auth-content">
-        <div class="container">
-            <div class="header">
-                <div class="icon">
-                    <i class="fas fa-sign-in-alt"></i>
+    <div class="auth-layout">
+        <!-- <aside class="auth-hero" aria-label="Marché en ligne">
+            <span class="auth-hero__kicker"><i class="fas fa-store" aria-hidden="true"></i> E‑commerce</span>
+            <h2 class="auth-hero__title">Produits naturels, commandes et suivi en un seul endroit</h2>
+            <p class="auth-hero__lead">Connectez-vous pour parcourir le catalogue, finaliser vos achats et retrouver
+                l’historique de vos commandes. Les comptes équipe accèdent avec le même écran (email et mot de passe,
+                ou téléphone + code).</p>
+            <div class="auth-hero__grid">
+                <div class="auth-hero-card">
+                    <div class="auth-hero-card__ic" aria-hidden="true"><i class="fas fa-cart-shopping"></i></div>
+                    <span>Panier &amp; commande</span>
                 </div>
+                <div class="auth-hero-card">
+                    <div class="auth-hero-card__ic" aria-hidden="true"><i class="fas fa-truck-fast"></i></div>
+                    <span>Livraison</span>
+                </div>
+                <div class="auth-hero-card">
+                    <div class="auth-hero-card__ic" aria-hidden="true"><i class="fas fa-leaf"></i></div>
+                    <span>Catalogue naturel</span>
+                </div>
+            </div>
+        </aside> -->
+
+        <main class="auth-main">
+        <div class="auth-card">
+            <div class="auth-card__inner">
+            <div class="auth-card__head">
+                <div class="auth-card__icon" aria-hidden="true"><i class="fas fa-right-to-bracket"></i></div>
                 <h1>Connexion</h1>
             </div>
 
@@ -434,23 +133,67 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                 </div>
             <?php endif; ?>
 
-            <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>
+            <?php if (!empty($login_locked) && $login_remaining_seconds > 0): ?>
+                <?php include __DIR__ . '/includes/login_rate_lock_banner.php'; ?>
+            <?php elseif (isset($result['message']) && $result['message'] !== '' && !$result['success']): ?>
                 <div class="error-message">
                     <i class="fas fa-exclamation-circle"></i> <?php echo $result['message']; ?>
                 </div>
             <?php endif; ?>
 
             <div class="login-mode-tabs" role="tablist" aria-label="Mode de connexion">
-                <button type="button" role="tab" id="tab-email" aria-controls="panel-email"
-                    aria-selected="<?php echo $active_login_mode === 'email' ? 'true' : 'false'; ?>"
-                    tabindex="<?php echo $active_login_mode === 'email' ? '0' : '-1'; ?>">
-                    <i class="fas fa-envelope" aria-hidden="true"></i> Email
-                </button>
                 <button type="button" role="tab" id="tab-phone" aria-controls="panel-phone"
                     aria-selected="<?php echo $active_login_mode === 'phone' ? 'true' : 'false'; ?>"
-                    tabindex="<?php echo $active_login_mode === 'phone' ? '0' : '-1'; ?>">
+                    tabindex="<?php echo $active_login_mode === 'phone' ? '0' : '-1'; ?>"
+                    <?php echo $login_locked ? 'disabled' : ''; ?>>
                     <i class="fas fa-phone" aria-hidden="true"></i> Téléphone
                 </button>
+                <button type="button" role="tab" id="tab-email" aria-controls="panel-email"
+                    aria-selected="<?php echo $active_login_mode === 'email' ? 'true' : 'false'; ?>"
+                    tabindex="<?php echo $active_login_mode === 'email' ? '0' : '-1'; ?>"
+                    <?php echo $login_locked ? 'disabled' : ''; ?>>
+                    <i class="fas fa-envelope" aria-hidden="true"></i> Email
+                </button>
+            </div>
+
+            <div id="panel-phone" class="login-panel" role="tabpanel" aria-labelledby="tab-phone"
+                <?php echo $active_login_mode !== 'phone' ? 'hidden' : ''; ?>>
+            <form method="POST" action="">
+                <input type="hidden" name="login_mode" value="phone">
+                <?php if (!empty($redirect_after)): ?>
+                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
+                <?php endif; ?>
+                <fieldset class="login-fieldset"<?php echo $login_locked ? ' disabled' : ''; ?>>
+                <div class="form-group">
+                    <label for="telephone"><i class="fas fa-phone"></i> Numéro de téléphone *</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="telephone" name="telephone" placeholder="Ex. 77 123 45 67" autocomplete="tel"
+                            value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pin"><i class="fas fa-key"></i> Code PIN ou mot de passe *</label>
+                    <div class="input-wrapper password-wrapper">
+                        <input type="password" id="pin" name="pin" placeholder="Le même secret que pour votre compte" autocomplete="current-password">
+                        <button type="button" class="password-toggle" aria-label="Afficher le code"
+                            onclick="togglePassword('pin', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="accepte_conditions_phone" name="accepte_conditions_phone" value="1" <?php echo (isset($_POST['accepte_conditions_phone']) && $_POST['accepte_conditions_phone'] === '1') ? 'checked' : ''; ?>>
+                    <label for="accepte_conditions_phone">
+                        J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>
+                        (obligatoire pour les comptes clients — les accès équipe ne nécessitent pas cette case)
+                    </label>
+                </div>
+                <button type="submit" class="btn-submit"<?php echo $login_locked ? ' disabled' : ''; ?>>
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+                </fieldset>
+            </form>
             </div>
 
             <div id="panel-email" class="login-panel" role="tabpanel" aria-labelledby="tab-email"
@@ -460,6 +203,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                 <?php if (!empty($redirect_after)): ?>
                 <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
                 <?php endif; ?>
+                <fieldset class="login-fieldset"<?php echo $login_locked ? ' disabled' : ''; ?>>
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email *</label>
                     <div class="input-wrapper">
@@ -479,7 +223,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                         </button>
                     </div>
                     <div class="forgot-password-link">
-                        <a href="/user/mot-de-passe-oublie.php">Mot de passe oublié ?</a>
+                        <a href="/mot-de-passe-oublie.php">Mot de passe oublié ?</a>
                     </div>
                 </div>
 
@@ -491,61 +235,23 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                     </label>
                 </div>
 
-                <button type="submit" class="btn-submit">
+                <button type="submit" class="btn-submit"<?php echo $login_locked ? ' disabled' : ''; ?>>
                     <i class="fas fa-sign-in-alt"></i> Se connecter
                 </button>
+                </fieldset>
             </form>
             </div>
 
-            <div id="panel-phone" class="login-panel" role="tabpanel" aria-labelledby="tab-phone"
-                <?php echo $active_login_mode !== 'phone' ? 'hidden' : ''; ?>>
-            <form method="POST" action="">
-                <input type="hidden" name="login_mode" value="phone">
-                <?php if (!empty($redirect_after)): ?>
-                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
-                <?php endif; ?>
-                <div class="form-group">
-                    <label for="telephone"><i class="fas fa-phone"></i> Numéro de téléphone *</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="telephone" name="telephone" placeholder="Ex. 77 123 45 67" autocomplete="tel"
-                            value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
-                        <i class="fas fa-phone"></i>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="pin"><i class="fas fa-key"></i> Code PIN ou mot de passe *</label>
-                    <div class="input-wrapper password-wrapper">
-                        <input type="password" id="pin" name="pin" placeholder="Le même secret que pour votre compte" autocomplete="current-password">
-                        <button type="button" class="password-toggle" aria-label="Afficher le code"
-                            onclick="togglePassword('pin', this)">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                    <p style="font-size: 12px; color: var(--texte-mute); margin-top: 8px; line-height: 1.45;">
-                        Comptes équipe : PIN ou mot de passe vendeur, ou <strong>compte d’accès</strong> créé par votre gérant (téléphone + mot de passe). Compte client : même champ avec le mot de passe de votre espace acheteur.
-                    </p>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="accepte_conditions_phone" name="accepte_conditions_phone" value="1" <?php echo (isset($_POST['accepte_conditions_phone']) && $_POST['accepte_conditions_phone'] === '1') ? 'checked' : ''; ?>>
-                    <label for="accepte_conditions_phone">
-                        J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>
-                        (obligatoire pour les comptes clients — les accès équipe ne nécessitent pas cette case)
-                    </label>
-                </div>
-                <button type="submit" class="btn-submit">
-                    <i class="fas fa-sign-in-alt"></i> Se connecter
-                </button>
-            </form>
-            </div>
-
-            <div class="footer-text">
+            <div class="auth-footer">
                 <p>Vous n'avez pas de compte ? <a href="/choix-inscription.php<?php
                     $rq = isset($_GET['redirect']) ? trim((string) $_GET['redirect']) : '';
                     $safe = preg_match('/^[a-z0-9_-]+$/i', $rq) ? $rq : '';
                     echo $safe !== '' ? ('?' . http_build_query(['redirect' => $safe])) : '';
                 ?>">Créer un compte</a></p>
             </div>
+            </div>
         </div>
+        </main>
     </div>
 
     <script>
@@ -558,6 +264,11 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
 
             function showMode(mode) {
                 var isEmail = mode === 'email';
+                var root = document.querySelector('.auth-page');
+                if (root) {
+                    root.classList.remove('auth-page--email', 'auth-page--phone');
+                    root.classList.add(isEmail ? 'auth-page--email' : 'auth-page--phone');
+                }
                 panelEmail.hidden = !isEmail;
                 panelPhone.hidden = isEmail;
                 tabEmail.setAttribute('aria-selected', isEmail ? 'true' : 'false');

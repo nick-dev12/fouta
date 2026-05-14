@@ -133,8 +133,8 @@ flutter_launcher_icons:
 
 # Configuration pour l'écran de lancement (splash screen)
 flutter_native_splash:
-  color: "#3564A6"
-  image: "assets/images/logo_market.jpeg"
+  color: "#F8FAFC"
+  image: "assets/images/app_icon.png"
   android: true
   ios: true
   web: true

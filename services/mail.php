@@ -140,23 +140,31 @@ function mail_send_contact($nom, $email, $sujet, $message) {
 }
 
 /**
- * Envoie l'email de réinitialisation de mot de passe
+ * Envoie l'email de réinitialisation de mot de passe (client ou boutique / admin).
  * @param string $email Destinataire
  * @param string $reset_link Lien de réinitialisation
- * @param string $type 'user' ou 'admin' (pour adapter le texte)
+ * @param string $type 'user' ou 'admin'
  * @return array ['success' => bool, 'error' => string|null]
  */
 function mail_send_reset_link($email, $reset_link, $type = 'user') {
-    $is_admin = ($type === 'admin');
-    $sujet = 'Réinitialisation de votre mot de passe - Sugar Paper';
+    $is_boutique = ($type === 'admin');
+    $sujet = $is_boutique
+        ? 'Réinitialisation mot de passe boutique — COLObanes'
+        : 'Réinitialisation mot de passe — COLObanes';
+
+    $intro = $is_boutique
+        ? 'Vous avez demandé à réinitialiser le mot de passe de votre compte vendeur / administration boutique.'
+        : 'Vous avez demandé la réinitialisation du mot de passe de votre compte client.';
+
+    $bleu = '#3564a6';
 
     $body = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 500px; margin: 0 auto;">';
-    $body .= '<h2 style="color: #918a44;">Réinitialisation du mot de passe</h2>';
-    $body .= '<p>Vous avez demandé la réinitialisation de votre mot de passe.</p>';
-    $body .= '<p>Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>';
-    $body .= '<p style="margin: 25px 0;"><a href="' . htmlspecialchars($reset_link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Réinitialiser mon mot de passe</a></p>';
+    $body .= '<h2 style="color: ' . $bleu . '; margin-top: 0;">Réinitialisation du mot de passe</h2>';
+    $body .= '<p>' . htmlspecialchars($intro) . '</p>';
+    $body .= '<p>Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe :</p>';
+    $body .= '<p style="margin: 25px 0;"><a href="' . htmlspecialchars($reset_link) . '" style="display: inline-block; padding: 12px 24px; background: ' . $bleu . '; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 600;">Réinitialiser mon mot de passe</a></p>';
     $body .= '<p style="font-size: 13px; color: #666;">Ou copiez ce lien dans votre navigateur :<br><span style="word-break: break-all;">' . htmlspecialchars($reset_link) . '</span></p>';
-    $body .= '<p style="font-size: 12px; color: #999; margin-top: 30px;">Ce lien expire dans 2 heures. Si vous n\'avez pas fait cette demande, ignorez cet email.</p>';
+    $body .= '<p style="font-size: 12px; color: #999; margin-top: 24px;">Ce lien expire dans 2 heures. Si vous n\'avez pas fait cette demande, ignorez cet email.</p>';
     $body .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
     $body .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
     $body .= '</div>';

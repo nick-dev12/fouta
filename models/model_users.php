@@ -104,17 +104,19 @@ function get_user_by_id($id) {
  */
 function create_user($nom, $prenom, $email, $telephone, $password_hash) {
     global $db;
-    
+
+    $email_bind = ($email === null || $email === '') ? null : $email;
+
     try {
         $stmt = $db->prepare("
-            INSERT INTO users (nom, prenom, email, telephone, password, date_creation, statut) 
+            INSERT INTO users (nom, prenom, email, telephone, password, date_creation, statut)
             VALUES (:nom, :prenom, :email, :telephone, :password, NOW(), 'actif')
         ");
-        
+
         $result = $stmt->execute([
             'nom' => $nom,
             'prenom' => $prenom,
-            'email' => $email,
+            'email' => $email_bind,
             'telephone' => $telephone,
             'password' => $password_hash
         ]);

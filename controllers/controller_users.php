@@ -10,6 +10,7 @@ if (file_exists($autoload)) {
 }
 require_once __DIR__ . '/../models/model_users.php';
 require_once __DIR__ . '/../models/model_admin.php';
+require_once __DIR__ . '/../includes/login_rate_limit.php';
 if (file_exists(__DIR__ . '/../models/model_vendeur_comptes_acces.php')) {
     require_once __DIR__ . '/../models/model_vendeur_comptes_acces.php';
 }
@@ -21,14 +22,23 @@ if (file_exists(__DIR__ . '/../models/model_vendeur_comptes_acces.php')) {
  */
 function process_unified_login() {
     $errors = [];
-    $success = false;
-    $message = '';
-    $type = null;
-    $admin = null;
-    $user = null;
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return ['success' => false, 'message' => '', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+    }
+
+    if (login_attempt_is_locked()) {
+        $rem = login_attempt_remaining_seconds();
+        return [
+            'success' => false,
+            'message' => 'Trop de tentatives de connexion. Réessayez dans ' . login_attempt_format_remaining($rem) . '.',
+            'type' => null,
+            'admin' => null,
+            'user' => null,
+            'vendeur_collaborateur' => null,
+            'rate_limited' => true,
+            'remaining_seconds' => $rem,
+        ];
     }
 
     $login_mode = isset($_POST['login_mode']) ? trim((string) $_POST['login_mode']) : 'email';
@@ -56,6 +66,7 @@ function process_unified_login() {
     // 1. Vérifier d'abord la table admin
     $admin = get_admin_by_email($email);
     if ($admin && $admin['statut'] === 'actif' && password_verify($password, $admin['password'])) {
+        login_attempt_clear();
         update_admin_last_login($admin['id']);
         return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'admin', 'admin' => $admin, 'user' => null, 'vendeur_collaborateur' => null];
     }
@@ -64,23 +75,27 @@ function process_unified_login() {
     $user = get_user_by_email($email);
     if ($user) {
         if ($user['statut'] !== 'actif') {
-            $errors[] = 'Votre compte est désactivé. Contactez le support.';
-        } elseif (!$accepte_conditions) {
-            $errors[] = 'Vous devez accepter les conditions d\'utilisation pour vous connecter.';
-        } elseif (password_verify($password, $user['password'])) {
-            if ($accepte_conditions) {
-                update_user_accepte_conditions($user['id'], true);
-            }
-            return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user, 'vendeur_collaborateur' => null];
-        } else {
-            $errors[] = 'Email ou mot de passe incorrect.';
+            return login_failure_result_array('Votre compte est désactivé. Contactez le support.');
         }
-    } else {
-        $errors[] = 'Email ou mot de passe incorrect.';
+        if (!$accepte_conditions) {
+            return [
+                'success' => false,
+                'message' => 'Vous devez accepter les conditions d\'utilisation pour vous connecter.',
+                'type' => null,
+                'admin' => null,
+                'user' => null,
+                'vendeur_collaborateur' => null,
+            ];
+        }
+        if (password_verify($password, $user['password'])) {
+            login_attempt_clear();
+            update_user_accepte_conditions($user['id'], true);
+            return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user, 'vendeur_collaborateur' => null];
+        }
+        return login_failure_result_array('Email ou mot de passe incorrect.');
     }
 
-    $message = !empty($errors) ? implode('<br>', $errors) : 'Une erreur est survenue.';
-    return ['success' => false, 'message' => $message, 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+    return login_failure_result_array('Email ou mot de passe incorrect.');
 }
 
 /**
@@ -103,6 +118,7 @@ function process_unified_phone_login() {
 
     $admin = get_admin_by_telephone($tel);
     if ($admin && ($admin['statut'] ?? '') === 'actif' && password_verify($secret, $admin['password'])) {
+        login_attempt_clear();
         update_admin_last_login($admin['id']);
         return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'admin', 'admin' => $admin, 'user' => null, 'vendeur_collaborateur' => null];
     }
@@ -111,7 +127,7 @@ function process_unified_phone_login() {
         $collab = get_vendeur_compte_acces_by_telephone_for_unified_login($tel);
         if ($collab) {
             if (($collab['statut'] ?? '') !== 'actif') {
-                return ['success' => false, 'message' => 'Ce compte d’accès est désactivé. Contactez le gérant de la boutique.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+                return login_failure_result_array('Ce compte d’accès est désactivé. Contactez le gérant de la boutique.');
             }
             if (!password_verify($secret, $collab['password'])) {
                 // Laisser tomber vers la vérification client (même téléphone possible en théorie)
@@ -119,8 +135,9 @@ function process_unified_phone_login() {
             } else {
                 $owner = get_admin_by_id((int) ($collab['vendeur_admin_id'] ?? 0));
                 if (!$owner || ($owner['statut'] ?? '') !== 'actif' || normalize_admin_role($owner['role'] ?? '') !== 'vendeur') {
-                    return ['success' => false, 'message' => 'Boutique indisponible. Contactez la plateforme.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+                    return login_failure_result_array('Boutique indisponible. Contactez la plateforme.');
                 }
+                login_attempt_clear();
                 update_vendeur_compte_acces_last_login((int) $collab['id']);
                 update_admin_last_login($owner['id']);
                 return [
@@ -137,18 +154,19 @@ function process_unified_phone_login() {
 
     $user = get_user_by_telephone($tel);
     if (!$user) {
-        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+        return login_failure_result_array('Téléphone ou code incorrect.');
     }
     if (($user['statut'] ?? '') !== 'actif') {
-        return ['success' => false, 'message' => 'Votre compte est désactivé. Contactez le support.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+        return login_failure_result_array('Votre compte est désactivé. Contactez le support.');
     }
     if (!$accepte_conditions) {
         return ['success' => false, 'message' => 'Vous devez accepter les conditions d\'utilisation pour vous connecter.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
     if (!password_verify($secret, $user['password'])) {
-        return ['success' => false, 'message' => 'Téléphone ou code incorrect.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+        return login_failure_result_array('Téléphone ou code incorrect.');
     }
 
+    login_attempt_clear();
     update_user_accepte_conditions($user['id'], true);
     return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user, 'vendeur_collaborateur' => null];
 }
@@ -169,63 +187,52 @@ function process_user_inscription() {
     
     // Récupération et validation des données
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
-    $prenom = isset($_POST['prenom']) ? trim($_POST['prenom']) : '';
     $email = isset($_POST['email']) ? trim($_POST['email']) : '';
     $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
-    $password = isset($_POST['password']) ? $_POST['password'] : '';
-    $password_confirm = isset($_POST['password_confirm']) ? $_POST['password_confirm'] : '';
-    
+    $pin = isset($_POST['pin']) ? (string) $_POST['pin'] : '';
+    $pin_confirm = isset($_POST['pin_confirm']) ? (string) $_POST['pin_confirm'] : '';
+    $prenom = '';
+
     // Validation du nom
     if (empty($nom)) {
         $errors[] = 'Le nom est obligatoire.';
     } elseif (strlen($nom) < 2) {
         $errors[] = 'Le nom doit contenir au moins 2 caractères.';
     }
-    
-    // Validation du prénom
-    if (empty($prenom)) {
-        $errors[] = 'Le prénom est obligatoire.';
-    } elseif (strlen($prenom) < 2) {
-        $errors[] = 'Le prénom doit contenir au moins 2 caractères.';
+
+    // Email facultatif
+    if ($email !== '') {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'L\'email n\'est pas valide.';
+        } elseif (user_email_exists($email)) {
+            $errors[] = 'Cet email est déjà utilisé.';
+        }
     }
-    
-    // Validation de l'email
-    if (empty($email)) {
-        $errors[] = 'L\'email est obligatoire.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'L\'email n\'est pas valide.';
-    } elseif (user_email_exists($email)) {
-        $errors[] = 'Cet email est déjà utilisé.';
-    }
-    
+
     // Validation du téléphone
     if (empty($telephone)) {
         $errors[] = 'Le téléphone est obligatoire.';
     } elseif (!preg_match('/^[0-9+\-\s()]+$/', $telephone)) {
         $errors[] = 'Le format du téléphone n\'est pas valide.';
+    } elseif (get_user_by_telephone($telephone)) {
+        $errors[] = 'Ce numéro de téléphone est déjà enregistré.';
     }
-    
-    // Validation du mot de passe
-    if (empty($password)) {
-        $errors[] = 'Le mot de passe est obligatoire.';
-    } elseif (strlen($password) < 6) {
-        $errors[] = 'Le mot de passe doit contenir au moins 6 caractères.';
+
+    // Code PIN à 6 chiffres (remplace le mot de passe)
+    if ($pin === '' || $pin_confirm === '') {
+        $errors[] = 'Le code PIN et sa confirmation sont obligatoires.';
+    } elseif (!preg_match('/^\d{6}$/', $pin)) {
+        $errors[] = 'Le code PIN doit comporter exactement 6 chiffres.';
+    } elseif ($pin !== $pin_confirm) {
+        $errors[] = 'Les deux saisies du code PIN ne correspondent pas.';
     }
-    
-    // Validation de la confirmation du mot de passe
-    if (empty($password_confirm)) {
-        $errors[] = 'La confirmation du mot de passe est obligatoire.';
-    } elseif ($password !== $password_confirm) {
-        $errors[] = 'Les mots de passe ne correspondent pas.';
-    }
-    
+
     // Si aucune erreur, procéder à l'inscription
     if (empty($errors)) {
-        // Hashage du mot de passe
-        $password_hash = password_hash($password, PASSWORD_BCRYPT);
-        
-        // Création de l'utilisateur
-        $user_id = create_user($nom, $prenom, $email, $telephone, $password_hash);
+        $password_hash = password_hash($pin, PASSWORD_BCRYPT);
+        $email_db = $email !== '' ? $email : null;
+
+        $user_id = create_user($nom, $prenom, $email_db, $telephone, $password_hash);
         
         if ($user_id) {
             $success = true;

@@ -9,21 +9,20 @@ return [
     // Méthode d'envoi : 'smtp', 'sendmail', ou 'mail' (fonction mail() PHP)
     'method' => 'smtp',
 
-    // Configuration SMTP - SSL/TLS recommandé (port 465)
+    // SMTP — Ex. mail.colobanes.com, port 465 (SSL)
     'smtp' => [
-        'host' => 'sugar-paper.com',
+        'host' => 'mail.colobanes.com',
         'port' => 465,
         'encryption' => 'ssl',
-        'username' => 'service@sugar-paper.com',
-        'password' => 'VOTRE_MOT_DE_PASSE',
+        'username' => 'no-replay@colobanes.com',
+        'password' => 'VOTRE_MOT_DE_PASSE_SMTP',
         'timeout' => 30,
         'verify_ssl' => false,
     ],
 
-    // Expéditeur par défaut
     'from' => [
-        'email' => 'service@sugar-paper.com',
-        'name' => 'COLObanes',
+        'email' => 'no-replay@colobanes.com',
+        'name' => 'Colobanes',
     ],
 
     // Email de contact (destinataire des messages du formulaire contact)

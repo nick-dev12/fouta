@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.gestion_scolaire"
+    namespace = "com.colobanes.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,8 +26,8 @@ android {
     }
 
     defaultConfig {
-        // Application ID unique - Changez-le pour votre domaine
-        applicationId = "com.ariaedu.app"
+        // Identifiant unique Colobanes (distinct des autres apps du même éditeur)
+        applicationId = "com.colobanes.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -75,8 +75,8 @@ android {
             // Ne renommer que les APK (les AAB sont gérés par la tâche ci-dessous)
             if (output.outputFile?.extension == "apk") {
                 val outputFileName = when {
-                    variant.buildType.name == "release" -> "ARIA_APP.apk"
-                    else -> "ARIA_APP-debug.apk"
+                    variant.buildType.name == "release" -> "COLOBANES_APP.apk"
+                    else -> "COLOBANES_APP-debug.apk"
                 }
                 output.outputFileName = outputFileName
             }
@@ -105,7 +105,7 @@ afterEvaluate {
             doLast {
                 val bundleDir = file("${project.buildDir}/outputs/bundle/release")
                 val originalFile = file("${bundleDir}/app-release.aab")
-                val renamedFile = file("${bundleDir}/ARIA_APP.aab")
+                val renamedFile = file("${bundleDir}/COLOBANES_APP.aab")
                 
                 if (originalFile.exists()) {
                     if (renamedFile.exists()) {
@@ -128,7 +128,7 @@ afterEvaluate {
             doLast {
                 val bundleDir = file("${project.buildDir}/outputs/bundle/debug")
                 val originalFile = file("${bundleDir}/app-debug.aab")
-                val renamedFile = file("${bundleDir}/ARIA_APP-debug.aab")
+                val renamedFile = file("${bundleDir}/COLOBANES_APP-debug.aab")
                 
                 if (originalFile.exists()) {
                     if (renamedFile.exists()) {
@@ -152,9 +152,10 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-    
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
+
+    // Firebase (versions alignées sur la BoM — ne pas fixer les versions des libs Firebase une par une)
+    implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
+    implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
     
     // Note: Google Play Core a été supprimé car incompatible avec SDK 34 (Android 14)

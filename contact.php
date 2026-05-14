@@ -45,7 +45,7 @@ if (!isset($_SESSION['contact_csrf'])) {
 
 $email_contact = 'contact@colobanes.sn';
 $telephones_contact = ['+221 33 870 00 70'];
-$adresse_contact = 'Rond point ZAC MBAO, Dakar';
+$adresse_contact = 'Rond Point Colobane, Dakar, Sénégal';
 
 $contact_social_cfg = file_exists(__DIR__ . '/config/social.php') ? require __DIR__ . '/config/social.php' : [];
 $contact_social_cfg = is_array($contact_social_cfg) ? $contact_social_cfg : [];
@@ -313,9 +313,9 @@ $seo_canonical = $base . '/contact.php';
         <div class="contact-map">
             <h3><i class="fas fa-map-marker-alt"></i> Notre localisation</h3>
             <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3938.0!2d-17.4292527!3d14.7417241!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xec10dd1a8097e29%3A0x23db771389d8414!2sSugar%20Paper%20S%C3%A9n%C3%A9gal!5e0!3m2!1sen!2ssn!4v1730000000!5m2!1sen!2ssn"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3858.0!2d-17.4486!3d14.7167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xec112b5f6e5e6e5%3A0x6e5e5e5e5e5e5e5e!2sRond%20Point%20Colobane%2C%20Dakar!5e0!3m2!1sfr!2ssn!4v1700000000!5m2!1sfr!2ssn"
                 allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-                title="Localisation COLObanes Sénégal">
+                title="Localisation COLObanes - Rond Point Colobane, Dakar">
             </iframe>
         </div>
     </div>

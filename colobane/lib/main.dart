@@ -11,11 +11,18 @@ import 'dart:convert';
 import 'services/fcm_service.dart';
 import 'dart:async';
 
-/// URL de la marketplace chargée dans la WebView
-const String kMarketplaceBaseUrl = 'https://samapiece.it.com/';
+/// URL de la marketplace chargée dans la WebView (production)
+const String kMarketplaceBaseUrl = 'https://colobanes.com/';
 const Color kBleuPrincipal = Color(0xFF3564A6);
 const Color kBleuPrincipalFonce = Color(0xFF2D5690);
 const Color kOrangePromo = Color(0xFFFF6B35);
+/// Bleu marine proche du logo « banes »
+const Color kBleuLogoMarine = Color(0xFF1A3A5C);
+
+bool _isMarketplaceHost(String host) {
+  final h = host.toLowerCase();
+  return h == 'colobanes.com' || h == 'www.colobanes.com';
+}
 
 String resolveRelativeMarketUrl(String href) {
   if (href.isEmpty) {
@@ -151,13 +158,14 @@ class _WebViewScreenState extends State<WebViewScreen>
       final prefs = await SharedPreferences.getInstance();
       final savedUrl = prefs.getString('last_webview_url');
       if (savedUrl != null && savedUrl.isNotEmpty) {
-        if (savedUrl.contains('aria-edu.com')) {
+        if (savedUrl.contains('aria-edu.com') ||
+            savedUrl.contains('samapiece.it.com')) {
           await prefs.remove('last_webview_url');
           _currentUrl = null;
         } else {
           try {
             final u = Uri.parse(savedUrl);
-            if (u.hasAuthority && u.host.contains('samapiece.it.com')) {
+            if (u.hasAuthority && _isMarketplaceHost(u.host)) {
               _currentUrl = savedUrl;
             } else {
               await prefs.remove('last_webview_url');
@@ -690,176 +698,285 @@ class _MarketplaceLoader extends StatefulWidget {
 }
 
 class _MarketplaceLoaderState extends State<_MarketplaceLoader>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+    with TickerProviderStateMixin {
+  static const Color _senegalRouge = Color(0xFFE31B23);
+  static const Color _senegalJaune = Color(0xFFFCD116);
+  static const Color _senegalVert = Color(0xFF00853F);
+
+  late AnimationController _pulseController;
   late Animation<double> _scaleAnimation;
+  late AnimationController _ribbonController;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1400),
       vsync: this,
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    _scaleAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    _ribbonController = AnimationController(
+      duration: const Duration(milliseconds: 2400),
+      vsync: this,
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _pulseController.dispose();
+    _ribbonController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final p = widget.progress.clamp(0.0, 1.0);
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [kBleuPrincipal, kBleuPrincipalFonce],
+          colors: [
+            Color.lerp(kOrangePromo, Colors.white, 0.06)!,
+            kBleuLogoMarine,
+            const Color(0xFF0D2238),
+          ],
+          stops: const [0.0, 0.52, 1.0],
         ),
       ),
       child: SafeArea(
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo avec animation
-              AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(20),
-                      child: Image.asset(
-                        'assets/images/logo_market.jpeg',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.shopping_bag,
-                            size: 60,
-                            color: kBleuPrincipal,
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 40),
-              const Text(
-                'COLObanes',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Chargement du marché en ligne...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white.withOpacity(0.9),
-                  fontWeight: FontWeight.w300,
-                ),
-              ),
-              const SizedBox(height: 50),
-              // Barre de progression stylée
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 60),
-                child: Column(
-                  children: [
-                    // Barre de progression principale
-                    Container(
-                      height: 8,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Colors.white.withOpacity(0.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          // Fond
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: Colors.white.withOpacity(0.2),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedBuilder(
+                  animation: _ribbonController,
+                  builder: (context, _) {
+                    final slide =
+                        (_ribbonController.value * 200 - 60).clamp(-60.0, 140.0);
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: SizedBox(
+                        height: 5,
+                        width: 168,
+                        child: Stack(
+                          clipBehavior: Clip.hardEdge,
+                          children: [
+                            const Row(
+                              children: [
+                                Expanded(child: ColoredBox(color: _senegalRouge)),
+                                Expanded(child: ColoredBox(color: _senegalJaune)),
+                                Expanded(child: ColoredBox(color: _senegalVert)),
+                              ],
                             ),
-                          ),
-                          // Progression
-                          FractionallySizedBox(
-                            widthFactor: widget.progress.clamp(0.0, 1.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                gradient: const LinearGradient(
-                                  colors: [Colors.white, kOrangePromo],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.white.withOpacity(0.5),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
+                            Positioned.fill(
+                              child: Transform.translate(
+                                offset: Offset(slide, 0),
+                                child: Container(
+                                  width: 56,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0),
+                                        Colors.white.withValues(alpha: 0.38),
+                                        Colors.white.withValues(alpha: 0),
+                                      ],
+                                    ),
                                   ),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Pourcentage
-                    Text(
-                      '${(widget.progress * 100).toInt()}%',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.8),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 40),
-              // Indicateur de chargement animé
-              SizedBox(
-                width: 30,
-                height: 30,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.white.withOpacity(0.8),
+                const SizedBox(height: 28),
+                AnimatedBuilder(
+                  animation: _pulseController,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _scaleAnimation.value,
+                      child: child,
+                    );
+                  },
+                  child: Container(
+                    width: 136,
+                    height: 136,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.22),
+                          blurRadius: 28,
+                          offset: const Offset(0, 14),
+                          spreadRadius: -4,
+                        ),
+                        BoxShadow(
+                          color: kOrangePromo.withValues(alpha: 0.35),
+                          blurRadius: 24,
+                          spreadRadius: -8,
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(14),
+                    child: Image.asset(
+                      'assets/images/app_icon.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.shopping_cart_rounded,
+                          size: 64,
+                          color: kBleuLogoMarine,
+                        );
+                      },
+                    ),
                   ),
-                  strokeWidth: 3,
                 ),
-              ),
-            ],
+                const SizedBox(height: 28),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'COLO',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: kOrangePromo,
+                          letterSpacing: 0.5,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'banes',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'MARCHÉ EN LIGNE • GLOBAL MARKETPLACE',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    letterSpacing: 1.1,
+                    height: 1.35,
+                    color: Colors.white.withValues(alpha: 0.76),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Chargement du marché…',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 36),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          height: 8,
+                          width: double.infinity,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ColoredBox(
+                                color: Colors.white.withValues(alpha: 0.18),
+                              ),
+                              FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: p,
+                                heightFactor: 1,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.95),
+                                        Color.lerp(
+                                          Colors.white,
+                                          kOrangePromo,
+                                          0.55,
+                                        )!,
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.45,
+                                        ),
+                                        blurRadius: 10,
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '${(p * 100).toInt()}%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.82),
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 36),
+                SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.white.withValues(alpha: 0.85),
+                    ),
+                    strokeWidth: 3,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
