@@ -114,6 +114,9 @@ $__footer_show_social = ($__wa_t !== '' && preg_replace('/[^0-9]/', '', $__wa_t)
                     <a href="/politique-confidentialite.php">Politique de confidentialité</a>
                 </li>
                 <li class="li footer_list_item">
+                    <a href="/politique-suppression-compte.php">Suppression de compte</a>
+                </li>
+                <li class="li footer_list_item">
                     <a href="/conditions-utilisation.php">Conditions d'utilisation</a>
                 </li>
             </ul>

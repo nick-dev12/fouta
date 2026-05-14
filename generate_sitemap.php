@@ -20,6 +20,7 @@ $static_pages = [
     ['loc' => '/promo.php', 'priority' => '0.9', 'changefreq' => 'daily'],
     ['loc' => '/commande-personnalisee.php', 'priority' => '0.65', 'changefreq' => 'monthly'],
     ['loc' => '/politique-confidentialite.php', 'priority' => '0.35', 'changefreq' => 'yearly'],
+    ['loc' => '/politique-suppression-compte.php', 'priority' => '0.35', 'changefreq' => 'yearly'],
     ['loc' => '/conditions-utilisation.php', 'priority' => '0.35', 'changefreq' => 'yearly'],
     ['loc' => '/choix-inscription.php', 'priority' => '0.5', 'changefreq' => 'monthly'],
 ];

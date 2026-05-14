@@ -3,6 +3,7 @@ session_start();
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
 $seo_title = 'Politique de Confidentialité - COLObanes';
 $seo_description = 'Politique de confidentialité COLObanes : base légale, catégories de données, sécurité, appareils, cookies, durées de conservation, droits des personnes et sous-traitants.';
@@ -189,6 +190,8 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         <p>
             L'utilisation du Service implique la prise de connaissance de cette politique ainsi que des
             <a href="/conditions-utilisation.php">Conditions générales d'utilisation</a>.
+            Pour la <strong>suppression de votre compte utilisateur</strong> (procédure, données supprimées ou conservées, délais), consultez la
+            <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>.
         </p>
 
         <div class="legal-toc">
@@ -207,6 +210,7 @@ $seo_canonical = $base . '/politique-confidentialite.php';
                 <li><a href="#priv-11">Communications électroniques et notifications</a></li>
                 <li><a href="#priv-12">Mineurs</a></li>
                 <li><a href="#priv-13">Vos droits</a></li>
+                <li><a href="#priv-suppression">Suppression du compte utilisateur</a></li>
                 <li><a href="#priv-14">Réclamations auprès d'une autorité</a></li>
                 <li><a href="#priv-15">Évolution de cette politique</a></li>
             </ol>
@@ -509,6 +513,14 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             <li><strong>Retrait du consentement</strong> : lorsque le traitement est fondé sur le consentement, sans affecter la licéité des traitements antérieurs ;</li>
             <li><strong>Directives post-mortem</strong> : selon le droit applicable local quant à la transmission ou la suppression de certaines données.</li>
         </ul>
+        <h3 id="priv-suppression">Suppression du compte utilisateur</h3>
+        <p>
+            Une <strong>procédure détaillée</strong> explique comment demander la fermeture et la suppression des données liées à votre compte client, quelles informations sont effacées ou conservées, et quelles
+            <strong>durées de conservation supplémentaires</strong> peuvent s’appliquer (notamment pour la comptabilité et les commandes). Elle précise que
+            <strong>la demande doit être formulée par courriel</strong> à
+            <a href="mailto:<?php echo htmlspecialchars(SITE_BRAND_CONTACT_EMAIL, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars(SITE_BRAND_CONTACT_EMAIL, ENT_QUOTES, 'UTF-8'); ?></a> :
+            <a href="/politique-suppression-compte.php"><strong>Politique de suppression de compte</strong></a>.
+        </p>
         <p>
             Pour exercer vos droits : écrivez à <a href="mailto:contact@colobanes.com">contact@colobanes.com</a> en joignant une preuve d'identité proportionnée (scan d'identité avec masquage des données non nécessaires si vous le souhaitez).
             Nous nous efforçons de répondre sous <strong>30 jours</strong> ; ce délai peut être prolongé en cas de complexité, avec information préalable.
@@ -533,7 +545,9 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         </p>
 
         <div class="legal-cross">
-            <strong>Document associé :</strong>
+            <strong>Documents associés :</strong>
+            <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>
+            ·
             <a href="/conditions-utilisation.php">Conditions générales d'utilisation</a>
         </div>
 
