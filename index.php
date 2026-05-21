@@ -568,6 +568,9 @@ $seo_canonical = $base . '/';
             position: relative;
             z-index: 1;
             pointer-events: auto;
+            box-sizing: border-box;
+            padding: 0 clamp(5px, 1.4vw, 10px);
+            overflow: hidden;
         }
 
         .mp-pop-cat-icon {
@@ -620,6 +623,8 @@ $seo_canonical = $base . '/';
             display: block;
             width: 100%;
             max-width: 100%;
+            box-sizing: border-box;
+            padding: 0 clamp(4px, 1.1vw, 8px);
             font-size: clamp(10px, 1.6vw, 11px);
             font-weight: 500;
             text-align: center;
@@ -627,6 +632,15 @@ $seo_canonical = $base . '/';
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        /* GTranslate enveloppe parfois le libellé dans <font> — confiner dans la tuile */
+        .mp-pop-cat-label font {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         /* Icône grille 2×2 — bouton Voir tout */
@@ -652,9 +666,11 @@ $seo_canonical = $base . '/';
         .mp-pop-cat-item--all {
             border: none;
             background: none;
-            padding: 0;
+            padding: 0 clamp(5px, 1.4vw, 10px);
             cursor: pointer;
             font-family: inherit;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         @media (min-width: 768px) {
@@ -689,6 +705,12 @@ $seo_canonical = $base . '/';
                 width: auto;
                 min-width: 0;
                 max-width: none;
+                padding: 0 clamp(6px, 1.8vw, 12px);
+            }
+
+            .mp-pop-cat-label {
+                padding: 0 clamp(5px, 1.5vw, 10px);
+                font-size: clamp(9px, 2.4vw, 10px);
             }
         }
 
@@ -704,9 +726,17 @@ $seo_canonical = $base . '/';
             }
 
             .mp-popular-categories-track {
-                gap: 10px;
-                margin: 0 -2px;
-                padding: 2px 2px 4px;
+                gap: 8px;
+                margin: 0;
+                padding: 2px clamp(4px, 1.5vw, 8px) 4px;
+            }
+
+            .mp-pop-cat-item {
+                padding: 0 clamp(7px, 2vw, 12px);
+            }
+
+            .mp-pop-cat-label {
+                padding: 0 clamp(6px, 1.8vw, 10px);
             }
         }
 
