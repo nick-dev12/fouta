@@ -45,4 +45,6 @@ temp/
 Thumbs.db
 desktop.ini
 
+# Archive lourde locale (limite GitHub ~100 Mo par fichier)
+colobane.zip
 
