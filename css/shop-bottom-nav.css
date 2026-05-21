@@ -1,5 +1,5 @@
 /**
- * Dock bas boutique (≤1024px) — même structure / design que admin-vendeur-dock-bar
+ * Dock bas boutique (≤1024px) — structure DOM partagée avec l’admin vendeur (.shop-bottom-dock → .shop-dock-bar → .shop-dock-primary).
  */
 
 @media (max-width: 1024px) {
@@ -7,13 +7,13 @@
     --shop-bottom-nav-clearance: clamp(5.9rem, 14vw, 7rem);
   }
 
-  html {
+  html:has(#shopBottomDock) {
     scroll-padding-bottom: calc(
       var(--shop-bottom-nav-clearance, 5.9rem) + env(safe-area-inset-bottom, 0px)
     );
   }
 
-  body {
+  body:has(#shopBottomDock) {
     padding-bottom: calc(
       var(--shop-bottom-nav-clearance, 5.9rem) + env(safe-area-inset-bottom, 0px) + 6px
     );
@@ -50,7 +50,7 @@
   }
 
   /* Menu / Nouveautés / Promo masqués : le dock bas et la sidebar catalogue suffisent */
-  section.section1 {
+  body:has(#shopBottomDock) section.section1 {
     display: none !important;
   }
 
@@ -84,15 +84,18 @@
     box-sizing: border-box;
     display: flex;
     align-items: stretch;
-    gap: clamp(4px, 1.8vw, 10px);
+    gap: clamp(2px, 1.6vw, 8px);
     width: 100%;
     flex-shrink: 0;
     pointer-events: auto;
-    padding:
-      clamp(8px, 2.2vw, 14px) clamp(10px, 3vw, 14px)
-      calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background: transparent;
     border: none;
+  }
+
+  .shop-dock-primary.shop-dock-primary--cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .shop-dock-primary {
@@ -212,6 +215,13 @@
     color: #15803d;
   }
 
+  .shop-bottom-dock
+    .shop-dock-primary.shop-dock-primary--cols-5
+    > .menu-item.menu-item--dock-mini:nth-child(5)
+    .menu-item__icon {
+    color: #7c3aed;
+  }
+
   .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__text {
     font-size: clamp(0.6875rem, 2.2vw, 0.8125rem);
     font-weight: 600;
@@ -243,27 +253,35 @@
     box-shadow: 0 0 0 3px var(--focus-ring);
   }
 
-  /* Smartphones — glyphes du dock plus grands pour meilleure lisibilité */
+  /* Smartphones — dock compact : peu / pas de padding tuiles, glyphes lisibles dans un cadre réduit */
   @media (max-width: 599px) {
     :root {
-      --shop-bottom-nav-clearance: clamp(6.125rem, 17vw, 7.85rem);
+      --shop-bottom-nav-clearance: clamp(5.75rem, 16vw, 7.35rem);
+    }
+
+    /* Pilule nav plus près des bords écran : padding horizontal réduit */
+    .shop-bottom-dock .shop-dock-primary {
+      padding-inline: clamp(3px, 1.8vw, 8px);
+      padding-block: clamp(4px, 1.2vw, 8px);
+      gap: clamp(2px, 1vw, 5px);
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini {
-      min-height: 5rem;
-      padding: clamp(6px, 2vw, 10px) clamp(4px, 1vw, 7px);
-      gap: clamp(4px, 1.25vw, 6px);
+      min-height: auto;
+      padding: 0;
+      gap: clamp(2px, 0.65vw, 4px);
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon {
-      font-size: clamp(1.42rem, 6.4vw, 1.92rem);
-      width: clamp(46px, 15vw, 58px);
-      height: clamp(46px, 15vw, 58px);
+      width: clamp(26px, 7vw, 32px);
+      height: clamp(26px, 7vw, 32px);
+      border-radius: 8px;
+      font-size: clamp(1.52rem, 7.25vw, 2.05rem);
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__badge--dock {
-      top: 6px;
-      right: clamp(5px, 11%, 20px);
+      top: 2px;
+      right: clamp(2px, 7%, 14px);
     }
   }
 

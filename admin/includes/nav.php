@@ -273,7 +273,8 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
             </a>
         </nav>
 
-        <?php if ($is_vendeur_menu):
+        <?php
+        if ($is_vendeur_menu) {
             $vd_cmd_active_nav = (
                 $is_commandes &&
                 in_array(
@@ -298,10 +299,15 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 $vd_clients_dock_act ||
                 $vd_param_sheet_active
             );
-            ?>
-        <!-- Bas d’écran vendeur : 5 entrées incl. Menu dans le bloc arrondi (≤1024px) -->
-        <div class="admin-vendeur-dock-bar" id="adminVendeurDockBar" aria-label="Navigation vendeur réduite" hidden>
-            <nav class="admin-vendeur-dock-primary" aria-label="Raccourcis">
+        }
+        ?>
+    </aside>
+
+    <?php if ($is_vendeur_menu): ?>
+    <!-- Dock vendeur : même structure DOM que la boutique (shop-bottom-dock → shop-dock-bar → shop-dock-primary) -->
+    <div class="shop-bottom-dock" id="adminVendeurBottomDock" aria-label="Navigation vendeur rapide">
+        <div class="shop-dock-bar" id="adminVendeurDockBar" aria-label="Navigation vendeur réduite" hidden>
+            <nav class="shop-dock-primary shop-dock-primary--cols-5" aria-label="Raccourcis">
                 <a href="<?php echo $base_path; ?>dashboard.php"
                     class="menu-item menu-item--dock-mini<?php echo $vd_dashboard_dock_act ? ' active' : ''; ?>">
                     <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-home"></i></span>
@@ -336,10 +342,8 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 </button>
             </nav>
         </div>
-        <?php endif; ?>
-    </aside>
+    </div>
 
-    <?php if ($is_vendeur_menu): ?>
     <div class="admin-vendeur-dock-menu-layer" id="adminVendeurDockMenuLayer" aria-hidden="true">
         <div class="admin-vendeur-dock-menu-backdrop" id="adminVendeurDockMenuBackdrop" role="presentation"></div>
         <div class="admin-vendeur-dock-menu-panel" id="adminVendeurDockMenuPanel" role="dialog" aria-modal="true"

@@ -196,10 +196,12 @@ $dock_more_has_active_child = user_nav_more_has_active_child($user_nav_items, $c
             </a>
             <?php endforeach; ?>
         </nav>
+    </aside>
 
-        <!-- Bas d’écran : 5 touches (≤1024px), même logique que le dock boutique -->
-        <div class="user-dock-bar" id="userDockBar" aria-label="Navigation compte réduite" hidden>
-            <nav class="user-dock-primary" aria-label="Raccourcis">
+    <!-- Dock client : même structure DOM que boutique / vendeur (shop-bottom-dock → shop-dock-bar → shop-dock-primary) -->
+    <div class="shop-bottom-dock" id="userBottomDock" aria-label="Navigation compte rapide">
+        <div class="shop-dock-bar" id="userDockBar" aria-label="Navigation compte réduite" hidden>
+            <nav class="shop-dock-primary shop-dock-primary--cols-5" aria-label="Raccourcis">
                 <?php foreach ($user_nav_items as $nav_item): ?>
                     <?php if (($nav_item['dock'] ?? '') !== 'primary') {
                         continue;
@@ -233,7 +235,7 @@ $dock_more_has_active_child = user_nav_more_has_active_child($user_nav_items, $c
             </button>
             </nav>
         </div>
-    </aside>
+    </div>
 
     <!-- Panneau « autres liens » — hors aside (backdrop-filter évite fullscreen fixed) -->
     <div class="user-dock-menu-layer" id="userDockMenuLayer" aria-hidden="true">

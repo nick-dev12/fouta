@@ -29,9 +29,11 @@ if ($generale_id > 0) {
     $categorie_nom = (string) $generale_row['nom'];
 
     require_once __DIR__ . '/models/model_genres.php';
-    if (function_exists('count_genres_linked_to_categorie_generale')
+    if (
+        function_exists('count_genres_linked_to_categorie_generale')
         && count_genres_linked_to_categorie_generale($generale_id) > 0
-        && function_exists('get_genres_linked_to_categorie_generale')) {
+        && function_exists('get_genres_linked_to_categorie_generale')
+    ) {
         $genres_pour_filtre_rayon = get_genres_linked_to_categorie_generale($generale_id);
         if ($filter_genre_id > 0) {
             $genre_ok = false;
@@ -50,8 +52,10 @@ if ($generale_id > 0) {
     }
 
     if ($filter_sous_categorie_id > 0) {
-        if (!function_exists('categorie_plateforme_liee_au_rayon')
-            || !categorie_plateforme_liee_au_rayon($filter_sous_categorie_id, $generale_id)) {
+        if (
+            !function_exists('categorie_plateforme_liee_au_rayon')
+            || !categorie_plateforme_liee_au_rayon($filter_sous_categorie_id, $generale_id)
+        ) {
             $filter_sous_categorie_id = 0;
         }
     }
@@ -156,141 +160,142 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
     <?php include __DIR__ . '/nav_bar.php'; ?>
 
     <?php if (isset($_GET['added']) && $_GET['added'] === '1'): ?>
-    <div class="cat-page-alert cat-page-alert--ok mp-shell">
-        <i class="fas fa-check-circle" aria-hidden="true"></i> Produit ajouté au panier avec succès.
-    </div>
+        <div class="cat-page-alert cat-page-alert--ok mp-shell">
+            <i class="fas fa-check-circle" aria-hidden="true"></i> Produit ajouté au panier avec succès.
+        </div>
     <?php endif; ?>
     <?php if (isset($_GET['error'])): ?>
-    <div class="cat-page-alert cat-page-alert--err mp-shell">
-        <i class="fas fa-exclamation-circle" aria-hidden="true"></i> <?php echo htmlspecialchars((string) $_GET['error']); ?>
-    </div>
+        <div class="cat-page-alert cat-page-alert--err mp-shell">
+            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+            <?php echo htmlspecialchars((string) $_GET['error']); ?>
+        </div>
     <?php endif; ?>
 
     <main class="mp-main">
         <div class="mp-shell">
             <header class="cat-rayon-hero">
-                <p class="cat-rayon-kicker">
-                    <i class="fas <?php echo $generale_row ? 'fa-layer-group' : 'fa-folder-open'; ?>" aria-hidden="true"></i>
-                    <?php echo $generale_row ? 'Rayon marketplace' : 'Catégorie'; ?>
-                </p>
                 <h1><?php echo htmlspecialchars($categorie_nom); ?></h1>
             </header>
 
             <?php if ($generale_id > 0 && (!empty($sous_categories_rayon) || !empty($genres_pour_filtre_rayon))): ?>
-            <section class="cat-filters" aria-labelledby="cat-filters-heading">
-                <div class="cat-filters-inner">
-                    <div class="cat-filters-head">
-                        <span class="cat-subs-kicker">Affiner</span>
-                        <h2 class="cat-subs-title" id="cat-filters-heading">Filtres</h2>
-                    </div>
+                <section class="cat-filters" aria-labelledby="cat-filters-heading">
+                    <div class="cat-filters-inner">
+                        <div class="cat-filters-head">
+                            <span class="cat-subs-kicker">Affiner</span>
+                            <h2 class="cat-subs-title" id="cat-filters-heading">Filtres</h2>
+                        </div>
 
-                    <div class="cat-filters-controls">
-                        <?php if (!empty($sous_categories_rayon)): ?>
-                        <label class="cat-filter-select-wrap" for="cat-filter-sous-categorie">
-                            <span class="cat-filter-select-label">
-                                <i class="fas fa-layer-group" aria-hidden="true"></i>
-                                Sous-catégorie
-                            </span>
-                            <span class="cat-filter-select-shell">
-                                <select id="cat-filter-sous-categorie" class="cat-filter-select" aria-label="Filtrer par sous-catégorie"
-                                    onchange="if (this.value) window.location.href = this.value;">
-                                    <?php
-                                    $h_ref_tout = function_exists('nav_categorie_generale_filtre_href')
-                                        ? nav_categorie_generale_filtre_href($generale_id, $filter_genre_id > 0 ? $filter_genre_id : 0, 0)
-                                        : nav_categorie_generale_href($generale_id);
-                                    ?>
-                                    <option value="<?php echo htmlspecialchars($h_ref_tout); ?>" <?php echo $filter_sous_categorie_id === 0 ? 'selected' : ''; ?>>
-                                        Toutes les sous-catégories
-                                    </option>
-                                    <?php foreach ($sous_categories_rayon as $sc): ?>
-                                        <?php
-                                        $sid = (int) ($sc['id'] ?? 0);
-                                        if ($sid <= 0) {
-                                            continue;
-                                        }
-                                        $h_sub = function_exists('nav_categorie_generale_filtre_href')
-                                            ? nav_categorie_generale_filtre_href(
-                                                $generale_id,
-                                                $filter_genre_id > 0 ? $filter_genre_id : 0,
-                                                $sid
-                                            )
-                                            : nav_categorie_href($sid);
-                                        ?>
-                                    <option value="<?php echo htmlspecialchars($h_sub); ?>" <?php echo $filter_sous_categorie_id === $sid ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars((string) ($sc['nom'] ?? '')); ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <i class="fas fa-chevron-down" aria-hidden="true"></i>
-                            </span>
-                        </label>
-                        <?php endif; ?>
+                        <div class="cat-filters-controls">
+                            <?php if (!empty($sous_categories_rayon)): ?>
+                                <label class="cat-filter-select-wrap" for="cat-filter-sous-categorie">
+                                    <span class="cat-filter-select-label">
+                                        <i class="fas fa-layer-group" aria-hidden="true"></i>
+                                        Sous-catégorie
+                                    </span>
+                                    <span class="cat-filter-select-shell">
+                                        <select id="cat-filter-sous-categorie" class="cat-filter-select"
+                                            aria-label="Filtrer par sous-catégorie"
+                                            onchange="if (this.value) window.location.href = this.value;">
+                                            <?php
+                                            $h_ref_tout = function_exists('nav_categorie_generale_filtre_href')
+                                                ? nav_categorie_generale_filtre_href($generale_id, $filter_genre_id > 0 ? $filter_genre_id : 0, 0)
+                                                : nav_categorie_generale_href($generale_id);
+                                            ?>
+                                            <option value="<?php echo htmlspecialchars($h_ref_tout); ?>" <?php echo $filter_sous_categorie_id === 0 ? 'selected' : ''; ?>>
+                                                Toutes les sous-catégories
+                                            </option>
+                                            <?php foreach ($sous_categories_rayon as $sc): ?>
+                                                <?php
+                                                $sid = (int) ($sc['id'] ?? 0);
+                                                if ($sid <= 0) {
+                                                    continue;
+                                                }
+                                                $h_sub = function_exists('nav_categorie_generale_filtre_href')
+                                                    ? nav_categorie_generale_filtre_href(
+                                                        $generale_id,
+                                                        $filter_genre_id > 0 ? $filter_genre_id : 0,
+                                                        $sid
+                                                    )
+                                                    : nav_categorie_href($sid);
+                                                ?>
+                                                <option value="<?php echo htmlspecialchars($h_sub); ?>" <?php echo $filter_sous_categorie_id === $sid ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars((string) ($sc['nom'] ?? '')); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                                    </span>
+                                </label>
+                            <?php endif; ?>
 
-                        <?php if (!empty($genres_pour_filtre_rayon) && function_exists('nav_categorie_generale_genre_href')): ?>
-                        <label class="cat-filter-select-wrap" for="cat-filter-genre">
-                            <span class="cat-filter-select-label">
-                                <i class="fas fa-tags" aria-hidden="true"></i>
-                                Genre
-                            </span>
-                            <span class="cat-filter-select-shell">
-                                <select id="cat-filter-genre" class="cat-filter-select" aria-label="Filtrer par genre"
-                                    onchange="if (this.value) window.location.href = this.value;">
-                                    <?php
-                                    $g_href0 = function_exists('nav_categorie_generale_filtre_href')
-                                        ? nav_categorie_generale_filtre_href($generale_id, 0, $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : 0)
-                                        : nav_categorie_generale_genre_href($generale_id, 0);
-                                    ?>
-                                    <option value="<?php echo htmlspecialchars($g_href0); ?>" <?php echo $filter_genre_id === 0 ? 'selected' : ''; ?>>
-                                        Tous les genres
-                                    </option>
-                                    <?php foreach ($genres_pour_filtre_rayon as $grow): ?>
-                                    <?php
-                                    $gpid = (int) ($grow['id'] ?? 0);
-                                    if ($gpid <= 0) {
-                                        continue;
-                                    }
-                                    $gn = trim((string) ($grow['nom'] ?? ''));
-                                    $g_href = function_exists('nav_categorie_generale_filtre_href')
-                                        ? nav_categorie_generale_filtre_href(
-                                            $generale_id,
-                                            $gpid,
-                                            $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : 0
-                                        )
-                                        : nav_categorie_generale_genre_href($generale_id, $gpid);
-                                    ?>
-                                    <option value="<?php echo htmlspecialchars($g_href); ?>" <?php echo $filter_genre_id === $gpid ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($gn !== '' ? $gn : 'Genre'); ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <i class="fas fa-chevron-down" aria-hidden="true"></i>
-                            </span>
-                        </label>
-                        <?php endif; ?>
+                            <?php if (!empty($genres_pour_filtre_rayon) && function_exists('nav_categorie_generale_genre_href')): ?>
+                                <label class="cat-filter-select-wrap" for="cat-filter-genre">
+                                    <span class="cat-filter-select-label">
+                                        <i class="fas fa-tags" aria-hidden="true"></i>
+                                        Genre
+                                    </span>
+                                    <span class="cat-filter-select-shell">
+                                        <select id="cat-filter-genre" class="cat-filter-select" aria-label="Filtrer par genre"
+                                            onchange="if (this.value) window.location.href = this.value;">
+                                            <?php
+                                            $g_href0 = function_exists('nav_categorie_generale_filtre_href')
+                                                ? nav_categorie_generale_filtre_href($generale_id, 0, $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : 0)
+                                                : nav_categorie_generale_genre_href($generale_id, 0);
+                                            ?>
+                                            <option value="<?php echo htmlspecialchars($g_href0); ?>" <?php echo $filter_genre_id === 0 ? 'selected' : ''; ?>>
+                                                Tous les genres
+                                            </option>
+                                            <?php foreach ($genres_pour_filtre_rayon as $grow): ?>
+                                                <?php
+                                                $gpid = (int) ($grow['id'] ?? 0);
+                                                if ($gpid <= 0) {
+                                                    continue;
+                                                }
+                                                $gn = trim((string) ($grow['nom'] ?? ''));
+                                                $g_href = function_exists('nav_categorie_generale_filtre_href')
+                                                    ? nav_categorie_generale_filtre_href(
+                                                        $generale_id,
+                                                        $gpid,
+                                                        $filter_sous_categorie_id > 0 ? $filter_sous_categorie_id : 0
+                                                    )
+                                                    : nav_categorie_generale_genre_href($generale_id, $gpid);
+                                                ?>
+                                                <option value="<?php echo htmlspecialchars($g_href); ?>" <?php echo $filter_genre_id === $gpid ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($gn !== '' ? $gn : 'Genre'); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                                    </span>
+                                </label>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
             <?php endif; ?>
 
             <section class="mp-block" aria-labelledby="cat-products-heading">
                 <header class="mp-block-head">
                     <h2 id="cat-products-heading">Produits</h2>
-                    <span style="font-size:14px;color:var(--texte-mute);"><?php echo (int) count($produits); ?> article(s)</span>
+                    <span style="font-size:14px;color:var(--texte-mute);"><?php echo (int) count($produits); ?>
+                        article(s)</span>
                 </header>
                 <div class="mp-grid" id="produits-container">
                     <?php if (empty($produits)): ?>
-                    <div class="mp-empty">
-                        <p style="margin:0 0 12px;"><i class="fas fa-box-open" style="font-size:40px;opacity:.45;" aria-hidden="true"></i></p>
-                        <p style="margin:0 0 20px;">Aucun produit publié pour le moment.</p>
-                        <a href="index.php" class="cat-page-back"><i class="fas fa-arrow-left" aria-hidden="true"></i> Retour à l’accueil</a>
-                    </div>
+                        <div class="mp-empty">
+                            <p style="margin:0 0 12px;"><i class="fas fa-box-open" style="font-size:40px;opacity:.45;"
+                                    aria-hidden="true"></i></p>
+                            <p style="margin:0 0 20px;">Aucun produit publié pour le moment.</p>
+                            <a href="index.php" class="cat-page-back"><i class="fas fa-arrow-left" aria-hidden="true"></i>
+                                Retour à l’accueil</a>
+                        </div>
                     <?php else: ?>
-                    <?php
-                    foreach ($produits as $produit) {
-                        $return_url = $return_url_cat;
-                        require $card_partial;
-                    }
-                    ?>
+                        <?php
+                        foreach ($produits as $produit) {
+                            $return_url = $return_url_cat;
+                            require $card_partial;
+                        }
+                        ?>
                     <?php endif; ?>
                 </div>
             </section>

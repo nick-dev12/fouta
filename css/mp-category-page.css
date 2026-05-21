@@ -21,25 +21,6 @@
   margin-bottom: 4px;
 }
 
-.cat-rayon-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--couleur-dominante);
-  margin: 0 0 10px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.65);
-  border: 1px solid rgba(53, 100, 166, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: var(--glass-shadow);
-}
-
 .cat-rayon-hero h1 {
   margin: 0 0 12px;
   font-size: clamp(22px, 3.2vw, 32px);
@@ -76,7 +57,9 @@
     rgba(250, 252, 255, 0.88) 100%
   );
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  box-shadow:
+    var(--glass-shadow),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
@@ -138,7 +121,12 @@
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid var(--glass-border);
   box-shadow: 0 2px 8px rgba(53, 100, 166, 0.06);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
   white-space: nowrap;
 }
 
@@ -158,12 +146,20 @@
 
 .cat-sub-chip--all {
   border-color: rgba(53, 100, 166, 0.35);
-  background: linear-gradient(135deg, var(--bleu-pale), rgba(255, 255, 255, 0.85));
+  background: linear-gradient(
+    135deg,
+    var(--bleu-pale),
+    rgba(255, 255, 255, 0.85)
+  );
   color: var(--bleu-fonce);
 }
 
 .cat-sub-chip.is-active {
-  background: linear-gradient(135deg, var(--couleur-dominante), var(--bleu-fonce));
+  background: linear-gradient(
+    135deg,
+    var(--couleur-dominante),
+    var(--bleu-fonce)
+  );
   color: var(--texte-clair);
   border-color: transparent;
   box-shadow: 0 6px 20px rgba(53, 100, 166, 0.3);
@@ -185,9 +181,15 @@
   gap: 18px;
   padding: 18px 20px;
   border-radius: 22px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(250, 252, 255, 0.94));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.82),
+    rgba(250, 252, 255, 0.94)
+  );
   border: 1px solid rgba(53, 100, 166, 0.12);
-  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  box-shadow:
+    var(--glass-shadow),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
@@ -252,7 +254,10 @@
   font: 700 14px/1.2 var(--font-corps);
   box-shadow: 0 4px 14px rgba(53, 100, 166, 0.08);
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .cat-filter-select:hover {
@@ -264,7 +269,9 @@
 .cat-filter-select:focus {
   outline: none;
   border-color: var(--couleur-dominante);
-  box-shadow: 0 0 0 4px var(--focus-ring), var(--ombre-douce);
+  box-shadow:
+    0 0 0 4px var(--focus-ring),
+    var(--ombre-douce);
 }
 
 /* Sections produits (comme index marketplace) */
@@ -341,7 +348,9 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .mp-card:hover {
@@ -474,7 +483,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .mp-card-btn:hover {
@@ -558,12 +569,20 @@
 }
 
 .mp-catalog-hero--bleu {
-  background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--couleur-dominante) 0%,
+    var(--bleu-fonce) 100%
+  );
   box-shadow: 0 8px 28px rgba(53, 100, 166, 0.22);
 }
 
 .mp-catalog-hero--promo {
-  background: linear-gradient(135deg, var(--accent-promo) 0%, var(--orange-fonce) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent-promo) 0%,
+    var(--orange-fonce) 100%
+  );
   box-shadow: 0 8px 28px rgba(255, 107, 53, 0.22);
 }
 
@@ -590,7 +609,10 @@
   color: var(--texte-fonce);
   font-weight: 600;
   font-size: 14px;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .mp-pagination a:hover {

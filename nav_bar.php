@@ -159,10 +159,16 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        position: sticky;
+        top: 0;
+        z-index: 11000;
+        overflow: visible;
+        isolation: isolate;
     }
 
     .section1 {
-        z-index: 100;
+        position: relative;
+        z-index: 50;
     }
 
     .nav-planete-gateau .logo {
@@ -206,7 +212,8 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         max-width: 500px;
         margin: 0 20px;
         position: relative;
-        z-index: 9999;
+        z-index: 1;
+        overflow: visible;
     }
 
     .nav-search-form {
@@ -220,30 +227,61 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
 
     .nav-language-switcher {
         margin-left: 8px;
-        width: 90px;
-        height: 36px;
-        padding: 0 8px;
-        background: var(--blanc);
-        border: 1px solid rgba(13, 13, 13, 0.08);
-        border-radius: 10px;
-        color: var(--couleur-dominante);
-        transition: all 0.3s;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 2;
+        overflow: visible;
+    }
+
+    .nav-language-switcher.is-open {
+        z-index: 11005;
+    }
+
+    .nav-lang-trigger {
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        gap: 6px;
-        flex-shrink: 0;
-        box-shadow: 0 2px 8px rgba(53, 100, 166, 0.06);
-        position: relative;
-        overflow: hidden;
+        gap: 7px;
+        min-width: 88px;
+        height: 38px;
+        padding: 0 10px 0 8px;
+        border: 1px solid rgba(53, 100, 166, 0.14);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff 0%, var(--blanc-neige, #f5f5f5) 100%);
+        color: var(--couleur-dominante);
+        cursor: pointer;
+        font-family: var(--font-corps);
+        box-shadow:
+            0 2px 10px rgba(53, 100, 166, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            transform 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
     }
 
-    .nav-language-switcher:hover {
-        background: var(--blanc);
+    .nav-lang-trigger:hover {
+        border-color: rgba(53, 100, 166, 0.35);
+        box-shadow:
+            0 4px 16px rgba(53, 100, 166, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .nav-lang-trigger:focus-visible {
+        outline: none;
+        box-shadow:
+            0 0 0 3px var(--focus-ring, rgba(53, 100, 166, 0.15)),
+            0 2px 10px rgba(53, 100, 166, 0.08);
+    }
+
+    .nav-language-switcher.is-open .nav-lang-trigger {
         border-color: var(--couleur-dominante);
+        box-shadow:
+            0 4px 18px rgba(53, 100, 166, 0.14),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
     }
 
-    /* Ne pas utiliser display:none : le script GTranslate n’initialise pas le <select> correctement. */
     .nav-language-switcher .gtranslate_wrapper {
         position: absolute;
         width: 1px;
@@ -258,44 +296,149 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
 
     .nav-lang-flag {
         display: block;
-        width: 24px;
-        height: 18px;
-        border-radius: 2px;
+        width: 22px;
+        height: 16px;
+        border-radius: 3px;
         background-image: url('https://flagcdn.com/w40/fr.png');
         background-size: cover;
         background-position: center;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
         flex-shrink: 0;
+        border: 1px solid rgba(0, 0, 0, 0.06);
     }
 
     .nav-lang-code {
-        font: 800 12px/1 var(--font-corps);
+        font: 700 12px/1 var(--font-corps);
         color: var(--texte-fonce);
-        letter-spacing: 0.02em;
-        min-width: 20px;
+        letter-spacing: 0.04em;
+        min-width: 22px;
         text-transform: uppercase;
     }
 
     .nav-lang-chevron {
-        color: var(--gris-fonce);
-        font-size: 12px;
+        color: var(--gris-moyen);
+        font-size: 10px;
         margin-left: auto;
         pointer-events: none;
+        transition: transform 0.22s ease, color 0.2s ease;
     }
 
-    .nav-lang-select {
+    .nav-language-switcher.is-open .nav-lang-chevron {
+        transform: rotate(180deg);
+        color: var(--couleur-dominante);
+    }
+
+    .nav-lang-select--hidden {
         position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
         border: 0;
-        outline: none;
+        pointer-events: none;
+        opacity: 0;
+    }
+
+    .nav-lang-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 196px;
+        padding: 6px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid rgba(53, 100, 166, 0.12);
+        box-shadow:
+            0 12px 40px rgba(15, 23, 42, 0.14),
+            0 2px 8px rgba(53, 100, 166, 0.08);
+        backdrop-filter: blur(16px) saturate(1.2);
+        -webkit-backdrop-filter: blur(16px) saturate(1.2);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        animation: navLangPanelIn 0.2s ease;
+        z-index: 11010;
+    }
+
+    .nav-lang-panel[hidden] {
+        display: none !important;
+    }
+
+    @keyframes navLangPanelIn {
+        from {
+            opacity: 0;
+            transform: translateY(-6px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .nav-lang-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 10px;
         background: transparent;
-        font: 800 12px/1 var(--font-corps);
         cursor: pointer;
-        appearance: none;
-        -webkit-appearance: none;
+        font-family: var(--font-corps);
+        text-align: left;
+        color: var(--texte-fonce);
+        transition: background 0.18s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-lang-option:hover {
+        background: rgba(53, 100, 166, 0.08);
+    }
+
+    .nav-lang-option:focus-visible {
+        outline: none;
+        background: rgba(53, 100, 166, 0.1);
+        box-shadow: inset 0 0 0 2px var(--couleur-dominante);
+    }
+
+    .nav-lang-option.is-active {
+        background: rgba(53, 100, 166, 0.1);
+    }
+
+    .nav-lang-option-flag {
+        flex-shrink: 0;
+        width: 24px;
+        height: 18px;
+        border-radius: 3px;
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .nav-lang-option-label {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.25;
+    }
+
+    .nav-lang-option-check {
+        flex-shrink: 0;
+        font-size: 12px;
+        color: var(--couleur-dominante);
+        opacity: 0;
+        transform: scale(0.85);
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .nav-lang-option.is-active .nav-lang-option-check {
+        opacity: 1;
+        transform: scale(1);
     }
 
     .nav-search-btn {
@@ -435,10 +578,13 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         }
 
         .nav-language-switcher {
-            width: 88px;
-            height: 35px;
             min-width: 0;
-            padding: 0 7px;
+        }
+
+        .nav-lang-trigger {
+            min-width: 84px;
+            height: 35px;
+            padding: 0 8px 0 7px;
         }
 
         .nav-search-input {
@@ -569,9 +715,13 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         }
 
         .nav-language-switcher {
-            width: 84px;
+            min-width: 0;
+        }
+
+        .nav-lang-trigger {
+            min-width: 80px;
             height: 34px;
-            padding: 0 7px;
+            padding: 0 7px 0 6px;
             gap: 5px;
         }
     }
@@ -615,28 +765,42 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         }
 
         .nav-language-switcher {
-            width: 78px;
-            height: 32px;
-            padding: 0 6px;
+            min-width: 0;
+        }
+
+        .nav-lang-trigger {
+            min-width: 76px;
+            height: 34px;
+            padding: 0 7px 0 6px;
             gap: 5px;
         }
 
         .nav-lang-flag {
-            width: 22px;
-            height: 16px;
+            width: 20px;
+            height: 15px;
         }
 
         .nav-lang-code {
             font-size: 11px;
-            min-width: 18px;
+            min-width: 20px;
         }
 
         .nav-lang-chevron {
-            font-size: 11px;
+            font-size: 9px;
         }
 
-        .nav-lang-select {
-            font-size: 11px;
+        .nav-lang-panel {
+            min-width: 180px;
+            right: 0;
+            left: auto;
+        }
+
+        .nav-lang-option {
+            padding: 9px 10px;
+        }
+
+        .nav-lang-option-label {
+            font-size: 13px;
         }
     }
 </style>
@@ -692,11 +856,47 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             <input type="hidden" name="tri" id="nav-tri"
                 value="<?php echo isset($_GET['tri']) ? htmlspecialchars($_GET['tri']) : ''; ?>">
         </form>
-        <div class="nav-language-switcher" aria-label="Sélection de la langue" title="Changer la langue">
-            <span class="nav-lang-flag" id="navLangFlag" aria-hidden="true"></span>
-            <span class="nav-lang-code" id="navLangCode" aria-hidden="true">FR</span>
-            <i class="fa-solid fa-chevron-up nav-lang-chevron" aria-hidden="true"></i>
-            <select class="nav-lang-select" id="navLangSelect" aria-label="Changer la langue">
+        <div class="nav-language-switcher" id="navLangSwitcher">
+            <button type="button" class="nav-lang-trigger" id="navLangTrigger"
+                aria-expanded="false" aria-haspopup="listbox" aria-controls="navLangPanel"
+                title="Changer la langue">
+                <span class="nav-lang-flag" id="navLangFlag" aria-hidden="true"></span>
+                <span class="nav-lang-code" id="navLangCode">FR</span>
+                <i class="fa-solid fa-chevron-down nav-lang-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="nav-lang-panel" id="navLangPanel" role="listbox" aria-label="Changer la langue" hidden>
+                <button type="button" class="nav-lang-option" role="option" data-lang="fr"
+                    data-flag-src="https://flagcdn.com/w40/fr.png" data-code="FR">
+                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/fr.png')"></span>
+                    <span class="nav-lang-option-label">Français</span>
+                    <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="nav-lang-option" role="option" data-lang="en"
+                    data-flag-src="https://flagcdn.com/w40/gb.png" data-code="EN">
+                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/gb.png')"></span>
+                    <span class="nav-lang-option-label">English</span>
+                    <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="nav-lang-option" role="option" data-lang="es"
+                    data-flag-src="https://flagcdn.com/w40/es.png" data-code="ES">
+                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/es.png')"></span>
+                    <span class="nav-lang-option-label">Español</span>
+                    <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="nav-lang-option" role="option" data-lang="pt"
+                    data-flag-src="https://flagcdn.com/w40/pt.png" data-code="PT">
+                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/pt.png')"></span>
+                    <span class="nav-lang-option-label">Português</span>
+                    <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="nav-lang-option" role="option" data-lang="ar"
+                    data-flag-src="https://flagcdn.com/w40/sa.png" data-code="AR">
+                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/sa.png')"></span>
+                    <span class="nav-lang-option-label">العربية</span>
+                    <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
+                </button>
+            </div>
+            <select class="nav-lang-select nav-lang-select--hidden" id="navLangSelect" tabindex="-1" aria-hidden="true">
                 <option value="fr" data-flag-src="https://flagcdn.com/w40/fr.png">FR</option>
                 <option value="en" data-flag-src="https://flagcdn.com/w40/gb.png">EN</option>
                 <option value="es" data-flag-src="https://flagcdn.com/w40/es.png">ES</option>
@@ -716,10 +916,14 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         };
 
         (function () {
+            var switcher = document.getElementById('navLangSwitcher');
+            var trigger = document.getElementById('navLangTrigger');
+            var panel = document.getElementById('navLangPanel');
             var select = document.getElementById('navLangSelect');
             var flag = document.getElementById('navLangFlag');
             var code = document.getElementById('navLangCode');
-            if (!select || !flag || !code) {
+            var options = panel ? panel.querySelectorAll('.nav-lang-option') : [];
+            if (!switcher || !trigger || !panel || !select || !flag || !code) {
                 return;
             }
 
@@ -748,15 +952,79 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             }
 
             function currentLangFromCookie() {
-                var raw = decodeURIComponent(getCookie('googtrans') || '');
-                var match = raw.match(/\/fr\/([a-z-]+)/i) || raw.match(/\/auto\/([a-z-]+)/i);
-                return match ? match[1].toLowerCase() : 'fr';
+                var raw = getCookie('googtrans');
+                if (!raw) {
+                    return 'fr';
+                }
+                try {
+                    raw = decodeURIComponent(raw.replace(/\+/g, ' ')).trim();
+                } catch (e1) {
+                    raw = raw.trim();
+                }
+                /* Variante sans slash : "fr|es" */
+                if (raw.indexOf('/') === -1 && raw.indexOf('|') !== -1) {
+                    var pv = raw.split('|').filter(function (s) {
+                        return s.length > 0;
+                    });
+                    if (pv.length) {
+                        var lp = pv[pv.length - 1].toLowerCase().trim();
+                        if (/^[a-z]{2}$/.test(lp)) {
+                            return lp;
+                        }
+                    }
+                }
+                /* googtrans : souvent "/fr/es", "/auto/en", ou encodé %2Ffr%2Fes */
+                var segments = raw.split('/').filter(function (s) {
+                    return s.length > 0;
+                });
+                if (!segments.length) {
+                    return 'fr';
+                }
+                var target = segments[segments.length - 1].toLowerCase();
+                target = target.split('|')[0].trim();
+                if (target.indexOf('-') !== -1) {
+                    target = target.split('-')[0];
+                }
+                if (/^[a-z]{2}$/.test(target)) {
+                    return target;
+                }
+                return 'fr';
             }
 
             function syncFlag() {
-                var opt = select.options[select.selectedIndex];
-                flag.style.backgroundImage = 'url("' + (opt ? (opt.getAttribute('data-flag-src') || 'https://flagcdn.com/w40/fr.png') : 'https://flagcdn.com/w40/fr.png') + '")';
+                var lang = select.value || 'fr';
+                var opt = select.querySelector('option[value="' + lang + '"]');
+                var url =
+                    opt && opt.getAttribute('data-flag-src')
+                        ? opt.getAttribute('data-flag-src')
+                        : 'https://flagcdn.com/w40/fr.png';
+                flag.style.backgroundImage = 'url("' + url + '")';
                 code.textContent = opt ? opt.textContent.trim().toUpperCase() : 'FR';
+                options.forEach(function (btn) {
+                    var active = btn.getAttribute('data-lang') === lang;
+                    btn.classList.toggle('is-active', active);
+                    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+            }
+
+            function openPanel() {
+                panel.removeAttribute('hidden');
+                switcher.classList.add('is-open');
+                trigger.setAttribute('aria-expanded', 'true');
+            }
+
+            function closePanel() {
+                panel.setAttribute('hidden', '');
+                switcher.classList.remove('is-open');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+
+            function togglePanel() {
+                if (panel.hasAttribute('hidden')) {
+                    openPanel();
+                } else {
+                    closePanel();
+                }
             }
 
             function applyLanguage(lang) {
@@ -771,11 +1039,50 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             var initial = currentLangFromCookie();
             if (select.querySelector('option[value="' + initial + '"]')) {
                 select.value = initial;
+            } else {
+                select.value = 'fr';
             }
             syncFlag();
 
-            select.addEventListener('change', function () {
-                applyLanguage(select.value);
+            trigger.addEventListener('click', function (e) {
+                e.stopPropagation();
+                togglePanel();
+            });
+
+            options.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var lang = btn.getAttribute('data-lang');
+                    if (!lang || lang === select.value) {
+                        closePanel();
+                        return;
+                    }
+                    select.value = lang;
+                    applyLanguage(lang);
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!switcher.contains(e.target)) {
+                    closePanel();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closePanel();
+                }
+            });
+
+            window.addEventListener('pageshow', function () {
+                var lang = currentLangFromCookie();
+                if (select.querySelector('option[value="' + lang + '"]')) {
+                    select.value = lang;
+                }
+                syncFlag();
+            });
+
+            window.addEventListener('load', function () {
+                syncFlag();
             });
         })();
     </script>
