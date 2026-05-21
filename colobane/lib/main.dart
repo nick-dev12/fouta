@@ -112,7 +112,6 @@ class _WebViewScreenState extends State<WebViewScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _requestPermissions();
     _initializeFCM();
     _loadSavedUrl();
   }
@@ -239,16 +238,6 @@ class _WebViewScreenState extends State<WebViewScreen>
       print('❌ ERREUR lors de l\'initialisation FCM: $e');
       print('❌ Stack trace: $stackTrace');
     }
-  }
-
-  // Demander les permissions nécessaires
-  Future<void> _requestPermissions() async {
-    await [
-      Permission.camera,
-      Permission.storage,
-      Permission.location,
-      Permission.notification,
-    ].request();
   }
 
   // Gérer les messages JavaScript depuis la WebView
@@ -606,7 +595,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                   useShouldOverrideUrlLoading: true,
                   mediaPlaybackRequiresUserGesture: false,
                   allowsInlineMediaPlayback: true,
-                  iframeAllow: "camera; microphone",
+                  iframeAllow: "camera",
                   iframeAllowFullscreen: true,
                   // Désactivé pour améliorer les performances
                   useOnLoadResource: false,
@@ -660,9 +649,19 @@ class _WebViewScreenState extends State<WebViewScreen>
                   }
                 },
                 onPermissionRequest: (controller, request) async {
-                  // Autoriser caméra/micro par défaut pour la WebView
+                  // Caméra uniquement si le site la demande ; pas de micro (non utilisé par COLObanes)
+                  final allowed = request.resources.where((r) {
+                    final name = r.toString().toLowerCase();
+                    return name.contains('camera');
+                  }).toList();
+                  if (allowed.isEmpty) {
+                    return PermissionResponse(
+                      resources: request.resources,
+                      action: PermissionResponseAction.DENY,
+                    );
+                  }
                   return PermissionResponse(
-                    resources: request.resources,
+                    resources: allowed,
                     action: PermissionResponseAction.GRANT,
                   );
                 },

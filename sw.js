@@ -1,11 +1,11 @@
 /**
- * Service Worker PWA - Installation comme application
- * Permet l'installation du site sur l'écran d'accueil (mobile/desktop)
+ * Service Worker PWA (installation, cache léger)
+ * Les notifications FCM utilisent firebase-messaging-sw.js
  */
-self.addEventListener('install', function(event) {
+self.addEventListener('install', function (event) {
     self.skipWaiting();
 });
 
-self.addEventListener('activate', function(event) {
+self.addEventListener('activate', function (event) {
     event.waitUntil(self.clients.claim());
 });

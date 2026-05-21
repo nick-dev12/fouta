@@ -15,4 +15,6 @@ $firebase_config = require __DIR__ . '/../config/firebase_config.php';
         'appId' => $firebase_config['appId'],
         'measurementId' => $firebase_config['measurementId'] ?? null
     ]); ?>;
+    window.FIREBASE_VAPID_KEY = <?php echo json_encode(trim($firebase_config['vapidKey'] ?? '')); ?>;
+    window.FCM_SW_PATH = '/firebase-messaging-sw.js';
 </script>

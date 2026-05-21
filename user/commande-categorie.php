@@ -30,6 +30,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirmer_livraison']
         if ($cmd_post && (($cmd_post['statut'] ?? '') === 'livraison_en_cours')) {
             require_once __DIR__ . '/../models/model_commandes_admin.php';
             if (update_commande_statut($post_cmd_id, 'paye')) {
+                require_once __DIR__ . '/../services/send_commande_notification.php';
+                send_commande_status_notification(
+                    $user_id,
+                    $cmd_post['numero_commande'],
+                    'paye',
+                    trim($_SESSION['user_email'] ?? '')
+                );
+                $vendeur_id = (int) ($cmd_post['vendeur_id'] ?? 0);
+                if ($vendeur_id > 0) {
+                    send_commande_vendeur_action_notification(
+                        $vendeur_id,
+                        $post_cmd_id,
+                        $cmd_post['numero_commande'],
+                        'Réception confirmée par le client (payée)'
+                    );
+                }
                 header('Location: commande-categorie.php?commande_id=' . $post_cmd_id . '&receive_ok=1');
                 exit;
             }

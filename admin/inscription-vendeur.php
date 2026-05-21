@@ -14,7 +14,7 @@ if (isset($_SESSION['admin_id'])) {
 $result = process_inscription_vendeur();
 if (!empty($result['success'])) {
     $_SESSION['inscription_success'] = $result['message'];
-    header('Location: login.php');
+    header('Location: /choix-connexion.php');
     exit;
 }
 

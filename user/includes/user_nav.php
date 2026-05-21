@@ -197,7 +197,7 @@ $dock_more_has_active_child = user_nav_more_has_active_child($user_nav_items, $c
             <?php endforeach; ?>
         </nav>
 
-        <!-- Bas d’écran : 4 raccourcis + bouton Menu (≤1024px) -->
+        <!-- Bas d’écran : 5 touches (≤1024px), même logique que le dock boutique -->
         <div class="user-dock-bar" id="userDockBar" aria-label="Navigation compte réduite" hidden>
             <nav class="user-dock-primary" aria-label="Raccourcis">
                 <?php foreach ($user_nav_items as $nav_item): ?>
@@ -210,28 +210,28 @@ $dock_more_has_active_child = user_nav_more_has_active_child($user_nav_items, $c
                         ENT_QUOTES,
                         'UTF-8'
                     ); ?>">
-                    <span class="menu-item-icon" aria-hidden="true"><i class="fas <?php echo htmlspecialchars(
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas <?php echo htmlspecialchars(
                         (string) $nav_item['fa'],
                         ENT_QUOTES,
                         'UTF-8'
                     ); ?>"></i></span>
-                    <span class="menu-item-text"><?php echo htmlspecialchars(
+                    <span class="menu-item__text"><?php echo htmlspecialchars(
                         (string) $nav_item['label'],
                         ENT_QUOTES,
                         'UTF-8'
                     ); ?></span>
                 </a>
                 <?php endforeach; ?>
-            </nav>
             <button type="button"
-                class="user-dock-menu-btn<?php echo $dock_more_has_active_child ? ' user-dock-menu-btn--hint' : ''; ?>"
                 id="userDockMenuBtn"
                 aria-expanded="false"
                 aria-haspopup="dialog"
-                aria-controls="userDockMenuPanel">
-                <span class="user-dock-menu-btn__icon" aria-hidden="true"><i class="fas fa-th"></i></span>
-                <span class="user-dock-menu-btn__label">Menu</span>
+                aria-controls="userDockMenuPanel"
+                class="menu-item menu-item--dock-mini menu-item--dock-mini-btn<?php echo $dock_more_has_active_child ? ' menu-item--dock-mini-btn--hint' : ''; ?>">
+                <span class="menu-item__icon menu-item__icon--hint-host" aria-hidden="true"><i class="fas fa-th"></i></span>
+                <span class="menu-item__text">Menu</span>
             </button>
+            </nav>
         </div>
     </aside>
 

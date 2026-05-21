@@ -43,6 +43,9 @@ if ($prenom_trim !== '') {
     $avatar_initial = '?';
 }
 $user_email_display = trim((string) ($user['email'] ?? ''));
+$enable_firebase_notifications = true;
+$firebase_notify_type = 'user';
+$skip_pwa_service_worker = true;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -81,12 +84,29 @@ $user_email_display = trim((string) ($user['email'] ?? ''));
                 </div>
                 <div class="mc-hero-actions">
                     <button type="button" id="btn-enable-notifications"
-                        class="mc-btn mc-btn--notify btn-enable-notifications">
-                        <i class="fas fa-bell-slash" aria-hidden="true"></i> Activer les notifications
+                        class="mc-btn mc-btn--notify btn-enable-notifications"
+                        data-notify-type="user"
+                        title="Recevoir les mises à jour de vos commandes">
+                        <i class="fas fa-bell-slash" aria-hidden="true"></i>
+                        Activer les notifications
                     </button>
                     <a href="/index.php" class="mc-btn mc-btn--primary">
                         <i class="fas fa-store" aria-hidden="true"></i> Voir les produits
                     </a>
+                </div>
+                <div id="notify-help-panel" class="mc-notify-help" hidden aria-live="polite">
+                    <p class="mc-notify-help__title">
+                        <i class="fas fa-circle-info" aria-hidden="true"></i>
+                        Edge n'a pas affiché la demande — autorisez manuellement :
+                    </p>
+                    <ol class="mc-notify-help__steps">
+                        <li>Cliquez sur le <strong>cadenas</strong> (ou ⓘ) à gauche de l'adresse</li>
+                        <li><strong>Notifications</strong> → choisissez <strong>Autoriser</strong></li>
+                        <li>Cliquez sur le bouton ci-dessous pour finaliser</li>
+                    </ol>
+                    <button type="button" id="btn-notify-continue" class="mc-btn mc-btn--primary mc-notify-help__btn">
+                        <i class="fas fa-check" aria-hidden="true"></i> J'ai autorisé — continuer
+                    </button>
                 </div>
             </div>
             <div class="mc-shop-row">
@@ -206,29 +226,5 @@ $user_email_display = trim((string) ($user['email'] ?? ''));
             <?php endif; ?>
         </section>
     </div>
-
-    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging-compat.js"></script>
-    <?php require_once __DIR__ . '/../includes/firebase_init.php'; ?>
-    <script>
-        if (window.FIREBASE_CONFIG) {
-            firebase.initializeApp(window.FIREBASE_CONFIG);
-        }
-    </script>
-    <script src="/js/firebase-notifications.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var btn = document.getElementById('btn-enable-notifications');
-            if (btn) {
-                btn.addEventListener('click', function() {
-                    if (typeof FirebaseNotifications !== 'undefined') {
-                        FirebaseNotifications.enable('user', this);
-                    } else {
-                        alert('Erreur: Les scripts de notification ne sont pas chargés.');
-                    }
-                });
-            }
-        });
-    </script>
 
     <?php include 'includes/user_footer.php'; ?>

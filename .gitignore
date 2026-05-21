@@ -1,6 +1,9 @@
 # Fichiers sensibles - NE JAMAIS committer
 # Clés privées Firebase (service account)
 sugar-paper-*.json
+gestion-scolaire-*.json
+colobanes-*.json
+colobanes-firebase-adminsdk-*.json
 *-firebase-adminsdk-*.json
 *firebase*credentials*.json
 

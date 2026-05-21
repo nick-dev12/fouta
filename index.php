@@ -510,6 +510,192 @@ $seo_canonical = $base . '/';
             line-height: 1.5;
         }
 
+        /* Catégories populaires — bandeau sous le hero */
+        .mp-popular-categories {
+            background: var(--blanc);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 0 14px;
+        }
+
+        .mp-popular-categories-inner {
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .mp-popular-categories-track {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: clamp(8px, 2vw, 16px);
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x proximity;
+            scrollbar-width: none;
+            padding: 2px 0 4px;
+        }
+
+        .mp-popular-categories-track::-webkit-scrollbar {
+            display: none;
+        }
+
+        .mp-pop-cat-item {
+            flex: 0 0 auto;
+            width: clamp(58px, 11vw, 76px);
+            max-width: 76px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--titres);
+            scroll-snap-align: start;
+            min-width: 0;
+        }
+
+        .mp-pop-cat-icon {
+            width: clamp(48px, 9vw, 60px);
+            height: clamp(48px, 9vw, 60px);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.32);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            box-shadow: 0 4px 18px rgba(53, 100, 166, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .mp-pop-cat-icon i {
+            font-size: clamp(22px, 4vw, 28px);
+            line-height: 1;
+        }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 1) .mp-pop-cat-icon i { color: var(--nav-soft-fg-1); }
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 2) .mp-pop-cat-icon i { color: var(--nav-soft-fg-2); }
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 3) .mp-pop-cat-icon i { color: var(--nav-soft-fg-3); }
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 4) .mp-pop-cat-icon i { color: var(--nav-soft-fg-4); }
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 5) .mp-pop-cat-icon i { color: var(--nav-soft-fg-5); }
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 6) .mp-pop-cat-icon i { color: var(--nav-soft-fg-6); }
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 7) .mp-pop-cat-icon i { color: var(--nav-soft-fg-7); }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):hover .mp-pop-cat-icon {
+            transform: scale(1.04);
+            background: rgba(255, 255, 255, 0.48);
+            box-shadow: 0 6px 22px rgba(53, 100, 166, 0.16);
+        }
+
+        .mp-pop-cat-item--all .mp-pop-cat-icon {
+            background: rgba(255, 255, 255, 0.32);
+            color: var(--couleur-dominante);
+        }
+
+        .mp-pop-cat-item--all:hover .mp-pop-cat-icon {
+            transform: scale(1.04);
+            background: rgba(255, 255, 255, 0.48);
+            box-shadow: 0 6px 22px rgba(53, 100, 166, 0.16);
+        }
+
+        .mp-pop-cat-label {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            font-size: clamp(10px, 1.6vw, 11px);
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Icône grille 2×2 — bouton Voir tout */
+        .mp-pop-grid-dots {
+            display: grid;
+            grid-template-columns: repeat(2, 5px);
+            grid-template-rows: repeat(2, 5px);
+            gap: 4px;
+        }
+
+        .mp-pop-grid-dots span {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .mp-pop-cat-item--all .mp-pop-cat-label {
+            color: var(--couleur-dominante);
+            font-weight: 600;
+        }
+
+        .mp-pop-cat-item--all {
+            border: none;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        @media (min-width: 768px) {
+            .mp-popular-categories-track {
+                justify-content: space-between;
+                overflow-x: visible;
+                flex-wrap: nowrap;
+            }
+
+            .mp-pop-cat-item {
+                flex: 1 1 0;
+                width: auto;
+                min-width: 0;
+                max-width: 76px;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .mp-popular-categories-track {
+                justify-content: space-between;
+                overflow-x: visible;
+                flex-wrap: nowrap;
+                gap: 6px;
+            }
+
+            .mp-pop-cat-item:nth-child(n + 5):not(.mp-pop-cat-item--all) {
+                display: none;
+            }
+
+            .mp-pop-cat-item {
+                flex: 1 1 0;
+                width: auto;
+                min-width: 0;
+                max-width: none;
+            }
+        }
+
+        @media (min-width: 1100px) {
+            .mp-popular-categories {
+                padding: 14px 0 16px;
+            }
+        }
+
+        @media (max-width: 479px) {
+            .mp-popular-categories {
+                padding: 10px 0 12px;
+            }
+
+            .mp-popular-categories-track {
+                gap: 10px;
+                margin: 0 -2px;
+                padding: 2px 2px 4px;
+            }
+        }
+
         .mp-search {
             display: flex;
             flex-wrap: wrap;
@@ -644,9 +830,31 @@ $seo_canonical = $base . '/';
         }
 
         .mp-card-img {
+            position: relative;
             aspect-ratio: 1 / 1;
             background: var(--blanc-casse);
             overflow: hidden;
+        }
+
+        .mp-card-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 2;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border-radius: 6px;
+            pointer-events: none;
+            line-height: 1.2;
+        }
+
+        .mp-card-badge--nouveau {
+            background: var(--accent-promo);
+            color: var(--blanc);
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
         }
 
         .mp-card-img img {
@@ -807,6 +1015,44 @@ $seo_canonical = $base . '/';
 
             .mp-showcase-inner.mp-showcase-inner--no-nav {
                 grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+            }
+        }
+
+        /* Tablette : mêmes proportions que desktop, légèrement adaptées */
+        @media (min-width: 768px) and (max-width: 1100px) {
+            .mp-showcase-inner.mp-showcase-inner--no-nav {
+                grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+                gap: 14px;
+            }
+
+            .mp-showcase-center {
+                padding: 18px 16px 20px;
+            }
+
+            .mp-showcase-spotlight {
+                min-height: auto;
+                max-width: 100%;
+            }
+
+            .mp-promo-b2b-inner {
+                grid-template-columns: minmax(220px, 34%) 1fr;
+                gap: 20px;
+                padding: 28px 24px;
+            }
+
+            .mp-pair-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+
+            .mp-panel-products {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px 12px;
+            }
+
+            .mp-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 14px;
             }
         }
 
@@ -1374,7 +1620,7 @@ $seo_canonical = $base . '/';
             padding: 32px 28px 32px 32px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 767px) {
             .mp-promo-b2b-inner {
                 grid-template-columns: 1fr;
                 padding: 24px 18px;
@@ -1495,7 +1741,7 @@ $seo_canonical = $base . '/';
             gap: 18px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 767px) {
             .mp-pair-grid {
                 grid-template-columns: 1fr;
             }
@@ -1546,12 +1792,11 @@ $seo_canonical = $base . '/';
 
         .mp-panel-products {
             display: grid;
-            /* Mobile / tablette : 2×2 ; grand écran : une ligne de 4 */
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px 14px;
         }
 
-        @media (min-width: 900px) {
+        @media (min-width: 1101px) {
             .mp-panel-products {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 10px 12px;
@@ -1882,6 +2127,7 @@ $seo_canonical = $base . '/';
         $mp_nav_cats = array_slice($mp_categories, 0, 14);
         $mp_nav_is_generale = false;
     }
+    $mp_popular_cats = array_slice($mp_nav_cats, 0, 6);
 
     require_once __DIR__ . '/includes/marketplace_home_helpers.php';
     if (file_exists(__DIR__ . '/models/model_recherches_catalogue.php')) {
@@ -1965,52 +2211,57 @@ $seo_canonical = $base . '/';
             <?php endif; ?>
         </section>
 
-        <div class="mp-shell">
-            <section class="mp-showcase" aria-label="Catégories et tendances">
-                <div class="mp-showcase-inner<?php echo empty($mp_nav_cats) ? ' mp-showcase-inner--no-nav' : ''; ?>">
-                    <?php if (!empty($mp_nav_cats)): ?>
-                        <aside class="mp-showcase-nav">
-                            <div class="mp-showcase-nav-head">
-                                <i class="fas fa-star" aria-hidden="true"></i> Catégories pour vous
-                            </div>
-                            <ul class="mp-showcase-nav-list">
-                                <?php foreach ($mp_nav_cats as $nrow): ?>
-                                    <?php
-                                    $nlabel = (string) ($nrow['nom'] ?? '');
-                                    if ($nlabel === '') {
-                                        continue;
-                                    }
-                                    $sn_ic_class = function_exists('categorie_fa_icon_class')
-                                        ? categorie_fa_icon_class($nrow)
-                                        : 'fa-solid fa-layer-group';
-                                    $nid_nav = (int) ($nrow['id'] ?? 0);
-                                    if ($mp_nav_is_generale) {
-                                        $nhref = $nid_nav > 0 && function_exists('nav_categorie_generale_href')
-                                            ? nav_categorie_generale_href($nid_nav)
-                                            : ('produits.php?recherche=' . rawurlencode($nlabel));
-                                    } else {
-                                        $nhref = $nid_nav > 0 && function_exists('nav_categorie_href')
-                                            ? nav_categorie_href($nid_nav)
-                                            : 'produits.php';
-                                    }
-                                    ?>
-                                    <li>
-                                        <a href="<?php echo htmlspecialchars($nhref, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <span class="mp-sn-ico" aria-hidden="true"><i
-                                                    class="<?php echo htmlspecialchars($sn_ic_class, ENT_QUOTES, 'UTF-8'); ?>"></i></span>
-                                            <?php echo htmlspecialchars($nlabel); ?>
-                                            <span class="mp-sn-chev" aria-hidden="true"><i
-                                                    class="fas fa-chevron-right"></i></span>
-                                        </a>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                            <div class="mp-showcase-nav-foot">
-                                <a href="produits.php">Tout le catalogue</a>
-                            </div>
-                        </aside>
-                    <?php endif; ?>
+        <?php if (!empty($mp_popular_cats)): ?>
+        <section class="mp-popular-categories" aria-label="Catégories populaires">
+            <div class="mp-popular-categories-inner">
+                <div class="mp-popular-categories-track" role="list">
+                    <?php foreach ($mp_popular_cats as $prow): ?>
+                        <?php
+                        $plabel = trim((string) ($prow['nom'] ?? ''));
+                        if ($plabel === '') {
+                            continue;
+                        }
+                        $pic_class = function_exists('categorie_fa_icon_class')
+                            ? categorie_fa_icon_class($prow)
+                            : 'fa-solid fa-layer-group';
+                        $pid = (int) ($prow['id'] ?? 0);
+                        if ($mp_nav_is_generale) {
+                            $phref = $pid > 0 && function_exists('nav_categorie_generale_href')
+                                ? nav_categorie_generale_href($pid)
+                                : ('produits.php?recherche=' . rawurlencode($plabel));
+                        } else {
+                            $phref = $pid > 0 && function_exists('nav_categorie_href')
+                                ? nav_categorie_href($pid)
+                                : 'produits.php';
+                        }
+                        ?>
+                        <a class="mp-pop-cat-item" role="listitem"
+                            href="<?php echo htmlspecialchars($phref, ENT_QUOTES, 'UTF-8'); ?>"
+                            title="<?php echo htmlspecialchars($plabel, ENT_QUOTES, 'UTF-8'); ?>">
+                            <span class="mp-pop-cat-icon" aria-hidden="true">
+                                <i class="<?php echo htmlspecialchars($pic_class, ENT_QUOTES, 'UTF-8'); ?>"></i>
+                            </span>
+                            <span class="mp-pop-cat-label"><?php echo htmlspecialchars($plabel); ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                    <button type="button" class="mp-pop-cat-item mp-pop-cat-item--all" role="listitem"
+                        title="Voir toutes les catégories"
+                        onclick="if(typeof window.openBoutiqueNavSidebar==='function'){window.openBoutiqueNavSidebar();}">
+                        <span class="mp-pop-cat-icon" aria-hidden="true">
+                            <span class="mp-pop-grid-dots">
+                                <span></span><span></span><span></span><span></span>
+                            </span>
+                        </span>
+                        <span class="mp-pop-cat-label">Voir tout</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+        <?php endif; ?>
 
+        <div class="mp-shell">
+            <section class="mp-showcase" aria-label="Tendances et sélections">
+                <div class="mp-showcase-inner mp-showcase-inner--no-nav">
                     <div class="mp-showcase-center">
                         <div class="mp-showcase-center-top">
                             <div>

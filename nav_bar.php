@@ -132,6 +132,11 @@ if ($nav_compte_logged) {
 $nav_panier_href = isset($_SESSION['user_id'])
     ? $u_panier
     : '/choix-connexion.php?redirect=' . rawurlencode($nav_panier_connect_redirect);
+
+$shop_nav_script = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: ($_SERVER['PHP_SELF'] ?? ''));
+$shop_dock_home_act = ($shop_nav_script === 'index.php');
+$shop_dock_panier_act = in_array($shop_nav_script, ['panier.php', 'commande.php'], true);
+$shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== false);
 ?>
 <link rel="stylesheet" href="/css/variables.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="/css/nabare.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
@@ -855,31 +860,38 @@ $nav_panier_href = isset($_SESSION['user_id'])
     </div>
 </aside>
 
-<!-- Dock bas boutique (tablet/mobile) — 4 raccourcis pleine largeur ; Nouveautés / Promo / Contact restent en section1 -->
+<!-- Dock bas boutique (tablet/mobile) — même structure que le dock vendeur -->
 <div class="shop-bottom-dock" id="shopBottomDock" aria-label="Navigation boutique rapide">
-    <nav class="shop-dock-strip" aria-label="Raccourcis boutique">
-        <a class="shop-dock-item" href="<?php echo htmlspecialchars($u_home, ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
-            <span class="shop-dock-lb">Accueil</span>
-        </a>
-        <a class="shop-dock-item" href="<?php echo htmlspecialchars($u_produits, ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-store"></i></span>
-            <span class="shop-dock-lb">Produits</span>
-        </a>
-        <a class="shop-dock-item shop-dock-item--accent"
-            href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
-            title="<?php echo isset($_SESSION['user_id']) ? 'Panier' : 'Se connecter — panier'; ?>">
-            <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
-                <span class="shop-dock-badge" aria-hidden="true"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
-            <?php endif; ?>
-            <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-cart-shopping"></i></span>
-            <span class="shop-dock-lb">Panier</span>
-        </a>
-        <a class="shop-dock-item" href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="shop-dock-ic" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
-            <span class="shop-dock-lb">Compte</span>
-        </a>
-    </nav>
+    <div class="shop-dock-bar" id="shopDockBar" aria-label="Navigation boutique réduite">
+        <nav class="shop-dock-primary" aria-label="Raccourcis">
+            <a href="<?php echo htmlspecialchars($u_home, ENT_QUOTES, 'UTF-8'); ?>"
+                class="menu-item menu-item--dock-mini<?php echo $shop_dock_home_act ? ' active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
+                <span class="menu-item__text">Accueil</span>
+            </a>
+            <button type="button"
+                id="shopDockSidebarBtn"
+                class="menu-item menu-item--dock-mini menu-item--dock-mini-btn"
+                aria-label="Ouvrir le menu catalogue">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fa-solid fa-bars"></i></span>
+                <span class="menu-item__text">Menu</span>
+            </button>
+            <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
+                class="menu-item menu-item--dock-mini menu-item--has-badge<?php echo $shop_dock_panier_act ? ' active' : ''; ?>"
+                title="<?php echo isset($_SESSION['user_id']) ? 'Panier' : 'Se connecter — panier'; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fa-solid fa-cart-shopping"></i></span>
+                <span class="menu-item__text">Panier</span>
+                <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+                <span class="menu-item__badge menu-item__badge--dock" aria-label="<?php echo (int) $panier_count; ?> article<?php echo $panier_count > 1 ? 's' : ''; ?> dans le panier"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
+                <?php endif; ?>
+            </a>
+            <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>"
+                class="menu-item menu-item--dock-mini<?php echo $shop_dock_compte_act ? ' active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
+                <span class="menu-item__text">Compte</span>
+            </a>
+        </nav>
+    </div>
 </div>
 
 <section class="section1">
@@ -904,10 +916,6 @@ $nav_panier_href = isset($_SESSION['user_id'])
         <a href="<?php echo htmlspecialchars($u_promo); ?>" class="nav-action-btn nav-btn-promo">
             <i class="fa-solid fa-percent"></i>
             <span>PROMO</span>
-        </a>
-        <a href="<?php echo htmlspecialchars($u_contact); ?>" class="nav-action-btn nav-btn-contact">
-            <i class="fa-solid fa-phone"></i>
-            <span>CONTACT</span>
         </a>
     </div>
 </section>
@@ -950,6 +958,14 @@ $nav_panier_href = isset($_SESSION['user_id'])
             else openSidebarMenu();
         });
         if (overlay) overlay.addEventListener('click', closeSidebarMenu);
+
+        var dockSidebarBtn = document.getElementById('shopDockSidebarBtn');
+        if (dockSidebarBtn) {
+            dockSidebarBtn.addEventListener('click', function () {
+                if (sidebar && sidebar.classList.contains('open')) closeSidebarMenu();
+                else openSidebarMenu();
+            });
+        }
 
         window.addEventListener('resize', function () {
             if (window.innerWidth <= 1024) return;

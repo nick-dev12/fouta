@@ -57,7 +57,6 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
 
     <div class="mp-catalog-hero mp-catalog-hero--promo">
         <h1><i class="fas fa-percent" aria-hidden="true"></i> Promotions</h1>
-        <p><?php echo (int) $total_produits; ?> produit(s) en promotion — profitez des meilleures offres sur la marketplace.</p>
     </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>

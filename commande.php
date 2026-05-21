@@ -61,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         // Envoi notification + email en arrière-plan (une cible par boutique)
         if (file_exists(__DIR__ . '/services/send_new_commande_to_admin.php')) {
             require_once __DIR__ . '/services/send_new_commande_to_admin.php';
+            require_once __DIR__ . '/services/send_commande_notification.php';
             if (!empty($result['notifications']) && is_array($result['notifications'])) {
                 foreach ($result['notifications'] as $n) {
                     if (empty($n['vendeur_id']) || empty($n['numero_commande'])) {
@@ -88,6 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $d['produits'] ?? []
                 );
             }
+
+            $nums_client = !empty($result['numeros_commandes']) ? $result['numeros_commandes'] : [$result['numero_commande']];
+            $montant_client = isset($result['email_data']['montant_total']) ? (float) $result['email_data']['montant_total'] : 0;
+            send_new_commande_confirmation_to_client(
+                (int) $_SESSION['user_id'],
+                $nums_client,
+                $montant_client
+            );
         }
         exit;
     } else {

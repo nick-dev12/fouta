@@ -1879,7 +1879,7 @@ body {
   }
 
   :root {
-    --admin-vendeur-bottom-nav-clearance: 5.9rem;
+    --admin-vendeur-bottom-nav-clearance: clamp(5.9rem, 14vw, 7rem);
   }
 
   .admin-sidebar.admin-sidebar--vendeur {
@@ -1897,16 +1897,16 @@ body {
     overflow: visible;
     transform: none !important;
     transition: none;
-    z-index: 1000;
-    border-right: none;
-    border-top: 1px solid rgba(53, 100, 166, 0.14);
-    border-radius: 20px 20px 0 0;
-    box-shadow:
-      0 -8px 36px rgba(15, 23, 42, 0.1),
-      0 -2px 0 rgba(255, 255, 255, 0.75) inset;
-    backdrop-filter: blur(22px) saturate(1.45);
-    -webkit-backdrop-filter: blur(22px) saturate(1.45);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 10050;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: transparent;
+    padding: 0;
+    padding-bottom: 0;
+    pointer-events: none;
   }
 
   .admin-sidebar.admin-sidebar--vendeur.admin-sidebar.hidden,
@@ -1915,15 +1915,8 @@ body {
   }
 
   .admin-sidebar.admin-sidebar--vendeur::before {
-    content: "";
-    display: block;
-    flex-shrink: 0;
-    width: 42px;
-    height: 4px;
-    margin: 8px auto 2px;
-    border-radius: 999px;
-    background: rgba(15, 23, 42, 0.1);
-    order: -1;
+    display: none !important;
+    content: none !important;
   }
 
   .admin-sidebar.admin-sidebar--vendeur.show {
@@ -1945,70 +1938,61 @@ body {
     gap: clamp(4px, 1.8vw, 10px);
     width: 100%;
     flex-shrink: 0;
+    pointer-events: auto;
     padding:
-      0 clamp(10px, 3vw, 14px)
-      calc(10px + env(safe-area-inset-bottom, 0px))
-      clamp(10px, 3vw, 14px);
+      clamp(8px, 2.2vw, 14px) clamp(10px, 3vw, 14px)
+      calc(10px + env(safe-area-inset-bottom, 0px));
     background: transparent;
     border: none;
   }
 
   .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-primary {
     flex: 1;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: clamp(2px, 1vw, 4px);
-    min-width: 0;
+    width: 100%;
     max-width: 100%;
-    overflow: hidden;
-  }
-
-  .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-menu-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: clamp(4px, 1vw, 6px);
-    flex: 0 0 auto;
-    min-width: clamp(54px, 14vw, 68px);
-    max-width: 4.85rem;
     margin: 0;
-    padding: clamp(6px, 1.8vw, 9px) clamp(6px, 1.4vw, 10px)
-      clamp(7px, 1.8vw, 11px);
-    border-radius: 14px;
-    border: 1px solid rgba(53, 100, 166, 0.18);
-    background: rgba(53, 100, 166, 0.08);
-    color: var(--couleur-dominante);
-    font-family: var(--font-corps);
-    font-size: clamp(0.58rem, 2.05vw + 0.06rem, 0.6875rem);
-    font-weight: 700;
-    line-height: 1.15;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(4px, 1.25vw, 8px);
+    justify-items: stretch;
+    align-items: stretch;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: clamp(16px, 4.5vw, 22px);
+    padding: clamp(5px, 1.2vw, 9px);
+    background: #ffffff;
+    border: 1px solid rgba(53, 100, 166, 0.1);
+    box-shadow:
+      0 4px 28px rgba(15, 23, 42, 0.1),
+      0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  }
+
+  .admin-sidebar.admin-sidebar--vendeur
+    button.menu-item.menu-item--dock-mini.menu-item--dock-mini-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
     cursor: pointer;
-    transition:
-      background 0.18s ease,
-      border-color 0.18s ease,
-      box-shadow 0.18s ease;
-    -webkit-tap-highlight-color: transparent;
+    text-align: center;
+    box-sizing: border-box;
   }
 
-  .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-menu-btn:hover {
-    background: rgba(53, 100, 166, 0.14);
-    border-color: rgba(53, 100, 166, 0.28);
-  }
-
-  .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-menu-btn:focus-visible {
+  .admin-sidebar.admin-sidebar--vendeur
+    .menu-item.menu-item--dock-mini.menu-item--dock-mini-btn:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px var(--focus-ring);
   }
 
-  .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-menu-btn--hint {
-    box-shadow: inset 0 0 0 1px rgba(53, 100, 166, 0.28);
-    background: rgba(53, 100, 166, 0.12);
+  .admin-sidebar.admin-sidebar--vendeur
+    .menu-item.menu-item--dock-mini.menu-item--dock-mini-btn--hint
+    .menu-item__icon--hint-host {
+    position: relative;
   }
 
   .admin-sidebar.admin-sidebar--vendeur
-    .admin-vendeur-dock-menu-btn--hint
-    .admin-vendeur-dock-menu-btn__icon::after {
+    .menu-item.menu-item--dock-mini.menu-item--dock-mini-btn--hint
+    .menu-item__icon--hint-host::after {
     content: "";
     position: absolute;
     top: -2px;
@@ -2018,55 +2002,36 @@ body {
     border-radius: 50%;
     background: var(--accent-promo);
     border: 1.5px solid var(--blanc);
-  }
-
-  .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-menu-btn__icon {
-    position: relative;
-    width: clamp(34px, 10vw, 40px);
-    height: clamp(34px, 10vw, 40px);
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    font-size: clamp(1rem, 3.2vw, 1.15rem);
-    box-sizing: border-box;
-    border: 1px solid rgba(109, 40, 217, 0.2);
-    background: linear-gradient(
-      148deg,
-      rgba(167, 139, 250, 0.22) 0%,
-      rgba(53, 100, 166, 0.15) 100%
-    );
-    color: var(--couleur-dominante, #3564a6);
-  }
-
-  .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-menu-btn__icon i {
-    color: inherit;
-  }
-
-  .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-menu-btn__label {
-    text-align: center;
-    max-width: 4.85rem;
+    pointer-events: none;
   }
 
   .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini {
+    display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    gap: clamp(3px, 0.8vw, 5px);
-    padding: clamp(5px, 1.5vw, 8px) clamp(3px, 0.8vw, 6px)
-      clamp(6px, 1.5vw, 9px);
-    margin: 0;
-    border-radius: 12px;
+    justify-content: center;
+    gap: clamp(4px, 1vw, 6px);
+    width: 100%;
+    max-width: none;
     min-width: 0;
-    max-width: 100%;
+    margin: 0;
+    padding: clamp(8px, 2vw, 12px) clamp(4px, 1vw, 8px);
+    border-radius: 12px;
+    min-height: 4.875rem;
+    box-sizing: border-box;
     border: 1px solid rgba(53, 100, 166, 0.12);
     position: relative;
     text-align: center;
     overflow: hidden;
-  }
-
-  .admin-sidebar.admin-sidebar--vendeur
-    .menu-item.menu-item--dock-mini.menu-item--has-badge {
-    padding-top: clamp(10px, 2.6vw, 14px);
+    text-decoration: none;
+    color: var(--titres, #1a1a1a);
+    background: #ffffff;
+    font-family: var(--font-corps);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease;
   }
 
   .admin-sidebar.admin-sidebar--vendeur
@@ -2079,21 +2044,29 @@ body {
     height: 1.2rem;
     padding: 0 6px;
     font-size: 0.61rem;
+    font-weight: 800;
+    line-height: 1.2rem;
+    text-align: center;
+    border-radius: 999px;
+    background: var(--accent-promo);
+    color: #fff;
+    pointer-events: none;
   }
 
   .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__icon {
-    width: clamp(34px, 10vw, 40px);
-    height: clamp(34px, 10vw, 40px);
     margin-right: 0;
     border-radius: 12px;
-    font-size: clamp(1rem, 3.2vw, 1.1rem);
-    border: 1px solid transparent;
+    border: none;
+    background: transparent;
+    box-shadow: none;
     box-sizing: border-box;
-    transition:
-      background 0.2s ease,
-      color 0.2s ease,
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+    font-size: clamp(1.15rem, 4vw, 1.4rem);
+    width: clamp(40px, 11vw, 48px);
+    height: clamp(40px, 11vw, 48px);
   }
 
   .admin-sidebar.admin-sidebar--vendeur
@@ -2101,54 +2074,49 @@ body {
     > .menu-item.menu-item--dock-mini
     .menu-item__icon
     i {
+    line-height: 1;
     color: inherit;
   }
 
-  /* Pastilles d’icônes colorées par raccourci (ordre : accueil, stock, commandes, caisse) */
   .admin-sidebar.admin-sidebar--vendeur
     .admin-vendeur-dock-primary
     > .menu-item.menu-item--dock-mini:nth-child(1)
     .menu-item__icon {
-    background: rgba(53, 100, 166, 0.2);
     color: var(--couleur-dominante, #3564a6);
-    border-color: rgba(53, 100, 166, 0.22);
   }
 
   .admin-sidebar.admin-sidebar--vendeur
     .admin-vendeur-dock-primary
     > .menu-item.menu-item--dock-mini:nth-child(2)
     .menu-item__icon {
-    background: rgba(14, 165, 233, 0.17);
     color: #0369a1;
-    border-color: rgba(3, 105, 161, 0.2);
   }
 
   .admin-sidebar.admin-sidebar--vendeur
     .admin-vendeur-dock-primary
     > .menu-item.menu-item--dock-mini:nth-child(3)
     .menu-item__icon {
-    background: rgba(255, 107, 53, 0.16);
     color: var(--accent-promo, #ff6b35);
-    border-color: rgba(255, 107, 53, 0.28);
   }
 
   .admin-sidebar.admin-sidebar--vendeur
     .admin-vendeur-dock-primary
     > .menu-item.menu-item--dock-mini:nth-child(4)
     .menu-item__icon {
-    background: rgba(34, 197, 94, 0.15);
     color: #15803d;
-    border-color: rgba(22, 163, 74, 0.25);
   }
 
-  .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini.active .menu-item__icon {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.65);
+  .admin-sidebar.admin-sidebar--vendeur
+    .admin-vendeur-dock-primary
+    > .menu-item.menu-item--dock-mini:nth-child(5)
+    .menu-item__icon {
+    color: #7c3aed;
   }
 
   .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__text {
-    font-size: clamp(0.55rem, 1.85vw, 0.65rem);
+    font-size: clamp(0.6875rem, 2.2vw, 0.8125rem);
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 1.2;
     text-align: center;
     max-width: 100%;
     white-space: nowrap;
@@ -2171,11 +2139,90 @@ body {
     font-weight: 700;
   }
 
+  @media (max-width: 599px) {
+    :root {
+      --admin-vendeur-bottom-nav-clearance: clamp(6.125rem, 17vw, 7.85rem);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini {
+      min-height: 5rem;
+      padding: clamp(6px, 2vw, 10px) clamp(4px, 1vw, 7px);
+      gap: clamp(4px, 1.25vw, 6px);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__icon {
+      font-size: clamp(1.42rem, 6.4vw, 1.92rem);
+      width: clamp(46px, 15vw, 58px);
+      height: clamp(46px, 15vw, 58px);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__badge--dock {
+      top: 6px;
+      right: clamp(5px, 11%, 20px);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__text {
+      font-size: clamp(0.625rem, 2vw, 0.6875rem);
+    }
+  }
+
+  @media (min-width: 600px) and (max-width: 1024px) {
+    .admin-sidebar.admin-sidebar--vendeur .admin-vendeur-dock-primary {
+      gap: clamp(3px, 0.9vw, 6px);
+      padding: clamp(5px, 1vw, 8px);
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      box-shadow:
+        0 4px 28px rgba(53, 100, 166, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(22px) saturate(1.4);
+      -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini {
+      min-height: 3.5rem;
+      padding: clamp(4px, 1vw, 7px) clamp(3px, 0.8vw, 5px);
+      gap: clamp(2px, 0.65vw, 4px);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      background: rgba(255, 255, 255, 0.36);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.65),
+        0 2px 16px rgba(53, 100, 166, 0.08);
+      backdrop-filter: blur(14px) saturate(1.25);
+      -webkit-backdrop-filter: blur(14px) saturate(1.25);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini.active {
+      background: rgba(53, 100, 166, 0.14);
+      border-color: rgba(53, 100, 166, 0.24);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -3px 0 var(--couleur-dominante);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__icon {
+      width: auto;
+      height: auto;
+      min-width: 1.85rem;
+      font-size: clamp(1.45rem, 3.85vw, 2rem);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__text {
+      font-size: clamp(0.72rem, 1.95vw, 0.84375rem);
+    }
+
+    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__badge--dock {
+      top: 4px;
+      right: clamp(4px, 10%, 16px);
+    }
+  }
+
   .admin-vendeur-dock-menu-layer {
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 4400;
+    z-index: 10160;
     pointer-events: none;
   }
 
@@ -2353,19 +2400,6 @@ body {
     body:has(.admin-sidebar.admin-sidebar--vendeur) #adminContent.admin-content {
       padding-top: 16px !important;
     }
-
-    /* Barre de navigation vendeur - texte compact sur mobile */
-    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__text {
-      font-size: clamp(0.5rem, 1.6vw, 0.6rem);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
-
-    .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini {
-      padding: clamp(4px, 1.2vw, 6px) clamp(2px, 0.6vw, 4px) clamp(5px, 1.2vw, 7px);
-    }
   }
 }
 
@@ -2434,17 +2468,6 @@ body {
     font-size: 11px;
   }
 
-  /* Navigation vendeur - texte minimum sur très petits écrans */
-  .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__text {
-    font-size: 0.5rem;
-    letter-spacing: -0.02em;
-  }
-
-  .admin-sidebar.admin-sidebar--vendeur .menu-item.menu-item--dock-mini .menu-item__icon {
-    width: clamp(28px, 9vw, 32px);
-    height: clamp(28px, 9vw, 32px);
-    font-size: clamp(0.85rem, 2.8vw, 0.95rem);
-  }
 }
 
 /* Très petit mobile (480px et moins) */

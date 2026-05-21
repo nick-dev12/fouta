@@ -3,7 +3,7 @@
 <plist version="1.0">
 	<dict>
 		<key>CFBundleDevelopmentRegion</key>
-		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<string>fr</string>
 		<key>CFBundleDisplayName</key>
 		<string>COLObanes</string>
 		<key>CFBundleExecutable</key>
@@ -45,28 +45,29 @@
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
-		<!-- Permissions pour les fonctionnalités natives -->
-		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Cette application a besoin d'accéder à votre localisation pour améliorer votre expérience.</string>
-		<key>NSLocationAlwaysUsageDescription</key>
-		<string>Cette application a besoin d'accéder à votre localisation pour améliorer votre expérience.</string>
+		<!-- Chaînes d'objectif (Guideline Apple 5.1.1) — usage réel + exemple concret -->
 		<key>NSCameraUsageDescription</key>
-		<string>Cette application a besoin d'accéder à votre caméra pour prendre des photos.</string>
+		<string>COLObanes utilise l'appareil photo lorsque vous appuyez sur « Prendre une photo » pour illustrer votre profil, une fiche produit vendeur ou joindre une image à un message (par exemple : photographier un article que vous mettez en vente sur la marketplace).</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Cette application a besoin d'accéder à votre galerie photo pour sélectionner des images.</string>
+		<string>COLObanes accède à vos photos uniquement si vous choisissez « Importer depuis la galerie » pour ajouter une image à votre profil, à une boutique ou à un produit (par exemple : sélectionner une photo existante comme photo de profil).</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
-		<string>Cette application a besoin d'accéder à votre galerie photo pour enregistrer des images.</string>
-		<key>NSMicrophoneUsageDescription</key>
-		<string>Cette application a besoin d'accéder à votre microphone pour enregistrer de l'audio.</string>
-		<key>NSNotificationUsageDescription</key>
-		<string>Cette application a besoin d'envoyer des notifications pour vous tenir informé.</string>
-		<!-- Autoriser le trafic HTTP pour le développement -->
+		<string>COLObanes peut enregistrer dans votre photothèque une image que vous téléchargez depuis la plateforme, uniquement lorsque vous utilisez explicitement la fonction d'enregistrement proposée à l'écran.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>COLObanes utilise votre position lorsque vous demandez la localisation pour préremplir ou confirmer votre adresse de livraison sur la carte (par exemple : afficher le point de livraison lors du passage d'une commande au Sénégal).</string>
+		<!-- Production : HTTPS uniquement (développement local possible via exceptions ciblées si besoin) -->
 		<key>NSAppTransportSecurity</key>
 		<dict>
 			<key>NSAllowsArbitraryLoads</key>
-			<true/>
+			<false/>
 		</dict>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>FirebaseAppDelegateProxyEnabled</key>
+		<false/>
+		<!-- Notifications push (APNs / FCM) -->
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
 	</dict>
 </plist>

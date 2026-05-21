@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service pour gérer Firebase Cloud Messaging
 class FCMService {
@@ -12,43 +16,82 @@ class FCMService {
   static String? _serverUrl;
   static Function(String)? _onNotificationTap;
 
-  /// Initialiser les notifications locales
+  /// Initialiser les notifications locales (Android + iOS)
   static Future<void> initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
+    const darwinSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
     const initializationSettings = InitializationSettings(
       android: androidSettings,
+      iOS: darwinSettings,
+      macOS: darwinSettings,
     );
 
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Gérer le clic sur la notification
-        if (response.payload != null) {
-          final url = response.payload;
-          if (url != null && _onNotificationTap != null) {
-            _onNotificationTap!(url);
-          }
+        final url = response.payload;
+        if (url != null && url.isNotEmpty && _onNotificationTap != null) {
+          _onNotificationTap!(url);
         }
       },
     );
 
-    // Créer le canal de notification Android
-    const androidChannel = AndroidNotificationChannel(
-      'colobanes_channel',
-      'COLObanes',
-      description: 'Notifications COLObanes',
-      importance: Importance.high,
-      playSound: true,
-      enableVibration: true,
+    if (!kIsWeb && Platform.isAndroid) {
+      const androidChannel = AndroidNotificationChannel(
+        'colobanes_channel',
+        'COLObanes',
+        description:
+            'Alertes de commande et messages liés à votre compte COLObanes',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
+
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(androidChannel);
+    }
+  }
+
+  /// Demande l'autorisation d'afficher des notifications (iOS + Android 13+)
+  static Future<bool> requestNotificationPermission() async {
+    if (!kIsWeb && Platform.isAndroid) {
+      final status = await Permission.notification.request();
+      if (!status.isGranted) {
+        print('❌ Permission de notification Android refusée');
+        return false;
+      }
+    }
+
+    final settings = await _messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
     );
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(androidChannel);
+    final authorized =
+        settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
+
+    if (authorized) {
+      print('✅ Permission de notification accordée');
+    } else {
+      print('❌ Permission de notification refusée');
+    }
+
+    return authorized;
   }
 
   /// Définir le callback pour la navigation depuis les notifications
@@ -67,22 +110,18 @@ class FCMService {
       await initializeLocalNotifications();
       print('✅ Notifications locales initialisées');
 
-      // Demander la permission pour les notifications
-      NotificationSettings settings = await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
-
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        print('✅ Permission de notification accordée');
-      } else if (settings.authorizationStatus ==
-          AuthorizationStatus.provisional) {
-        print('⚠️ Permission de notification provisoire');
-      } else {
-        print('❌ Permission de notification refusée');
+      final permissionGranted = await requestNotificationPermission();
+      if (!permissionGranted) {
         return null;
+      }
+
+      // iOS : enregistrement auprès d'APNs (requis pour recevoir le token FCM)
+      if (!kIsWeb && Platform.isIOS) {
+        await _messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
       }
 
       // Obtenir le token FCM
@@ -139,11 +178,15 @@ class FCMService {
   /// Code JavaScript à injecter dans la WebView pour enregistrer le token
   static String getTokenRegistrationScript(String token) {
     final serverUrl = _serverUrl ?? 'https://colobanes.com';
+    final deviceType = (!kIsWeb && Platform.isIOS) ? 'ios' : 'android';
+    final deviceName = (!kIsWeb && Platform.isIOS)
+        ? 'COLObanes iOS'
+        : 'COLObanes Android';
     return '''
       (function() {
         const token = '$token';
-        const deviceType = 'android';
-        const deviceName = 'COLObanes Android';
+        const deviceType = '$deviceType';
+        const deviceName = '$deviceName';
         const serverUrl = '$serverUrl';
         
         function getCookie(name) {
@@ -169,18 +212,18 @@ class FCMService {
         if (baseUrl.endsWith('/')) {
           baseUrl = baseUrl.slice(0, -1);
         }
-        const apiUrl = baseUrl + '/api/fcm/save-token/';
+        const apiUrl = baseUrl + '/api/save_fcm_token.php';
         console.log('📤 URL:', apiUrl);
         
         fetch(apiUrl, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken') || ''
+            'Content-Type': 'application/json'
           },
           credentials: 'include',
           body: JSON.stringify({
             token: token,
+            type: 'user',
             device_type: deviceType,
             device_name: deviceName
           })
@@ -189,14 +232,12 @@ class FCMService {
           console.log('📤 Réponse du serveur:', response.status, response.statusText);
           console.log('📤 Content-Type:', response.headers.get('content-type'));
           
-          // Vérifier que la réponse est bien du JSON
           const contentType = response.headers.get('content-type');
           if (!contentType || !contentType.includes('application/json')) {
-            // Si ce n'est pas du JSON, lire le texte pour voir ce qui est renvoyé
             return response.text().then(text => {
               console.error('❌ Le serveur a renvoyé du HTML au lieu de JSON:');
               console.error('❌ Premiers caractères:', text.substring(0, 200));
-              throw new Error('Le serveur a renvoyé du HTML au lieu de JSON. Vérifiez l\\'endpoint Django.');
+              throw new Error('Le serveur a renvoyé du HTML au lieu de JSON. Vérifiez l\\'endpoint PHP /api/save_fcm_token.php.');
             });
           }
           
@@ -234,8 +275,16 @@ class FCMService {
       enableVibration: true,
       icon: '@mipmap/ic_launcher',
     );
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
 
-    const notificationDetails = NotificationDetails(android: androidDetails);
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+    );
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch.remainder(100000),
@@ -333,12 +382,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       FlutterLocalNotificationsPlugin();
 
   const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const darwinSettings = DarwinInitializationSettings();
   const initializationSettings = InitializationSettings(
     android: androidSettings,
+    iOS: darwinSettings,
   );
   await localNotifications.initialize(initializationSettings);
 
-  // Afficher la notification
   final title = message.notification?.title ?? 'COLObanes';
   final body = message.notification?.body ?? '';
   final url = message.data['redirect_url'] ?? message.data['url'] ?? '';
@@ -353,8 +403,16 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     enableVibration: true,
     icon: '@mipmap/ic_launcher',
   );
+  const darwinDetails = DarwinNotificationDetails(
+    presentAlert: true,
+    presentBadge: true,
+    presentSound: true,
+  );
 
-  const notificationDetails = NotificationDetails(android: androidDetails);
+  const notificationDetails = NotificationDetails(
+    android: androidDetails,
+    iOS: darwinDetails,
+  );
 
   await localNotifications.show(
     DateTime.now().millisecondsSinceEpoch.remainder(100000),

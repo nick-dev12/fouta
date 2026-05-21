@@ -57,7 +57,6 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
 
     <div class="mp-catalog-hero mp-catalog-hero--bleu">
         <h1><i class="fas fa-gift" aria-hidden="true"></i> Nouveautés</h1>
-        <p>Découvrez les derniers produits ajoutés par les vendeurs sur la marketplace.</p>
     </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
@@ -87,6 +86,7 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
                     </div>
                     <?php else: ?>
                     <?php
+                    $show_nouveau_badge = true;
                     foreach ($produits as $produit) {
                         $return_url = $return_url_list;
                         require $card_partial;

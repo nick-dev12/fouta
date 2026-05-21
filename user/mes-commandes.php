@@ -28,6 +28,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirmer_livraison']
         if ($commande && $commande['statut'] === 'livraison_en_cours') {
             require_once __DIR__ . '/../models/model_commandes_admin.php';
             if (update_commande_statut($commande_id, 'paye')) {
+                require_once __DIR__ . '/../services/send_commande_notification.php';
+                send_commande_status_notification(
+                    (int) $_SESSION['user_id'],
+                    $commande['numero_commande'],
+                    'paye',
+                    trim($_SESSION['user_email'] ?? '')
+                );
+                $vendeur_id = (int) ($commande['vendeur_id'] ?? 0);
+                if ($vendeur_id > 0) {
+                    send_commande_vendeur_action_notification(
+                        $vendeur_id,
+                        $commande_id,
+                        $commande['numero_commande'],
+                        'Réception confirmée par le client (payée)'
+                    );
+                }
                 $success_message = 'Colis reçu confirmé avec succès !';
                 header('Location: mes-commandes.php?livraison_confirmee=1');
                 exit;
@@ -49,6 +65,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['annuler_commande'])) 
 
         if ($commande && $commande['statut'] !== 'livree' && $commande['statut'] !== 'annulee') {
             if (update_commande_statut_user($commande_id, $_SESSION['user_id'], 'annulee')) {
+                require_once __DIR__ . '/../services/send_commande_notification.php';
+                send_commande_status_notification(
+                    (int) $_SESSION['user_id'],
+                    $commande['numero_commande'],
+                    'annulee',
+                    trim($_SESSION['user_email'] ?? '')
+                );
+                $vendeur_id = (int) ($commande['vendeur_id'] ?? 0);
+                if ($vendeur_id > 0) {
+                    send_commande_vendeur_action_notification(
+                        $vendeur_id,
+                        $commande_id,
+                        $commande['numero_commande'],
+                        'Annulée par le client'
+                    );
+                }
                 $success_message = 'Commande annulée avec succès !';
                 // Recharger les commandes pour afficher le nouveau statut
                 header('Location: mes-commandes.php?commande_annulee=1');

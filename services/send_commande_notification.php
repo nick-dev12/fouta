@@ -19,6 +19,7 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
         'livraison_en_cours' => 'Livraison en cours',
         'expediee' => 'Expédiée',
         'livree' => 'Livrée',
+        'paye' => 'Payée',
         'annulee' => 'Annulée'
     ];
 
@@ -31,19 +32,20 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
     $base_url = get_site_base_url();
     $link = $base_url . '/user/mes-commandes.php';
 
-    // Notification push (si le client a des tokens FCM)
-    $tokens = get_fcm_tokens_by_user($user_id);
-    if (!empty($tokens)) {
-        firebase_send_notification($tokens, $title, $body, [
-            'link' => $link,
-            'commande_id' => '',
-            'statut' => $nouveau_statut,
-            'numero_commande' => $numero_commande,
-            'tag' => 'commande-' . $numero_commande
-        ]);
+    $user_id = (int) $user_id;
+    if ($user_id > 0) {
+        $tokens = get_fcm_tokens_by_user($user_id);
+        if (!empty($tokens)) {
+            firebase_send_notification($tokens, $title, $body, [
+                'link' => $link,
+                'commande_id' => '',
+                'statut' => $nouveau_statut,
+                'numero_commande' => $numero_commande,
+                'tag' => 'commande-' . $numero_commande
+            ]);
+        }
     }
 
-    // Email au client (si email valide et service mail configuré)
     $user_email = trim($user_email ?? '');
     if (!empty($user_email) && filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
         $autoload = __DIR__ . '/../vendor/autoload.php';
@@ -65,4 +67,83 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
             mail_send($user_email, $sujet, $body_html, true);
         }
     }
+}
+
+/**
+ * Notification push au client lors de la création de commande(s)
+ *
+ * @param int $user_id
+ * @param array $numeros_commandes Liste des numéros de commande créés
+ * @param float $montant_total Montant total (toutes commandes)
+ */
+function send_new_commande_confirmation_to_client($user_id, $numeros_commandes, $montant_total = 0) {
+    $user_id = (int) $user_id;
+    if ($user_id <= 0 || empty($numeros_commandes)) {
+        return;
+    }
+
+    require_once __DIR__ . '/../models/model_fcm.php';
+    require_once __DIR__ . '/firebase_push.php';
+    require_once __DIR__ . '/../includes/site_url.php';
+
+    $tokens = get_fcm_tokens_by_user($user_id);
+    if (empty($tokens)) {
+        return;
+    }
+
+    $nums = array_values(array_filter(array_map('strval', $numeros_commandes)));
+    $numero_affichage = count($nums) > 1 ? implode(', ', $nums) : $nums[0];
+    $title = count($nums) > 1 ? 'Commandes enregistrées' : 'Commande enregistrée';
+    $body = count($nums) > 1
+        ? 'Vos commandes #' . $numero_affichage . ' ont bien été reçues.'
+        : 'Votre commande #' . $numero_affichage . ' a bien été enregistrée.';
+    if ($montant_total > 0) {
+        $body .= ' Total : ' . number_format($montant_total, 0, ',', ' ') . ' FCFA.';
+    }
+
+    $base_url = get_site_base_url();
+    firebase_send_notification($tokens, $title, $body, [
+        'link' => $base_url . '/user/mes-commandes.php',
+        'numero_commande' => $numero_affichage,
+        'tag' => 'nouvelle-commande-client-' . $nums[0]
+    ]);
+}
+
+/**
+ * Notification push au vendeur lors d'une action client sur une commande (annulation, confirmation réception)
+ *
+ * @param int $vendeur_id
+ * @param int $commande_id
+ * @param string $numero_commande
+ * @param string $action_label Libellé court (ex. « Annulée par le client »)
+ */
+function send_commande_vendeur_action_notification($vendeur_id, $commande_id, $numero_commande, $action_label) {
+    $vendeur_id = (int) $vendeur_id;
+    if ($vendeur_id <= 0) {
+        return;
+    }
+
+    require_once __DIR__ . '/../models/model_fcm.php';
+    require_once __DIR__ . '/firebase_push.php';
+    require_once __DIR__ . '/../includes/site_url.php';
+
+    $tokens = get_fcm_tokens_by_admin($vendeur_id);
+    if (empty($tokens)) {
+        return;
+    }
+
+    $commande_id = (int) $commande_id;
+    $base_url = get_site_base_url();
+    $link = $commande_id > 0
+        ? $base_url . '/admin/commandes/details.php?id=' . $commande_id
+        : $base_url . '/admin/commandes/index.php';
+
+    $title = 'Mise à jour commande (client)';
+    $body = "Commande #{$numero_commande} : {$action_label}";
+
+    firebase_send_notification($tokens, $title, $body, [
+        'link' => $link,
+        'numero_commande' => $numero_commande,
+        'tag' => 'commande-vendeur-' . $numero_commande
+    ]);
 }

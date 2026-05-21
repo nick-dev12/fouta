@@ -299,7 +299,7 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 $vd_param_sheet_active
             );
             ?>
-        <!-- Bas d’écran vendeur : 4 raccourcis + Menu (≤1024px) -->
+        <!-- Bas d’écran vendeur : 5 entrées incl. Menu dans le bloc arrondi (≤1024px) -->
         <div class="admin-vendeur-dock-bar" id="adminVendeurDockBar" aria-label="Navigation vendeur réduite" hidden>
             <nav class="admin-vendeur-dock-primary" aria-label="Raccourcis">
                 <a href="<?php echo $base_path; ?>dashboard.php"
@@ -325,16 +325,16 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                     <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
                     <span class="menu-item__text">Caisse</span>
                 </a>
+                <button type="button"
+                    id="adminVendeurDockMenuBtn"
+                    aria-expanded="false"
+                    aria-haspopup="dialog"
+                    aria-controls="adminVendeurDockMenuPanel"
+                    class="menu-item menu-item--dock-mini menu-item--dock-mini-btn<?php echo $vdock_menu_hint_sheet ? ' menu-item--dock-mini-btn--hint' : ''; ?>">
+                    <span class="menu-item__icon menu-item__icon--hint-host" aria-hidden="true"><i class="fas fa-th"></i></span>
+                    <span class="menu-item__text">Menu</span>
+                </button>
             </nav>
-            <button type="button"
-                class="admin-vendeur-dock-menu-btn<?php echo $vdock_menu_hint_sheet ? ' admin-vendeur-dock-menu-btn--hint' : ''; ?>"
-                id="adminVendeurDockMenuBtn"
-                aria-expanded="false"
-                aria-haspopup="dialog"
-                aria-controls="adminVendeurDockMenuPanel">
-                <span class="admin-vendeur-dock-menu-btn__icon" aria-hidden="true"><i class="fas fa-th"></i></span>
-                <span class="admin-vendeur-dock-menu-btn__label">Menu</span>
-            </button>
         </div>
         <?php endif; ?>
     </aside>

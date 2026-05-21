@@ -129,6 +129,41 @@ body.user-page-mon-compte .user-content > * {
   align-items: center;
 }
 
+.mc-notify-help {
+  flex: 1 1 100%;
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(53, 100, 166, 0.22);
+  background: rgba(53, 100, 166, 0.08);
+  font-size: 0.84rem;
+  color: var(--titres);
+}
+
+.mc-notify-help[hidden] {
+  display: none !important;
+}
+
+.mc-notify-help__title {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mc-notify-help__steps {
+  margin: 0 0 0.75rem 1.1rem;
+  padding: 0;
+  color: var(--gris-fonce);
+  line-height: 1.45;
+}
+
+.mc-notify-help__btn {
+  width: 100%;
+  max-width: 320px;
+}
+
 .mc-btn {
   display: inline-flex;
   align-items: center;

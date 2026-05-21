@@ -163,6 +163,7 @@ $seo_canonical = $base . '/conditions-utilisation.php';
                 <li><a href="#cgu-2">Édition du service et contact</a></li>
                 <li><a href="#cgu-3">Création de compte, identifiants et sécurité</a></li>
                 <li><a href="#cgu-4">Description des services et rôle de la plateforme</a></li>
+                <li><a href="#cgu-4b">Application mobile et autorisations système</a></li>
                 <li><a href="#cgu-5">Règles d'utilisation acceptables</a></li>
                 <li><a href="#cgu-6">Offres, prix, disponibilité et erreurs manifestes</a></li>
                 <li><a href="#cgu-7">Commande, validation et preuve</a></li>
@@ -243,6 +244,25 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         <h3>4.2 Absence de conseil personnalisé</h3>
         <p>
             Les contenus, notices, photographies et descriptifs publiés n'ont pas vocation à se substituer à un avis médical, juridique, technique ou professionnel. Le Client reste seul juge de l'adéquation d'un produit à ses besoins.
+        </p>
+
+        <h2 id="cgu-4b">4 bis. Application mobile et autorisations système (iOS / Android)</h2>
+        <p>
+            L'application mobile COLObanes donne accès aux mêmes services que le site web. Elle peut solliciter, <strong>uniquement sur votre initiative</strong>, les autorisations suivantes&nbsp;:
+        </p>
+        <ul>
+            <li><strong>Caméra et photothèque</strong> — pour prendre ou choisir une photo (profil, produit vendeur, pièce jointe). Exemple&nbsp;: photographier un article mis en vente.</li>
+            <li><strong>Localisation (pendant l'utilisation)</strong> — pour afficher ou confirmer un point de livraison sur la carte lors d'une commande. Exemple&nbsp;: positionner votre adresse de livraison à Dakar.</li>
+            <li><strong>Notifications</strong> — pour vous informer du statut de vos commandes ou de messages liés à votre compte.</li>
+        </ul>
+        <p>
+            L'application <strong>ne demande pas l'accès au microphone</strong> et <strong>ne suit pas votre position en arrière-plan</strong>.
+            Le refus d'une autorisation limite la fonction concernée sans empêcher la navigation générale ni la consultation du catalogue.
+            Le détail des traitements de données liés à ces fonctions figure dans la
+            <a href="/politique-confidentialite.php#priv-9">Politique de confidentialité (section&nbsp;9)</a>.
+        </p>
+        <p>
+            En installant l'application depuis l'App Store ou Google Play, vous acceptez également les conditions propres à ces plateformes (Apple Media Services, Google Play) pour les téléchargements, mises à jour et achats intégrés le cas échéant.
         </p>
 
         <h2 id="cgu-5">5. Règles d'utilisation acceptables</h2>
@@ -331,7 +351,8 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         <h2 id="cgu-13">13. Données personnelles</h2>
         <p>
             Le traitement des données à caractère personnel dans le cadre du Service est décrit de manière détaillée dans notre
-            <a href="/politique-confidentialite.php">Politique de confidentialité</a>, avec lesquels vous devez prendre connaissance avant toute utilisation extensive du compte ou du formulaire de commande.
+            <a href="/politique-confidentialite.php">Politique de confidentialité</a>, notamment les sections relatives à l'<a href="/politique-confidentialite.php#priv-9">application mobile et aux permissions d'appareil</a>.
+            Vous devez en prendre connaissance avant toute utilisation extensive du compte, du formulaire de commande ou des fonctions natives (caméra, localisation, notifications).
         </p>
 
         <h2 id="cgu-14">14. Force majeure</h2>

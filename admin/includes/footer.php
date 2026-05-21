@@ -19,6 +19,7 @@
         });
     })();
 </script>
+<?php include __DIR__ . '/../../includes/firebase_notifications_scripts.php'; ?>
 </body>
 </html>
 

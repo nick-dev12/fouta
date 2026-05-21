@@ -1060,7 +1060,13 @@ body {
 /* --- Tablettes & mobiles : navigation bas d’écran (type barre WhatsApp) --- */
 @media (max-width: 1024px) {
     :root {
-        --user-bottom-nav-clearance: 5.9rem;
+        --user-bottom-nav-clearance: clamp(5.9rem, 14vw, 7rem);
+    }
+
+    html {
+        scroll-padding-bottom: calc(
+            var(--user-bottom-nav-clearance, 5.9rem) + env(safe-area-inset-bottom, 0px)
+        );
     }
 
     .sidebar-overlay {
@@ -1075,8 +1081,7 @@ body {
     body {
         padding-bottom: 0;
     }
-
-    /* Barre dock — fixed pour rester visible au scroll ; pleine largeur, glass élégant */
+    /* Sidebar bas d’écran : shell neutre (comme #shopBottomDock) */
     .user-sidebar.user-sidebar--glass {
         top: auto;
         bottom: 0;
@@ -1090,29 +1095,21 @@ body {
         flex-direction: column;
         transform: none !important;
         transition: none;
-        z-index: 1000;
-        border-right: none;
-        border-radius: 20px 20px 0 0;
-        border-top: 1px solid rgba(53, 100, 166, 0.14);
-        box-shadow:
-            0 -8px 36px rgba(15, 23, 42, 0.1),
-            0 -2px 0 rgba(255, 255, 255, 0.75) inset;
-        backdrop-filter: blur(22px) saturate(1.45);
-        -webkit-backdrop-filter: blur(22px) saturate(1.45);
-        padding-bottom: env(safe-area-inset-bottom, 0px);
+        z-index: 10050;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        padding: 0;
+        padding-bottom: 0;
+        overflow: visible;
+        pointer-events: none;
     }
 
-    /* Poignée visuelle façon dock mobile */
     .user-sidebar.user-sidebar--glass::before {
-        content: "";
-        display: block;
-        flex-shrink: 0;
-        width: 42px;
-        height: 4px;
-        margin: 8px auto 2px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.1);
-        order: -1;
+        display: none !important;
     }
 
     /* Ancien mode tiroir : plus utilisé sous 1025px */
@@ -1128,7 +1125,6 @@ body {
         display: none;
     }
 
-    /* Rail gauche desktop masqué : remplacé par le dock compact */
     .user-sidebar .sidebar-menu.sidebar-menu--rail {
         display: none !important;
     }
@@ -1140,66 +1136,89 @@ body {
         gap: clamp(4px, 1.8vw, 10px);
         width: 100%;
         flex-shrink: 0;
+        pointer-events: auto;
         padding:
-            0 clamp(10px, 3vw, 14px)
-            calc(10px + env(safe-area-inset-bottom, 0px))
-            clamp(10px, 3vw, 14px);
+            clamp(8px, 2.2vw, 14px) clamp(10px, 3vw, 14px)
+            calc(10px + env(safe-area-inset-bottom, 0px));
+        background: transparent;
+        border: none;
     }
 
     .user-sidebar .user-dock-primary {
         flex: 1;
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: clamp(2px, 1vw, 4px);
-        min-width: 0;
+        width: 100%;
         max-width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: clamp(4px, 1.25vw, 8px);
+        justify-items: stretch;
+        align-items: stretch;
+        min-width: 0;
         overflow: hidden;
+        border-radius: clamp(16px, 4.5vw, 22px);
+        padding: clamp(5px, 1.2vw, 9px);
+        background: #ffffff;
+        border: 1px solid rgba(53, 100, 166, 0.1);
+        box-shadow:
+            0 4px 28px rgba(15, 23, 42, 0.1),
+            0 1px 0 rgba(255, 255, 255, 0.85) inset;
     }
 
-    .user-sidebar .user-dock-menu-btn {
+    .user-sidebar .menu-item.menu-item--dock-mini {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-start;
+        justify-content: center;
         gap: clamp(4px, 1vw, 6px);
-        flex: 0 0 auto;
-        min-width: clamp(54px, 14vw, 68px);
-        max-width: 4.85rem;
+        width: 100%;
+        max-width: none;
+        min-width: 0;
         margin: 0;
-        padding: clamp(6px, 1.8vw, 9px) clamp(6px, 1.4vw, 10px)
-            clamp(7px, 1.8vw, 11px);
-        border-radius: 14px;
-        border: 1px solid rgba(53, 100, 166, 0.18);
-        background: rgba(53, 100, 166, 0.08);
-        color: var(--couleur-dominante);
+        padding: clamp(8px, 2vw, 12px) clamp(4px, 1vw, 8px);
+        border-radius: 12px;
+        min-height: 4.875rem;
+        box-sizing: border-box;
+        border: 1px solid rgba(53, 100, 166, 0.12);
+        position: relative;
+        text-align: center;
+        overflow: hidden;
+        text-decoration: none;
+        color: var(--titres, #1a1a1a);
+        background: #ffffff;
         font-family: var(--font-corps);
-        font-size: clamp(0.58rem, 2.05vw + 0.06rem, 0.6875rem);
-        font-weight: 700;
-        line-height: 1.15;
-        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
         transition:
             background 0.18s ease,
             border-color 0.18s ease,
             box-shadow 0.18s ease;
-        -webkit-tap-highlight-color: transparent;
     }
 
-    .user-sidebar .user-dock-menu-btn:hover {
-        background: rgba(53, 100, 166, 0.14);
-        border-color: rgba(53, 100, 166, 0.28);
+    .user-sidebar button.menu-item.menu-item--dock-mini.menu-item--dock-mini-btn {
+        appearance: none;
+        -webkit-appearance: none;
+        font: inherit;
+        cursor: pointer;
+        text-align: center;
+        box-sizing: border-box;
     }
 
-    .user-sidebar .user-dock-menu-btn:focus-visible {
+    .user-sidebar .menu-item.menu-item--dock-mini.menu-item--dock-mini-btn:focus-visible {
         outline: none;
         box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
-    .user-sidebar .user-dock-menu-btn--hint {
-        box-shadow: inset 0 0 0 1px rgba(53, 100, 166, 0.28);
-        background: rgba(53, 100, 166, 0.12);
+    /* Pastille indicative (rubrique « Autres » active) — même logique que l’ancien bouton séparé */
+    .user-sidebar
+        .menu-item.menu-item--dock-mini.menu-item--dock-mini-btn--hint
+        .menu-item__icon--hint-host {
+        position: relative;
     }
 
-    .user-sidebar .user-dock-menu-btn--hint .user-dock-menu-btn__icon::after {
+    .user-sidebar
+        .menu-item.menu-item--dock-mini.menu-item--dock-mini-btn--hint
+        .menu-item__icon--hint-host::after {
         content: "";
         position: absolute;
         top: -2px;
@@ -1209,53 +1228,56 @@ body {
         border-radius: 50%;
         background: var(--accent-promo);
         border: 1.5px solid var(--blanc);
+        pointer-events: none;
     }
 
-    .user-sidebar .user-dock-menu-btn__icon {
-        position: relative;
-        width: clamp(34px, 10vw, 40px);
-        height: clamp(34px, 10vw, 40px);
+    .user-sidebar .menu-item.menu-item--dock-mini .menu-item__icon {
+        margin-right: 0;
         border-radius: 12px;
-        background: rgba(255, 255, 255, 0.75);
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        box-sizing: border-box;
         display: grid;
         place-items: center;
-        font-size: clamp(1rem, 3.2vw, 1.15rem);
+        flex-shrink: 0;
+        transition: color 0.2s ease;
+        font-size: clamp(1.15rem, 4vw, 1.4rem);
+        width: clamp(40px, 11vw, 48px);
+        height: clamp(40px, 11vw, 48px);
     }
 
-    .user-sidebar .user-dock-menu-btn__label {
-        text-align: center;
-        max-width: 4.85rem;
+    .user-sidebar .menu-item.menu-item--dock-mini .menu-item__icon i {
+        line-height: 1;
+        color: inherit;
     }
 
-    .user-sidebar .menu-item--dock-mini {
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        gap: clamp(3px, 0.8vw, 5px);
-        padding: clamp(5px, 1.5vw, 8px) clamp(3px, 0.8vw, 6px)
-            clamp(6px, 1.5vw, 9px);
-        margin: 0;
-        border-radius: 12px;
-        min-width: 0;
-        max-width: 100%;
-        overflow: hidden;
+    .user-sidebar .user-dock-primary > .menu-item.menu-item--dock-mini:nth-child(1) .menu-item__icon {
+        color: var(--couleur-dominante, #3564a6);
     }
 
-    .user-sidebar .menu-item--dock-mini .menu-item-icon {
-        width: clamp(34px, 10vw, 40px);
-        height: clamp(34px, 10vw, 40px);
-        border-radius: 12px;
-        font-size: clamp(1rem, 3.2vw, 1.1rem);
+    .user-sidebar .user-dock-primary > .menu-item.menu-item--dock-mini:nth-child(2) .menu-item__icon {
+        color: #0369a1;
     }
 
-    .user-sidebar .menu-item--dock-mini .menu-item-text {
-        flex: 0 1 auto;
-        font-size: clamp(0.55rem, 1.85vw, 0.65rem);
+    .user-sidebar .user-dock-primary > .menu-item.menu-item--dock-mini:nth-child(3) .menu-item__icon {
+        color: var(--accent-promo, #ff6b35);
+    }
+
+    .user-sidebar .user-dock-primary > .menu-item.menu-item--dock-mini:nth-child(4) .menu-item__icon {
+        color: #15803d;
+    }
+
+    .user-sidebar .user-dock-primary > .menu-item.menu-item--dock-mini:nth-child(5) .menu-item__icon {
+        color: #7c3aed;
+    }
+
+    .user-sidebar .menu-item.menu-item--dock-mini .menu-item__text {
+        font-size: clamp(0.6875rem, 2.2vw, 0.8125rem);
         font-weight: 600;
-        line-height: 1.1;
+        line-height: 1.2;
         text-align: center;
         max-width: 100%;
-        min-width: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1266,12 +1288,97 @@ body {
         -webkit-box-orient: unset;
     }
 
+    .user-sidebar .menu-item.menu-item--dock-mini.active {
+        background: rgba(53, 100, 166, 0.12);
+        border-color: rgba(53, 100, 166, 0.22);
+        box-shadow:
+            inset 0 -3px 0 var(--couleur-dominante),
+            0 1px 0 rgba(255, 255, 255, 0.7);
+        color: var(--titres);
+    }
+
+    .user-sidebar .menu-item.menu-item--dock-mini.active .menu-item__text {
+        color: var(--couleur-dominante);
+        font-weight: 700;
+    }
+
+    /* Smartphones — glyphes plus grands (aligné boutique) */
+    @media (max-width: 599px) {
+        :root {
+            --user-bottom-nav-clearance: clamp(6.125rem, 17vw, 7.85rem);
+        }
+
+        .user-sidebar .menu-item.menu-item--dock-mini {
+            min-height: 5rem;
+            padding: clamp(6px, 2vw, 10px) clamp(4px, 1vw, 7px);
+            gap: clamp(4px, 1.25vw, 6px);
+        }
+
+        .user-sidebar .menu-item.menu-item--dock-mini .menu-item__text {
+            font-size: clamp(0.625rem, 2vw, 0.6875rem);
+        }
+
+        .user-sidebar .menu-item.menu-item--dock-mini .menu-item__icon {
+            font-size: clamp(1.42rem, 6.4vw, 1.92rem);
+            width: clamp(46px, 15vw, 58px);
+            height: clamp(46px, 15vw, 58px);
+        }
+    }
+
+    /* Tablettes : panneau verre */
+    @media (min-width: 600px) and (max-width: 1024px) {
+        .user-sidebar .user-dock-primary {
+            gap: clamp(3px, 0.9vw, 6px);
+            padding: clamp(5px, 1vw, 8px);
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            box-shadow:
+                0 4px 28px rgba(53, 100, 166, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(22px) saturate(1.4);
+            -webkit-backdrop-filter: blur(22px) saturate(1.4);
+        }
+
+        .user-sidebar .menu-item.menu-item--dock-mini {
+            min-height: 3.5rem;
+            padding: clamp(4px, 1vw, 7px) clamp(3px, 0.8vw, 5px);
+            gap: clamp(2px, 0.65vw, 4px);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.58);
+            background: rgba(255, 255, 255, 0.36);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.65),
+                0 2px 16px rgba(53, 100, 166, 0.08);
+            backdrop-filter: blur(14px) saturate(1.25);
+            -webkit-backdrop-filter: blur(14px) saturate(1.25);
+        }
+
+        .user-sidebar .menu-item.menu-item--dock-mini.active {
+            background: rgba(53, 100, 166, 0.14);
+            border-color: rgba(53, 100, 166, 0.24);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                inset 0 -3px 0 var(--couleur-dominante);
+        }
+
+        .user-sidebar .menu-item.menu-item--dock-mini .menu-item__icon {
+            width: auto;
+            height: auto;
+            min-width: 1.85rem;
+            font-size: clamp(1.45rem, 3.85vw, 2rem);
+        }
+
+        .user-sidebar .menu-item.menu-item--dock-mini .menu-item__text {
+            font-size: clamp(0.72rem, 1.95vw, 0.84375rem);
+        }
+    }
+
     /* Panneau « Menu » plein écran (hors aside, z sous les modales produits ~4800) */
     .user-dock-menu-layer {
         display: none;
         position: fixed;
         inset: 0;
-        z-index: 4400;
+        z-index: 10160;
         pointer-events: none;
     }
 
@@ -1462,28 +1569,6 @@ body {
             !important;
     }
 
-    @media (max-width: 600px) {
-        .user-sidebar .menu-item--dock-mini .menu-item-text {
-            font-size: clamp(0.5rem, 1.6vw, 0.6rem);
-        }
-
-        .user-sidebar .menu-item--dock-mini {
-            padding: clamp(4px, 1.2vw, 6px) clamp(2px, 0.6vw, 4px) clamp(5px, 1.2vw, 7px);
-        }
-    }
-
-    @media (max-width: 360px) {
-        .user-sidebar .menu-item--dock-mini .menu-item-text {
-            font-size: 0.5rem;
-            letter-spacing: -0.02em;
-        }
-
-        .user-sidebar .menu-item--dock-mini .menu-item-icon {
-            width: clamp(28px, 9vw, 32px);
-            height: clamp(28px, 9vw, 32px);
-            font-size: clamp(0.85rem, 2.8vw, 0.95rem);
-        }
-    }
 }
 
 /* Desktop : dock + feuille menu masqués (évite classe is-open résiduelle) */

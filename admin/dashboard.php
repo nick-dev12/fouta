@@ -14,13 +14,10 @@ if (!isset($_SESSION['admin_id'])) {
 
 require_once __DIR__ . '/includes/require_access.php';
 
-$dash_show_compta = admin_route_is_allowed($_SESSION['admin_role'] ?? 'admin', 'comptabilite/index.php');
-
 require_once __DIR__ . '/../models/model_commandes_admin.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
-require_once __DIR__ . '/../includes/admin_route_access.php';
 
 $success_message = '';
 if (isset($_SESSION['success_message'])) {
@@ -60,6 +57,8 @@ if ($fap_use_category_hierarchy && $categorie_id_prefill_modal > 0) {
     }
 }
 $categorie_id_prefill = $categorie_id_prefill_modal;
+$enable_firebase_notifications = true;
+$firebase_notify_type = 'admin';
 
 $vf_dash = admin_vendeur_filter_id();
 $recherche = trim($_GET['recherche'] ?? '');
@@ -280,17 +279,16 @@ if (!empty($produits)) {
                     <span>Installer l’appli</span>
                 </button>
                 <button type="button" id="btn-enable-notifications" class="dash-tool-btn dash-tool-btn--outline"
+                    data-notify-type="admin"
                     title="Recevoir des notifications push pour les nouvelles commandes">
-                    <i class="fas fa-bell" aria-hidden="true"></i>
-                    <span>Notifications</span>
+                    <i class="fas fa-bell-slash" aria-hidden="true"></i>
+                    <span>Activer les notifications</span>
                 </button>
-                <?php if ($dash_show_compta): ?>
-                <a href="comptabilite/index.php" class="dash-tool-btn dash-tool-btn--outline"
-                    title="Comptabilité">
-                    <i class="fas fa-calculator" aria-hidden="true"></i>
-                    <span>Comptabilité</span>
+                <a href="/index.php" class="dash-tool-btn dash-tool-btn--outline"
+                    title="Visiter la vitrine Colobanes (site public)">
+                    <i class="fas fa-store" aria-hidden="true"></i>
+                    <span>Visiter Colobanes</span>
                 </a>
-                <?php endif; ?>
                 <button type="button" id="btnOpenAddProduitModalDash" class="dash-tool-btn dash-tool-btn--primary">
                     <i class="fas fa-plus" aria-hidden="true"></i>
                     <span>Nouveau produit</span>
@@ -509,15 +507,6 @@ if (!empty($produits)) {
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging-compat.js"></script>
-    <?php require_once __DIR__ . '/../includes/firebase_init.php'; ?>
-    <script>
-        if (window.FIREBASE_CONFIG) {
-            firebase.initializeApp(window.FIREBASE_CONFIG);
-        }
-    </script>
-    <script src="/js/firebase-notifications.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var modalAdd = document.getElementById('modalAddProduitDash');
@@ -578,19 +567,6 @@ if (!empty($produits)) {
                     }
                 });
             });
-
-            var btn = document.getElementById('btn-enable-notifications');
-            if (btn) {
-                btn.addEventListener('click', function () {
-                    if (typeof FirebaseNotifications !== 'undefined') {
-                        FirebaseNotifications.enable('admin', this);
-                    } else {
-                        alert(
-                            'Erreur: Les scripts de notification ne sont pas chargés. Vérifiez la console (F12).'
-                        );
-                    }
-                });
-            }
 
             var installBtn = document.getElementById('btn-install-pwa');
             var deferredPrompt;

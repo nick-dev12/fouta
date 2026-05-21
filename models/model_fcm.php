@@ -139,3 +139,23 @@ function get_all_fcm_tokens_admin() {
         return [];
     }
 }
+
+/**
+ * Indique si un utilisateur a au moins un token FCM actif
+ * @param int $user_id
+ * @return bool
+ */
+function user_has_fcm_tokens($user_id) {
+    $tokens = get_fcm_tokens_by_user((int) $user_id);
+    return !empty($tokens);
+}
+
+/**
+ * Indique si un admin/vendeur a au moins un token FCM actif
+ * @param int $admin_id
+ * @return bool
+ */
+function admin_has_fcm_tokens($admin_id) {
+    $tokens = get_fcm_tokens_by_admin((int) $admin_id);
+    return !empty($tokens);
+}

@@ -296,6 +296,13 @@
   gap: 12px;
 }
 
+@media (min-width: 768px) and (max-width: 1100px) {
+  .mp-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
 @media (min-width: 1400px) {
   .mp-grid {
     grid-template-columns: repeat(6, 1fr);
@@ -351,9 +358,31 @@
 }
 
 .mp-card-img {
+  position: relative;
   aspect-ratio: 1 / 1;
   background: var(--blanc-casse);
   overflow: hidden;
+}
+
+.mp-card-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  line-height: 1.2;
+}
+
+.mp-card-badge--nouveau {
+  background: var(--accent-promo);
+  color: var(--blanc);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
 }
 
 .mp-card-img img {

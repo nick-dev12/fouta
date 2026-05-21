@@ -1,3 +1,19 @@
+<?php
+/**
+ * Génère firebase-messaging-sw.js depuis config/firebase_config.php
+ * Usage : php scripts/sync_firebase_sw.php
+ */
+$config_path = __DIR__ . '/../config/firebase_config.php';
+$output_path = __DIR__ . '/../firebase-messaging-sw.js';
+
+if (!file_exists($config_path)) {
+    fwrite(STDERR, "config/firebase_config.php introuvable\n");
+    exit(1);
+}
+
+$cfg = require $config_path;
+
+$js = <<<'JS'
 /**
  * Service Worker Firebase Cloud Messaging
  * Généré depuis config/firebase_config.php — ne pas éditer à la main.
@@ -15,12 +31,12 @@ importScripts('https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-    apiKey: 'AIzaSyC9sEoKn89rBaYvNAULOKtXZIIFYTyL4f4',
-    authDomain: 'gestion-scolaire-6945a.firebaseapp.com',
-    projectId: 'gestion-scolaire-6945a',
-    storageBucket: 'gestion-scolaire-6945a.firebasestorage.app',
-    messagingSenderId: '983006440407',
-    appId: '1:983006440407:web:1c18c83f8942e8577e7992'
+    apiKey: '%s',
+    authDomain: '%s',
+    projectId: '%s',
+    storageBucket: '%s',
+    messagingSenderId: '%s',
+    appId: '%s'
 });
 
 var messaging = firebase.messaging();
@@ -77,3 +93,18 @@ self.addEventListener('notificationclick', function (event) {
         })
     );
 });
+
+JS;
+
+$js = sprintf(
+    $js,
+    addslashes($cfg['apiKey']),
+    addslashes($cfg['authDomain']),
+    addslashes($cfg['projectId']),
+    addslashes($cfg['storageBucket']),
+    addslashes($cfg['messagingSenderId']),
+    addslashes($cfg['appId'])
+);
+
+file_put_contents($output_path, $js);
+echo "firebase-messaging-sw.js synchronisé (projet: {$cfg['projectId']})\n";

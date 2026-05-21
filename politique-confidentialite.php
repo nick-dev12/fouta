@@ -456,17 +456,76 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         </p>
 
         <h2 id="priv-9">9. Appareils, journaux techniques et application mobile</h2>
-        <h3>9.1 Identifiants d'appareil et notifications</h3>
+        <h3>9.1 Application mobile COLObanes (iOS et Android)</h3>
         <p>
-            Lorsque vous installez l'application COLObanes et acceptez les notifications, un <strong>jeton unique</strong> est attribué par les services de Google (FCM sur Android) ou Apple (APNs sur iOS).
-            Ce jeton permet uniquement d'acheminer des messages (statut de commande, promotions si vous les avez acceptées) vers votre installation ; il peut être révoqué en désactivant les notifications dans les réglages de l'application ou du système.
+            L'application mobile officielle COLObanes (identifiant de bundle iOS&nbsp;: <strong>com.colobanes.app</strong>, package Android&nbsp;: <strong>com.colobanes.app</strong>)
+            charge le site marketplace dans une interface sécurisée et expose, sur demande explicite de l'utilisateur, des fonctions natives (prise de photo, localisation pour la livraison, notifications de commande).
+            Elle ne collecte pas de données via la caméra, la galerie ou le GPS sans action de votre part (bouton dédié dans l'écran concerné).
         </p>
-        <h3>9.2 Permissions matérielles</h3>
+        <h3>9.2 Identifiants d'appareil et notifications push</h3>
         <p>
-            Selon les fonctions activées (ex. : scan d'un justificatif, choix d'photo de profil), l'application peut demander l'accès à la <strong>caméra</strong> ou à la <strong>galerie</strong>.
-            Ces accès ne sont sollicités qu'au moment de l'usage correspondant et peuvent être révoqués dans les paramètres Android / iOS.
+            Lorsque vous installez l'application et acceptez les notifications, un <strong>jeton technique</strong> est attribué par Firebase Cloud Messaging (Google) et, sur iOS, relayé via Apple Push Notification service (APNs).
+            Ce jeton sert uniquement à vous adresser des alertes liées au Service (ex.&nbsp;: confirmation ou expédition de commande, message du support si vous l'avez sollicité).
+            Il est associé à votre compte ou à votre session selon l'implémentation technique ; vous pouvez le neutraliser en refusant les notifications dans Réglages &gt; COLObanes ou en désinstallant l'application.
         </p>
-        <h3>9.3 Mode Web (PWA)</h3>
+        <h3>9.3 Permissions matérielles (caméra, photos, localisation)</h3>
+        <p>
+            Conformément aux exigences d'Apple (App Store, ligne directrice 5.1.1) et de Google Play, chaque accès sensible est demandé <strong>au moment de l'usage</strong>, avec une explication affichée par le système d'exploitation.
+            Le tableau ci-dessous reprend les finalités réelles ; les textes affichés sur iPhone/iPad reprennent les mêmes informations.
+        </p>
+        <div class="legal-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Permission</th>
+                        <th>Finalité</th>
+                        <th>Exemple concret</th>
+                        <th>Obligatoire&nbsp;?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Caméra</strong></td>
+                        <td>Prendre une photo à joindre au profil, à une fiche produit vendeur ou à un message</td>
+                        <td>Photographier un article que vous mettez en vente sur la marketplace</td>
+                        <td>Non — refus possible ; fonction «&nbsp;prendre une photo&nbsp;» indisponible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Photothèque (lecture)</strong></td>
+                        <td>Choisir une image déjà enregistrée sur l'appareil</td>
+                        <td>Sélectionner une photo de profil depuis la galerie</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Photothèque (ajout)</strong></td>
+                        <td>Enregistrer une image téléchargée depuis COLObanes, si vous utilisez la fonction d'enregistrement</td>
+                        <td>Sauvegarder une preuve de commande en image sur votre appareil</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Localisation (pendant l'utilisation)</strong></td>
+                        <td>Afficher ou confirmer un point sur la carte pour l'adresse de livraison</td>
+                        <td>Préremplir la position sur la carte lors du passage de commande</td>
+                        <td>Non — saisie manuelle de l'adresse possible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Notifications</strong></td>
+                        <td>Alertes de suivi de commande et informations de compte</td>
+                        <td>Notification «&nbsp;Votre commande est en livraison&nbsp;»</td>
+                        <td>Non</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>
+            <strong>Microphone&nbsp;:</strong> l'application COLObanes <strong>ne demande pas</strong> l'accès au microphone et n'enregistre pas d'audio.
+            <strong>Localisation en arrière-plan&nbsp;:</strong> non utilisée ; seule la localisation «&nbsp;pendant l'utilisation de l'app&nbsp;» peut être sollicitée.
+        </p>
+        <p>
+            Les coordonnées GPS ou les images capturées sont transmises à nos serveurs uniquement lorsque vous validez l'action dans l'interface (envoi du formulaire, enregistrement du profil, etc.) et sont traitées selon les sections 3 et 4 de la présente politique.
+            Vous pouvez révoquer toute autorisation dans les réglages iOS (Réglages &gt; Confidentialité) ou Android (Paramètres &gt; Applications &gt; COLObanes &gt; Autorisations).
+        </p>
+        <h3>9.4 Mode Web (PWA)</h3>
         <p>
             Si vous utilisez COLObanes via un navigateur en mode installable (PWA), des technologies similaires aux cookies et au cache local peuvent stocker des ressources pour le fonctionnement hors ligne partiel ; aucune donnée bancaire n'y est conservée en clair.
         </p>

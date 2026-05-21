@@ -11,10 +11,9 @@ function _firebase_get_config() {
     $config_path = __DIR__ . '/../config/firebase_server.php';
     if (file_exists($config_path)) {
         $config = require $config_path;
-        $config['credentials_path'] = $config['credentials_path'] ?? __DIR__ . '/../sugar-paper-d34851eeca5a.json';
         return $config;
     }
-    return ['credentials_path' => __DIR__ . '/../sugar-paper-d34851eeca5a.json'];
+    return ['credentials_path' => __DIR__ . '/../config/colobanes-firebase-adminsdk-fbsvc-b4db241730.json'];
 }
 
 /**
@@ -114,10 +113,10 @@ function _fcm_base64url_encode($data) {
 
 function _firebase_get_project_id($credentials_path) {
     if (!file_exists($credentials_path)) {
-        return 'sugar-paper';
+        return 'colobanes';
     }
     $credentials = json_decode(file_get_contents($credentials_path), true);
-    return $credentials['project_id'] ?? 'sugar-paper';
+    return $credentials['project_id'] ?? 'colobanes';
 }
 
 function firebase_get_access_token($credentials_path) {

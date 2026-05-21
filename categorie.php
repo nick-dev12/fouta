@@ -174,11 +174,6 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
                     <?php echo $generale_row ? 'Rayon marketplace' : 'Catégorie'; ?>
                 </p>
                 <h1><?php echo htmlspecialchars($categorie_nom); ?></h1>
-                <?php if ($generale_row && !empty($generale_row['description'])): ?>
-                <p class="cat-rayon-desc"><?php echo htmlspecialchars(strip_tags((string) $generale_row['description'])); ?></p>
-                <?php elseif (!$generale_row && !empty($categorie['description'])): ?>
-                <p class="cat-rayon-desc"><?php echo htmlspecialchars(strip_tags((string) $categorie['description'])); ?></p>
-                <?php endif; ?>
             </header>
 
             <?php if ($generale_id > 0 && (!empty($sous_categories_rayon) || !empty($genres_pour_filtre_rayon))): ?>
