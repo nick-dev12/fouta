@@ -15,11 +15,13 @@ $errors = [];
 $warnings = [];
 $ok = [];
 
-function out($msg) {
+function out($msg)
+{
     echo $msg . PHP_EOL;
 }
 
-function check($label, $pass, $detail = '') {
+function check($label, $pass, $detail = '')
+{
     global $errors, $ok;
     if ($pass) {
         $ok[] = $label;
@@ -30,7 +32,8 @@ function check($label, $pass, $detail = '') {
     }
 }
 
-function warn($label, $detail = '') {
+function warn($label, $detail = '')
+{
     global $warnings;
     $warnings[] = $label;
     out('[WARN] ' . $label . ($detail !== '' ? ' — ' . $detail : ''));
@@ -129,8 +132,10 @@ $apiOk = false;
 if (!empty($result['errors'])) {
     $err = strtolower(implode(' ', $result['errors']));
     out('Réponse FCM : ' . implode(' | ', $result['errors']));
-    if (strpos($err, 'invalid') !== false || strpos($err, 'not found') !== false
-        || strpos($err, 'unregistered') !== false || strpos($err, 'not a valid fcm') !== false) {
+    if (
+        strpos($err, 'invalid') !== false || strpos($err, 'not found') !== false
+        || strpos($err, 'unregistered') !== false || strpos($err, 'not a valid fcm') !== false
+    ) {
         $apiOk = true;
         check('API FCM accessible (erreur attendue token factice)', true);
     }
