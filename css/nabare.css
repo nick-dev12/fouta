@@ -464,6 +464,10 @@ nav .containernav .users img {
   flex-direction: column;
   gap: 10px;
 }
+.nav-glass-rayons-list--shortcuts {
+  padding: 14px 14px 10px;
+  gap: 8px;
+}
 .nav-glass-rayons-list > li {
   margin: 0;
   padding: 0;
@@ -471,12 +475,14 @@ nav .containernav .users img {
 .nav-glass-rayon-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
+  gap: 12px;
+  padding: 10px 12px;
+  min-height: 56px;
+  box-sizing: border-box;
   text-decoration: none;
   color: #1f2937;
   font-family: var(--font-titres, inherit);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
   background: rgba(255, 255, 255, 0.92);
@@ -491,6 +497,54 @@ nav .containernav .users img {
     border-color 0.22s ease,
     background 0.22s ease;
 }
+.nav-glass-rayon-card--nouveautes {
+  background: var(--couleur-dominante, #3564a6);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 14px rgba(53, 100, 166, 0.25);
+}
+.nav-glass-rayon-card--nouveautes .nav-glass-rayon-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.nav-glass-rayon-card--nouveautes .nav-glass-rayon-label {
+  color: #fff;
+}
+.nav-glass-rayon-card--nouveautes .nav-glass-rayon-arrow {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.nav-glass-rayon-card--nouveautes:hover {
+  background: var(--couleur-dominante-hover, #2d5690);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 6px 18px rgba(53, 100, 166, 0.32);
+}
+.nav-glass-rayon-card--promo {
+  background: var(--accent-promo, #ff6b35);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.28);
+}
+.nav-glass-rayon-card--promo .nav-glass-rayon-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.nav-glass-rayon-card--promo .nav-glass-rayon-label {
+  color: #fff;
+}
+.nav-glass-rayon-card--promo .nav-glass-rayon-arrow {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.nav-glass-rayon-card--promo:hover {
+  background: var(--orange-fonce, #e85a2a);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.35);
+}
 .nav-glass-rayon-card:hover {
   transform: translateY(-1px);
   background: #ffffff;
@@ -502,8 +556,8 @@ nav .containernav .users img {
   outline-offset: 2px;
 }
 .nav-glass-rayon-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -547,6 +601,20 @@ nav .containernav .users img {
 }
 .nav-glass-rayon-icon i {
   font-size: 17px;
+}
+.nav-glass-rayon-icon--photo {
+  padding: 0;
+  overflow: hidden;
+  background: var(--blanc-casse);
+}
+.nav-glass-rayon-icon--photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.nav-glass-rayon-card:hover .nav-glass-rayon-icon--photo {
+  transform: scale(1.02);
 }
 .nav-glass-rayon-label {
   flex: 1;
@@ -726,6 +794,140 @@ nav .containernav .users img {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+.nav-region-wrap {
+  position: relative;
+}
+.nav-region-wrap--top {
+  display: none;
+  flex-shrink: 0;
+}
+.nav-btn-region--top {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 42px;
+  padding: 0 10px;
+  max-width: 130px;
+  border: 1.5px solid rgba(53, 100, 166, 0.35);
+  border-radius: 10px;
+  background: var(--blanc, #fff);
+  color: var(--couleur-dominante, #3564a6);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.nav-btn-region--top .nav-btn-region__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 72px;
+}
+.nav-btn-region--top .nav-btn-region__chev {
+  font-size: 9px;
+  opacity: 0.75;
+}
+.nav-region-wrap--top.open .nav-btn-region__chev {
+  transform: rotate(180deg);
+}
+.nav-btn-region--top:hover,
+.nav-region-wrap--top.open .nav-btn-region--top {
+  background: var(--bleu-pale, rgba(53, 100, 166, 0.12));
+  border-color: var(--couleur-dominante, #3564a6);
+}
+.nav-region-menu--top {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1200;
+}
+@media (max-width: 992px) {
+  .nav-top-row .nav-panier-link {
+    display: none !important;
+  }
+  .nav-region-wrap--top {
+    display: block;
+  }
+  .section1-right .nav-region-wrap:not(.nav-region-wrap--top) {
+    display: none !important;
+  }
+}
+.section1 .nav-btn-region {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--blanc, #fff);
+  color: var(--couleur-dominante, #3564a6);
+  border: 1.5px solid rgba(53, 100, 166, 0.35);
+  cursor: pointer;
+  font-family: inherit;
+  max-width: 160px;
+}
+.section1 .nav-btn-region .nav-btn-region__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 88px;
+}
+.section1 .nav-btn-region .nav-btn-region__chev {
+  font-size: 10px;
+  opacity: 0.75;
+  transition: transform 0.2s ease;
+}
+.nav-region-wrap.open .nav-btn-region__chev {
+  transform: rotate(180deg);
+}
+.section1 .nav-btn-region:hover,
+.nav-region-wrap.open .nav-btn-region {
+  background: var(--bleu-pale, rgba(53, 100, 166, 0.12));
+  border-color: var(--couleur-dominante, #3564a6);
+}
+.nav-region-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1200;
+  min-width: 210px;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  background: var(--blanc, #fff);
+  border: 1px solid rgba(53, 100, 166, 0.18);
+  border-radius: 12px;
+  box-shadow: var(--ombre-douce, 0 4px 20px rgba(53, 100, 166, 0.12));
+  padding: 6px;
+}
+.nav-region-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+.nav-region-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--texte-fonce, #0d0d0d);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.nav-region-item:hover {
+  background: var(--bleu-pale, rgba(53, 100, 166, 0.12));
+  color: var(--couleur-dominante, #3564a6);
+}
+.nav-region-item.is-active {
+  background: var(--couleur-dominante, #3564a6);
+  color: var(--texte-clair, #fff);
 }
 .section1 .toggle-categories-btn {
   display: flex;
@@ -925,6 +1127,18 @@ nav .containernav .users img {
   .section1 .nav-action-btn__icon i {
     font-size: 13px;
   }
+  .section1 .nav-btn-region {
+    max-width: 118px;
+    padding: 6px 8px;
+  }
+  .section1 .nav-btn-region .nav-btn-region__label {
+    max-width: 52px;
+    font-size: 9px;
+  }
+  .nav-region-menu {
+    min-width: 180px;
+    right: 0;
+  }
   .nav-sidebar {
     width: min(280px, 86vw);
     max-width: 86vw;
@@ -973,13 +1187,18 @@ nav .containernav .users img {
     padding: 4px 16px 3px;
     margin: 0 0 6px;
   }
+  .nav-glass-rayons-list--shortcuts {
+    padding: 10px 10px 8px;
+    gap: 6px;
+  }
   .nav-glass-rayons-list {
     padding: 0 10px 14px;
     gap: 8px;
   }
   .nav-glass-rayon-card {
     gap: 10px;
-    padding: 11px 12px;
+    padding: 9px 11px;
+    min-height: 50px;
     font-size: 12px;
     line-height: 1.3;
     border-radius: 12px;
@@ -987,7 +1206,7 @@ nav .containernav .users img {
   .nav-glass-rayon-icon {
     width: 34px;
     height: 34px;
-    border-radius: 11px;
+    border-radius: 9px;
   }
   .nav-glass-rayon-icon i {
     font-size: 14px;
@@ -1125,13 +1344,18 @@ nav .containernav .users img {
     padding: 3px 12px 2px;
     margin: 0 0 5px;
   }
+  .nav-glass-rayons-list--shortcuts {
+    padding: 8px 8px 6px;
+    gap: 5px;
+  }
   .nav-glass-rayons-list {
     padding: 0 8px 12px;
     gap: 6px;
   }
   .nav-glass-rayon-card {
     gap: 8px;
-    padding: 9px 10px;
+    padding: 8px 10px;
+    min-height: 46px;
     font-size: 11px;
     border-radius: 10px;
   }

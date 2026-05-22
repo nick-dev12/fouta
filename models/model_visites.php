@@ -99,6 +99,7 @@ function get_produits_plus_visites($limit = 10, $boutique_admin_id = null) {
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $extra = ' AND p.admin_id = :boutique_admin_id';
         }
+        $extra .= produits_region_sql_with_alias($boutique_admin_id)['sql'];
         // Récupérer les produits les plus visités avec le nombre de visites
         $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
@@ -118,9 +119,10 @@ function get_produits_plus_visites($limit = 10, $boutique_admin_id = null) {
             ORDER BY nb_visites DESC, p.date_creation DESC
             LIMIT :limit
         ");
-        if ($extra !== '') {
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
+        produits_bind_region_stmt($stmt, $boutique_admin_id);
         
         $stmt->bindValue(':limit', $limit * 2, PDO::PARAM_INT); // Récupérer plus pour avoir de la variété
         $stmt->execute();

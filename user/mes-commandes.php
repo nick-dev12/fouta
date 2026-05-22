@@ -354,7 +354,7 @@ $nb_commandes_actives = count($commandes_actives);
                     <div class="mc-commande-card__actions commande-actions">
                         <a href="commande-categorie.php?commande_id=<?php echo (int) $commande['id']; ?>"
                             class="btn-view-categories btn-view-commande">
-                            <i class="fas fa-eye" aria-hidden="true"></i> Voir les produits
+                            <i class="fas fa-route" aria-hidden="true"></i> Suivre la commande
                         </a>
 
                         <?php if ($commande['statut'] == 'livraison_en_cours'): ?>

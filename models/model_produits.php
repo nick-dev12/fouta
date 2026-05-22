@@ -54,6 +54,88 @@ function produits_sql_vendeur_fragment() {
 }
 
 /**
+ * Code région marketplace actif (null = pas de filtre)
+ */
+function produits_region_filter_code_or_null($boutique_admin_id = null)
+{
+    if ($boutique_admin_id !== null && $boutique_admin_id !== '') {
+        return null;
+    }
+    if (!produits_has_column('admin_id')) {
+        return null;
+    }
+    require_once __DIR__ . '/../includes/marketplace_region_filter.php';
+    if (!marketplace_region_filter_applies()) {
+        return null;
+    }
+    require_once __DIR__ . '/../models/model_admin.php';
+    if (!admin_has_boutique_region_column()) {
+        return null;
+    }
+    return marketplace_get_selected_region_code();
+}
+
+/**
+ * Clause SQL filtre région avec alias table produits
+ * @return array{sql: string, code: string|null}
+ */
+function produits_region_sql_with_alias($boutique_admin_id = null, $alias = 'p')
+{
+    $code = produits_region_filter_code_or_null($boutique_admin_id);
+    if ($code === null) {
+        return ['sql' => '', 'code' => null];
+    }
+    $a = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $alias);
+    if ($a === '') {
+        $a = 'p';
+    }
+    return [
+        'sql' => " AND {$a}.admin_id IN (SELECT a.id FROM admin a WHERE a.role = 'vendeur' AND a.statut = 'actif' AND a.boutique_region = :mp_marketplace_region)",
+        'code' => $code,
+    ];
+}
+
+/**
+ * Clause SQL filtre région sans alias (requêtes COUNT sur produits seule)
+ * @return array{sql: string, code: string|null}
+ */
+function produits_region_sql_plain($boutique_admin_id = null)
+{
+    $code = produits_region_filter_code_or_null($boutique_admin_id);
+    if ($code === null) {
+        return ['sql' => '', 'code' => null];
+    }
+    return [
+        'sql' => " AND admin_id IN (SELECT a.id FROM admin a WHERE a.role = 'vendeur' AND a.statut = 'actif' AND a.boutique_region = :mp_marketplace_region)",
+        'code' => $code,
+    ];
+}
+
+/**
+ * Ajoute le filtre région à une clause WHERE avec paramètres positionnels (?)
+ */
+function produits_append_region_positional(&$where, &$exec_params, $boutique_admin_id = null)
+{
+    $code = produits_region_filter_code_or_null($boutique_admin_id);
+    if ($code === null) {
+        return;
+    }
+    $where .= " AND p.admin_id IN (SELECT a.id FROM admin a WHERE a.role = 'vendeur' AND a.statut = 'actif' AND a.boutique_region = ?)";
+    $exec_params[] = $code;
+}
+
+/**
+ * Lie le paramètre région sur un PDOStatement si actif
+ */
+function produits_bind_region_stmt(PDOStatement $stmt, $boutique_admin_id = null)
+{
+    $code = produits_region_filter_code_or_null($boutique_admin_id);
+    if ($code !== null) {
+        $stmt->bindValue(':mp_marketplace_region', $code, PDO::PARAM_STR);
+    }
+}
+
+/**
  * Fragment SQL : nom affiché = catégorie générale (rayon categories_generales) si liée au produit
  * ou à la catégorie feuille, avec repli sur le nom de la catégorie SQL (c.nom).
  *
@@ -90,31 +172,94 @@ function produits_sql_rayon_categorie_nom_fragment() {
 }
 
 /**
- * Génère le prochain identifiant interne FPLXXXXXX (6 chiffres)
+ * Préfixe identifiant : 3 premières lettres du nom boutique (A-Z).
  */
-function generate_next_identifiant_interne_produit() {
+function produit_identifiant_prefix_from_boutique_nom($boutique_nom)
+{
+    $nom = trim((string) $boutique_nom);
+    if ($nom === '') {
+        return 'FPL';
+    }
+    if (function_exists('iconv')) {
+        $t = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $nom);
+        if ($t !== false && $t !== '') {
+            $nom = $t;
+        }
+    }
+    $letters = preg_replace('/[^A-Za-z]/', '', $nom);
+    $letters = strtoupper($letters);
+    if ($letters === '') {
+        return 'FPL';
+    }
+    if (strlen($letters) < 3) {
+        return str_pad($letters, 3, 'X');
+    }
+    return substr($letters, 0, 3);
+}
+
+/**
+ * Format valide : 3 lettres + 6 chiffres (ex. SHO482913, FPL000042).
+ */
+function produit_identifiant_interne_is_valid_format($code)
+{
+    $code = strtoupper(trim((string) $code));
+    return (bool) preg_match('/^[A-Z]{3}\d{6}$/', $code);
+}
+
+/**
+ * Vérifie si un identifiant interne existe déjà.
+ */
+function produit_identifiant_interne_exists($code)
+{
+    global $db;
+    if (!$db || !produits_has_column('identifiant_interne')) {
+        return false;
+    }
+    $code = strtoupper(trim((string) $code));
+    if (!produit_identifiant_interne_is_valid_format($code)) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('SELECT COUNT(*) FROM produits WHERE UPPER(TRIM(identifiant_interne)) = :c');
+        $stmt->execute(['c' => $code]);
+        return (int) $stmt->fetchColumn() > 0;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Génère un identifiant interne : 3 lettres boutique + 6 chiffres aléatoires.
+ * @param int|null $admin_id ID vendeur pour le préfixe boutique, null = FPL (legacy)
+ */
+function generate_next_identifiant_interne_produit($admin_id = null)
+{
     global $db;
     if (!$db || !produits_has_column('identifiant_interne')) {
         return null;
     }
-    try {
-        $stmt = $db->query("
-            SELECT identifiant_interne FROM produits
-            WHERE identifiant_interne REGEXP '^FPL[0-9]{6}$'
-            ORDER BY identifiant_interne DESC LIMIT 1
-        ");
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $next = 1;
-        if ($row && !empty($row['identifiant_interne']) && preg_match('/^FPL(\d{6})$/', $row['identifiant_interne'], $m)) {
-            $next = (int) $m[1] + 1;
+
+    $prefix = 'FPL';
+    if ($admin_id !== null && (int) $admin_id > 0) {
+        require_once __DIR__ . '/model_admin.php';
+        $admin = get_admin_by_id((int) $admin_id);
+        if ($admin) {
+            $bn = trim((string) ($admin['boutique_nom'] ?? ''));
+            if ($bn === '') {
+                $bn = trim((string) ($admin['nom'] ?? ''));
+            }
+            $prefix = produit_identifiant_prefix_from_boutique_nom($bn);
         }
-        if ($next > 999999) {
-            $next = 1;
-        }
-        return 'FPL' . str_pad((string) $next, 6, '0', STR_PAD_LEFT);
-    } catch (PDOException $e) {
-        return 'FPL' . str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
     }
+
+    for ($i = 0; $i < 60; $i++) {
+        $code = $prefix . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        if (!produit_identifiant_interne_exists($code)) {
+            return $code;
+        }
+    }
+
+    return null;
 }
 
 /**
@@ -144,6 +289,11 @@ function get_all_produits($statut = null, $boutique_admin_id = null)
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $sql .= ' AND p.admin_id = :boutique_admin_id';
             $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
+        $rf = produits_region_sql_with_alias($boutique_admin_id);
+        $sql .= $rf['sql'];
+        if ($rf['code'] !== null) {
+            $params['mp_marketplace_region'] = $rf['code'];
         }
         $sql .= ' ORDER BY p.date_creation DESC';
         $stmt = $db->prepare($sql);
@@ -182,6 +332,7 @@ function get_produits_by_categorie($categorie_id, $boutique_admin_id = null)
             $where .= ' AND p.admin_id = ?';
             $execParams[] = (int) $boutique_admin_id;
         }
+        produits_append_region_positional($where, $execParams, $boutique_admin_id);
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
             FROM produits p 
@@ -278,6 +429,8 @@ function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = n
             $exec_params[] = $filter_sous_categorie_id;
         }
     }
+
+    produits_append_region_positional($where, $exec_params, $boutique_admin_id);
 
     try {
         $stmt = $db->prepare("
@@ -382,6 +535,7 @@ function get_produits_similaires_rayon_generale($exclude_produit_id, $generale_i
     $where_or = '(' . implode(' OR ', $conds) . ')';
     $vj = produits_sql_vendeur_fragment();
     $where = "p.statut = 'actif' AND p.id != ? AND $where_or";
+    produits_append_region_positional($where, $exec_params, null);
 
     try {
         $sql = "
@@ -440,7 +594,7 @@ function get_produit_by_identifiant_interne($code, $only_actif = false)
         return false;
     }
     $code = strtoupper(trim((string) $code));
-    if (!preg_match('/^FPL\d{6}$/', $code)) {
+    if (!produit_identifiant_interne_is_valid_format($code)) {
         return false;
     }
 
@@ -486,7 +640,7 @@ function produits_sql_identifiant_suffix_5_expr($table_prefix = 'p')
 {
     $col = $table_prefix === '' ? 'identifiant_interne' : $table_prefix . '.identifiant_interne';
 
-    return "RIGHT(REPLACE(REPLACE(REPLACE(UPPER(TRIM($col)), 'F', ''), 'P', ''), 'L', ''), 5)";
+    return "RIGHT(UPPER(TRIM($col)), 5)";
 }
 
 /**
@@ -509,6 +663,8 @@ function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $l
     if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
         $extra = ' AND p.admin_id = :boutique_admin_id';
     }
+    $rf = produits_region_sql_with_alias($boutique_admin_id);
+    $extra .= $rf['sql'];
     $vj = produits_sql_vendeur_fragment();
     $sql = '
         SELECT p.*, c.nom as categorie_nom ' . $vj['select'] . '
@@ -525,10 +681,11 @@ function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $l
 
     try {
         $stmt = $db->prepare($sql);
-        $stmt->bindValue(':suf', $suffix5, PDO::PARAM_STR);
-        if ($extra !== '') {
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
+        produits_bind_region_stmt($stmt, $boutique_admin_id);
+        $stmt->bindValue(':suf', $suffix5, PDO::PARAM_STR);
         $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -567,6 +724,11 @@ function count_produits_by_identifiant_suffix_5_chiffres($suffix5, $only_actif =
         $sql .= ' AND admin_id = :boutique_admin_id';
         $params['boutique_admin_id'] = (int) $boutique_admin_id;
     }
+    $rf = produits_region_sql_plain($boutique_admin_id);
+    $sql .= $rf['sql'];
+    if ($rf['code'] !== null) {
+        $params['mp_marketplace_region'] = $rf['code'];
+    }
 
     try {
         $stmt = $db->prepare($sql);
@@ -600,7 +762,8 @@ function ensure_produit_identifiant_interne($produit_id)
     }
 
     for ($attempt = 0; $attempt < 8; $attempt++) {
-        $ident = generate_next_identifiant_interne_produit();
+        $admin_id = isset($p['admin_id']) ? (int) $p['admin_id'] : 0;
+        $ident = generate_next_identifiant_interne_produit($admin_id > 0 ? $admin_id : null);
         if (!$ident) {
             return null;
         }
@@ -646,6 +809,8 @@ function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
+        $rf = produits_region_sql_with_alias($boutique_admin_id);
+        $where .= $rf['sql'];
         $stmt = $db->prepare("
             SELECT p.*, " . $rj['categorie_nom_sql'] . " as categorie_nom " . $vj['select'] . "
             FROM produits p 
@@ -660,6 +825,7 @@ function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
+        produits_bind_region_stmt($stmt, $boutique_admin_id);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -690,9 +856,19 @@ function search_produits($recherche, $offset = 0, $limit = 20, $boutique_admin_i
     if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $t)) {
         return get_produits_by_identifiant_suffix_5_chiffres($t, $offset, $limit, true, $boutique_admin_id);
     }
-    if (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $t)) {
+    if (produits_has_column('identifiant_interne') && produit_identifiant_interne_is_valid_format(strtoupper($t))) {
         $p = get_produit_by_identifiant_interne(strtoupper($t), true);
-        return $p ? [$p] : [];
+        if (!$p) {
+            return [];
+        }
+        require_once __DIR__ . '/../includes/marketplace_region_filter.php';
+        if (!produit_visible_in_marketplace_region($p)) {
+            return [];
+        }
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
+            return ((int) $p['admin_id'] === (int) $boutique_admin_id) ? [$p] : [];
+        }
+        return [$p];
     }
 
     try {
@@ -701,6 +877,7 @@ function search_produits($recherche, $offset = 0, $limit = 20, $boutique_admin_i
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
+        $where .= produits_region_sql_with_alias($boutique_admin_id)['sql'];
         $vj = produits_sql_vendeur_fragment();
         $rj = produits_sql_rayon_categorie_nom_fragment();
         $stmt = $db->prepare("
@@ -717,6 +894,7 @@ function search_produits($recherche, $offset = 0, $limit = 20, $boutique_admin_i
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
+        produits_bind_region_stmt($stmt, $boutique_admin_id);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -745,9 +923,13 @@ function count_search_produits($recherche, $boutique_admin_id = null)
     if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $t)) {
         return count_produits_by_identifiant_suffix_5_chiffres($t, true, $boutique_admin_id);
     }
-    if (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $t)) {
+    if (produits_has_column('identifiant_interne') && produit_identifiant_interne_is_valid_format(strtoupper($t))) {
         $p = get_produit_by_identifiant_interne(strtoupper($t), true);
         if (!$p) {
+            return 0;
+        }
+        require_once __DIR__ . '/../includes/marketplace_region_filter.php';
+        if (!produit_visible_in_marketplace_region($p)) {
             return 0;
         }
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
@@ -763,6 +945,11 @@ function count_search_produits($recherche, $boutique_admin_id = null)
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND admin_id = :boutique_admin_id';
             $params['boutique_admin_id'] = (int) $boutique_admin_id;
+        }
+        $rf = produits_region_sql_plain($boutique_admin_id);
+        $where .= $rf['sql'];
+        if ($rf['code'] !== null) {
+            $params['mp_marketplace_region'] = $rf['code'];
         }
         $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
         $stmt->execute($params);
@@ -795,13 +982,18 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
             $conditions[] = 'p.admin_id = :boutique_admin_id';
             $params['boutique_admin_id'] = (int) $boutique_admin_id;
         }
+        $rf = produits_region_sql_with_alias($boutique_admin_id);
+        if ($rf['sql'] !== '') {
+            $conditions[] = ltrim($rf['sql'], ' AND ');
+            $params['mp_marketplace_region'] = $rf['code'];
+        }
 
         if (!empty(trim($recherche))) {
             $tr = trim($recherche);
             if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $tr)) {
                 $conditions[] = 'p.identifiant_interne IS NOT NULL AND TRIM(p.identifiant_interne) != \'\' AND ' . produits_sql_identifiant_suffix_5_expr('p') . ' = :suffix5';
                 $params['suffix5'] = $tr;
-            } elseif (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $tr)) {
+            } elseif (produits_has_column('identifiant_interne') && produit_identifiant_interne_is_valid_format(strtoupper($tr))) {
                 $conditions[] = 'UPPER(TRIM(p.identifiant_interne)) = :ident_exact';
                 $params['ident_exact'] = strtoupper($tr);
             } else {
@@ -894,13 +1086,18 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
             $conditions[] = 'admin_id = :boutique_admin_id';
             $params['boutique_admin_id'] = (int) $boutique_admin_id;
         }
+        $rf = produits_region_sql_plain($boutique_admin_id);
+        if ($rf['sql'] !== '') {
+            $conditions[] = ltrim($rf['sql'], ' AND ');
+            $params['mp_marketplace_region'] = $rf['code'];
+        }
 
         if (!empty(trim($recherche))) {
             $tr = trim($recherche);
             if (produits_has_column('identifiant_interne') && preg_match('/^\d{5}$/', $tr)) {
                 $conditions[] = 'identifiant_interne IS NOT NULL AND TRIM(identifiant_interne) != \'\' AND ' . produits_sql_identifiant_suffix_5_expr('') . ' = :suffix5';
                 $params['suffix5'] = $tr;
-            } elseif (produits_has_column('identifiant_interne') && preg_match('/^FPL\d{6}$/i', $tr)) {
+            } elseif (produits_has_column('identifiant_interne') && produit_identifiant_interne_is_valid_format(strtoupper($tr))) {
                 $conditions[] = 'UPPER(TRIM(identifiant_interne)) = :ident_exact';
                 $params['ident_exact'] = strtoupper($tr);
             } else {
@@ -964,6 +1161,11 @@ function count_all_produits_actifs($boutique_admin_id = null)
             $where .= ' AND admin_id = :boutique_admin_id';
             $params['boutique_admin_id'] = (int) $boutique_admin_id;
         }
+        $rf = produits_region_sql_plain($boutique_admin_id);
+        $where .= $rf['sql'];
+        if ($rf['code'] !== null) {
+            $params['mp_marketplace_region'] = $rf['code'];
+        }
         $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
@@ -990,6 +1192,7 @@ function get_produits_en_promo($offset = 0, $limit = 50, $boutique_admin_id = nu
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
+        $where .= produits_region_sql_with_alias($boutique_admin_id)['sql'];
         $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
@@ -1003,6 +1206,7 @@ function get_produits_en_promo($offset = 0, $limit = 50, $boutique_admin_id = nu
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
+        produits_bind_region_stmt($stmt, $boutique_admin_id);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -1031,6 +1235,11 @@ function count_produits_en_promo($boutique_admin_id = null)
             $where .= ' AND admin_id = :boutique_admin_id';
             $params['boutique_admin_id'] = (int) $boutique_admin_id;
         }
+        $rf = produits_region_sql_plain($boutique_admin_id);
+        $where .= $rf['sql'];
+        if ($rf['code'] !== null) {
+            $params['mp_marketplace_region'] = $rf['code'];
+        }
         $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
@@ -1053,6 +1262,7 @@ function get_produits_nouveautes($limit = 4, $boutique_admin_id = null)
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
+        $where .= produits_region_sql_with_alias($boutique_admin_id)['sql'];
         $vj = produits_sql_vendeur_fragment();
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom " . $vj['select'] . "
@@ -1067,6 +1277,7 @@ function get_produits_nouveautes($limit = 4, $boutique_admin_id = null)
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
+        produits_bind_region_stmt($stmt, $boutique_admin_id);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1092,6 +1303,7 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_a
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
+        $where .= produits_region_sql_with_alias($boutique_admin_id)['sql'];
         $vj = produits_sql_vendeur_fragment();
         $rj = produits_sql_rayon_categorie_nom_fragment();
         $stmt = $db->prepare("
@@ -1107,6 +1319,7 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_a
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
+        produits_bind_region_stmt($stmt, $boutique_admin_id);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -1131,6 +1344,7 @@ function get_produits_vedettes($limit = 20, $boutique_admin_id = null)
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where_extra = ' AND p.admin_id = :boutique_admin_id';
         }
+        $where_extra .= produits_region_sql_with_alias($boutique_admin_id)['sql'];
         // Récupérer les produits les plus ajoutés au panier et les plus commandés
         $vj = produits_sql_vendeur_fragment();
         $sql = "
@@ -1160,9 +1374,10 @@ function get_produits_vedettes($limit = 20, $boutique_admin_id = null)
             LIMIT :limit
         ";
         $stmt = $db->prepare($sql);
-        if ($where_extra !== '') {
+        if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
+        produits_bind_region_stmt($stmt, $boutique_admin_id);
 
         $stmt->bindValue(':limit', $limit * 2, PDO::PARAM_INT); // Récupérer plus pour avoir de la variété
         $stmt->execute();
@@ -1228,9 +1443,10 @@ function create_produit($data)
             $params['admin_id'] = (int) $data['admin_id'];
         }
         if (produits_has_column('identifiant_interne')) {
+            $admin_id_ident = isset($data['admin_id']) ? (int) $data['admin_id'] : 0;
             $ident = isset($data['identifiant_interne']) && $data['identifiant_interne'] !== ''
                 ? $data['identifiant_interne']
-                : generate_next_identifiant_interne_produit();
+                : generate_next_identifiant_interne_produit($admin_id_ident > 0 ? $admin_id_ident : null);
             if ($ident) {
                 $cols = "identifiant_interne, " . $cols;
                 $vals = ":identifiant_interne, " . $vals;
@@ -1540,6 +1756,7 @@ function get_produits_plus_vendus_marketplace($max_rows = 60)
     try {
         $vj = produits_sql_vendeur_fragment();
         $rj = produits_sql_rayon_categorie_nom_fragment();
+        $region_sql = produits_region_sql_with_alias(null)['sql'];
         $sql = "
             SELECT p.*, " . $rj['categorie_nom_sql'] . " AS categorie_nom, COALESCE(v.qte, 0) AS qte_vendue
             " . $vj['select'] . "
@@ -1554,10 +1771,12 @@ function get_produits_plus_vendus_marketplace($max_rows = 60)
                 WHERE co.statut <> 'annulee'
                 GROUP BY cp.produit_id
             ) v ON v.produit_id = p.id
-            WHERE p.statut = 'actif'
+            WHERE p.statut = 'actif' $region_sql
             ORDER BY v.qte DESC, p.id DESC
             LIMIT " . (int) $max_rows;
-        $stmt = $db->query($sql);
+        $stmt = $db->prepare($sql);
+        produits_bind_region_stmt($stmt, null);
+        $stmt->execute();
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $produits ? $produits : [];
     } catch (PDOException $e) {

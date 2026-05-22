@@ -95,11 +95,11 @@ if (preg_match('/^\d{5}$/', $code)) {
 }
 
 $code = strtoupper($code);
-if (!preg_match('/^FPL\d{6}$/', $code)) {
+if (!produit_identifiant_interne_is_valid_format($code)) {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Utilisez le code complet FPL + 6 chiffres, ou exactement 5 chiffres pour la recherche rapide.',
+        'message' => 'Utilisez le code complet (3 lettres + 6 chiffres), ou exactement 5 chiffres pour la recherche rapide.',
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

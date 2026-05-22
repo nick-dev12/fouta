@@ -26,7 +26,7 @@ function generer_barcode_produit_fpl($produit_id)
         return false;
     }
     $code = strtoupper(trim($code));
-    if (!preg_match('/^FPL\d{6}$/', $code)) {
+    if (!produit_identifiant_interne_is_valid_format($code)) {
         return false;
     }
 

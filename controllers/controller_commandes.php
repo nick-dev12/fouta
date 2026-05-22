@@ -99,15 +99,19 @@ function process_create_commande() {
         ];
     }
 
-    if (!preg_match('/^[0-9+\s\-()]+$/', $telephone_livraison)) {
+    $telephone_livraison = preg_replace('/\s+/', '', $telephone_livraison);
+    if ($telephone_livraison !== '' && $telephone_livraison[0] !== '+') {
+        $telephone_livraison = '+' . ltrim($telephone_livraison, '0');
+    }
+
+    if (!preg_match('/^\+[0-9]{7,15}$/', $telephone_livraison)) {
         return [
             'success' => false,
             'message' => 'Le format du téléphone n\'est pas valide.'
         ];
     }
 
-    /* Pas de zone / frais port : livraison gérée avec le client par téléphone */
-    $adresse_livraison = 'Coordonnées de livraison communiquées au client par téléphone.';
+    $adresse_livraison = trim($_POST['adresse_livraison'] ?? '');
     $zone_livraison_id = null;
     $frais_livraison = 0;
     $notes = null;

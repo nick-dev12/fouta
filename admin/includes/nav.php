@@ -172,7 +172,6 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
             <a href="<?php echo $base_path; ?>parametres.php"
                 class="menu-item <?php echo (
                     $current_page == 'parametres.php' ||
-                    $current_page == 'profil.php' ||
                     $current_page == 'parametres-boutique-vendeur.php' ||
                     strpos($current_dir, '/parametres') !== false ||
                     $is_zones_livraison ||
@@ -198,7 +197,7 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 <span class="menu-item__text">Caisse</span>
             </a>
             <a href="<?php echo $base_path; ?>parametres.php"
-                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $is_comptes) ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
                 <span class="menu-item__text">Paramètres</span>
             </a>
@@ -214,7 +213,7 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 <span class="menu-item__text">Historique encaissements</span>
             </a>
             <a href="<?php echo $base_path; ?>parametres.php"
-                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $is_comptes) ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
                 <span class="menu-item__text">Paramètres</span>
             </a>
@@ -230,7 +229,7 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 <span class="menu-item__text">Historique des ventes</span>
             </a>
             <a href="<?php echo $base_path; ?>parametres.php"
-                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $is_comptes) ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
                 <span class="menu-item__text">Paramètres</span>
             </a>
@@ -246,7 +245,7 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 <span class="menu-item__text">Clients</span>
             </a>
             <a href="<?php echo $base_path; ?>parametres.php"
-                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $is_comptes) ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
                 <span class="menu-item__text">Paramètres</span>
             </a>
@@ -262,11 +261,16 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 <span class="menu-item__text">Produits</span>
             </a>
             <a href="<?php echo $base_path; ?>parametres.php"
-                class="menu-item <?php echo ($current_page == 'parametres.php' || $current_page == 'profil.php' || $is_comptes) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($current_page == 'parametres.php' || $is_comptes) ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
                 <span class="menu-item__text">Paramètres</span>
             </a>
             <?php endif; ?>
+            <a href="<?php echo $base_path; ?>profil.php"
+                class="menu-item <?php echo ($current_page === 'profil.php') ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-user"></i></span>
+                <span class="menu-item__text">Mon profil</span>
+            </a>
             <a href="<?php echo $base_path; ?>logout.php" class="menu-item menu-item--logout">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-sign-out-alt"></i></span>
                 <span class="menu-item__text">Déconnexion</span>
@@ -285,18 +289,19 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
             );
             $vd_param_sheet_active = (
                 $current_page === 'parametres.php' ||
-                $current_page === 'profil.php' ||
                 $current_page === 'parametres-boutique-vendeur.php' ||
                 strpos($current_dir, '/parametres') !== false ||
                 $is_zones_livraison ||
                 $is_comptes
             );
+            $vd_profil_dock_act = ($current_page === 'profil.php');
             $vd_dashboard_dock_act = (($current_page === 'dashboard.php') || ($is_produits && $current_page === 'index.php'));
             $vd_stock_dock_act = $is_stock;
             $vd_caisse_dock_act = ($is_caisse && !$is_caisse_encaisser);
             $vd_clients_dock_act = $is_users;
             $vdock_menu_hint_sheet = (
                 $vd_clients_dock_act ||
+                $vd_caisse_dock_act ||
                 $vd_param_sheet_active
             );
         }
@@ -326,10 +331,10 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                     <span class="menu-item__badge menu-item__badge--dock" title="<?php echo (int) $nav_commandes_en_traitement; ?> commande<?php echo $nav_commandes_en_traitement > 1 ? 's' : ''; ?> en cours de traitement" aria-label="<?php echo (int) $nav_commandes_en_traitement; ?> commande<?php echo $nav_commandes_en_traitement > 1 ? 's' : ''; ?> en cours de traitement"><?php echo (int) $nav_commandes_en_traitement; ?></span>
                     <?php endif; ?>
                 </a>
-                <a href="<?php echo $base_path; ?>caisse/index.php"
-                    class="menu-item menu-item--dock-mini<?php echo $vd_caisse_dock_act ? ' active' : ''; ?>">
-                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
-                    <span class="menu-item__text">Caisse</span>
+                <a href="<?php echo $base_path; ?>profil.php"
+                    class="menu-item menu-item--dock-mini<?php echo $vd_profil_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-user"></i></span>
+                    <span class="menu-item__text">Mon profil</span>
                 </a>
                 <button type="button"
                     id="adminVendeurDockMenuBtn"
@@ -360,6 +365,11 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                     class="menu-item menu-item--dock-sheet-row<?php echo $vd_clients_dock_act ? ' active' : ''; ?>">
                     <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-store"></i></span>
                     <span class="menu-item__text">Clients</span>
+                </a>
+                <a href="<?php echo $base_path; ?>caisse/index.php"
+                    class="menu-item menu-item--dock-sheet-row<?php echo $vd_caisse_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
+                    <span class="menu-item__text">Caisse</span>
                 </a>
                 <a href="<?php echo $base_path; ?>parametres.php"
                     class="menu-item menu-item--dock-sheet-row<?php echo $vd_param_sheet_active ? ' active' : ''; ?>">

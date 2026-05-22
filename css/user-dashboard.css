@@ -179,6 +179,37 @@ body {
     color: var(--titres);
 }
 
+.menu-item--has-badge {
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+
+.menu-item__badge {
+    margin-left: auto;
+    flex-shrink: 0;
+    min-width: 1.5rem;
+    height: 1.45rem;
+    padding: 0 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+    background: linear-gradient(145deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(53, 100, 166, 0.35);
+}
+
+.menu-item.active .menu-item__badge {
+    box-shadow: 0 2px 8px rgba(53, 100, 166, 0.5);
+}
+
+.menu-item__icon--badge-host {
+    position: relative;
+}
+
 /* Pastilles soft UI (alignées admin / variables --nav-soft-*) */
 .menu-item--dashboard .menu-item-icon {
     background: var(--nav-soft-bg-1);

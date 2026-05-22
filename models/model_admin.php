@@ -249,6 +249,29 @@ function admin_boutique_slug_exists($slug)
 }
 
 /**
+ * Indique si la colonne boutique_region existe sur admin
+ */
+function admin_has_boutique_region_column()
+{
+    static $exists = null;
+    global $db;
+    if ($exists !== null) {
+        return $exists;
+    }
+    $exists = false;
+    if (!$db) {
+        return false;
+    }
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM admin LIKE 'boutique_region'");
+        $exists = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $exists = false;
+    }
+    return $exists;
+}
+
+/**
  * Crée un compte vendeur (boutique)
  * @param string $identite Nom affiché (champ unique UI)
  * @param string|null $email
@@ -256,9 +279,10 @@ function admin_boutique_slug_exists($slug)
  * @param string $password_hash hash du PIN / mot de passe
  * @param string $boutique_nom Nom commercial
  * @param string $boutique_slug Slug URL unique
+ * @param string|null $boutique_region Code région Sénégal
  * @return bool|int id ou false
  */
-function create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug)
+function create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region = null)
 {
     global $db;
 
@@ -267,20 +291,28 @@ function create_vendeur_boutique($identite, $email, $telephone, $password_hash, 
     $boutique_slug = trim((string) $boutique_slug);
     $telephone = preg_replace('/\s+/', '', (string) $telephone);
     $email = $email !== null && trim((string) $email) !== '' ? trim((string) $email) : null;
+    $boutique_region = $boutique_region !== null && trim((string) $boutique_region) !== ''
+        ? trim((string) $boutique_region)
+        : null;
 
     try {
-        $stmt = $db->prepare("
-            INSERT INTO admin (nom, prenom, email, password, date_creation, statut, role, boutique_slug, boutique_nom, telephone)
-            VALUES (:nom, '', :email, :password, NOW(), 'actif', 'vendeur', :boutique_slug, :boutique_nom, :telephone)
-        ");
-        $ok = $stmt->execute([
+        $cols = 'nom, prenom, email, password, date_creation, statut, role, boutique_slug, boutique_nom, telephone';
+        $vals = ':nom, \'\', :email, :password, NOW(), \'actif\', \'vendeur\', :boutique_slug, :boutique_nom, :telephone';
+        $params = [
             'nom' => $identite,
             'email' => $email,
             'password' => $password_hash,
             'boutique_slug' => $boutique_slug,
             'boutique_nom' => $boutique_nom,
             'telephone' => $telephone,
-        ]);
+        ];
+        if (admin_has_boutique_region_column()) {
+            $cols .= ', boutique_region';
+            $vals .= ', :boutique_region';
+            $params['boutique_region'] = $boutique_region;
+        }
+        $stmt = $db->prepare("INSERT INTO admin ($cols) VALUES ($vals)");
+        $ok = $stmt->execute($params);
         if ($ok) {
             return (int) $db->lastInsertId();
         }
@@ -360,6 +392,49 @@ function update_admin_last_login($admin_id)
 }
 
 /**
+ * Met à jour le nom et la région de la boutique vendeur (profil / gestion boutique).
+ *
+ * @param int $id ID admin vendeur
+ * @param string $boutique_nom Nom commercial
+ * @param string $boutique_region Code région Sénégal
+ * @return bool
+ */
+function update_vendeur_boutique_profil($id, $boutique_nom, $boutique_region)
+{
+    global $db;
+
+    $boutique_nom = trim((string) $boutique_nom);
+    $boutique_region = trim((string) $boutique_region);
+
+    try {
+        if (admin_has_boutique_region_column()) {
+            $stmt = $db->prepare("
+                UPDATE admin SET
+                    boutique_nom = :boutique_nom,
+                    boutique_region = :boutique_region
+                WHERE id = :id AND role = 'vendeur'
+            ");
+            return $stmt->execute([
+                'id' => (int) $id,
+                'boutique_nom' => $boutique_nom,
+                'boutique_region' => $boutique_region !== '' ? $boutique_region : null,
+            ]);
+        }
+
+        $stmt = $db->prepare("
+            UPDATE admin SET boutique_nom = :boutique_nom
+            WHERE id = :id AND role = 'vendeur'
+        ");
+        return $stmt->execute([
+            'id' => (int) $id,
+            'boutique_nom' => $boutique_nom,
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Mise à jour branding vitrine vendeur (logo, couleurs, adresse affichée).
  * Colonnes attendues : boutique_logo, boutique_couleur_principale, boutique_couleur_accent, boutique_adresse
  *
@@ -372,16 +447,13 @@ function update_admin_boutique_branding($id, array $data)
     global $db;
 
     try {
-        $stmt = $db->prepare("
-            UPDATE admin SET
-                boutique_logo = :boutique_logo,
-                boutique_couleur_principale = :boutique_couleur_principale,
-                boutique_couleur_accent = :boutique_couleur_accent,
-                boutique_adresse = :boutique_adresse
-            WHERE id = :id AND role = 'vendeur'
-        ");
-
-        return $stmt->execute([
+        $sets = [
+            'boutique_logo = :boutique_logo',
+            'boutique_couleur_principale = :boutique_couleur_principale',
+            'boutique_couleur_accent = :boutique_couleur_accent',
+            'boutique_adresse = :boutique_adresse',
+        ];
+        $params = [
             'id' => (int) $id,
             'boutique_logo' => $data['boutique_logo'] !== null && $data['boutique_logo'] !== ''
                 ? (string) $data['boutique_logo']
@@ -395,7 +467,20 @@ function update_admin_boutique_branding($id, array $data)
             'boutique_adresse' => $data['boutique_adresse'] !== null && trim((string) $data['boutique_adresse']) !== ''
                 ? trim((string) $data['boutique_adresse'])
                 : null,
-        ]);
+        ];
+        if (admin_has_boutique_region_column()) {
+            $sets[] = 'boutique_region = :boutique_region';
+            $region = $data['boutique_region'] ?? null;
+            $params['boutique_region'] = $region !== null && trim((string) $region) !== ''
+                ? trim((string) $region)
+                : null;
+        }
+        $stmt = $db->prepare('
+            UPDATE admin SET ' . implode(', ', $sets) . "
+            WHERE id = :id AND role = 'vendeur'
+        ");
+
+        return $stmt->execute($params);
     } catch (PDOException $e) {
         return false;
     }

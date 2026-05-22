@@ -649,6 +649,64 @@ function categorie_fa_icon_class(array $row) {
 }
 
 /**
+ * URL publique de l’image d’une catégorie / sous-catégorie, ou null si absente ou fichier introuvable.
+ */
+function categorie_image_public_path($categorie_row) {
+    if (!is_array($categorie_row)) {
+        return null;
+    }
+    $im = trim((string) ($categorie_row['image'] ?? ''));
+    if ($im === '') {
+        return null;
+    }
+    $im = ltrim(str_replace('\\', '/', $im), '/');
+    $root = dirname(__DIR__);
+    $file_path = $root . DIRECTORY_SEPARATOR . 'upload' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $im);
+    if (!is_file($file_path)) {
+        return null;
+    }
+    return '/upload/' . $im;
+}
+
+/**
+ * Sous-catégories plateforme rattachées à un rayon (categories_generales), avec visuels.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function get_subcategories_for_categorie_generale($generale_id) {
+    global $db;
+    $generale_id = (int) $generale_id;
+    if ($generale_id <= 0 || !categories_has_categorie_generale_id_column() || !categories_generales_table_exists()) {
+        return [];
+    }
+    try {
+        if (categories_generales_liaisons_table_exists()) {
+            $st = $db->prepare("
+                SELECT c.`id`, c.`nom`, c.`image`, c.`icone`, c.`sort_ordre`
+                FROM `categories` c
+                INNER JOIN `categories_categories_generales` ccg ON ccg.`categorie_id` = c.`id`
+                WHERE ccg.`categorie_generale_id` = :gid
+                  AND (c.`admin_id` IS NULL OR c.`admin_id` = 0)
+                ORDER BY c.`sort_ordre` ASC, c.`nom` ASC
+            ");
+            $st->execute(['gid' => $generale_id]);
+            return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        }
+        $st = $db->prepare("
+            SELECT c.`id`, c.`nom`, c.`image`, c.`icone`, c.`sort_ordre`
+            FROM `categories` c
+            WHERE c.`categorie_generale_id` = :gid
+              AND (c.`admin_id` IS NULL OR c.`admin_id` = 0)
+            ORDER BY c.`sort_ordre` ASC, c.`nom` ASC
+        ");
+        $st->execute(['gid' => $generale_id]);
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
  * Table dédiée catégories générales (rayons plateforme)
  */
 function categories_generales_table_exists() {
@@ -696,6 +754,45 @@ function categories_generales_attr_columns_exist() {
         $cached = false;
     }
     return $cached;
+}
+
+/**
+ * Colonne image présente sur categories_generales (visuel rayon).
+ */
+function categories_generales_image_column_exists() {
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    global $db;
+    $cached = false;
+    if (!$db || !categories_generales_table_exists()) {
+        return false;
+    }
+    try {
+        $st = $db->query("
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories_generales' AND COLUMN_NAME = 'image'
+        ");
+        $cached = ((int) $st->fetchColumn()) > 0;
+    } catch (PDOException $e) {
+        $cached = false;
+    }
+    return $cached;
+}
+
+/**
+ * Supprime un fichier image rayon (chemin relatif sous upload/).
+ */
+function categories_generales_delete_image_file($image_path) {
+    $image_path = trim(str_replace('\\', '/', (string) $image_path), '/');
+    if ($image_path === '') {
+        return;
+    }
+    $full = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'upload' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $image_path);
+    if (is_file($full)) {
+        @unlink($full);
+    }
 }
 
 /**
@@ -1648,7 +1745,7 @@ function categories_generales_list_all() {
     }
 }
 
-function categories_generales_insert_row($nom, $description, $icone, $sort_ordre, $attr_poids = 1, $attr_taille = 1, $attr_mesure = 1, $attr_couleur = 1) {
+function categories_generales_insert_row($nom, $description, $icone, $sort_ordre, $attr_poids = 1, $attr_taille = 1, $attr_mesure = 1, $attr_couleur = 1, $image = null) {
     global $db;
     if (!categories_generales_table_exists()) {
         return false;
@@ -1664,13 +1761,18 @@ function categories_generales_insert_row($nom, $description, $icone, $sort_ordre
     $at = (int) (bool) $attr_taille;
     $am = (int) (bool) $attr_mesure;
     $ac = (int) (bool) $attr_couleur;
+    $img_val = ($image !== null && trim((string) $image) !== '') ? trim((string) $image) : null;
+    $has_img_col = categories_generales_image_column_exists();
     try {
         if (categories_generales_attr_columns_exist()) {
-            $st = $db->prepare('
-                INSERT INTO `categories_generales` (`nom`, `description`, `icone`, `sort_ordre`, `attr_poids`, `attr_taille`, `attr_mesure`, `attr_couleur`, `date_creation`)
-                VALUES (:nom, :descr, :icone, :so, :ap, :at, :am, :ac, NOW())
-            ');
-            if ($st->execute([
+            $sql = '
+                INSERT INTO `categories_generales` (`nom`, `description`, `icone`, `sort_ordre`, `attr_poids`, `attr_taille`, `attr_mesure`, `attr_couleur`, `date_creation'
+                . ($has_img_col ? ', `image`' : '') . ')
+                VALUES (:nom, :descr, :icone, :so, :ap, :at, :am, :ac, NOW()'
+                . ($has_img_col ? ', :img' : '') . ')
+            ';
+            $st = $db->prepare($sql);
+            $params = [
                 'nom' => $nom,
                 'descr' => $description !== null ? (string) $description : null,
                 'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
@@ -1679,20 +1781,31 @@ function categories_generales_insert_row($nom, $description, $icone, $sort_ordre
                 'at' => $at,
                 'am' => $am,
                 'ac' => $ac,
-            ])) {
+            ];
+            if ($has_img_col) {
+                $params['img'] = $img_val;
+            }
+            if ($st->execute($params)) {
                 return (int) $db->lastInsertId();
             }
         } else {
-            $st = $db->prepare('
-                INSERT INTO `categories_generales` (`nom`, `description`, `icone`, `sort_ordre`, `date_creation`)
-                VALUES (:nom, :descr, :icone, :so, NOW())
-            ');
-            if ($st->execute([
+            $sql = '
+                INSERT INTO `categories_generales` (`nom`, `description`, `icone`, `sort_ordre`, `date_creation'
+                . ($has_img_col ? ', `image`' : '') . ')
+                VALUES (:nom, :descr, :icone, :so, NOW()'
+                . ($has_img_col ? ', :img' : '') . ')
+            ';
+            $st = $db->prepare($sql);
+            $params = [
                 'nom' => $nom,
                 'descr' => $description !== null ? (string) $description : null,
                 'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
                 'so' => (int) $sort_ordre,
-            ])) {
+            ];
+            if ($has_img_col) {
+                $params['img'] = $img_val;
+            }
+            if ($st->execute($params)) {
                 return (int) $db->lastInsertId();
             }
         }
@@ -1701,7 +1814,7 @@ function categories_generales_insert_row($nom, $description, $icone, $sort_ordre
     return false;
 }
 
-function categories_generales_update_row($id, $nom, $description, $icone, $sort_ordre, $attr_poids = null, $attr_taille = null, $attr_mesure = null, $attr_couleur = null) {
+function categories_generales_update_row($id, $nom, $description, $icone, $sort_ordre, $attr_poids = null, $attr_taille = null, $attr_mesure = null, $attr_couleur = null, $image = null) {
     global $db;
     $id = (int) $id;
     if ($id <= 0 || !categories_generales_table_exists()) {
@@ -1725,15 +1838,25 @@ function categories_generales_update_row($id, $nom, $description, $icone, $sort_
         }
         return array_key_exists($key, $row) ? (int) (!empty($row[$key])) : 1;
     };
+    $img_val = null;
+    if ($image !== null) {
+        $img_val = trim((string) $image) !== '' ? trim((string) $image) : null;
+    } elseif (array_key_exists('image', $row)) {
+        $prev = trim((string) ($row['image'] ?? ''));
+        $img_val = $prev !== '' ? $prev : null;
+    }
+    $has_img_col = categories_generales_image_column_exists();
     try {
         if (categories_generales_attr_columns_exist()) {
-            $st = $db->prepare('
+            $sql = '
                 UPDATE `categories_generales`
                 SET `nom` = :nom, `description` = :descr, `icone` = :icone, `sort_ordre` = :so,
-                    `attr_poids` = :ap, `attr_taille` = :at, `attr_mesure` = :am, `attr_couleur` = :ac
+                    `attr_poids` = :ap, `attr_taille` = :at, `attr_mesure` = :am, `attr_couleur` = :ac'
+                . ($has_img_col ? ', `image` = :img' : '') . '
                 WHERE `id` = :id
-            ');
-            return $st->execute([
+            ';
+            $st = $db->prepare($sql);
+            $params = [
                 'id' => $id,
                 'nom' => $nom,
                 'descr' => $description !== null ? (string) $description : null,
@@ -1743,20 +1866,30 @@ function categories_generales_update_row($id, $nom, $description, $icone, $sort_
                 'at' => $def_attr('attr_taille', $attr_taille),
                 'am' => $def_attr('attr_mesure', $attr_mesure),
                 'ac' => $def_attr('attr_couleur', $attr_couleur),
-            ]);
+            ];
+            if ($has_img_col) {
+                $params['img'] = $img_val;
+            }
+            return $st->execute($params);
         }
-        $st = $db->prepare('
+        $sql = '
             UPDATE `categories_generales`
-            SET `nom` = :nom, `description` = :descr, `icone` = :icone, `sort_ordre` = :so
+            SET `nom` = :nom, `description` = :descr, `icone` = :icone, `sort_ordre` = :so'
+            . ($has_img_col ? ', `image` = :img' : '') . '
             WHERE `id` = :id
-        ');
-        return $st->execute([
+        ';
+        $st = $db->prepare($sql);
+        $params = [
             'id' => $id,
             'nom' => $nom,
             'descr' => $description !== null ? (string) $description : null,
             'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
             'so' => (int) $sort_ordre,
-        ]);
+        ];
+        if ($has_img_col) {
+            $params['img'] = $img_val;
+        }
+        return $st->execute($params);
     } catch (PDOException $e) {
         return false;
     }
@@ -1771,7 +1904,8 @@ function categories_generales_delete_row($id) {
     if ($id <= 0 || !categories_generales_table_exists()) {
         return false;
     }
-    if (!get_categorie_generale_by_id($id)) {
+    $row_del = get_categorie_generale_by_id($id);
+    if (!$row_del) {
         return false;
     }
     if (categories_generales_liaisons_table_exists()) {
@@ -1798,7 +1932,11 @@ function categories_generales_delete_row($id) {
     }
     try {
         $st = $db->prepare('DELETE FROM `categories_generales` WHERE `id` = :id');
-        return $st->execute(['id' => $id]);
+        $ok = $st->execute(['id' => $id]);
+        if ($ok && $row_del && function_exists('categories_generales_delete_image_file')) {
+            categories_generales_delete_image_file($row_del['image'] ?? '');
+        }
+        return $ok;
     } catch (PDOException $e) {
         return false;
     }

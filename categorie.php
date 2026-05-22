@@ -103,7 +103,9 @@ require_once __DIR__ . '/includes/asset_version.php';
 
 $sous_categories_rayon = [];
 if ($generale_id > 0) {
-    $sous_categories_rayon = get_subcategories_with_active_products_for_general($generale_id, null);
+    $sous_categories_rayon = function_exists('get_subcategories_for_categorie_generale')
+        ? get_subcategories_for_categorie_generale($generale_id)
+        : get_subcategories_with_active_products_for_general($generale_id, null);
 }
 
 $return_url_cat = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/categorie.php';
@@ -176,8 +178,59 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
             <header class="cat-rayon-hero">
                 <h1><?php echo htmlspecialchars($categorie_nom); ?></h1>
             </header>
+        </div>
 
-            <?php if ($generale_id > 0 && (!empty($sous_categories_rayon) || !empty($genres_pour_filtre_rayon))): ?>
+        <?php if ($generale_id > 0 && !empty($sous_categories_rayon)): ?>
+            <section class="mp-popular-categories cat-subs-popular" aria-label="Sous-catégories">
+                <div class="mp-popular-categories-inner">
+                    <div class="mp-popular-categories-track" role="list">
+                        <?php foreach ($sous_categories_rayon as $sc): ?>
+                            <?php
+                            $sid = (int) ($sc['id'] ?? 0);
+                            $slabel = trim((string) ($sc['nom'] ?? ''));
+                            if ($sid <= 0 || $slabel === '') {
+                                continue;
+                            }
+                            $h_sub = function_exists('nav_categorie_generale_filtre_href')
+                                ? nav_categorie_generale_filtre_href(
+                                    $generale_id,
+                                    $filter_genre_id > 0 ? $filter_genre_id : 0,
+                                    $sid
+                                )
+                                : nav_categorie_href($sid);
+                            $sic_class = function_exists('categorie_fa_icon_class')
+                                ? categorie_fa_icon_class($sc)
+                                : 'fa-solid fa-layer-group';
+                            $sc_img = function_exists('categorie_image_public_path')
+                                ? categorie_image_public_path($sc)
+                                : null;
+                            $has_sc_img = is_string($sc_img) && $sc_img !== '';
+                            $is_active_sub = $filter_sous_categorie_id === $sid;
+                            ?>
+                            <a class="mp-pop-cat-item<?php echo $is_active_sub ? ' is-active' : ''; ?>" role="listitem"
+                                href="<?php echo htmlspecialchars($h_sub, ENT_QUOTES, 'UTF-8'); ?>"
+                                title="<?php echo htmlspecialchars($slabel, ENT_QUOTES, 'UTF-8'); ?>"
+                                <?php echo $is_active_sub ? ' aria-current="page"' : ''; ?>>
+                                <span class="mp-pop-cat-icon<?php echo $has_sc_img ? ' mp-pop-cat-icon--photo' : ''; ?>" aria-hidden="true">
+                                    <?php if ($has_sc_img): ?>
+                                        <img src="<?php echo htmlspecialchars($sc_img, ENT_QUOTES, 'UTF-8'); ?>"
+                                            alt=""
+                                            loading="lazy"
+                                            decoding="async">
+                                    <?php else: ?>
+                                        <i class="<?php echo htmlspecialchars($sic_class, ENT_QUOTES, 'UTF-8'); ?>"></i>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="mp-pop-cat-label"><?php echo htmlspecialchars($slabel); ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </section>
+        <?php endif; ?>
+
+        <div class="mp-shell">
+            <?php if ($generale_id > 0 && !empty($genres_pour_filtre_rayon)): ?>
                 <section class="cat-filters" aria-labelledby="cat-filters-heading">
                     <div class="cat-filters-inner">
                         <div class="cat-filters-head">
@@ -186,48 +239,6 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
                         </div>
 
                         <div class="cat-filters-controls">
-                            <?php if (!empty($sous_categories_rayon)): ?>
-                                <label class="cat-filter-select-wrap" for="cat-filter-sous-categorie">
-                                    <span class="cat-filter-select-label">
-                                        <i class="fas fa-layer-group" aria-hidden="true"></i>
-                                        Sous-catégorie
-                                    </span>
-                                    <span class="cat-filter-select-shell">
-                                        <select id="cat-filter-sous-categorie" class="cat-filter-select"
-                                            aria-label="Filtrer par sous-catégorie"
-                                            onchange="if (this.value) window.location.href = this.value;">
-                                            <?php
-                                            $h_ref_tout = function_exists('nav_categorie_generale_filtre_href')
-                                                ? nav_categorie_generale_filtre_href($generale_id, $filter_genre_id > 0 ? $filter_genre_id : 0, 0)
-                                                : nav_categorie_generale_href($generale_id);
-                                            ?>
-                                            <option value="<?php echo htmlspecialchars($h_ref_tout); ?>" <?php echo $filter_sous_categorie_id === 0 ? 'selected' : ''; ?>>
-                                                Toutes les sous-catégories
-                                            </option>
-                                            <?php foreach ($sous_categories_rayon as $sc): ?>
-                                                <?php
-                                                $sid = (int) ($sc['id'] ?? 0);
-                                                if ($sid <= 0) {
-                                                    continue;
-                                                }
-                                                $h_sub = function_exists('nav_categorie_generale_filtre_href')
-                                                    ? nav_categorie_generale_filtre_href(
-                                                        $generale_id,
-                                                        $filter_genre_id > 0 ? $filter_genre_id : 0,
-                                                        $sid
-                                                    )
-                                                    : nav_categorie_href($sid);
-                                                ?>
-                                                <option value="<?php echo htmlspecialchars($h_sub); ?>" <?php echo $filter_sous_categorie_id === $sid ? 'selected' : ''; ?>>
-                                                    <?php echo htmlspecialchars((string) ($sc['nom'] ?? '')); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <i class="fas fa-chevron-down" aria-hidden="true"></i>
-                                    </span>
-                                </label>
-                            <?php endif; ?>
-
                             <?php if (!empty($genres_pour_filtre_rayon) && function_exists('nav_categorie_generale_genre_href')): ?>
                                 <label class="cat-filter-select-wrap" for="cat-filter-genre">
                                     <span class="cat-filter-select-label">

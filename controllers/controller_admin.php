@@ -403,6 +403,7 @@ function process_inscription_vendeur() {
     }
 
     require_once __DIR__ . '/../includes/marketplace_helpers.php';
+    require_once __DIR__ . '/../includes/senegal_regions.php';
 
     $identite = isset($_POST['identite']) ? trim((string) $_POST['identite']) : '';
     $email = isset($_POST['email']) ? trim((string) $_POST['email']) : '';
@@ -410,6 +411,7 @@ function process_inscription_vendeur() {
     $pin = (string) ($_POST['pin'] ?? '');
     $pin2 = (string) ($_POST['pin_confirm'] ?? '');
     $boutique_nom = isset($_POST['boutique_nom']) ? trim((string) $_POST['boutique_nom']) : '';
+    $boutique_region = isset($_POST['boutique_region']) ? trim((string) $_POST['boutique_region']) : '';
 
     $errors = [];
     if (mb_strlen($identite) < 2) {
@@ -429,6 +431,9 @@ function process_inscription_vendeur() {
     }
     if (mb_strlen($boutique_nom) < 2) {
         $errors[] = 'Le nom de la boutique est obligatoire.';
+    }
+    if ($boutique_region === '' || !senegal_region_is_valid($boutique_region)) {
+        $errors[] = 'Veuillez sélectionner la région de votre boutique.';
     }
     if (admin_telephone_exists($telephone)) {
         $errors[] = 'Ce numéro de téléphone est déjà enregistré.';
@@ -454,7 +459,7 @@ function process_inscription_vendeur() {
     }
 
     $hash = password_hash($pin, PASSWORD_BCRYPT);
-    $id = create_vendeur_boutique($identite, $email !== '' ? $email : null, $telephone, $hash, $boutique_nom, $slug);
+    $id = create_vendeur_boutique($identite, $email !== '' ? $email : null, $telephone, $hash, $boutique_nom, $slug, $boutique_region);
     if (!$id) {
         return ['success' => false, 'message' => 'Erreur lors de la création du compte. Réessayez.'];
     }

@@ -594,6 +594,24 @@ $seo_canonical = $base . '/';
             line-height: 1;
         }
 
+        .mp-pop-cat-icon--photo {
+            overflow: hidden;
+            padding: 0;
+            background: var(--blanc-casse);
+        }
+
+        .mp-pop-cat-icon--photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):hover .mp-pop-cat-icon--photo {
+            transform: scale(1.04);
+            box-shadow: 0 6px 22px rgba(53, 100, 166, 0.16);
+        }
+
         .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 1) .mp-pop-cat-icon i { color: var(--nav-soft-fg-1); }
         .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 2) .mp-pop-cat-icon i { color: var(--nav-soft-fg-2); }
         .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 3) .mp-pop-cat-icon i { color: var(--nav-soft-fg-3); }
@@ -2268,6 +2286,10 @@ $seo_canonical = $base . '/';
                         $pic_class = function_exists('categorie_fa_icon_class')
                             ? categorie_fa_icon_class($prow)
                             : 'fa-solid fa-layer-group';
+                        $pop_img = function_exists('categorie_image_public_path')
+                            ? categorie_image_public_path($prow)
+                            : null;
+                        $has_pop_img = is_string($pop_img) && $pop_img !== '';
                         $pid = (int) ($prow['id'] ?? 0);
                         if ($mp_nav_is_generale) {
                             $phref = $pid > 0 && function_exists('nav_categorie_generale_href')
@@ -2282,8 +2304,15 @@ $seo_canonical = $base . '/';
                         <a class="mp-pop-cat-item" role="listitem"
                             href="<?php echo htmlspecialchars($phref, ENT_QUOTES, 'UTF-8'); ?>"
                             title="<?php echo htmlspecialchars($plabel, ENT_QUOTES, 'UTF-8'); ?>">
-                            <span class="mp-pop-cat-icon" aria-hidden="true">
-                                <i class="<?php echo htmlspecialchars($pic_class, ENT_QUOTES, 'UTF-8'); ?>"></i>
+                            <span class="mp-pop-cat-icon<?php echo $has_pop_img ? ' mp-pop-cat-icon--photo' : ''; ?>" aria-hidden="true">
+                                <?php if ($has_pop_img): ?>
+                                    <img src="<?php echo htmlspecialchars($pop_img, ENT_QUOTES, 'UTF-8'); ?>"
+                                        alt=""
+                                        loading="lazy"
+                                        decoding="async">
+                                <?php else: ?>
+                                    <i class="<?php echo htmlspecialchars($pic_class, ENT_QUOTES, 'UTF-8'); ?>"></i>
+                                <?php endif; ?>
                             </span>
                             <span class="mp-pop-cat-label"><?php echo htmlspecialchars($plabel); ?></span>
                         </a>

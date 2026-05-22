@@ -14,6 +14,7 @@ if (!isset($_SESSION['admin_id'])) {
 
 // Récupérer les informations de l'administrateur
 require_once __DIR__ . '/../models/model_admin.php';
+require_once __DIR__ . '/../includes/senegal_regions.php';
 $admin = get_admin_by_id($_SESSION['admin_id']);
 
 if (!$admin) {
@@ -21,6 +22,21 @@ if (!$admin) {
     header('Location: login.php');
     exit;
 }
+
+$is_vendeur = (($admin['role'] ?? '') === 'vendeur');
+$profil_nom = (string) ($admin['nom'] ?? '');
+$profil_prenom = (string) ($admin['prenom'] ?? '');
+$profil_email = (string) ($admin['email'] ?? '');
+$profil_telephone = (string) ($admin['telephone'] ?? '');
+$profil_display_name = trim($profil_prenom . ' ' . $profil_nom);
+if ($profil_display_name === '') {
+    $profil_display_name = $profil_nom !== '' ? $profil_nom : 'Mon compte';
+}
+$profil_boutique_nom = (string) ($admin['boutique_nom'] ?? '');
+$profil_boutique_region = (string) ($admin['boutique_region'] ?? '');
+$profil_boutique_region_label = $profil_boutique_region !== ''
+    ? senegal_region_label($profil_boutique_region)
+    : '';
 
 // Traitement des formulaires
 $success_message = '';
@@ -49,16 +65,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
         $errors[] = 'Le nom doit contenir au moins 2 caractères.';
     }
     
-    // Validation du prénom
-    if (empty($prenom)) {
-        $errors[] = 'Le prénom est obligatoire.';
-    } elseif (strlen($prenom) < 2) {
+    // Validation du prénom (facultatif pour les vendeurs)
+    if (!$is_vendeur) {
+        if (empty($prenom)) {
+            $errors[] = 'Le prénom est obligatoire.';
+        } elseif (strlen($prenom) < 2) {
+            $errors[] = 'Le prénom doit contenir au moins 2 caractères.';
+        }
+    } elseif ($prenom !== '' && strlen($prenom) < 2) {
         $errors[] = 'Le prénom doit contenir au moins 2 caractères.';
     }
     
-    // Validation de l'email
-    if (empty($email)) {
-        $errors[] = 'L\'email est obligatoire.';
+    // Validation de l'email (facultatif pour les vendeurs)
+    if ($email === '') {
+        if (!$is_vendeur) {
+            $errors[] = 'L\'email est obligatoire.';
+        }
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'L\'email n\'est pas valide.';
     } else {
@@ -82,14 +104,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
         $data = [
             'nom' => $nom,
             'prenom' => $prenom,
-            'email' => $email,
+            'email' => $email !== '' ? $email : null,
             'telephone' => $telephone
         ];
 
         // Mettre à jour les informations de base
         if (update_admin($_SESSION['admin_id'], $data)) {
-            // Mettre à jour l'email dans la session
-            $_SESSION['admin_email'] = $email;
+            if ($email !== '') {
+                $_SESSION['admin_email'] = $email;
+            } else {
+                unset($_SESSION['admin_email']);
+            }
 
             // Redirection pour éviter la double soumission (pattern Post-Redirect-Get)
             $_SESSION['success_message'] = 'Vos informations personnelles ont été mises à jour avec succès !';
@@ -100,6 +125,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
         }
     } else {
         $error_message = implode('<br>', $errors);
+    }
+}
+
+// Traitement du formulaire gestion boutique (vendeurs)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_boutique']) && $is_vendeur) {
+    $boutique_nom = isset($_POST['boutique_nom']) ? trim((string) $_POST['boutique_nom']) : '';
+    $boutique_region = isset($_POST['boutique_region']) ? trim((string) $_POST['boutique_region']) : '';
+
+    $errors = [];
+
+    if (mb_strlen($boutique_nom) < 2) {
+        $errors[] = 'Le nom de la boutique est obligatoire (2 caractères minimum).';
+    }
+
+    if (admin_has_boutique_region_column()) {
+        if ($boutique_region === '' || !senegal_region_is_valid($boutique_region)) {
+            $errors[] = 'Veuillez sélectionner une région valide pour votre boutique.';
+        }
+    }
+
+    if (empty($errors)) {
+        if (update_vendeur_boutique_profil($_SESSION['admin_id'], $boutique_nom, $boutique_region)) {
+            $_SESSION['success_message'] = 'Les informations de votre boutique ont été mises à jour avec succès !';
+            header('Location: profil.php');
+            exit;
+        }
+        $error_message = 'Impossible d\'enregistrer les informations de la boutique. Réessayez.';
+    } else {
+        $error_message = implode('<br>', $errors);
+        $profil_boutique_nom = $boutique_nom;
+        $profil_boutique_region = $boutique_region;
+        $profil_boutique_region_label = $boutique_region !== '' ? senegal_region_label($boutique_region) : '';
     }
 }
 
@@ -217,6 +274,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
             border-radius: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
         }
+        .form-optional {
+            font-weight: 400;
+            color: #737373;
+            font-size: 0.85rem;
+        }
+        .profil-form select.profil-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            font-family: inherit;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .profil-form select.profil-select:focus {
+            outline: none;
+            border-color: var(--couleur-dominante, #3564a6);
+            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.15);
+        }
     </style>
 </head>
 
@@ -234,8 +313,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
                 <div class="avatar">
                     <i class="fas fa-user-shield"></i>
                 </div>
-                <h2><?php echo htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']); ?></h2>
-                <p><?php echo htmlspecialchars($admin['email']); ?></p>
+                <h2><?php echo htmlspecialchars($profil_display_name, ENT_QUOTES, 'UTF-8'); ?></h2>
+                <p><?php echo $profil_email !== '' ? htmlspecialchars($profil_email, ENT_QUOTES, 'UTF-8') : 'Email non renseigné'; ?></p>
             </div>
 
             <!-- Messages -->
@@ -282,25 +361,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
                     <div class="form-row">
                         <div class="form-group">
                             <label for="nom">Nom <span class="required">*</span></label>
-                            <input type="text" id="nom" name="nom" value="<?php echo htmlspecialchars($admin['nom']); ?>" required>
+                            <input type="text" id="nom" name="nom" value="<?php echo htmlspecialchars($profil_nom, ENT_QUOTES, 'UTF-8'); ?>" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="prenom">Prénom <span class="required">*</span></label>
-                            <input type="text" id="prenom" name="prenom" value="<?php echo htmlspecialchars($admin['prenom']); ?>" required>
+                            <label for="prenom">Prénom <?php if (!$is_vendeur): ?><span class="required">*</span><?php else: ?><span class="form-optional">(facultatif)</span><?php endif; ?></label>
+                            <input type="text" id="prenom" name="prenom" value="<?php echo htmlspecialchars($profil_prenom, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $is_vendeur ? '' : ' required'; ?>>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email <span class="required">*</span></label>
-                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($admin['email']); ?>" required>
+                        <label for="email">Email <?php if (!$is_vendeur): ?><span class="required">*</span><?php else: ?><span class="form-optional">(facultatif)</span><?php endif; ?></label>
+                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($profil_email, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $is_vendeur ? '' : ' required'; ?>>
                     </div>
 
                     <div class="form-group">
                         <label for="telephone">Téléphone <span class="required">*</span></label>
                         <div class="input-wrapper input-wrapper--intl-tel">
                             <input type="tel" id="telephone" name="telephone"
-                                value="<?php echo htmlspecialchars((string) ($admin['telephone'] ?? '')); ?>"
+                                value="<?php echo htmlspecialchars($profil_telephone, ENT_QUOTES, 'UTF-8'); ?>"
                                 placeholder="77 123 45 67"
                                 required autocomplete="tel">
                         </div>
@@ -317,6 +396,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
                     </div>
                 </div>
             </form>
+
+            <?php if ($is_vendeur): ?>
+            <!-- Section Gestion de la boutique -->
+            <form method="POST" action="" class="profil-form">
+                <div class="form-section">
+                    <h3><i class="fas fa-store"></i> Gestion de la boutique</h3>
+
+                    <div class="form-group">
+                        <label for="boutique_nom">Nom de la boutique <span class="required">*</span></label>
+                        <input type="text" id="boutique_nom" name="boutique_nom"
+                            value="<?php echo htmlspecialchars($profil_boutique_nom, ENT_QUOTES, 'UTF-8'); ?>"
+                            required maxlength="255" autocomplete="organization">
+                    </div>
+
+                    <?php if (admin_has_boutique_region_column()): ?>
+                    <div class="form-group">
+                        <label for="boutique_region">Région de la boutique <span class="required">*</span></label>
+                        <select id="boutique_region" name="boutique_region" class="profil-select" required>
+                            <?php echo senegal_regions_options_html($profil_boutique_region, true, 'Sélectionnez une région'); ?>
+                        </select>
+                        <?php if ($profil_boutique_region_label !== ''): ?>
+                        <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.35rem;">
+                            Région actuelle : <?php echo htmlspecialchars($profil_boutique_region_label, ENT_QUOTES, 'UTF-8'); ?>
+                        </small>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="form-actions">
+                        <button type="submit" name="modifier_boutique" class="btn-submit">
+                            <i class="fas fa-save"></i> Enregistrer la boutique
+                        </button>
+                        <a href="parametres-boutique-vendeur.php" class="btn-cancel">
+                            <i class="fas fa-palette"></i> Paramètres vitrine
+                        </a>
+                    </div>
+                </div>
+            </form>
+            <?php endif; ?>
 
             <!-- Section Sécurité -->
             <form method="POST" action="" class="profil-form">

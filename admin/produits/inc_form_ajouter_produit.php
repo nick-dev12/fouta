@@ -86,11 +86,6 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                     <i class="fas fa-info-circle"></i>
                     <h3>Informations principales</h3>
                 </div>
-                <?php if (!$fap_is_edit): ?>
-                <p class="fap-hint">Un code interne <strong>FPLxxxxxx</strong> est attribué automatiquement à l’enregistrement.</p>
-                <?php else: ?>
-                <p class="fap-hint">Référence interne attribuée à la création — non modifiable.</p>
-                <?php endif; ?>
                 <div class="fap-field">
                     <label for="nom">Nom du produit <span class="required">*</span></label>
                     <input type="text" id="nom" name="nom" required placeholder="Ex. Kit frein arrière complet"
@@ -105,7 +100,7 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                 $ident_ro = trim((string) ($fap_edit_produit['identifiant_interne'] ?? ''));
                 ?>
                 <div class="fap-field">
-                    <label for="fap_ident_interne_ro">Identifiant interne (FPL)</label>
+                    <label for="fap_ident_interne_ro">Identifiant interne</label>
                     <input type="text" id="fap_ident_interne_ro" readonly
                         value="<?php echo $ident_ro !== '' ? htmlspecialchars($ident_ro) : '—'; ?>"
                         style="background:var(--blanc-neige,#f5f5f5);cursor:default;">
@@ -167,11 +162,8 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                     <i class="fas fa-sliders-h"></i>
                     <h3>Poids, taille, mesures &amp; couleurs</h3>
                 </div>
-                <p class="fap-hint">Facultatif. Les champs affichés dépendent du <strong>rayon</strong> choisi (configuration super administrateur).</p>
-
                 <div class="fap-field" data-fap-attr="poids">
                     <label>Poids disponibles</label>
-                    <p class="fap-hint" style="margin-top:0;">Supplément FCFA optionnel par option en boutique.</p>
                     <div class="options-add-block options-with-surcharge">
                         <div class="options-add-row">
                             <input type="text" id="poids-input" placeholder="Ex. 500g, 1kg" class="options-input">
@@ -219,7 +211,6 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                                 value="<?php echo htmlspecialchars($pm_mesure, ENT_QUOTES, 'UTF-8'); ?>">
                         </div>
                     </div>
-                    <p class="fap-hint">Texte libre pour préciser dimensions, volume ou conditionnement.</p>
                 </div>
 
                 <div class="fap-field" data-fap-attr="couleur">
@@ -248,7 +239,6 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                 <?php if (!$fap_is_edit): ?>
                 <div class="fap-field">
                     <label>Images <span class="required">*</span></label>
-                    <p class="fap-hint">La 1<sup>ère</sup> image est la photo principale ; les autres enrichissent la fiche.</p>
                     <div class="fap-dropzone file-input-wrapper file-input-single" data-trigger="images_produit">
                         <input type="file" id="images_produit" name="images_produit[]" accept="image/*" multiple required class="file-input fap-file-native">
                         <div class="fap-dropzone-inner">
@@ -286,6 +276,9 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                     <div id="preview-images-supp" class="image-preview-accumulator"></div>
                 </div>
                 <?php endif; ?>
+                <?php if ($add_produit_modal): ?>
+                <input type="hidden" name="statut" value="actif">
+                <?php else: ?>
                 <div class="fap-field">
                     <label for="statut">Visibilité</label>
                     <select id="statut" name="statut">
@@ -296,6 +289,7 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                         <?php endif; ?>
                     </select>
                 </div>
+                <?php endif; ?>
             </div>
 
             <div class="fap-card fap-card-variantes">
@@ -303,7 +297,6 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                     <i class="fas fa-layer-group"></i>
                     <div class="fap-card-head-text">
                         <h3>Variantes</h3>
-                        <span class="fap-card-sub">Optionnel — offres alternatives (nom, prix, image)</span>
                     </div>
                 </div>
                 <div id="fap-variantes-list-wrap" class="fap-variantes-list-wrap" hidden>

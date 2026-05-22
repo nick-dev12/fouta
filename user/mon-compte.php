@@ -35,12 +35,13 @@ $nb_panier = count_panier_items_by_user($_SESSION['user_id']);
 $nb_favoris = count_favoris_by_user($_SESSION['user_id']);
 $nb_visites = count_visites_by_user($_SESSION['user_id']);
 
-$avatar_initial = '';
+$avatar_initial = '?';
+$nom_trim = trim((string) ($user['nom'] ?? ''));
 $prenom_trim = trim((string) ($user['prenom'] ?? ''));
-if ($prenom_trim !== '') {
+if ($nom_trim !== '') {
+    $avatar_initial = mb_strtoupper(mb_substr($nom_trim, 0, 1, 'UTF-8'), 'UTF-8');
+} elseif ($prenom_trim !== '') {
     $avatar_initial = mb_strtoupper(mb_substr($prenom_trim, 0, 1, 'UTF-8'), 'UTF-8');
-} else {
-    $avatar_initial = '?';
 }
 $user_email_display = trim((string) ($user['email'] ?? ''));
 $enable_firebase_notifications = true;

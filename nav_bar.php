@@ -12,6 +12,22 @@ $u_panier = $GLOBALS['nav_panier'] ?? '/panier.php';
 $u_nouveautes = $GLOBALS['nav_nouveautes'] ?? '/nouveautes.php';
 $u_promo = $GLOBALS['nav_promo'] ?? '/promo.php';
 $u_contact = $GLOBALS['nav_contact'] ?? '/contact.php';
+$nav_show_region_filter = !(defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0);
+$nav_region_selected = '';
+$nav_region_selected_label = 'Région';
+$nav_region_redirect = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/index.php';
+if ($nav_region_redirect === '' || strpos($nav_region_redirect, '/') !== 0 || strpos($nav_region_redirect, '//') === 0) {
+    $nav_region_redirect = '/index.php';
+}
+if ($nav_show_region_filter) {
+    require_once __DIR__ . '/includes/marketplace_region_filter.php';
+    require_once __DIR__ . '/includes/senegal_regions.php';
+    $nav_region_selected = marketplace_get_selected_region_code() ?? '';
+    $lbl = marketplace_get_selected_region_label();
+    if ($lbl !== '') {
+        $nav_region_selected_label = $lbl;
+    }
+}
 if (!function_exists('nav_categorie_href')) {
     require_once __DIR__ . '/includes/marketplace_helpers.php';
 }
@@ -199,6 +215,11 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
 
     .nav-top-row .nav-panier-link {
         order: 3;
+    }
+
+    .nav-top-row .nav-region-wrap--top {
+        order: 3;
+        display: none;
     }
 
     .nav-top-row .nav-compte-btn {
@@ -604,6 +625,18 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         .nav-compte-subtitle {
             font-size: 11px;
         }
+
+        .nav-top-row .nav-panier-link {
+            display: none !important;
+        }
+
+        .nav-top-row .nav-region-wrap--top {
+            display: block;
+        }
+
+        .section1-right .nav-region-wrap:not(.nav-region-wrap--top) {
+            display: none !important;
+        }
     }
 
     @media (max-width: 768px) {
@@ -823,6 +856,29 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             <img src="<?php echo htmlspecialchars($__nav_logo_src, ENT_QUOTES, 'UTF-8'); ?>"
                 alt="<?php echo htmlspecialchars($__nav_logo_alt, ENT_QUOTES, 'UTF-8'); ?>">
         </a>
+        <?php if ($nav_show_region_filter): ?>
+        <div class="nav-region-wrap nav-region-wrap--top" id="navRegionWrapTop">
+            <button type="button" class="nav-btn-region nav-btn-region--top" id="navRegionToggleTop"
+                aria-expanded="false" aria-haspopup="listbox" aria-controls="navRegionMenuTop"
+                title="Choisir une région">
+                <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+                <span class="nav-btn-region__label"><?php echo htmlspecialchars($nav_region_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                <i class="fa-solid fa-chevron-down nav-btn-region__chev" aria-hidden="true"></i>
+            </button>
+            <div class="nav-region-menu nav-region-menu--top" id="navRegionMenuTop" role="listbox" hidden>
+                <form method="post" action="/set-region.php" class="nav-region-form">
+                    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_region_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+                    <button type="submit" name="region" value="all" class="nav-region-item<?php echo $nav_region_selected === '' ? ' is-active' : ''; ?>">Toutes les régions</button>
+                    <?php foreach (senegal_regions_list() as $code => $label): ?>
+                        <button type="submit" name="region" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
+                            class="nav-region-item<?php echo $nav_region_selected === $code ? ' is-active' : ''; ?>">
+                            <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                    <?php endforeach; ?>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
         <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
             class="nav-panier-link"
             title="<?php echo isset($_SESSION['user_id']) ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Se connecter pour voir le panier'; ?>">
@@ -1100,14 +1156,22 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         <p class="nav-sidebar-slogan"><?php echo htmlspecialchars(SITE_BRAND_TAGLINE, ENT_QUOTES, 'UTF-8'); ?></p>
     </div>
     <div class="nav-sidebar-content">
-        <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-sidebar-item nav-sidebar-nouveautes">
-            <i class="fa-solid fa-sparkles" aria-hidden="true"></i>
-            <span>NOUVEAUTÉS</span>
-        </a>
-        <a href="<?php echo htmlspecialchars($u_promo); ?>" class="nav-sidebar-item nav-sidebar-promo">
-            <i class="fa-solid fa-percent"></i>
-            <span>PROMO</span>
-        </a>
+        <ul class="nav-glass-rayons-list nav-glass-rayons-list--shortcuts" role="list">
+            <li>
+                <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-glass-rayon-card nav-glass-rayon-card--nouveautes">
+                    <span class="nav-glass-rayon-icon" aria-hidden="true"><i class="fa-solid fa-sparkles"></i></span>
+                    <span class="nav-glass-rayon-label">NOUVEAUTÉS</span>
+                    <span class="nav-glass-rayon-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
+                </a>
+            </li>
+            <li>
+                <a href="<?php echo htmlspecialchars($u_promo); ?>" class="nav-glass-rayon-card nav-glass-rayon-card--promo">
+                    <span class="nav-glass-rayon-icon" aria-hidden="true"><i class="fa-solid fa-percent"></i></span>
+                    <span class="nav-glass-rayon-label">PROMO</span>
+                    <span class="nav-glass-rayon-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
+                </a>
+            </li>
+        </ul>
         <div class="nav-sidebar-categories nav-sidebar-categories--glass">
             <?php if (!empty($nav_megamenu)): ?>
                 <p class="nav-sidebar-section-label">Nos rayons</p>
@@ -1117,14 +1181,24 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
                         $g = $mega['general'];
                         $gid = (int) $g['id'];
                         $ic_class = function_exists('categorie_fa_icon_class') ? categorie_fa_icon_class($g) : 'fa-solid fa-layer-group';
+                        $cg_img = function_exists('categorie_image_public_path') ? categorie_image_public_path($g) : null;
+                        $has_cg_img = is_string($cg_img) && $cg_img !== '';
                         $rayon_href = function_exists('nav_categorie_generale_href')
                             ? nav_categorie_generale_href($gid)
                             : nav_categorie_href($gid);
                         ?>
                         <li>
                             <a class="nav-glass-rayon-card" href="<?php echo htmlspecialchars($rayon_href); ?>">
-                                <span class="nav-glass-rayon-icon" aria-hidden="true"><i
-                                        class="<?php echo htmlspecialchars($ic_class); ?>"></i></span>
+                                <span class="nav-glass-rayon-icon<?php echo $has_cg_img ? ' nav-glass-rayon-icon--photo' : ''; ?>" aria-hidden="true">
+                                    <?php if ($has_cg_img): ?>
+                                        <img src="<?php echo htmlspecialchars($cg_img, ENT_QUOTES, 'UTF-8'); ?>"
+                                            alt=""
+                                            loading="lazy"
+                                            decoding="async">
+                                    <?php else: ?>
+                                        <i class="<?php echo htmlspecialchars($ic_class); ?>"></i>
+                                    <?php endif; ?>
+                                </span>
                                 <span class="nav-glass-rayon-label"><?php echo htmlspecialchars($g['nom']); ?></span>
                                 <span class="nav-glass-rayon-arrow" aria-hidden="true"><i
                                         class="fa-solid fa-arrow-right"></i></span>
@@ -1224,6 +1298,28 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             <i class="fa-solid fa-percent"></i>
             <span>PROMO</span>
         </a>
+        <?php if ($nav_show_region_filter): ?>
+        <div class="nav-region-wrap" id="navRegionWrap">
+            <button type="button" class="nav-action-btn nav-btn-region" id="navRegionToggle"
+                aria-expanded="false" aria-haspopup="listbox" aria-controls="navRegionMenu">
+                <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+                <span class="nav-btn-region__label"><?php echo htmlspecialchars($nav_region_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                <i class="fa-solid fa-chevron-down nav-btn-region__chev" aria-hidden="true"></i>
+            </button>
+            <div class="nav-region-menu" id="navRegionMenu" role="listbox" hidden>
+                <form method="post" action="/set-region.php" class="nav-region-form">
+                    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_region_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+                    <button type="submit" name="region" value="all" class="nav-region-item<?php echo $nav_region_selected === '' ? ' is-active' : ''; ?>">Toutes les régions</button>
+                    <?php foreach (senegal_regions_list() as $code => $label): ?>
+                        <button type="submit" name="region" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
+                            class="nav-region-item<?php echo $nav_region_selected === $code ? ' is-active' : ''; ?>">
+                            <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                    <?php endforeach; ?>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </section>
 
@@ -1284,6 +1380,48 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         document.addEventListener('keydown', function (e) {
             if (e.key !== 'Escape') return;
             closeSidebarMenu();
+            closeAllRegionMenus();
+        });
+
+        function closeAllRegionMenus() {
+            [
+                ['navRegionWrap', 'navRegionToggle', 'navRegionMenu'],
+                ['navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop']
+            ].forEach(function (ids) {
+                var wrap = document.getElementById(ids[0]);
+                var toggle = document.getElementById(ids[1]);
+                var menu = document.getElementById(ids[2]);
+                if (wrap) wrap.classList.remove('open');
+                if (menu) menu.hidden = true;
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        function initRegionDropdown(wrapId, toggleId, menuId) {
+            var regionWrap = document.getElementById(wrapId);
+            var regionToggle = document.getElementById(toggleId);
+            var regionMenu = document.getElementById(menuId);
+            if (!regionWrap || !regionToggle || !regionMenu) return;
+            regionToggle.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var willOpen = !regionWrap.classList.contains('open');
+                closeAllRegionMenus();
+                if (willOpen) {
+                    regionWrap.classList.add('open');
+                    regionMenu.hidden = false;
+                    regionToggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        }
+
+        initRegionDropdown('navRegionWrap', 'navRegionToggle', 'navRegionMenu');
+        initRegionDropdown('navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop');
+
+        document.addEventListener('click', function (e) {
+            var inRegion = e.target.closest('#navRegionWrap, #navRegionWrapTop');
+            if (!inRegion) {
+                closeAllRegionMenus();
+            }
         });
     });
 </script>

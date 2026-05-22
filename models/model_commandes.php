@@ -1002,6 +1002,29 @@ function count_commandes_by_user($user_id) {
 }
 
 /**
+ * Nombre de commandes en cours pour un client (hors livrées, payées et annulées).
+ *
+ * @param int $user_id
+ * @return int
+ */
+function count_commandes_actives_by_user($user_id) {
+    global $db;
+
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*)
+            FROM commandes
+            WHERE user_id = :user_id
+              AND statut NOT IN ('livree', 'paye', 'annulee')
+        ");
+        $stmt->execute(['user_id' => $user_id]);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
  * Récupère le nombre d'articles dans le panier d'un utilisateur
  * @param int $user_id L'ID de l'utilisateur
  * @return int Le nombre d'articles

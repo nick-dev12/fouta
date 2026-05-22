@@ -13,6 +13,7 @@ require_once __DIR__ . '/includes/require_access.php';
 require_once __DIR__ . '/../models/model_admin.php';
 require_once __DIR__ . '/../includes/boutique_vendeur_display.php';
 require_once __DIR__ . '/../includes/upload_image_limits.php';
+require_once __DIR__ . '/../includes/senegal_regions.php';
 
 $role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? '');
 if ($role !== 'vendeur') {
@@ -54,6 +55,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['boutique_branding_sav
             $c1 = $raw_c1 !== '' ? boutique_normalize_hex_color($raw_c1) : '';
             $c2 = $raw_c2 !== '' ? boutique_normalize_hex_color($raw_c2) : '';
             $adresse = isset($_POST['boutique_adresse']) ? trim((string) $_POST['boutique_adresse']) : '';
+            $boutique_region = isset($_POST['boutique_region']) ? trim((string) $_POST['boutique_region']) : '';
+
+            if (admin_has_boutique_region_column() && ($boutique_region === '' || !senegal_region_is_valid($boutique_region))) {
+                $error_message = 'Veuillez sélectionner une région valide pour votre boutique.';
+            }
 
             $current_logo = trim((string) ($admin['boutique_logo'] ?? ''));
             $logo_final = $current_logo;
@@ -101,12 +107,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['boutique_branding_sav
             }
 
             if ($error_message === '') {
-                $ok = update_admin_boutique_branding($admin_id, [
+                $branding_data = [
                     'boutique_logo' => $logo_final !== '' ? $logo_final : null,
                     'boutique_couleur_principale' => $c1 !== '' ? $c1 : null,
                     'boutique_couleur_accent' => $c2 !== '' ? $c2 : null,
                     'boutique_adresse' => $adresse !== '' ? $adresse : null,
-                ]);
+                ];
+                if (admin_has_boutique_region_column()) {
+                    $branding_data['boutique_region'] = $boutique_region;
+                }
+                $ok = update_admin_boutique_branding($admin_id, $branding_data);
                 if ($ok) {
                     $_SESSION['success_message'] = 'L’apparence de votre boutique a été enregistrée.';
                     header('Location: parametres-boutique-vendeur.php');
@@ -129,6 +139,7 @@ if ($clogo !== '') {
 $c1_val = htmlspecialchars(boutique_normalize_hex_color($admin['boutique_couleur_principale'] ?? '') ?: '#3564a6', ENT_QUOTES, 'UTF-8');
 $c2_val = htmlspecialchars(boutique_normalize_hex_color($admin['boutique_couleur_accent'] ?? '') ?: '#ff6b35', ENT_QUOTES, 'UTF-8');
 $adresse_val = htmlspecialchars((string) ($admin['boutique_adresse'] ?? ''), ENT_QUOTES, 'UTF-8');
+$region_val = htmlspecialchars((string) ($admin['boutique_region'] ?? ''), ENT_QUOTES, 'UTF-8');
 $logo_url_attr = $logo_url !== '' ? htmlspecialchars($logo_url, ENT_QUOTES, 'UTF-8') : '';
 
 ?>
@@ -160,37 +171,6 @@ $logo_url_attr = $logo_url !== '' ? htmlspecialchars($logo_url, ENT_QUOTES, 'UTF
             border-radius: 12px;
             padding: 14px 18px;
             font-weight: 500;
-        }
-        .brv-intro-strip {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin-bottom: 28px;
-            padding: 18px 20px;
-            background: linear-gradient(135deg, rgba(53, 100, 166, 0.07), rgba(255, 107, 53, 0.06));
-            border: 1px solid rgba(53, 100, 166, 0.14);
-            border-radius: 16px;
-            align-items: center;
-        }
-        .brv-intro-strip__icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, var(--couleur-dominante), var(--bleu-fonce));
-            color: var(--texte-clair);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            flex-shrink: 0;
-            box-shadow: 0 4px 16px rgba(53, 100, 166, 0.28);
-        }
-        .brv-intro-strip__text {
-            flex: 1 1 220px;
-            margin: 0;
-            font-size: 0.92rem;
-            line-height: 1.55;
-            color: var(--gris-fonce);
         }
         .brv-form-grid {
             display: grid;
@@ -418,6 +398,23 @@ $logo_url_attr = $logo_url !== '' ? htmlspecialchars($logo_url, ENT_QUOTES, 'UTF
             border-color: var(--couleur-dominante);
             box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.12);
         }
+        .brv-select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid rgba(53, 100, 166, 0.15);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            background: var(--blanc, #fff);
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        .brv-select:focus {
+            outline: none;
+            border-color: var(--couleur-dominante);
+            box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.12);
+        }
         .brv-actions {
             margin-top: 28px;
             padding: 20px 24px;
@@ -453,9 +450,6 @@ $logo_url_attr = $logo_url !== '' ? htmlspecialchars($logo_url, ENT_QUOTES, 'UTF
             <i class="fas fa-palette" aria-hidden="true"></i>
             <span>Apparence de ma boutique</span>
         </h1>
-        <p class="dashboard-page-header__lead">
-            Personnalisez l’identité visuelle de votre vitrine : le logo apparaît dans la navigation, les couleurs sur les boutons et accents, l’adresse sur la page contact et le pied de page.
-        </p>
     </div>
     <div class="dashboard-page-header__toolbar" role="group">
         <a href="parametres.php" class="dash-tool-btn dash-tool-btn--ghost">
@@ -476,13 +470,6 @@ $logo_url_attr = $logo_url !== '' ? htmlspecialchars($logo_url, ENT_QUOTES, 'UTF
         <?php endif; ?>
     </div>
     <?php endif; ?>
-
-    <div class="brv-intro-strip">
-        <div class="brv-intro-strip__icon" aria-hidden="true"><i class="fas fa-wand-magic-sparkles"></i></div>
-        <p class="brv-intro-strip__text">
-            Les visiteurs voient ces réglages sur <strong>votre URL boutique</strong> uniquement. Formats logo&nbsp;: JPEG, PNG, GIF ou WebP — taille max. <strong>20&nbsp;Mo</strong>. Pensez à un logo horizontal ou carré lisible en petit.
-        </p>
-    </div>
 
     <form method="post" enctype="multipart/form-data" action="" id="brv-form">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">
@@ -555,12 +542,24 @@ $logo_url_attr = $logo_url !== '' ? htmlspecialchars($logo_url, ENT_QUOTES, 'UTF
                 </div>
             </section>
 
+            <section class="brv-card brv-card--wide" aria-labelledby="brv-region-title">
+                <div class="brv-card__head">
+                    <i class="fas fa-map-location-dot" aria-hidden="true"></i>
+                    <div>
+                        <h2 id="brv-region-title" class="brv-card__title">Région de la boutique</h2>
+                    </div>
+                </div>
+                <label for="boutique_region" class="visually-hidden">Région</label>
+                <select id="boutique_region" class="brv-select" name="boutique_region" required>
+                    <?php echo senegal_regions_options_html($region_val, true, 'Sélectionnez une région'); ?>
+                </select>
+            </section>
+
             <section class="brv-card brv-card--wide" aria-labelledby="brv-addr-title">
                 <div class="brv-card__head">
                     <i class="fas fa-location-dot" aria-hidden="true"></i>
                     <div>
                         <h2 id="brv-addr-title" class="brv-card__title">Adresse affichée</h2>
-                        <p class="brv-card__hint">Visible sur la page Contact et dans le pied de page. Téléphone et e-mail sont ceux de votre fiche administrateur (<a href="profil.php">profil</a>).</p>
                     </div>
                 </div>
                 <label for="boutique_adresse" class="visually-hidden">Adresse</label>

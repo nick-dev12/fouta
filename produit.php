@@ -59,6 +59,12 @@ if (!$produit || $produit['statut'] != 'actif') {
     exit;
 }
 
+require_once __DIR__ . '/includes/marketplace_region_filter.php';
+if (!produit_visible_in_marketplace_region($produit)) {
+    header('Location: index.php');
+    exit;
+}
+
 // Enregistrer la visite si l'utilisateur est connecté
 if (isset($_SESSION['user_id']) && $produit_id > 0) {
     add_visite($_SESSION['user_id'], $produit_id);

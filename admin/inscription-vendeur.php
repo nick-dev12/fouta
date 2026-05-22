@@ -82,6 +82,20 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                         </div>
 
                         <div class="form-group">
+                            <label for="boutique_region"><i class="fas fa-map-marker-alt"></i> Région de la boutique *</label>
+                            <div class="input-wrapper">
+                                <select id="boutique_region" name="boutique_region" required class="auth-select">
+                                    <?php
+                                    require_once __DIR__ . '/../includes/senegal_regions.php';
+                                    $sel_region = isset($_POST['boutique_region']) ? (string) $_POST['boutique_region'] : '';
+                                    echo senegal_regions_options_html($sel_region, true, 'Sélectionnez une région');
+                                    ?>
+                                </select>
+                                <i class="fas fa-location-dot" aria-hidden="true"></i>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
                             <label for="telephone"><i class="fas fa-phone"></i> Téléphone (connexion) *</label>
                             <div class="input-wrapper input-wrapper--intl-tel">
                                 <input type="tel" id="telephone" name="telephone" placeholder="77 123 45 67"

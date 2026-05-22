@@ -17,9 +17,9 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 require_once __DIR__ . '/../models/model_commandes.php';
 $commandes = get_commandes_by_user($_SESSION['user_id']);
 
-// Filtrer pour ne garder que les commandes avec le statut "livree"
+// Commandes reçues par le client (confirmées ou marquées livrées)
 $commandes_livrees = array_filter($commandes, function ($commande) {
-    return $commande['statut'] === 'livree';
+    return in_array($commande['statut'], ['livree', 'paye'], true);
 });
 
 $nb_livrees = count($commandes_livrees);
@@ -64,8 +64,6 @@ $nb_livrees = count($commandes_livrees);
                         </div>
                     </div>
                 </div>
-                <p class="mc-orders-lead">Historique de vos commandes livrées — consultez le détail des articles reçus
-                    ci-dessous.</p>
             </div>
         </header>
 
@@ -76,7 +74,6 @@ $nb_livrees = count($commandes_livrees);
                 </div>
                 <div class="mc-continue-text">
                     <strong>Encore des colis en route ?</strong>
-                    <p>Suivez vos commandes en cours ou ajoutez de nouveaux articles au panier.</p>
                 </div>
                 <div class="mc-continue-actions">
                     <a href="mes-commandes.php" class="mc-btn mc-btn--primary">
@@ -102,7 +99,6 @@ $nb_livrees = count($commandes_livrees);
             <?php if (empty($commandes_livrees)): ?>
             <div class="mc-empty mc-empty--delivered">
                 <div class="mc-empty-icon" aria-hidden="true"><i class="fas fa-parachute-box"></i></div>
-                <p>Aucune commande livrée pour l’instant. Une fois votre colis reçu et confirmé, il apparaîtra ici.</p>
                 <a href="mes-commandes.php" class="btn-primary">
                     <i class="fas fa-arrow-left" aria-hidden="true"></i>
                     Voir mes commandes en cours

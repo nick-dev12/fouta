@@ -164,8 +164,7 @@ if (isset($_SESSION['success_message'])) {
                 Modifiez l’accueil, les médias et la logistique depuis un tableau clair. Chaque carte mène à un écran
                 dédié&nbsp;; enregistrez après vos changements pour les voir en ligne.
                 <?php else: ?>
-                Accédez à votre profil<?php echo $__param_show_comptes ? ' et à la gestion des comptes d’accès' : ''; ?>
-                depuis cette page. Les réglages du site public sont réservés aux administrateurs.
+                Accédez à votre profil depuis le menu «&nbsp;Mon profil&nbsp;»<?php echo $__param_show_comptes ? ' et à la gestion des comptes d’accès ci-dessous' : ''; ?>.
                 <?php endif; ?>
             </p>
             <?php endif; ?>
@@ -181,10 +180,6 @@ if (isset($_SESSION['success_message'])) {
                 <span>Comptes d’accès</span>
             </a>
             <?php endif; ?>
-            <a href="profil.php" class="dash-tool-btn dash-tool-btn--outline" title="Mon profil">
-                <i class="fas fa-user" aria-hidden="true"></i>
-                <span>Mon profil</span>
-            </a>
             <a href="<?php echo htmlspecialchars($__voir_site_href, ENT_QUOTES, 'UTF-8'); ?>" class="dash-tool-btn dash-tool-btn--outline" target="_blank" rel="noopener noreferrer" title="<?php echo $__vendeur_boutique_slug !== '' ? 'Ouvrir la vitrine de votre boutique' : 'Ouvrir le site public'; ?>">
                 <i class="fas fa-external-link-alt" aria-hidden="true"></i>
                 <span><?php echo $__vendeur_boutique_slug !== '' ? 'Voir ma boutique' : 'Voir le site'; ?></span>

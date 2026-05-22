@@ -429,6 +429,28 @@ form.auth-inscription-form {
     0 4px 16px var(--auth-glow);
 }
 
+.input-wrapper > select.auth-select {
+  width: 100%;
+  padding: 14px 44px 14px 44px;
+  border: 2px solid rgba(53, 100, 166, 0.12);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--texte-fonce, #0d0d0d);
+  background: rgba(255, 255, 255, 0.95);
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-wrapper > select.auth-select:focus {
+  outline: none;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 3px var(--auth-accent-soft),
+    0 4px 16px var(--auth-glow);
+}
+
 .input-wrapper > .fa-envelope,
 .input-wrapper > .fa-phone,
 .input-wrapper > .fa-lock,

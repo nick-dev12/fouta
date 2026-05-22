@@ -148,6 +148,7 @@ include 'nav_bar.php';
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <?php require_once __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
     <style>
     .commande-container {
         max-width: 1200px;
@@ -246,6 +247,16 @@ include 'nav_bar.php';
     .form-group textarea {
         resize: vertical;
         min-height: 100px;
+    }
+
+    .form-group .iti {
+        width: 100%;
+        display: block;
+    }
+
+    .form-group .iti input[type="tel"] {
+        width: 100%;
+        padding-left: 52px;
     }
 
     .form-group small {
@@ -433,7 +444,7 @@ include 'nav_bar.php';
         <h1 class="commande-page-title">
             <i class="fas fa-shopping-bag"></i> Passer la commande
         </h1>
-        <p class="commande-page-subtitle">Indiquez un numéro de téléphone pour la livraison. Les modalités sont convenues avec chaque boutique.</p>
+        <p class="commande-page-subtitle">Indiquez un numéro de téléphone pour la livraison. L'adresse est facultative.</p>
 
         <?php if ($message): ?>
         <div class="message <?php echo $message_type; ?>">
@@ -534,9 +545,18 @@ include 'nav_bar.php';
                             <i class="fas fa-phone"></i> Téléphone de livraison *
                         </label>
                         <input type="tel" id="telephone_livraison" name="telephone_livraison" required
-                            placeholder="+241 XX XX XX XX"
-                            value="<?php echo isset($_POST['telephone_livraison']) ? htmlspecialchars($_POST['telephone_livraison']) : htmlspecialchars($user['telephone'] ?? ''); ?>">
-                        <small>Numéro de téléphone pour la livraison</small>
+                            autocomplete="tel"
+                            placeholder="+221 XX XXX XX XX"
+                            value="<?php echo isset($_POST['telephone_livraison']) ? htmlspecialchars($_POST['telephone_livraison'], ENT_QUOTES, 'UTF-8') : htmlspecialchars((string) ($user['telephone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                        <small>Numéro avec indicatif pays pour la livraison</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adresse_livraison">
+                            <i class="fas fa-location-dot"></i> Adresse de livraison <span style="font-weight:400;color:var(--gris-moyen);">(facultatif)</span>
+                        </label>
+                        <textarea id="adresse_livraison" name="adresse_livraison" rows="3"
+                            placeholder="Rue, quartier, ville…"><?php echo isset($_POST['adresse_livraison']) ? htmlspecialchars($_POST['adresse_livraison'], ENT_QUOTES, 'UTF-8') : ''; ?></textarea>
                     </div>
 
                     <button type="submit" class="btn-submit-commande">
@@ -549,6 +569,14 @@ include 'nav_bar.php';
 
     <?php include 'footer.php'; ?>
 
+    <?php require_once __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof window.initAuthIntlTel === 'function') {
+            window.initAuthIntlTel('telephone_livraison');
+        }
+    });
+    </script>
     <script>
     (function() {
         var panierTotal = <?php echo $panier_total; ?>;

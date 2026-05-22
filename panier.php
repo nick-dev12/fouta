@@ -583,19 +583,22 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                             ? (float) $item['panier_prix_unitaire']
                             : (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] ? $item['prix_promotion'] : $item['prix']);
                         $prix_total_item = $prix_unitaire * $item['quantite'];
-                        $item_img = !empty($item['panier_variante_image']) ? $item['panier_variante_image'] : $item['image_principale'];
+                        $item_img = !empty($item['panier_variante_image']) ? $item['panier_variante_image'] : ($item['image_principale'] ?? '');
                         $item_nom = !empty($item['panier_variante_nom'])
                             ? $item['nom'] . ' → ' . $item['panier_variante_nom']
-                            : $item['nom'];
+                            : ($item['nom'] ?? '');
+                        $item_categorie = (string) ($item['categorie_nom'] ?? '');
                         ?>
                         <div class="panier-item" data-item-id="<?php echo $item['panier_id']; ?>">
-                            <img src="/upload/<?php echo htmlspecialchars($item_img); ?>"
-                                alt="<?php echo htmlspecialchars($item_nom); ?>" class="panier-item-image"
+                            <img src="/upload/<?php echo htmlspecialchars((string) $item_img, ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="<?php echo htmlspecialchars((string) $item_nom, ENT_QUOTES, 'UTF-8'); ?>" class="panier-item-image"
                                 onerror="this.src='/image/produit1.jpg'">
 
                             <div class="panier-item-info">
-                                <h3 class="panier-item-nom"><?php echo htmlspecialchars($item_nom); ?></h3>
-                                <p class="panier-item-categorie"><?php echo htmlspecialchars($item['categorie_nom']); ?></p>
+                                <h3 class="panier-item-nom"><?php echo htmlspecialchars((string) $item_nom, ENT_QUOTES, 'UTF-8'); ?></h3>
+                                <?php if ($item_categorie !== ''): ?>
+                                <p class="panier-item-categorie"><?php echo htmlspecialchars($item_categorie, ENT_QUOTES, 'UTF-8'); ?></p>
+                                <?php endif; ?>
                                 <?php if (!empty($item['panier_couleur']) || !empty($item['panier_poids']) || !empty($item['panier_taille'])): ?>
                                     <p class="panier-item-options">
                                         <?php
@@ -668,7 +671,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
                                 <p class="panier-stock-info">
                                     Stock disponible: <?php echo $item['stock']; ?>
-                                    <?php echo htmlspecialchars($item['unite']); ?>
+                                    <?php echo htmlspecialchars((string) ($item['unite'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
                                 </p>
                             </div>
                         </div>

@@ -11,6 +11,7 @@ require_once dirname(__DIR__, 2) . '/controllers/controller_categories.php';
 $sa_id = (int) ($_SESSION['super_admin_id'] ?? 0);
 $flash_ok = '';
 $flash_err = '';
+$upload_root = dirname(__DIR__, 2) . '/upload/';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tok = $_POST['csrf_token'] ?? '';
@@ -22,35 +23,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['create_cg'])) {
             $nom = trim((string) ($_POST['cg_nom'] ?? ''));
             $d = trim((string) ($_POST['cg_description'] ?? ''));
-            $ic = trim((string) ($_POST['cg_icone'] ?? ''));
             $so = (int) ($_POST['cg_sort'] ?? 0);
             $ap = isset($_POST['cg_attr_poids']) ? 1 : 0;
             $at = isset($_POST['cg_attr_taille']) ? 1 : 0;
             $am = isset($_POST['cg_attr_mesure']) ? 1 : 0;
             $ac = isset($_POST['cg_attr_couleur']) ? 1 : 0;
-            $id = categories_generales_insert_row($nom, $d !== '' ? $d : null, $ic !== '' ? $ic : null, $so, $ap, $at, $am, $ac);
-            if ($id) {
-                super_admin_log_action($sa_id, 'categorie_generale_creee', 'categories_generales', $id, $nom);
-                header('Location: categories-catalogue.php?ok=1', true, 303);
-                exit;
+            $img = null;
+            if (isset($_FILES['image']) && (int) ($_FILES['image']['error'] ?? 0) === UPLOAD_ERR_OK) {
+                $up = upload_categorie_image($_FILES);
+                if ($up) {
+                    $img = $up;
+                } else {
+                    $flash_err = 'Image non valide (JPEG, PNG, GIF, WebP).';
+                }
             }
-            $flash_err = 'Impossible d’ajouter la catégorie générale (nom déjà utilisé ou erreur).';
+            if ($flash_err === '') {
+                $id = categories_generales_insert_row($nom, $d !== '' ? $d : null, null, $so, $ap, $at, $am, $ac, $img);
+                if ($id) {
+                    super_admin_log_action($sa_id, 'categorie_generale_creee', 'categories_generales', $id, $nom);
+                    header('Location: categories-catalogue.php?ok=1', true, 303);
+                    exit;
+                }
+                $flash_err = 'Impossible d’ajouter la catégorie générale (nom déjà utilisé ou erreur).';
+            }
         } elseif (isset($_POST['update_cg'])) {
             $id = (int) ($_POST['cg_id'] ?? 0);
             $nom = trim((string) ($_POST['cg_nom'] ?? ''));
             $d = trim((string) ($_POST['cg_description'] ?? ''));
-            $ic = trim((string) ($_POST['cg_icone'] ?? ''));
             $so = (int) ($_POST['cg_sort'] ?? 0);
             $ap = isset($_POST['cg_attr_poids']) ? 1 : 0;
             $at = isset($_POST['cg_attr_taille']) ? 1 : 0;
             $am = isset($_POST['cg_attr_mesure']) ? 1 : 0;
             $ac = isset($_POST['cg_attr_couleur']) ? 1 : 0;
-            if (categories_generales_update_row($id, $nom, $d !== '' ? $d : null, $ic !== '' ? $ic : null, $so, $ap, $at, $am, $ac)) {
-                super_admin_log_action($sa_id, 'categorie_generale_modifiee', 'categories_generales', $id, $nom);
-                header('Location: categories-catalogue.php?ok=1', true, 303);
-                exit;
+            $row_cg = $id > 0 ? get_categorie_generale_by_id($id) : false;
+            if (!$row_cg) {
+                $flash_err = 'Rayon introuvable.';
+            } else {
+                $img = (string) ($row_cg['image'] ?? '');
+                if (isset($_FILES['image']) && (int) ($_FILES['image']['error'] ?? 0) === UPLOAD_ERR_OK) {
+                    $up = upload_categorie_image($_FILES);
+                    if ($up) {
+                        if ($img !== '' && is_file($upload_root . str_replace('\\', '/', $img))) {
+                            @unlink($upload_root . str_replace('\\', '/', $img));
+                        }
+                        $img = $up;
+                    } else {
+                        $flash_err = 'Image non valide (JPEG, PNG, GIF, WebP).';
+                    }
+                }
+                if ($flash_err === '' && categories_generales_update_row($id, $nom, $d !== '' ? $d : null, null, $so, $ap, $at, $am, $ac, $img)) {
+                    super_admin_log_action($sa_id, 'categorie_generale_modifiee', 'categories_generales', $id, $nom);
+                    header('Location: categories-catalogue.php?ok=1', true, 303);
+                    exit;
+                }
+                if ($flash_err === '') {
+                    $flash_err = 'Modification impossible (nom en doublon ou erreur).';
+                }
             }
-            $flash_err = 'Modification impossible (nom en doublon ou erreur).';
         } elseif (isset($_POST['delete_cg'])) {
             $id = (int) ($_POST['cg_id'] ?? 0);
             if (categories_generales_delete_row($id)) {
@@ -72,6 +101,7 @@ $edit_cg = isset($_GET['edit_cg']) ? (int) $_GET['edit_cg'] : 0;
 $row_edit_cg = $edit_cg > 0 ? get_categorie_generale_by_id($edit_cg) : false;
 $attr_edit = $row_edit_cg ? categorie_generale_parse_attributs_row($row_edit_cg) : ['poids' => true, 'taille' => true, 'mesure' => true, 'couleur' => true];
 $attr_cols_ok = function_exists('categories_generales_attr_columns_exist') && categories_generales_attr_columns_exist();
+$image_col_ok = function_exists('categories_generales_image_column_exists') && categories_generales_image_column_exists();
 
 $csrf = super_admin_csrf_token();
 $table_ok = categories_generales_table_exists() && categories_has_categorie_generale_id_column();
@@ -147,6 +177,12 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                 puis, si besoin, <code>php migrations/run_alter_categories_drop_unique_nom.php</code> pour les contraintes sur le nom des catégories plateforme.
             </div>
         <?php endif; ?>
+        <?php if ($table_ok && !$image_col_ok): ?>
+            <div class="sa-cat-migrate-banner" role="note">
+                <strong>Visuels des rayons.</strong> Pour ajouter une image par catégorie (menu navigation), exécutez
+                <code>php migrations/run_migrate_categories_generales_image.php</code>.
+            </div>
+        <?php endif; ?>
         <?php if ($table_ok && !$attr_cols_ok): ?>
             <div class="sa-cat-migrate-banner" role="note">
                 <strong>Champs produit par rayon.</strong> Pour activer les cases « Poids, taille, mesure, couleur » dans les formulaires de rayon, exécutez
@@ -158,7 +194,7 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                 <span class="sa-cat-panel__head-icon" aria-hidden="true"><i class="fas fa-layer-group"></i></span>
                 <div class="sa-cat-panel__head-text">
                     <h2>Catégories générales</h2>
-                    <p>Rayons affichés dans la navigation : nom, description courte, icône et ordre.</p>
+                    <p>Rayons affichés dans la navigation : nom, description courte, image et ordre.</p>
                 </div>
             </div>
             <div class="sa-cat-panel__body">
@@ -175,7 +211,7 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                                 <th>Ordre</th>
                                 <th>Nom</th>
                                 <th>Description</th>
-                                <th>Icône</th>
+                                <th>Image</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -192,17 +228,16 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                                     ?></td>
                                     <td class="sa-cat-table__visuel">
                                         <?php
-                                        $__ic_raw = trim((string) ($cg['icone'] ?? ''));
-                                        if ($__ic_raw !== ''):
-                                            $__ic_cls = categorie_fa_icon_class($cg);
+                                        $__cg_img = function_exists('categorie_image_public_path') ? categorie_image_public_path($cg) : null;
+                                        if (is_string($__cg_img) && $__cg_img !== ''):
                                         ?>
-                                        <span class="sa-cat-table__fa-wrap" title="<?php echo htmlspecialchars($__ic_cls, ENT_QUOTES, 'UTF-8'); ?>">
+                                        <img src="<?php echo htmlspecialchars($__cg_img, ENT_QUOTES, 'UTF-8'); ?>" alt="" style="max-width:56px;max-height:56px;object-fit:cover;border-radius:8px;" loading="lazy" decoding="async">
+                                        <?php else:
+                                            $__ic_cls = function_exists('categorie_fa_icon_class') ? categorie_fa_icon_class($cg) : 'fa-solid fa-layer-group';
+                                        ?>
+                                        <span class="sa-cat-table__fa-wrap" title="Icône par défaut">
                                             <i class="<?php echo htmlspecialchars($__ic_cls, ENT_QUOTES, 'UTF-8'); ?>" aria-hidden="true"></i>
                                         </span>
-                                        <code class="sa-cat-table__fa-code"><?php echo htmlspecialchars($__ic_raw, ENT_QUOTES, 'UTF-8'); ?></code>
-                                        <?php else: ?>
-                                        <span class="sa-cat-table__fa-placeholder" aria-hidden="true" title="Aucune icône"><i class="fas fa-minus"></i></span>
-                                        <code class="sa-cat-table__fa-code">—</code>
                                         <?php endif; ?>
                                     </td>
                                     <td class="sa-cat-actions">
@@ -235,7 +270,7 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
             <div class="sa-cat-modal__body">
                 <?php if ($row_edit_cg): ?>
                     <div class="sa-cat-form-block">
-                        <form class="sa-cat-form" method="post" action="">
+                        <form class="sa-cat-form" method="post" action="" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="cg_id" value="<?php echo (int) $row_edit_cg['id']; ?>">
                             <p><strong>Modifier</strong> « <?php echo htmlspecialchars((string) $row_edit_cg['nom'], ENT_QUOTES, 'UTF-8'); ?> »</p>
@@ -248,8 +283,17 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                                 <textarea id="cg_description" name="cg_description"><?php echo htmlspecialchars((string) ($row_edit_cg['description'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
                             </div>
                             <div class="sa-cat-field">
-                                <label for="cg_icone">Icône (Font Awesome, ex. fa-solid fa-basket-shopping)</label>
-                                <input type="text" id="cg_icone" name="cg_icone" maxlength="80" value="<?php echo htmlspecialchars((string) ($row_edit_cg['icone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                <label for="cg_image">Image (optionnel)</label>
+                                <?php
+                                $__edit_img = function_exists('categorie_image_public_path') ? categorie_image_public_path($row_edit_cg) : null;
+                                if (is_string($__edit_img) && $__edit_img !== ''):
+                                ?>
+                                <p style="margin:0 0 8px;"><img src="<?php echo htmlspecialchars($__edit_img, ENT_QUOTES, 'UTF-8'); ?>" alt="" style="max-width:80px;max-height:80px;object-fit:cover;border-radius:8px;"></p>
+                                <?php endif; ?>
+                                <input type="file" id="cg_image" name="image" accept="image/jpeg,image/png,image/gif,image/webp" <?php echo $image_col_ok ? '' : 'disabled'; ?>>
+                                <?php if (!$image_col_ok): ?>
+                                <p class="sa-cat-field-hint" style="font-size:13px;color:#666;margin:6px 0 0;">Migration <code>run_migrate_categories_generales_image.php</code> requise.</p>
+                                <?php endif; ?>
                             </div>
                             <div class="sa-cat-field">
                                 <label for="cg_sort">Ordre d’affichage</label>
@@ -278,7 +322,7 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                 <?php else: ?>
                     <div class="sa-cat-form-block">
                         <div class="sa-cat-form-card">
-                            <form class="sa-cat-form" method="post" action="">
+                            <form class="sa-cat-form" method="post" action="" enctype="multipart/form-data">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                                 <p><strong>Nouvelle</strong> catégorie générale</p>
                                 <div class="sa-cat-field">
@@ -290,8 +334,11 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                                     <textarea id="cg_description_new" name="cg_description" placeholder="Texte d’aide (optionnel)"></textarea>
                                 </div>
                                 <div class="sa-cat-field">
-                                    <label for="cg_icone_new">Icône (optionnel)</label>
-                                    <input type="text" id="cg_icone_new" name="cg_icone" maxlength="80" placeholder="fa-solid fa-basket-shopping">
+                                    <label for="cg_image_new">Image (optionnel)</label>
+                                    <input type="file" id="cg_image_new" name="image" accept="image/jpeg,image/png,image/gif,image/webp" <?php echo $image_col_ok ? '' : 'disabled'; ?>>
+                                    <?php if (!$image_col_ok): ?>
+                                    <p class="sa-cat-field-hint" style="font-size:13px;color:#666;margin:6px 0 0;">Migration <code>run_migrate_categories_generales_image.php</code> requise.</p>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="sa-cat-field">
                                     <label for="cg_sort_new">Ordre</label>

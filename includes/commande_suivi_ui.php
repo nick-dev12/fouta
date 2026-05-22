@@ -5,6 +5,27 @@
  * Programmation procédurale uniquement
  */
 
+if (!function_exists('commande_suivi_format_phone_display')) {
+    /**
+     * Affiche un numéro avec indicatif international (+).
+     */
+    function commande_suivi_format_phone_display(string $tel): string
+    {
+        $tel = trim($tel);
+        if ($tel === '') {
+            return '';
+        }
+        if (strpos($tel, '+') === 0) {
+            return $tel;
+        }
+        $digits = preg_replace('/\D/', '', $tel);
+        if ($digits === '') {
+            return $tel;
+        }
+        return '+' . $digits;
+    }
+}
+
 if (!function_exists('commande_suivi_statut_rank')) {
     /**
      * Rang absolu pour le suivi chronologique (plus = plus avancé).
@@ -257,8 +278,8 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                     if ($cnom === '') {
                         $cnom = '—';
                     }
-                    $ctel = trim((string) ($commande['user_telephone'] ?? ''));
-                    $ctel_liv = trim((string) ($commande['telephone_livraison'] ?? ''));
+                    $ctel_liv = commande_suivi_format_phone_display((string) ($commande['telephone_livraison'] ?? ''));
+                    $adresse_liv = trim((string) ($commande['adresse_livraison'] ?? ''));
                     $d_cmd_fmt = $dt_cmd ? date('d/m/Y à H:i', $dt_cmd) : '—';
                     ?>
                 <div class="cc-live-admin-contact" aria-label="Coordonnées commande">
@@ -268,8 +289,8 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                             <span class="cc-live-admin-contact__val"><?php echo htmlspecialchars($cnom, ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                         <div class="cc-live-admin-contact__cell">
-                            <span class="cc-live-admin-contact__lab"><i class="fas fa-phone" aria-hidden="true"></i> Tél. client</span>
-                            <span class="cc-live-admin-contact__val"><?php echo $ctel !== '' ? htmlspecialchars($ctel, ENT_QUOTES, 'UTF-8') : '—'; ?></span>
+                            <span class="cc-live-admin-contact__lab"><i class="fas fa-location-dot" aria-hidden="true"></i> Adresse livraison</span>
+                            <span class="cc-live-admin-contact__val"><?php echo $adresse_liv !== '' ? htmlspecialchars($adresse_liv, ENT_QUOTES, 'UTF-8') : '—'; ?></span>
                         </div>
                         <div class="cc-live-admin-contact__cell">
                             <span class="cc-live-admin-contact__lab"><i class="fas fa-headset" aria-hidden="true"></i> Tél. livraison</span>
