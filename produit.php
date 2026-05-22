@@ -74,6 +74,7 @@ if (isset($_SESSION['user_id']) && $produit_id > 0) {
 $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
     ? $produit['prix_promotion']
     : $produit['prix'];
+$prix_produit_detail = (float) $prix_affichage;
 $prix_original = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
     ? $produit['prix']
     : null;
@@ -1927,6 +1928,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             $card_partial_sim = __DIR__ . '/includes/partials/home_mp_product_card.php';
             $return_url_sim = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/produit.php?id=' . (int) $produit_id;
             $_produit_save = $produit;
+            $_prix_affichage_save = $prix_affichage;
             ?>
             <section class="produit-similaires-mp" aria-labelledby="similaires-title">
                 <header class="mp-block-head">
@@ -1945,6 +1947,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                         require $card_partial_sim;
                     }
                     $produit = $_produit_save;
+                    $prix_affichage = $_prix_affichage_save;
                     ?>
                 </div>
             </section>
@@ -1956,7 +1959,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script>
         // Calcul automatique du prix total (variante + surcoûts)
-        const prixBase = <?php echo $prix_affichage; ?>;
+        const prixBase = <?php echo $prix_produit_detail; ?>;
         const quantiteInput = document.getElementById('quantite');
         const prixTotalElement = document.getElementById('prix-total');
         const prixUnitaireInput = document.getElementById('option-prix-unitaire');

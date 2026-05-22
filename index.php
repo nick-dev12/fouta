@@ -922,7 +922,8 @@ $seo_canonical = $base . '/';
         .mp-card-img img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: center;
             display: block;
         }
 
@@ -1379,7 +1380,8 @@ $seo_canonical = $base . '/';
         .mp-trend-card a.mp-trend-img-link img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: center;
         }
 
         /* Coups de cœur — carte mise en avant */
@@ -1538,7 +1540,8 @@ $seo_canonical = $base . '/';
         .mp-sp-tile img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: center;
             max-height: none;
             filter: none;
             display: block;
@@ -1778,7 +1781,8 @@ $seo_canonical = $base . '/';
         .mp-strip-card-img img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: center;
         }
 
         .mp-strip-body {
@@ -1916,7 +1920,8 @@ $seo_canonical = $base . '/';
         .mp-top-card-img img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: center;
         }
 
         .mp-top-badge {
@@ -2019,7 +2024,8 @@ $seo_canonical = $base . '/';
         .mp-new-card-img img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: center;
         }
 
         .mp-new-promo {

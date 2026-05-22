@@ -8,7 +8,7 @@ if (empty($produit) || !is_array($produit)) {
     return;
 }
 $return_url = isset($return_url) ? (string) $return_url : (string) ($_SERVER['REQUEST_URI'] ?? '/index.php');
-$prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
+$card_prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
     ? $produit['prix_promotion']
     : $produit['prix'];
 $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
@@ -34,9 +34,9 @@ if ($pid <= 0) {
             <div class="mp-card-price-row">
                 <?php if ($has_promotion): ?>
                 <span class="mp-card-price-old"><?php echo number_format((float) $produit['prix'], 0, ',', ' '); ?> FCFA</span>
-                <span class="mp-card-price"><?php echo number_format((float) $prix_affichage, 0, ',', ' '); ?> FCFA</span>
+                <span class="mp-card-price"><?php echo number_format((float) $card_prix_affichage, 0, ',', ' '); ?> FCFA</span>
                 <?php else: ?>
-                <span class="mp-card-price"><?php echo number_format((float) $prix_affichage, 0, ',', ' '); ?> FCFA</span>
+                <span class="mp-card-price"><?php echo number_format((float) $card_prix_affichage, 0, ',', ' '); ?> FCFA</span>
                 <?php endif; ?>
             </div>
         </div>
