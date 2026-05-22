@@ -451,6 +451,7 @@ class _WebViewScreenState extends State<WebViewScreen>
   Future<void> _injectJavaScript() async {
     const jsCode = '''
       (function() {
+        window.__COLOBANES_NATIVE_APP = true;
         window.ColobanesNative = {
           // Demander l'accès à la caméra
           requestCamera: function() {
@@ -589,6 +590,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                   url: WebUri(_currentUrl ?? kMarketplaceBaseUrl),
                 ),
                 initialSettings: InAppWebViewSettings(
+                  applicationNameForUserAgent: 'ColobanesApp',
                   javaScriptEnabled: true,
                   domStorageEnabled: true,
                   databaseEnabled: true,

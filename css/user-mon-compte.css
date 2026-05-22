@@ -129,6 +129,14 @@ body.user-page-mon-compte .user-content > * {
   align-items: center;
 }
 
+/* App COLObanes (WebView) : FCM natif — masquer le bouton web push sur mobile */
+@media (max-width: 1024px) {
+  html.hide-web-push-notify-btn #btn-enable-notifications,
+  html.hide-web-push-notify-btn #notify-help-panel {
+    display: none !important;
+  }
+}
+
 .mc-notify-help {
   flex: 1 1 100%;
   margin-top: 0.5rem;

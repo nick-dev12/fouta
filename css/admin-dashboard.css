@@ -418,6 +418,14 @@ body {
   transform: none;
 }
 
+/* App COLObanes (WebView) : FCM natif — masquer le bouton web push sur mobile */
+@media (max-width: 1024px) {
+  html.hide-web-push-notify-btn #btn-enable-notifications,
+  html.hide-web-push-notify-btn #notify-help-panel {
+    display: none !important;
+  }
+}
+
 /* Section produits */
 .produits-section {
   background: #ffffff;

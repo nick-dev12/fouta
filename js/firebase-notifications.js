@@ -9,8 +9,34 @@
     var FCM_STORAGE_KEY = 'colobanes_fcm_enabled';
     var PERMISSION_TIMEOUT_MS = 12000;
     var TOKEN_TIMEOUT_MS = 20000;
+    var NATIVE_APP_MOBILE_MAX_WIDTH = 1024;
     var _activationInProgress = false;
     var _fcmRegistration = null;
+
+    function isColobanesNativeApp() {
+        if (window.__COLOBANES_NATIVE_APP === true) {
+            return true;
+        }
+        if (window.ColobanesNative || window.flutter_inappwebview) {
+            return true;
+        }
+        return /ColobanesApp/i.test(navigator.userAgent || '');
+    }
+
+    function isMobileViewport() {
+        return window.matchMedia('(max-width: ' + NATIVE_APP_MOBILE_MAX_WIDTH + 'px)').matches;
+    }
+
+    function shouldHideWebPushButton() {
+        return isColobanesNativeApp() && isMobileViewport();
+    }
+
+    function applyNativeAppNotificationUi() {
+        var native = isColobanesNativeApp();
+        document.documentElement.classList.toggle('is-colobanes-native-app', native);
+        document.documentElement.classList.toggle('hide-web-push-notify-btn', shouldHideWebPushButton());
+        return shouldHideWebPushButton();
+    }
 
     function log() {
         if (typeof console !== 'undefined' && console.log) {
@@ -624,20 +650,55 @@
             });
         },
 
+        isColobanesNativeApp: isColobanesNativeApp,
+        shouldHideWebPushButton: shouldHideWebPushButton,
+        applyNativeAppNotificationUi: applyNativeAppNotificationUi,
+
         boot: function () {
             log('Initialisation module notifications');
             log('Projet:', window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId, '| SW:', FCM_SW_PATH);
+
+            applyNativeAppNotificationUi();
+
+            if (shouldHideWebPushButton()) {
+                log('App COLObanes (mobile) — activation web push masquée (FCM natif)');
+                return;
+            }
+
             window.FirebaseNotifications.bindButton(document.getElementById('btn-enable-notifications'));
             window.FirebaseNotifications.bindHelpPanel();
             window.FirebaseNotifications.syncButton(document.getElementById('btn-enable-notifications'));
         }
     };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            window.FirebaseNotifications.boot();
+    function scheduleNativeAppUiRecheck() {
+        var delays = [300, 1200];
+        delays.forEach(function (delayMs) {
+            setTimeout(function () {
+                var wasHidden = document.documentElement.classList.contains('hide-web-push-notify-btn');
+                var hideNow = applyNativeAppNotificationUi();
+                if (!wasHidden && hideNow && window.FirebaseNotifications) {
+                    log('App COLObanes détectée — masquage du bouton web push');
+                }
+            }, delayMs);
         });
-    } else {
+    }
+
+    function initFirebaseNotifications() {
         window.FirebaseNotifications.boot();
+        scheduleNativeAppUiRecheck();
+
+        var mq = window.matchMedia('(max-width: ' + NATIVE_APP_MOBILE_MAX_WIDTH + 'px)');
+        if (typeof mq.addEventListener === 'function') {
+            mq.addEventListener('change', applyNativeAppNotificationUi);
+        } else if (typeof mq.addListener === 'function') {
+            mq.addListener(applyNativeAppNotificationUi);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFirebaseNotifications);
+    } else {
+        initFirebaseNotifications();
     }
 })();
