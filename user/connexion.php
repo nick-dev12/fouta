@@ -147,6 +147,13 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                 </div>
             <?php endif; ?>
 
+            <?php
+            $google_auth_type = 'auto';
+            $google_auth_redirect = $redirect_url;
+            $google_auth_position = 'top';
+            include __DIR__ . '/../includes/google_auth_button.php';
+            ?>
+
             <div class="login-mode-tabs" role="tablist" aria-label="Mode de connexion">
                 <button type="button" role="tab" id="tab-email" aria-controls="panel-email"
                     aria-selected="<?php echo $active_login_mode === 'email' ? 'true' : 'false'; ?>"
@@ -309,6 +316,7 @@ echo $rsafe !== '' ? htmlspecialchars('?' . http_build_query(['redirect' => $rsa
             }
         });
     </script>
+    <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 

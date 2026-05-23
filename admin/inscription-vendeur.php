@@ -60,6 +60,13 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                         </div>
                     <?php endif; ?>
 
+                    <?php
+                    $google_auth_type = 'auto';
+                    $google_auth_redirect = '/admin/dashboard.php';
+                    $google_auth_position = 'top';
+                    include __DIR__ . '/../includes/google_auth_button.php';
+                    ?>
+
                     <form method="post" action="" class="auth-inscription-form" id="inscriptionVendeurForm">
                         <div class="form-group">
                             <label for="identite"><i class="fas fa-id-card"></i> Identité (nom affiché) *</label>
@@ -180,6 +187,7 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
             }
         })();
     </script>
+    <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 </html>

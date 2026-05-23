@@ -56,6 +56,114 @@ function get_user_by_email($email) {
 }
 
 /**
+ * Indique si une colonne existe dans la table users.
+ */
+function users_has_column($column) {
+    static $cache = [];
+    global $db;
+
+    $column = trim((string) $column);
+    if ($column === '') {
+        return false;
+    }
+    if (array_key_exists($column, $cache)) {
+        return $cache[$column];
+    }
+
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM users LIKE " . $db->quote($column));
+        $cache[$column] = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        return $cache[$column];
+    } catch (PDOException $e) {
+        $cache[$column] = false;
+        return false;
+    }
+}
+
+/**
+ * Récupère un utilisateur lié à un UID Firebase.
+ */
+function get_user_by_firebase_uid($firebase_uid) {
+    global $db;
+
+    $firebase_uid = trim((string) $firebase_uid);
+    if ($firebase_uid === '' || !users_has_column('firebase_uid')) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("SELECT * FROM users WHERE firebase_uid = :uid LIMIT 1");
+        $stmt->execute(['uid' => $firebase_uid]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $user ? $user : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Lie un compte client existant à Firebase/Google.
+ */
+function update_user_google_identity($user_id, $firebase_uid, $auth_provider = 'google') {
+    global $db;
+
+    if (!users_has_column('firebase_uid')) {
+        return true;
+    }
+
+    $auth_provider = trim((string) $auth_provider);
+    if ($auth_provider === '') {
+        $auth_provider = 'google';
+    }
+
+    $sets = ['firebase_uid = :firebase_uid'];
+    $params = [
+        'id' => (int) $user_id,
+        'firebase_uid' => trim((string) $firebase_uid),
+    ];
+    if (users_has_column('auth_provider')) {
+        $sets[] = 'auth_provider = :auth_provider';
+        $params['auth_provider'] = $auth_provider;
+    }
+
+    try {
+        $stmt = $db->prepare('UPDATE users SET ' . implode(', ', $sets) . ' WHERE id = :id');
+        return $stmt->execute($params);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Complète les champs manquants d'un compte client Google.
+ */
+function update_user_google_missing_info($user_id, $nom, $telephone) {
+    global $db;
+
+    $tel_digits = users_normalize_phone_digits($telephone);
+    if ($tel_digits === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            UPDATE users SET
+                nom = :nom,
+                telephone = :telephone,
+                accepte_conditions = 1
+            WHERE id = :id
+        ");
+        return $stmt->execute([
+            'id' => (int) $user_id,
+            'nom' => trim((string) $nom),
+            'telephone' => $tel_digits,
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Normalise un numéro saisi : uniquement les chiffres (comparaisons, doublons, insertion).
  */
 function users_normalize_phone_digits($telephone) {
@@ -279,6 +387,18 @@ function create_user($nom, $prenom, $email, $telephone, $password_hash, &$creati
         $creation_error = users_format_create_user_exception($e);
         return false;
     }
+}
+
+/**
+ * Crée un compte client depuis Google, puis le lie à Firebase.
+ */
+function create_google_user($nom, $prenom, $email, $telephone, $firebase_uid, &$creation_error = null, $auth_provider = 'google') {
+    $password_hash = password_hash(bin2hex(random_bytes(24)), PASSWORD_BCRYPT);
+    $user_id = create_user($nom, $prenom, $email, $telephone, $password_hash, $creation_error);
+    if ($user_id) {
+        update_user_google_identity($user_id, $firebase_uid, $auth_provider);
+    }
+    return $user_id;
 }
 
 /**

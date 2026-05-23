@@ -7,6 +7,10 @@ colobanes-firebase-adminsdk-*.json
 *-firebase-adminsdk-*.json
 *firebase*credentials*.json
 
+# Clés Apple Sign In (privées)
+AuthKey_*.p8
+*.p8
+
 # Configuration base de données (identifiants)
 conn/conn.php
 

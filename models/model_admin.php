@@ -150,6 +150,88 @@ function get_admin_by_email($email)
 }
 
 /**
+ * Indique si une colonne existe dans la table admin.
+ */
+function admin_has_column($column)
+{
+    static $cache = [];
+    global $db;
+
+    $column = trim((string) $column);
+    if ($column === '') {
+        return false;
+    }
+    if (array_key_exists($column, $cache)) {
+        return $cache[$column];
+    }
+
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM admin LIKE " . $db->quote($column));
+        $cache[$column] = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        return $cache[$column];
+    } catch (PDOException $e) {
+        $cache[$column] = false;
+        return false;
+    }
+}
+
+/**
+ * Récupère un admin/vendeur lié à un UID Firebase.
+ */
+function get_admin_by_firebase_uid($firebase_uid)
+{
+    global $db;
+
+    $firebase_uid = trim((string) $firebase_uid);
+    if ($firebase_uid === '' || !admin_has_column('firebase_uid')) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("SELECT * FROM admin WHERE firebase_uid = :uid LIMIT 1");
+        $stmt->execute(['uid' => $firebase_uid]);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $admin ? $admin : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Lie un compte admin/vendeur existant à Firebase/Google.
+ */
+function update_admin_google_identity($admin_id, $firebase_uid, $auth_provider = 'google')
+{
+    global $db;
+
+    if (!admin_has_column('firebase_uid')) {
+        return true;
+    }
+
+    $auth_provider = trim((string) $auth_provider);
+    if ($auth_provider === '') {
+        $auth_provider = 'google';
+    }
+
+    $sets = ['firebase_uid = :firebase_uid'];
+    $params = [
+        'id' => (int) $admin_id,
+        'firebase_uid' => trim((string) $firebase_uid),
+    ];
+    if (admin_has_column('auth_provider')) {
+        $sets[] = 'auth_provider = :auth_provider';
+        $params['auth_provider'] = $auth_provider;
+    }
+
+    try {
+        $stmt = $db->prepare('UPDATE admin SET ' . implode(', ', $sets) . ' WHERE id = :id');
+        return $stmt->execute($params);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Récupère un admin par téléphone (vendeurs / connexion PIN)
  */
 function get_admin_by_telephone($telephone)
@@ -320,6 +402,19 @@ function create_vendeur_boutique($identite, $email, $telephone, $password_hash, 
     } catch (PDOException $e) {
         return false;
     }
+}
+
+/**
+ * Crée un vendeur depuis Google, puis le lie à Firebase.
+ */
+function create_google_vendeur_boutique($identite, $email, $telephone, $boutique_nom, $boutique_slug, $boutique_region, $firebase_uid, $auth_provider = 'google')
+{
+    $password_hash = password_hash(bin2hex(random_bytes(24)), PASSWORD_BCRYPT);
+    $admin_id = create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region);
+    if ($admin_id) {
+        update_admin_google_identity($admin_id, $firebase_uid, $auth_provider);
+    }
+    return $admin_id;
 }
 
 /**

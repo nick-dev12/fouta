@@ -142,6 +142,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
                 </div>
             <?php endif; ?>
 
+            <?php
+            $google_auth_type = 'auto';
+            $google_auth_redirect = $redirect_url;
+            $google_auth_position = 'top';
+            include __DIR__ . '/includes/google_auth_button.php';
+            ?>
+
             <div class="login-mode-tabs" role="tablist" aria-label="Mode de connexion">
                 <button type="button" role="tab" id="tab-phone" aria-controls="panel-phone"
                     aria-selected="<?php echo $active_login_mode === 'phone' ? 'true' : 'false'; ?>"
@@ -305,6 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
             }
         });
     </script>
+    <?php include __DIR__ . '/includes/google_auth_scripts.php'; ?>
     <?php include __DIR__ . '/includes/social_floating.php'; ?>
 </body>
 
