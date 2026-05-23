@@ -80,5 +80,7 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Google Sign-In (Android 11+) -->
+        <package android:name="com.google.android.gms" />
     </queries>
 </manifest>
