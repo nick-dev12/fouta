@@ -4,7 +4,7 @@
  * La création de compte est proposée via choix-inscription.php.
  */
 require_once __DIR__ . '/includes/session_user.php';
-require_once __DIR__ . '/../includes/auth_redirect.php';
+require_once __DIR__ . '/includes/auth_redirect.php';
 session_start();
 
 // Après connexion (même logique que user/connexion.php)
