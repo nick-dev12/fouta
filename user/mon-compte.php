@@ -38,17 +38,17 @@ $commandes_en_cours = array_values(array_filter($toutes_commandes, function ($cm
 }));
 $commandes_recentes = array_slice($commandes_en_cours, 0, 2);
 
-// Produits livrés — 2 commandes livrées les plus récentes
-$commandes_livrees_recentes = array_slice(
-    array_values(array_filter($toutes_commandes, fn($c) => ($c['statut'] ?? '') === 'livree')),
+// Produits livrés — 3 dernières commandes reçues (livree + paye)
+$commandes_recues_recentes = array_slice(
+    array_values(array_filter($toutes_commandes, function ($c) {
+        return in_array($c['statut'] ?? '', ['livree', 'paye'], true);
+    })),
     0,
-    2
+    3
 );
-$numeros_livres = array_column($commandes_livrees_recentes, 'numero_commande');
-$produits_commandes_all = get_produits_commandes_by_user($_SESSION['user_id'], 'livree');
-$produits_commandes = is_array($produits_commandes_all)
-    ? array_values(array_filter($produits_commandes_all, fn($p) => in_array($p['numero_commande'] ?? '', $numeros_livres, true)))
-    : [];
+$nb_commandes_recues = count(array_values(array_filter($toutes_commandes, function ($c) {
+    return in_array($c['statut'] ?? '', ['livree', 'paye'], true);
+})));
 
 // Commandes actives (non livrées/annulées)
 $nb_actives = count_commandes_actives_by_user($_SESSION['user_id']);
@@ -387,6 +387,14 @@ function mc_statut_icon($s) {
         }
 
         .mc-v2-card__link:hover { gap: 8px; }
+
+        .mc-v2-card__link--green {
+            color: #16a34a;
+        }
+
+        .mc-v2-card__link--green:hover {
+            color: #15803d;
+        }
 
         /* ---- Commande row ---- */
         .mc-commande-row {
@@ -868,14 +876,6 @@ function mc_statut_icon($s) {
                             <i class="fas fa-bell-slash"></i> Notifications
                         </button>
                     </div>
-                    <?php if ($nb_panier > 0): ?>
-                    <div class="mc-v2-hero__pills">
-                        <div class="mc-v2-hero__pill">
-                            <i class="fas fa-cart-shopping"></i>
-                            <span><strong><?php echo $nb_panier; ?></strong> article<?php echo $nb_panier > 1 ? 's' : ''; ?> au panier</span>
-                        </div>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
             <!-- Panel aide notifications -->
@@ -1020,16 +1020,16 @@ function mc_statut_icon($s) {
                 <h2>
                     <i class="fas fa-circle-check"></i>
                     Mes produits livr&eacute;s
-                    <?php if (!empty($produits_commandes)): ?>
-                        <span class="mc-v2-delivered__count"><?php echo count($produits_commandes); ?></span>
+                    <?php if ($nb_commandes_recues > 0): ?>
+                        <span class="mc-v2-delivered__count"><?php echo (int) $nb_commandes_recues; ?></span>
                     <?php endif; ?>
                 </h2>
-                <a href="mes-commandes.php" class="mc-v2-card__link">
-                    Voir toutes mes commandes <i class="fas fa-chevron-right"></i>
+                <a href="produits-livres.php" class="mc-v2-card__link mc-v2-card__link--green">
+                    Voir toutes les commandes re&ccedil;ues <i class="fas fa-chevron-right"></i>
                 </a>
             </div>
 
-            <?php if (empty($produits_commandes)): ?>
+            <?php if (empty($commandes_recues_recentes)): ?>
                 <div class="mc-v2-empty">
                     <i class="fas fa-box-open"></i>
                     <p>Aucun produit livr&eacute; pour le moment.<br>Passez votre premi&egrave;re commande !</p>
@@ -1038,48 +1038,33 @@ function mc_statut_icon($s) {
                     </a>
                 </div>
             <?php else: ?>
-                <div class="mc-v2-products-grid">
-                    <?php foreach ($produits_commandes as $produit): ?>
-                        <div class="mc-v2-product-card">
-                            <div class="mc-v2-product-card__img">
-                                <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
-                                    alt="<?php echo htmlspecialchars($produit['nom']); ?>"
-                                    onerror="this.src='/image/produit1.jpg'">
-                            </div>
-                            <div class="mc-v2-product-card__body">
-                                <div class="mc-v2-product-card__name"><?php echo htmlspecialchars($produit['nom']); ?></div>
-                                <div class="mc-v2-product-card__cat">
-                                    <?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans cat&eacute;gorie'); ?>
-                                </div>
-                                <div class="mc-v2-product-card__price-row">
-                                    <span class="mc-v2-product-card__price">
-                                        <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?>
-                                    </span>
-                                    <span class="mc-v2-product-card__price-unit">FCFA</span>
-                                </div>
-                                <div class="mc-v2-product-card__qty">
-                                    <i class="fas fa-cube"></i>
-                                    Qt&eacute;&nbsp;:&nbsp;<strong><?php echo (int) $produit['quantite']; ?></strong>
-                                    <?php if (!empty($produit['poids'])): ?>
-                                        &nbsp;&middot;&nbsp;<?php echo htmlspecialchars($produit['poids']); ?>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="mc-v2-product-card__cmd">
-                                    <i class="fas fa-hashtag" style="font-size:.6rem;"></i>
-                                    <?php echo htmlspecialchars($produit['numero_commande']); ?>
-                                </div>
-                                <div class="mc-v2-product-card__actions">
-                                    <a href="/produit.php?id=<?php echo (int) $produit['id']; ?>" class="mc-v2-product-btn mc-v2-product-btn--view">
-                                        <i class="fas fa-eye"></i> Voir
-                                    </a>
-                                    <a href="commande-categorie.php?commande_id=<?php echo (int) $produit['commande_id']; ?>" class="mc-v2-product-btn mc-v2-product-btn--detail">
-                                        <i class="fas fa-list"></i> D&eacute;tail
-                                    </a>
-                                </div>
-                            </div>
+                <?php foreach ($commandes_recues_recentes as $cmd):
+                    $st = $cmd['statut'] ?? 'livree';
+                    $date_fmt = isset($cmd['date_commande'])
+                        ? date('d/m/Y', strtotime($cmd['date_commande']))
+                        : '&mdash;';
+                ?>
+                    <a href="commande-categorie.php?commande_id=<?php echo (int) $cmd['id']; ?>" class="mc-commande-row">
+                        <div class="mc-commande-row__icon mc-commande-row__icon--done">
+                            <i class="fas <?php echo mc_statut_icon($st); ?>"></i>
                         </div>
-                    <?php endforeach; ?>
-                </div>
+                        <div class="mc-commande-row__body">
+                            <div class="mc-commande-row__num">
+                                <?php echo htmlspecialchars($cmd['numero_commande'] ?? ('#' . $cmd['id'])); ?>
+                            </div>
+                            <div class="mc-commande-row__meta"><?php echo $date_fmt; ?></div>
+                        </div>
+                        <div class="mc-commande-row__right">
+                            <span class="mc-commande-row__amount">
+                                <?php echo number_format((float) ($cmd['montant_total'] ?? 0), 0, ',', ' '); ?>
+                                <small style="font-size:.65em;font-weight:500;color:var(--gris-moyen);">FCFA</small>
+                            </span>
+                            <span class="mc-badge mc-badge--done">
+                                <?php echo mc_statut_label($st); ?>
+                            </span>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
             <?php endif; ?>
         </div>
 

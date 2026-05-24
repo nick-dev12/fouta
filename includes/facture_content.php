@@ -11,8 +11,14 @@
  * $facture_bl_statut_libelle (string, optionnel): statut du BL (ex. facture BL)
  * $facture_bl_statut_code (string, optionnel): brouillon | valide (ou ancien paye) — couleur du libellé
  * $facture_show_client_zone (bool, optionnel): zone réservée au client en bas de page (signature)
+ * $facture_logo_url (string, optionnel): logo en-tête
+ * $facture_couleur_principale, $facture_couleur_accent (string, optionnel): thème couleurs
  */
 $adresse_livraison = $adresse_livraison ?? '';
+$facture_logo_url = $facture_logo_url ?? '/image/logo_market.png';
+$facture_couleur_principale = $facture_couleur_principale ?? '#3564a6';
+$facture_couleur_accent = $facture_couleur_accent ?? '#ff6b35';
+$facture_branding_vendeur = !empty($facture_branding_vendeur);
 $facture_bl_statut_libelle = isset($facture_bl_statut_libelle) ? (string) $facture_bl_statut_libelle : '';
 $facture_bl_statut_code = isset($facture_bl_statut_code) ? (string) $facture_bl_statut_code : '';
 $facture_show_client_zone = !empty($facture_show_client_zone);
@@ -27,7 +33,7 @@ if ($facture_bl_statut_libelle !== '') {
 require_once __DIR__ . '/site_url.php';
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - COLObanes';
 $facture_og_desc = 'Facture COLObanes - ' . ($entreprise_nom ?? 'COLObanes') . ' - Montant : ' . number_format($facture['montant_total'] ?? 0, 0, ',', ' ') . ' CFA';
-$facture_og_image = get_site_base_url() . '/image/logo_market.png';
+$facture_og_image = get_site_base_url() . $facture_logo_url;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -47,6 +53,14 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --facture-primary: <?php echo htmlspecialchars($facture_couleur_principale, ENT_QUOTES, 'UTF-8'); ?>;
+            --facture-accent: <?php echo htmlspecialchars($facture_couleur_accent, ENT_QUOTES, 'UTF-8'); ?>;
+            --facture-primary-soft: color-mix(in srgb, var(--facture-primary) 25%, white);
+            --facture-primary-muted: color-mix(in srgb, var(--facture-primary) 12%, white);
+            --facture-primary-row: color-mix(in srgb, var(--facture-primary) 6%, white);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -69,8 +83,8 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
 
         .facture-banner-top {
             height: 28px;
-            background: linear-gradient(135deg, rgba(53, 100, 166, 0.25) 0%, rgba(45, 86, 144, 0.2) 50%, rgba(53, 100, 166, 0.2) 100%);
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(53, 100, 166, 0.15) 10px, rgba(53, 100, 166, 0.15) 20px);
+            background: linear-gradient(135deg, var(--facture-primary-soft) 0%, color-mix(in srgb, var(--facture-primary) 20%, white) 50%, var(--facture-primary-muted) 100%);
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, color-mix(in srgb, var(--facture-primary) 15%, transparent) 10px, color-mix(in srgb, var(--facture-primary) 15%, transparent) 20px);
         }
 
         .facture-header {
@@ -91,7 +105,7 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
         .facture-logo {
             width: 100px;
             height: 100px;
-            border: 2px solid #3564a6;
+            border: 2px solid var(--facture-primary);
             border-radius: 50%;
             overflow: hidden;
             flex-shrink: 0;
@@ -172,7 +186,7 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
 
         .facture-meta .solde {
             font-size: 16px;
-            color: #3564a6;
+            color: var(--facture-primary);
             margin-top: 8px;
         }
 
@@ -220,7 +234,7 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
         }
 
         .facture-table th {
-            background: #3564a6;
+            background: var(--facture-primary);
             color: #fff;
             font-size: 11px;
             font-weight: 700;
@@ -246,7 +260,7 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
         }
 
         .facture-table tr:nth-child(even) td {
-            background: rgba(53, 100, 166, 0.06);
+            background: var(--facture-primary-row);
         }
 
         .facture-table tr:nth-child(odd) td {
@@ -287,12 +301,12 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
             font-weight: 700;
             font-size: 16px;
             padding-top: 12px;
-            border-top: 2px solid #3564a6;
+            border-top: 2px solid var(--facture-primary);
             margin-top: 8px;
         }
 
         .facture-summary .solde-row {
-            background: rgba(53, 100, 166, 0.12);
+            background: var(--facture-primary-muted);
             padding: 8px 12px;
             margin-top: 8px;
             border-radius: 6px;
@@ -334,8 +348,8 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
 
         .facture-banner-bottom {
             height: 20px;
-            background: linear-gradient(135deg, rgba(53, 100, 166, 0.3) 0%, rgba(45, 86, 144, 0.2) 50%, rgba(53, 100, 166, 0.25) 100%);
-            background-image: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(53, 100, 166, 0.2) 10px, rgba(53, 100, 166, 0.2) 20px);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--facture-primary) 30%, white) 0%, color-mix(in srgb, var(--facture-primary) 20%, white) 50%, color-mix(in srgb, var(--facture-primary) 25%, white) 100%);
+            background-image: repeating-linear-gradient(-45deg, transparent, transparent 10px, color-mix(in srgb, var(--facture-primary) 20%, transparent) 10px, color-mix(in srgb, var(--facture-primary) 20%, transparent) 20px);
         }
 
         .facture-actions {
@@ -362,7 +376,7 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
             align-items: center;
             gap: 8px;
             padding: 10px 20px;
-            background: #3564a6;
+            background: var(--facture-primary);
             color: #fff;
             text-decoration: none;
             border-radius: 8px;
@@ -372,7 +386,7 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
         }
 
         .facture-actions a:hover {
-            background: #2d5690;
+            background: color-mix(in srgb, var(--facture-primary) 78%, black);
         }
 
         .facture-actions a.btn-whatsapp {
@@ -694,28 +708,41 @@ $facture_og_image = get_site_base_url() . '/image/logo_market.png';
         <div class="facture-header">
             <div class="facture-entreprise">
                 <div class="facture-logo">
-                    <img src="/image/logo_market.png" alt="COLObanes"
+                    <img src="<?php echo htmlspecialchars($facture_logo_url, ENT_QUOTES, 'UTF-8'); ?>"
+                        alt="<?php echo htmlspecialchars($entreprise_nom, ENT_QUOTES, 'UTF-8'); ?>"
                         onerror="this.style.background='#fafafa';this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext x=%2250%22 y=%2255%22 text-anchor=%22middle%22 font-size=%2240%22%3E🍰%3C/text%3E%3C/svg%3E'">
                 </div>
                 <div class="facture-entreprise-info">
                     <h1><?php echo htmlspecialchars($entreprise_nom); ?></h1>
+                    <?php if (!empty($entreprise_rc)): ?>
                     <p>R.C : <?php echo htmlspecialchars($entreprise_rc); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($entreprise_ninea)): ?>
                     <p>N.I.N.E.A : <?php echo htmlspecialchars($entreprise_ninea); ?></p>
-                    <p><?php echo htmlspecialchars($entreprise_adresse); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($entreprise_adresse)): ?>
+                    <p><?php echo nl2br(htmlspecialchars($entreprise_adresse)); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($entreprise_tel1)): ?>
                     <div class="tel">
                         <i class="fas fa-phone"
                             style="font-size:11px; margin-right:4px;"></i>+221 <?php echo htmlspecialchars($entreprise_tel1); ?><?php if (!empty($entreprise_tel2)): ?><br>
                         <i class="fas fa-phone"
                             style="font-size:11px; margin-right:4px;"></i>+221 <?php echo htmlspecialchars($entreprise_tel2); ?><?php endif; ?>
                     </div>
+                    <?php endif; ?>
+                    <?php if (!empty($entreprise_site)): ?>
                     <p style="margin-top:6px;">
                         <i class="fas fa-globe" style="font-size:11px; margin-right:4px;"></i>
                         <a href="<?php echo htmlspecialchars($entreprise_site); ?>"
-                            target="_blank"><?php echo htmlspecialchars($entreprise_site); ?></a>
+                            target="_blank" rel="noopener noreferrer"><?php echo htmlspecialchars($entreprise_site); ?></a>
                     </p>
+                    <?php endif; ?>
+                    <?php if (!empty($entreprise_email)): ?>
                     <p><i class="fas fa-envelope"
                             style="font-size:11px; margin-right:4px;"></i><?php echo htmlspecialchars($entreprise_email); ?>
                     </p>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="facture-meta">

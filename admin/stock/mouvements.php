@@ -4,12 +4,9 @@
  * Filtres: catégorie, produit, type
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 if (file_exists(__DIR__ . '/../includes/admin_route_access.php')) {

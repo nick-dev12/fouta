@@ -4,12 +4,9 @@
  * Programmation procédurale uniquement
  */
 
-session_start();
+require_once __DIR__ . '/includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/includes/require_access.php';
 
@@ -67,6 +64,7 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-vendeur-share.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== PARAMÈTRES v2 ===== */
 
@@ -446,22 +444,6 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
                     <?php echo $__param_show_site_modules ? 'Param&egrave;tres' : 'Compte &amp; raccourcis'; ?>
                 </h1>
             </div>
-            <div class="prm-page-header__actions">
-                <a href="<?php echo htmlspecialchars($__param_retour); ?>" class="prm-btn prm-btn--outline">
-                    <i class="fas fa-arrow-left"></i>
-                    <?php echo in_array($__param_role, ['admin', 'plateforme', 'vendeur'], true) ? 'Tableau de bord' : 'Retour'; ?>
-                </a>
-                <?php if ($__param_show_comptes): ?>
-                    <a href="comptes/index.php" class="prm-btn prm-btn--primary">
-                        <i class="fas fa-user-shield"></i> Comptes d&apos;acc&egrave;s
-                    </a>
-                <?php endif; ?>
-                <a href="<?php echo htmlspecialchars($__voir_site_href, ENT_QUOTES, 'UTF-8'); ?>"
-                    class="prm-btn prm-btn--outline" target="_blank" rel="noopener noreferrer">
-                    <i class="fas fa-external-link-alt"></i>
-                    <?php echo $__vendeur_boutique_slug !== '' ? 'Voir ma boutique' : 'Voir le site'; ?>
-                </a>
-            </div>
         </header>
 
         <!-- ===== HERO IDENTITÉ ===== -->
@@ -537,7 +519,9 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
                                     <i class="fas fa-copy"></i> Copier le lien
                                 </button>
                                 <button type="button" class="prm-boutique__action-btn prm-boutique__action-btn--share"
-                                    id="vendeurShareBoutiqueUrl">
+                                    id="vendeurShareBoutiqueUrl"
+                                    aria-haspopup="dialog"
+                                    aria-controls="vendeurShareModal">
                                     <i class="fas fa-share-alt"></i> Partager
                                 </button>
                             </div>
@@ -690,56 +674,23 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
 
     </div><!-- /.prm-page -->
 
+    <?php require_once __DIR__ . '/includes/vendeur_share_boutique.php'; ?>
+    <?php if (vendeur_share_boutique_is_available()): ?>
+        <?php vendeur_share_boutique_render_modal('vendeurShareModal'); ?>
+    <?php endif; ?>
+
     <?php include 'includes/footer.php'; ?>
 
-    <?php if ($__param_role === 'vendeur' && $__vendeur_boutique_slug !== ''): ?>
-    <script>
-    (function () {
-        var url      = <?php echo json_encode($__vendeur_site_full_url, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-        var title    = <?php echo json_encode($__vendeur_boutique_nom_aff . ' — vitrine', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-        var input    = document.getElementById('vendeurBoutiquePublicUrl');
-        var feedback = document.getElementById('vendeurCopyBoutiqueFeedback');
-        var btnCopy  = document.getElementById('vendeurCopyBoutiqueUrl');
-        var btnShare = document.getElementById('vendeurShareBoutiqueUrl');
-
-        function showFeedback(msg) {
-            if (feedback) {
-                feedback.textContent = msg;
-                window.setTimeout(function () { if (feedback) feedback.textContent = ''; }, 3500);
-            }
-        }
-
-        if (btnCopy && input) {
-            btnCopy.addEventListener('click', function () {
-                function fallbackCopy() {
-                    input.focus(); input.select();
-                    input.setSelectionRange(0, input.value.length);
-                    var ok = false;
-                    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-                    showFeedback(ok ? 'Lien copié dans le presse-papiers.' : 'Sélectionnez le lien et copiez-le (Ctrl+C).');
-                }
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(url).then(function () {
-                        showFeedback('Lien copié dans le presse-papiers.');
-                    }).catch(fallbackCopy);
-                    return;
-                }
-                fallbackCopy();
-            });
-        }
-
-        if (btnShare) {
-            btnShare.addEventListener('click', function () {
-                if (navigator.share) {
-                    navigator.share({ title: title, text: title, url: url }).catch(function () {});
-                } else {
-                    if (btnCopy) btnCopy.click();
-                    else showFeedback('Copiez le lien ci-dessus pour le partager.');
-                }
-            });
-        }
-    })();
-    </script>
+    <?php if (vendeur_share_boutique_is_available()): ?>
+    <?php
+    vendeur_share_boutique_render_script([
+        'modal_id' => 'vendeurShareModal',
+        'open_button_ids' => ['vendeurShareBoutiqueUrl'],
+        'external_copy_button_id' => 'vendeurCopyBoutiqueUrl',
+        'url_input_id' => 'vendeurBoutiquePublicUrl',
+        'feedback_id' => 'vendeurCopyBoutiqueFeedback',
+    ]);
+    ?>
     <?php endif; ?>
 
 </body>

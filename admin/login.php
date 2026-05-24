@@ -4,6 +4,8 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/session_admin.php';
+require_once __DIR__ . '/../includes/auth_redirect.php';
 session_start();
 
 // Si l'admin est déjà connecté, rediriger vers le dashboard
@@ -40,6 +42,9 @@ if (isset($result['success']) && $result['success'] && $result['admin']) {
     } else {
         unset($_SESSION['vendeur_collaborateur_id'], $_SESSION['vendeur_collaborateur_nom']);
     }
+
+    $login_role = normalize_admin_role($result['admin']['role'] ?? 'admin');
+    auth_set_portal_cookie($login_role === 'vendeur' ? 'vendeur' : 'admin');
 
     header('Location: dashboard.php');
     exit;

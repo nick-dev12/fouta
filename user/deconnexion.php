@@ -4,6 +4,8 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/session_user.php';
+require_once __DIR__ . '/../includes/auth_redirect.php';
 session_start();
 
 // Supprimer les tokens FCM du client avant déconnexion
@@ -25,10 +27,10 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// Finalement, détruire la session
 session_destroy();
 
-// Rediriger vers la page d'accueil du site
+auth_clear_portal_cookie();
+
 header('Location: /index.php');
 exit;
 

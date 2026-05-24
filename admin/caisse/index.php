@@ -2,12 +2,9 @@
 /**
  * Caisse magasin — zones A (scan/recherche), B (panier), C (résumé + paiement)
  */
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 

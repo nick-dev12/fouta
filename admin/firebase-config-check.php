@@ -2,11 +2,7 @@
 /**
  * Page de vérification de la configuration Firebase
  */
-session_start();
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: login.php');
-    exit;
-}
+require_once __DIR__ . '/includes/require_admin_session.php';
 
 $config_path = __DIR__ . '/../config/firebase_config.php';
 $config = file_exists($config_path) ? require $config_path : [];

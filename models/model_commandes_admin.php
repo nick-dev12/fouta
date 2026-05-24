@@ -585,14 +585,19 @@ function get_stats_comptabilite_periode($commandes) {
     $montant_non_traitees = 0;
     $nb_livrees = 0;
     $nb_non_traitees = 0;
-    
+    $nb_annulees = 0;
+
     foreach ($commandes as $c) {
         $mt = (float) ($c['montant_total'] ?? 0);
+        $st = $c['statut'] ?? '';
         $montant_total += $mt;
-        if ($c['statut'] === 'livree') {
+
+        if (in_array($st, ['livree', 'paye'], true)) {
             $montant_livrees += $mt;
             $nb_livrees++;
-        } elseif ($c['statut'] !== 'annulee') {
+        } elseif ($st === 'annulee') {
+            $nb_annulees++;
+        } else {
             $montant_non_traitees += $mt;
             $nb_non_traitees++;
         }
@@ -604,7 +609,8 @@ function get_stats_comptabilite_periode($commandes) {
         'montant_livrees' => $montant_livrees,
         'montant_non_traitees' => $montant_non_traitees,
         'nb_livrees' => $nb_livrees,
-        'nb_non_traitees' => $nb_non_traitees
+        'nb_non_traitees' => $nb_non_traitees,
+        'nb_annulees' => $nb_annulees,
     ];
 }
 

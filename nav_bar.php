@@ -79,7 +79,8 @@ $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier
 $nav_compte_href = '/choix-connexion.php';
 $nav_compte_btn_class = 'nav-compte-btn';
 $nav_compte_title = 'Mon compte';
-$nav_compte_subtitle = 'Identifiez-vous';
+$nav_compte_subtitle = 'Se connecter';
+$nav_compte_avatar_letter = '';
 $nav_compte_logged = false;
 
 if (isset($_SESSION['commercant_id'])) {
@@ -144,6 +145,51 @@ if (isset($_SESSION['commercant_id'])) {
 
 if ($nav_compte_logged) {
     $nav_compte_btn_class .= ' nav-compte-btn--logged';
+}
+
+if (!function_exists('nav_compte_pick_initial')) {
+    function nav_compte_pick_initial(...$sources)
+    {
+        foreach ($sources as $source) {
+            $text = trim((string) $source);
+            if ($text === '') {
+                continue;
+            }
+            if (function_exists('mb_substr')) {
+                return mb_strtoupper(mb_substr($text, 0, 1, 'UTF-8'), 'UTF-8');
+            }
+            return strtoupper(substr($text, 0, 1));
+        }
+        return '';
+    }
+}
+
+if ($nav_compte_logged) {
+    if (isset($_SESSION['user_id'])) {
+        $nav_compte_avatar_letter = nav_compte_pick_initial(
+            $_SESSION['user_prenom'] ?? '',
+            $_SESSION['user_nom'] ?? '',
+            strip_tags((string) $nav_compte_title)
+        );
+    } elseif (isset($_SESSION['admin_id'])) {
+        $__role_nav_avatar = (string) ($_SESSION['admin_role'] ?? 'admin');
+        if ($__role_nav_avatar === 'vendeur') {
+            $nav_compte_avatar_letter = nav_compte_pick_initial(
+                $_SESSION['admin_boutique_nom'] ?? '',
+                $_SESSION['admin_prenom'] ?? '',
+                $_SESSION['admin_nom'] ?? '',
+                strip_tags((string) $nav_compte_title)
+            );
+        } else {
+            $nav_compte_avatar_letter = nav_compte_pick_initial(
+                $_SESSION['admin_prenom'] ?? '',
+                $_SESSION['admin_nom'] ?? '',
+                strip_tags((string) $nav_compte_title)
+            );
+        }
+    } elseif (isset($_SESSION['commercant_id']) && isset($commercant) && !empty($commercant['nom'])) {
+        $nav_compte_avatar_letter = nav_compte_pick_initial($commercant['nom']);
+    }
 }
 $nav_panier_href = isset($_SESSION['user_id'])
     ? $u_panier
@@ -525,47 +571,90 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         border-color: var(--couleur-dominante);
     }
 
-    /* Bouton Mon compte */
+    /* Bouton Mon compte / Se connecter */
     .nav-compte-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 10px 20px;
-        background: var(--couleur-dominante);
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 14px 7px 7px;
+        background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce, #2d5690) 100%);
         color: var(--texte-clair);
         text-decoration: none;
-        border-radius: 25px;
-        transition: all 0.3s;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 4px 16px rgba(53, 100, 166, 0.22);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         position: relative;
-        min-width: 140px;
+        min-width: 0;
+        max-width: 190px;
     }
 
     .nav-compte-btn:hover {
-        background: var(--couleur-dominante-hover);
         color: var(--texte-clair);
         transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(53, 100, 166, 0.28);
+    }
+
+    .nav-compte-avatar {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.18);
+        border: 1.5px solid rgba(255, 255, 255, 0.35);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .nav-compte-avatar i {
+        font-size: 15px;
+        line-height: 1;
+    }
+
+    .nav-compte-text {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        min-width: 0;
+        flex: 1;
     }
 
     .nav-compte-title {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
         display: block;
-        line-height: 1.2;
+        line-height: 1.15;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .nav-compte-subtitle {
-        font-size: 12px;
-        opacity: 0.95;
-        font-weight: 400;
+        font-size: 11px;
+        opacity: 0.92;
+        font-weight: 500;
+        line-height: 1.15;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .nav-compte-chevron {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 12px;
-        opacity: 0.9;
+    .nav-compte-btn--logged .nav-compte-avatar {
+        background: #fff;
+        color: var(--couleur-dominante);
+        border-color: rgba(255, 255, 255, 0.85);
+    }
+
+    .nav-compte-btn--boutique {
+        background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--orange, #ff6b35) 120%);
     }
 
     /* Panier */
@@ -639,16 +728,29 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         }
 
         .nav-compte-btn {
-            min-width: 130px;
-            padding: 8px 14px;
+            max-width: 168px;
+            padding: 6px 10px 6px 6px;
+            gap: 8px;
+        }
+
+        .nav-compte-avatar {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            font-size: 13px;
+        }
+
+        .nav-compte-avatar i {
+            font-size: 14px;
         }
 
         .nav-compte-title {
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .nav-compte-subtitle {
-            font-size: 11px;
+            font-size: 10px;
+            font-weight: 600;
         }
 
         .nav-top-row .nav-panier-link {
@@ -712,48 +814,24 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         }
 
         .nav-compte-btn {
-            min-width: auto;
-            padding: 8px 12px;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 2px;
-            flex-shrink: 0;
-            max-width: 140px;
+            max-width: 150px;
+            padding: 6px 8px 6px 6px;
+            gap: 7px;
         }
 
-        .nav-compte-btn:not(.nav-compte-btn--boutique):not(.nav-compte-btn--logged) .nav-compte-title {
-            display: none;
+        .nav-compte-avatar {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
         }
 
-        .nav-compte-btn--boutique .nav-compte-title,
-        .nav-compte-btn--logged:not(.nav-compte-btn--boutique) .nav-compte-title {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            line-height: 1.15;
-            max-width: 130px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .nav-compte-btn--boutique .nav-compte-subtitle {
+        .nav-compte-title {
             font-size: 10px;
-            font-weight: 500;
-            opacity: 0.92;
-            max-width: 130px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
-        .nav-compte-btn:not(.nav-compte-btn--boutique) .nav-compte-subtitle {
-            font-size: 12px;
+        .nav-compte-subtitle {
+            font-size: 9px;
             font-weight: 600;
-        }
-
-        .nav-compte-chevron {
-            display: none;
         }
 
         .nav-search-wrapper {
@@ -926,9 +1004,17 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             <?php endif; ?>
         </a>
         <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo htmlspecialchars($nav_compte_btn_class, ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="nav-compte-title"><?php echo $nav_compte_title; ?></span>
-            <span class="nav-compte-subtitle"><?php echo $nav_compte_subtitle; ?></span>
-            <i class="fa-solid fa-chevron-down nav-compte-chevron"></i>
+            <span class="nav-compte-avatar" aria-hidden="true">
+                <?php if ($nav_compte_logged && $nav_compte_avatar_letter !== ''): ?>
+                    <?php echo htmlspecialchars($nav_compte_avatar_letter, ENT_QUOTES, 'UTF-8'); ?>
+                <?php else: ?>
+                    <i class="fa-solid fa-user"></i>
+                <?php endif; ?>
+            </span>
+            <span class="nav-compte-text">
+                <span class="nav-compte-title"><?php echo $nav_compte_title; ?></span>
+                <span class="nav-compte-subtitle"><?php echo $nav_compte_subtitle; ?></span>
+            </span>
         </a>
     </div>
 

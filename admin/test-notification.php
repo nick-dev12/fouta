@@ -4,12 +4,9 @@
  * Envoie une notification de test à l'admin connecté puis redirige vers le dashboard
  */
 
-session_start();
+require_once __DIR__ . '/includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: login.php');
-    exit;
-}
+
 require_once __DIR__ . '/../includes/require_access.php';
 
 

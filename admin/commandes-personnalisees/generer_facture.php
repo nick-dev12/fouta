@@ -2,12 +2,9 @@
 /**
  * Génère une facture pour une commande personnalisée
  */
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 require_once __DIR__ . '/../includes/require_access.php';
 require_once __DIR__ . '/../../includes/admin_route_access.php';
 if (admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin') === 'vendeur') {

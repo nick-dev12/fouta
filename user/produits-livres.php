@@ -548,11 +548,6 @@ $nb_annulees = count(array_filter($toutes_commandes, fn($c) => $c['statut'] === 
             <div class="pl-v2-list">
                 <?php foreach ($commandes_livrees as $commande):
                     $statut   = $commande['statut'] ?? 'livree';
-                    $date_fmt = isset($commande['date_commande'])
-                        ? date('d/m/Y &agrave; H:i', strtotime($commande['date_commande']))
-                        : '&mdash;';
-                    $adresse  = htmlspecialchars(substr((string)($commande['adresse_livraison'] ?? ''), 0, 80));
-                    $adresse .= strlen((string)($commande['adresse_livraison'] ?? '')) > 80 ? '&hellip;' : '';
                     $telephone = htmlspecialchars($commande['telephone_livraison'] ?? '');
                     $badge_label = $statut === 'paye' ? 'Re&ccedil;ue &amp; pay&eacute;e' : 'Livr&eacute;e';
                     $badge_icon  = $statut === 'paye' ? 'fa-circle-check' : 'fa-check';
@@ -565,9 +560,6 @@ $nb_annulees = count(array_filter($toutes_commandes, fn($c) => $c['statut'] === 
                                 <span class="pl-v2-card__num">
                                     <i class="fas fa-hashtag"></i>
                                     <?php echo htmlspecialchars($commande['numero_commande']); ?>
-                                </span>
-                                <span class="pl-v2-card__date">
-                                    <i class="far fa-clock"></i> <?php echo $date_fmt; ?>
                                 </span>
                             </div>
                             <span class="pl-badge-livree">
@@ -595,15 +587,6 @@ $nb_annulees = count(array_filter($toutes_commandes, fn($c) => $c['statut'] === 
 
                             <!-- Infos livraison -->
                             <div class="pl-v2-card__details">
-                                <?php if (!empty($adresse)): ?>
-                                    <div class="pl-v2-detail-row">
-                                        <div class="pl-v2-detail-row__icon"><i class="fas fa-map-marker-alt"></i></div>
-                                        <div>
-                                            <span class="pl-v2-detail-row__label">Adresse livr&eacute;e</span>
-                                            <span class="pl-v2-detail-row__val"><?php echo $adresse; ?></span>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
                                 <?php if (!empty($telephone)): ?>
                                     <div class="pl-v2-detail-row">
                                         <div class="pl-v2-detail-row__icon"><i class="fas fa-phone"></i></div>

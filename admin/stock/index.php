@@ -4,12 +4,9 @@
  * Programmation procédurale uniquement
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 if (file_exists(__DIR__ . '/../includes/admin_route_access.php')) {
@@ -758,19 +755,6 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                 <p class="stk-header__eyebrow"><i class="fas fa-boxes-stacked"></i> Inventaire &amp; stock</p>
                 <h1 class="stk-header__title">Gestion du stock</h1>
             </div>
-            <div class="stk-header__actions">
-                <a href="mouvements.php" class="stk-btn stk-btn--outline">
-                    <i class="fas fa-history"></i> Mouvements
-                </a>
-                <?php if (!$stock_catalogue_vendeur_seul): ?>
-                    <button type="button" class="stk-btn stk-btn--outline js-open-stock-cat-modal">
-                        <i class="fas fa-folder-plus"></i> Catégorie
-                    </button>
-                <?php endif; ?>
-                <a href="../produits/ajouter.php" class="stk-btn stk-btn--primary">
-                    <i class="fas fa-plus"></i> Nouveau produit
-                </a>
-            </div>
         </header>
 
         <!-- ===== HERO ===== -->
@@ -875,13 +859,6 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                     <?php endif; ?>
                 </div>
             </form>
-
-            <p class="stk-filters__results">
-                <i class="fas fa-list-check"></i>
-                <strong><?php echo $nb_total_filtres; ?></strong> produit<?php echo $nb_total_filtres > 1 ? 's' : ''; ?> trouv&eacute;<?php echo $nb_total_filtres > 1 ? 's' : ''; ?>
-                &mdash; page <strong><?php echo $page; ?></strong> / <?php echo $nb_pages; ?>
-                &nbsp;&nbsp;&bull;&nbsp;&nbsp; affichage par <strong><?php echo $per_page; ?></strong>
-            </p>
         </div>
 
         <!-- ===== GRILLE PRODUITS ===== -->
@@ -903,12 +880,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         <?php else: ?>
 
-            <div class="stk-section-head">
-                <h2 class="stk-section-title">Produits (<?php echo $nb_total_filtres; ?>)</h2>
-                <a href="../produits/ajouter.php" class="stk-btn stk-btn--primary" style="font-size:.78rem;padding:8px 16px;">
-                    <i class="fas fa-plus"></i> Ajouter
-                </a>
-            </div>
+            <h2 class="stk-section-title">Produits (<?php echo $nb_total_filtres; ?>)</h2>
 
             <div class="stk-grid">
                 <?php foreach ($produits_page as $produit):

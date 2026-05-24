@@ -1,9 +1,6 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+require_once __DIR__ . '/../includes/require_admin_session.php';
+
 require_once __DIR__ . '/../../controllers/controller_zones_livraison.php';
 $result = process_add_zone_livraison();
 if (isset($result['success']) && $result['success']) {

@@ -59,15 +59,6 @@ $user_nav_items = [
         'dock' => 'more',
     ],
     [
-        'key' => 'visited',
-        'href' => 'produits-visites.php',
-        'match' => ['produits-visites.php'],
-        'fa' => 'fa-eye',
-        'class_base' => 'menu-item menu-item--visited',
-        'label' => 'Produits visités',
-        'dock' => 'more',
-    ],
-    [
         'key' => 'profile',
         'href' => 'profil.php',
         'match' => ['profil.php'],

@@ -4,13 +4,9 @@
  * Programmation procédurale uniquement
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-// Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 $__role_produits_nav = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');

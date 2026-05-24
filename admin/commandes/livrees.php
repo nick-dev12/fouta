@@ -1,47 +1,53 @@
 <?php
 /**
- * Page de liste des commandes livrées (Admin)
- * Programmation procédurale uniquement
+ * Commandes livrées / payées — Admin & Vendeur
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-// Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
-
-// Récupérer uniquement les commandes avec le statut "livree"
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
-require_once __DIR__ . '/../../includes/admin_route_access.php';
+require_once __DIR__ . '/includes/commandes_v2_helpers.php';
+
 $vf_cmd = admin_vendeur_filter_id();
 $toutes_commandes = get_all_commandes(null, $vf_cmd);
 
-// Filtrer pour ne garder que les commandes avec le statut "livree" ou "paye"
-$commandes_livrees = array_filter($toutes_commandes, function ($commande) {
-    return $commande['statut'] === 'livree' || $commande['statut'] === 'paye';
-});
+$commandes_livrees_all = array_values(array_filter($toutes_commandes ?: [], function ($commande) {
+    return in_array($commande['statut'] ?? '', ['livree', 'paye'], true);
+}));
 
-// Par défaut : afficher uniquement les livraisons du jour. Option pour inclure les jours précédents
-$jours_precedents = isset($_GET['jours_precedents']) && $_GET['jours_precedents'] === '1';
-if (!$jours_precedents) {
-    $aujourd_hui = date('Y-m-d');
-    $commandes_livrees = array_filter($commandes_livrees, function ($c) use ($aujourd_hui) {
-        $date_ref = !empty($c['date_livraison']) ? $c['date_livraison'] : $c['date_commande'];
-        $date_c = date('Y-m-d', strtotime($date_ref));
-        return $date_c === $aujourd_hui;
-    });
+$vue = isset($_GET['vue']) ? (string) $_GET['vue'] : 'jour';
+if (!in_array($vue, ['jour', 'toutes'], true)) {
+    $vue = 'jour';
 }
 
-// Statistiques
-$total_commandes = count_commandes_by_statut(null, $vf_cmd);
-$livrees = count_commandes_by_statut('livree', $vf_cmd) + count_commandes_by_statut('paye', $vf_cmd);
+$commandes_livrees = $commandes_livrees_all;
+if ($vue === 'jour') {
+    $aujourd_hui = date('Y-m-d');
+    $commandes_livrees = array_values(array_filter($commandes_livrees_all, function ($c) use ($aujourd_hui) {
+        $date_ref = !empty($c['date_livraison']) ? $c['date_livraison'] : ($c['date_commande'] ?? '');
+        if ($date_ref === '') {
+            return false;
+        }
+        return date('Y-m-d', strtotime($date_ref)) === $aujourd_hui;
+    }));
+}
 
-// Comptabilité : montant total des commandes livrées
+$commandes_livrees = cmd_v2_tri_commandes($commandes_livrees, 'date_desc');
+
+$total_commandes = count_commandes_by_statut(null, $vf_cmd);
+$nb_livrees = count_commandes_by_statut('livree', $vf_cmd) + count_commandes_by_statut('paye', $vf_cmd);
 $montant_total_livrees = get_montant_total_commandes('livree', $vf_cmd) + get_montant_total_commandes('paye', $vf_cmd);
+$montant_affiche = array_sum(array_map(function ($c) {
+    return (float) ($c['montant_total'] ?? 0);
+}, $commandes_livrees));
+
+$nb_jour = count(array_filter($commandes_livrees_all, function ($c) {
+    $date_ref = !empty($c['date_livraison']) ? $c['date_livraison'] : ($c['date_commande'] ?? '');
+    return $date_ref !== '' && date('Y-m-d', strtotime($date_ref)) === date('Y-m-d');
+}));
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -50,133 +56,142 @@ $montant_total_livrees = get_montant_total_commandes('livree', $vf_cmd) + get_mo
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commandes Livrées - Administration</title>
+    <title>Commandes livr&eacute;es &mdash; Administration COLObanes</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-commandes-v2.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body>
     <?php include '../includes/nav.php'; ?>
 
-    <?php if (isset($_SESSION['success_message'])): ?>
-        <div class="message success">
-            <i class="fas fa-check-circle"></i>
-            <span><?php echo htmlspecialchars($_SESSION['success_message']);
-            unset($_SESSION['success_message']); ?></span>
-        </div>
-    <?php endif; ?>
+    <div class="contents-container">
+        <div class="cmd-v2-page">
 
-    <div class="content-header">
-        <h1><i class="fas fa-check-circle"></i> Commandes Livrées</h1>
-        <div class="header-actions">
-            <a href="index.php" class="btn-back"><i class="fas fa-arrow-left"></i> Retour</a>
-        </div>
-    </div>
+            <?php if (isset($_SESSION['success_message'])): ?>
+                <div class="cmd-v2-notif" role="status">
+                    <i class="fas fa-check-circle"></i>
+                    <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
+                </div>
+            <?php endif; ?>
 
-    <!-- Statistiques -->
-    <div class="commandes-stats">
-        <div class="stat-box">
-            <h3>Total Commandes</h3>
-            <div class="stat-value"><?php echo $total_commandes; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>Commandes Livrées</h3>
-            <div class="stat-value"><?php echo $livrees; ?></div>
-        </div>
-    </div>
-
-    <!-- Comptabilité -->
-    <div class="comptabilite-box">
-        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes livrées</div>
-        <div class="comptabilite-value"><?php echo number_format($montant_total_livrees, 0, ',', ' '); ?> FCFA</div>
-    </div>
-
-    <!-- Liste des commandes -->
-    <section class="content-section">
-        <div class="section-header">
-            <div class="section-title">
-                <h2><i class="fas fa-check-circle"></i> Commandes Reçues (<?php echo count($commandes_livrees); ?>)</h2>
-            </div>
-            <div class="form-actions" style="flex-wrap: wrap;">
-                <?php if ($jours_precedents): ?>
-                    <a href="livrees.php" class="btn-link">
-                        <i class="fas fa-calendar-day"></i> Voir uniquement les livraisons du jour
+            <header class="cmd-v2-header">
+                <div class="cmd-v2-header__left">
+                    <p class="cmd-v2-header__eyebrow"><i class="fas fa-circle-check"></i> Commandes finalis&eacute;es</p>
+                    <h1 class="cmd-v2-header__title">Commandes livr&eacute;es</h1>
+                </div>
+                <div class="cmd-v2-header__actions">
+                    <a href="index.php" class="cmd-v2-btn cmd-v2-btn--outline">
+                        <i class="fas fa-shopping-bag"></i> &Agrave; traiter
                     </a>
-                <?php else: ?>
+                    <a href="historique-ventes.php" class="cmd-v2-btn cmd-v2-btn--outline">
+                        <i class="fas fa-chart-line"></i> Historique
+                    </a>
+                    <a href="annulees.php" class="cmd-v2-btn cmd-v2-btn--danger">
+                        <i class="fas fa-ban"></i> Annul&eacute;es
+                    </a>
+                </div>
+            </header>
 
-                <?php endif; ?>
-                <a href="index.php" class="btn-link">
-                    <i class="fas fa-shopping-bag"></i> Voir les commandes à traiter
-                </a>
-                <a href="annulees.php" class="btn-link btn-danger">
-                    <i class="fas fa-ban"></i> Voir les commandes annulées
-                </a>
-            </div>
-        </div>
-
-        <?php if (empty($commandes_livrees)): ?>
-            <div class="empty-state">
-                <i class="fas fa-box-open"></i>
-                <h3>Aucune commande livrée</h3>
-                <p>Aucune commande n'a encore été livrée.</p>
-            </div>
-        <?php else: ?>
-            <div class="commandes-grid">
-                <?php foreach ($commandes_livrees as $commande): ?>
-                    <div class="commande-item">
-                        <div class="commande-header">
-                            <div class="commande-info">
-                                <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
-                                <p>
-                                    <strong>Client:</strong>
-                                    <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
-                                    <span
-                                        class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
-                                </p>
-                                <p class="commande-date">Date:
-                                    <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?>
-                                </p>
-                            </div>
-                            <span class="commande-statut statut-<?php echo $commande['statut']; ?>">
-                                <?php echo $commande['statut'] === 'paye' ? '<i class="fas fa-money-bill-wave"></i> Payée' : '<i class="fas fa-check-circle"></i> Reçu'; ?>
-                            </span>
+            <div class="cmd-v2-hero">
+                <div class="cmd-v2-hero__inner">
+                    <div>
+                        <p class="cmd-v2-hero__label">
+                            <?php echo $vue === 'jour' ? 'Montant — Livraisons du jour' : 'Montant — Toutes les livrées'; ?>
+                        </p>
+                        <div class="cmd-v2-hero__amount">
+                            <?php echo number_format($montant_affiche, 0, ',', ' '); ?><span>FCFA</span>
                         </div>
-                        <div class="commande-details">
-                            <div class="detail-item">
-                                <label>Montant total</label>
-                                <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
-                                </div>
+                        <div class="cmd-v2-hero__pills">
+                            <div class="cmd-v2-hero__pill cmd-v2-hero__pill--ok">
+                                <i class="fas fa-box"></i>
+                                <span><strong><?php echo count($commandes_livrees); ?></strong> affich&eacute;e<?php echo count($commandes_livrees) > 1 ? 's' : ''; ?></span>
                             </div>
-                            <div class="detail-item">
-                                <label>Adresse</label>
-                                <div class="value small">
-                                    <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
-                                </div>
+                            <div class="cmd-v2-hero__pill">
+                                <i class="fas fa-layer-group"></i>
+                                <span><strong><?php echo $nb_livrees; ?></strong> au total</span>
                             </div>
-                            <div class="detail-item">
-                                <label>Téléphone</label>
-                                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
-                            </div>
-                            <?php if ($commande['date_livraison']): ?>
-                                <div class="detail-item">
-                                    <label>Date livraison</label>
-                                    <div class="value"><?php echo date('d/m/Y', strtotime($commande['date_livraison'])); ?></div>
-                                </div>
-                            <?php endif; ?>
                         </div>
-
-                        <a href="details.php?id=<?php echo $commande['id']; ?>" class="btn-view">
-                            <i class="fas fa-eye"></i> Voir les détails
+                    </div>
+                    <div class="cmd-v2-hero__right">
+                        <a href="historique-ventes.php?periode=jour&amp;filtre_statut=vendues" class="cmd-v2-hero__cta">
+                            <i class="fas fa-chart-line"></i> Voir mes gains
                         </a>
                     </div>
-                <?php endforeach; ?>
+                </div>
             </div>
-        <?php endif; ?>
-    </section>
+
+            <div class="cmd-v2-stats">
+                <a href="?vue=jour" class="cmd-v2-stat cmd-v2-stat--ok<?php echo $vue === 'jour' ? ' cmd-v2-stat--active' : ''; ?>">
+                    <div class="cmd-v2-stat__icon"><i class="fas fa-calendar-day"></i></div>
+                    <div class="cmd-v2-stat__content">
+                        <span class="cmd-v2-stat__label">Aujourd'hui</span>
+                        <span class="cmd-v2-stat__value"><?php echo $nb_jour; ?></span>
+                    </div>
+                </a>
+                <a href="?vue=toutes" class="cmd-v2-stat cmd-v2-stat--total<?php echo $vue === 'toutes' ? ' cmd-v2-stat--active' : ''; ?>">
+                    <div class="cmd-v2-stat__icon"><i class="fas fa-check-double"></i></div>
+                    <div class="cmd-v2-stat__content">
+                        <span class="cmd-v2-stat__label">Toutes livr&eacute;es</span>
+                        <span class="cmd-v2-stat__value"><?php echo $nb_livrees; ?></span>
+                    </div>
+                </a>
+                <div class="cmd-v2-stat cmd-v2-stat--prise">
+                    <div class="cmd-v2-stat__icon"><i class="fas fa-coins"></i></div>
+                    <div class="cmd-v2-stat__content">
+                        <span class="cmd-v2-stat__label">CA livr&eacute; total</span>
+                        <span class="cmd-v2-stat__value" style="font-size:1.15rem;"><?php echo number_format($montant_total_livrees, 0, ',', ' '); ?></span>
+                    </div>
+                </div>
+                <div class="cmd-v2-stat cmd-v2-stat--livraison">
+                    <div class="cmd-v2-stat__icon"><i class="fas fa-shopping-bag"></i></div>
+                    <div class="cmd-v2-stat__content">
+                        <span class="cmd-v2-stat__label">Toutes commandes</span>
+                        <span class="cmd-v2-stat__value"><?php echo $total_commandes; ?></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cmd-v2-tabs-row">
+                <div class="cmd-v2-tabs" role="tablist">
+                    <a href="?vue=jour" class="cmd-v2-tab<?php echo $vue === 'jour' ? ' active' : ''; ?>" role="tab">
+                        <i class="fas fa-calendar-day"></i>
+                        Livraisons du jour
+                        <span class="cmd-v2-tab__count"><?php echo $nb_jour; ?></span>
+                    </a>
+                    <a href="?vue=toutes" class="cmd-v2-tab<?php echo $vue === 'toutes' ? ' active' : ''; ?>" role="tab">
+                        <i class="fas fa-history"></i>
+                        Toutes les livr&eacute;es
+                        <span class="cmd-v2-tab__count"><?php echo $nb_livrees; ?></span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="cmd-v2-grid">
+                <?php if (empty($commandes_livrees)): ?>
+                    <div class="cmd-v2-empty">
+                        <div class="cmd-v2-empty__icon"><i class="fas fa-box-open"></i></div>
+                        <h3>Aucune commande livr&eacute;e</h3>
+                        <p>
+                            <?php if ($vue === 'jour'): ?>
+                                Aucune livraison enregistr&eacute;e aujourd'hui. Consultez «&nbsp;Toutes les livr&eacute;es&nbsp;» ou l'historique des ventes.
+                            <?php else: ?>
+                                Aucune commande n'a encore &eacute;t&eacute; marqu&eacute;e comme livr&eacute;e ou pay&eacute;e.
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($commandes_livrees as $commande): ?>
+                        <?php cmd_v2_render_card($commande, ['show_date' => true, 'show_delivery' => true]); ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+        </div>
+    </div>
 
     <?php include '../includes/footer.php'; ?>
-
 </body>
 
 </html>

@@ -2,11 +2,7 @@
 /**
  * Page d'aide pour corriger l'erreur "API key not valid"
  */
-session_start();
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: login.php');
-    exit;
-}
+require_once __DIR__ . '/includes/require_admin_session.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">

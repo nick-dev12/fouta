@@ -4,13 +4,9 @@
  * Programmation procédurale uniquement
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-// Vérifier si l'admin est connecté
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 // Récupérer l'ID du slide
 $slide_id = isset($_GET['id']) ? intval($_GET['id']) : 0;

@@ -4,12 +4,9 @@
  * Design élégant, ergonomique et responsive
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 require_once __DIR__ . '/../../includes/admin_route_access.php';

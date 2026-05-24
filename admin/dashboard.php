@@ -4,13 +4,9 @@
  * Programmation procédurale uniquement
  */
 
-session_start();
+require_once __DIR__ . '/includes/require_admin_session.php';
 
-// Vérifier si l'admin est connecté, sinon rediriger vers la page de connexion
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/includes/require_access.php';
 
@@ -63,6 +59,7 @@ $enable_firebase_notifications = true;
 $firebase_notify_type = 'admin';
 
 $vf_dash = admin_vendeur_filter_id();
+require_once __DIR__ . '/includes/vendeur_share_boutique.php';
 $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
 $categories = admin_categories_list_for_session();
@@ -110,6 +107,7 @@ if (!empty($produits)) {
     <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-vendeur-share.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== DASHBOARD VENDEUR v2 ===== */
 
@@ -195,6 +193,15 @@ if (!empty($produits)) {
         }
 
         .dash-v2-tool-btn--outline:hover { background: rgba(53,100,166,0.05); }
+
+        .dash-v2-tool-btn--visit {
+            white-space: nowrap;
+        }
+
+        .dash-v2-tool-btn--visit .dash-v2-tool-btn__label {
+            display: inline;
+            font-weight: 600;
+        }
 
         .dash-v2-tool-btn--ghost {
             background: transparent;
@@ -312,6 +319,24 @@ if (!empty($produits)) {
         .dash-v2-hero__pill--warn {
             background: rgba(255,193,7,0.2);
             border-color: rgba(255,193,7,0.35);
+        }
+
+        .dash-v2-hero__pill--share {
+            background: rgba(255, 107, 53, 0.22);
+            border-color: rgba(255, 107, 53, 0.42);
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+
+        .dash-v2-hero__pill--share:hover {
+            background: rgba(255, 107, 53, 0.32);
+            transform: translateY(-1px);
+        }
+
+        button.dash-v2-hero__pill {
+            appearance: none;
+            -webkit-appearance: none;
         }
 
         .dash-v2-hero__voir-tout {
@@ -1061,6 +1086,17 @@ if (!empty($produits)) {
             }
 
             .dash-v2-header__actions .hide-sm { display: none; }
+
+            .dash-v2-tool-btn--visit {
+                padding: 8px 10px;
+                font-size: .74rem;
+                gap: 6px;
+            }
+
+            .dash-v2-tool-btn--visit .dash-v2-tool-btn__label {
+                display: inline;
+                font-size: .68rem;
+            }
         }
 
         @media (max-width: 380px) {
@@ -1125,9 +1161,9 @@ if (!empty($produits)) {
                     data-notify-type="admin" title="Activer les notifications">
                     <i class="fas fa-bell-slash"></i>
                 </button>
-                <a href="/index.php" class="dash-v2-tool-btn dash-v2-tool-btn--outline" title="Voir la boutique">
-                    <i class="fas fa-store"></i>
-                    <span class="hide-sm">Ma boutique</span>
+                <a href="/index.php" class="dash-v2-tool-btn dash-v2-tool-btn--outline dash-v2-tool-btn--visit" title="Visiter COLObanes">
+                    <i class="fas fa-globe"></i>
+                    <span class="dash-v2-tool-btn__label">Visiter COLObanes</span>
                 </a>
                 <button type="button" id="btnOpenAddProduitModalDash" class="dash-v2-tool-btn dash-v2-tool-btn--primary">
                     <i class="fas fa-plus"></i>
@@ -1151,14 +1187,15 @@ if (!empty($produits)) {
                     <i class="fas fa-box"></i>
                     <span>Produits &nbsp;<strong><?php echo $nb_produits; ?></strong></span>
                 </div>
-                <?php if ($en_attente > 0): ?>
-                    <div class="dash-v2-hero__pill dash-v2-hero__pill--warn">
-                        <i class="fas fa-clock"></i>
-                        <span><strong><?php echo $en_attente; ?></strong> en attente</span>
-                    </div>
+                <?php if (vendeur_share_boutique_is_available()): ?>
+                    <button type="button" class="dash-v2-hero__pill dash-v2-hero__pill--share"
+                        id="dashHeroShareBoutique" aria-haspopup="dialog" aria-controls="dashVendeurShareModal">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Partager ma boutique</span>
+                    </button>
                 <?php endif; ?>
-                <a href="commandes/index.php" class="dash-v2-hero__voir-tout">
-                    Voir tout <i class="fas fa-arrow-right"></i>
+                <a href="parametres.php" class="dash-v2-hero__voir-tout">
+                    Param&egrave;tres <i class="fas fa-sliders-h"></i>
                 </a>
             </div>
         </div>
@@ -1537,6 +1574,15 @@ if (!empty($produits)) {
             }
         });
     </script>
+    <?php
+    if (vendeur_share_boutique_is_available()) {
+        vendeur_share_boutique_render_modal('dashVendeurShareModal');
+        vendeur_share_boutique_render_script([
+            'modal_id' => 'dashVendeurShareModal',
+            'open_button_ids' => ['dashHeroShareBoutique'],
+        ]);
+    }
+    ?>
     <?php include 'includes/footer.php'; ?>
 </body>
 

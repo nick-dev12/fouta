@@ -2,12 +2,9 @@
 /**
  * Historique des encaissements (tickets payés) — filtre par période, défaut : jour courant
  */
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 

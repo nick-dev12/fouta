@@ -3,12 +3,9 @@
  * Page de modification de produit — même structure / design que l’ajout (inc_form_ajouter_produit.php)
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 

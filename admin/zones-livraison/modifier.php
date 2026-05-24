@@ -4,12 +4,9 @@
  * Programmation procédurale uniquement
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 $zone_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($zone_id <= 0) {

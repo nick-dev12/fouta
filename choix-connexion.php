@@ -4,6 +4,7 @@
  * La création de compte est proposée via choix-inscription.php.
  */
 require_once __DIR__ . '/includes/session_user.php';
+require_once __DIR__ . '/../includes/auth_redirect.php';
 session_start();
 
 // Après connexion (même logique que user/connexion.php)
@@ -44,6 +45,9 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
         unset($_SESSION['vendeur_collaborateur_id'], $_SESSION['vendeur_collaborateur_nom']);
     }
 
+    $login_role = normalize_admin_role($result['admin']['role'] ?? 'admin');
+    auth_set_portal_cookie($login_role === 'vendeur' ? 'vendeur' : 'admin');
+
     header('Location: /admin/dashboard.php');
     exit;
 }
@@ -55,6 +59,8 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'user
     $_SESSION['user_email'] = (string) ($result['user']['email'] ?? '');
     $_SESSION['user_telephone'] = $result['user']['telephone'];
     $_SESSION['user_statut'] = $result['user']['statut'];
+
+    auth_set_portal_cookie('client');
 
     header('Location: ' . $redirect_url);
     exit;

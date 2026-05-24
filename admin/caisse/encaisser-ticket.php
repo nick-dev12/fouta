@@ -2,12 +2,9 @@
 /**
  * Caissier : recherche par n° de ticket et encaissement (zone paiement)
  */
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 

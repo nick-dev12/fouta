@@ -4,12 +4,9 @@
  * Programmation procédurale uniquement
  */
 
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 
 require_once __DIR__ . '/../includes/require_access.php';
 require_once __DIR__ . '/../../includes/admin_permissions.php';
@@ -862,20 +859,15 @@ function statut_class_cmd($s) {
                 <h1 class="cmd-v2-header__title">Mes Commandes</h1>
             </div>
             <div class="cmd-v2-header__actions">
-                <?php if (admin_has_full_admin_menu()): ?>
-                    <a href="historique-ventes.php" class="cmd-v2-btn cmd-v2-btn--outline">
-                        <i class="fas fa-chart-line"></i> Historique
-                    </a>
-                <?php endif; ?>
+                <a href="historique-ventes.php" class="cmd-v2-btn cmd-v2-btn--outline">
+                    <i class="fas fa-chart-line"></i> Historique
+                </a>
                 <a href="livrees.php" class="cmd-v2-btn cmd-v2-btn--outline">
                     <i class="fas fa-check-circle"></i> Livr&eacute;es
                 </a>
                 <a href="annulees.php" class="cmd-v2-btn cmd-v2-btn--danger">
                     <i class="fas fa-ban"></i> Annul&eacute;es
                 </a>
-                <button type="button" class="cmd-v2-btn cmd-v2-btn--primary" id="btn-commande-manuelle">
-                    <i class="fas fa-plus-circle"></i> Nouvelle commande
-                </button>
             </div>
         </header>
 

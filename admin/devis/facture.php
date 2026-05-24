@@ -2,12 +2,9 @@
 /**
  * Affichage d'une facture de devis (admin, design identique à facture commande)
  */
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 require_once __DIR__ . '/../includes/require_access.php';
 
 

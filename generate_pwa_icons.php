@@ -1,50 +1,133 @@
 <?php
 /**
- * Script pour générer les icônes PWA (192x192 et 512x512) depuis image/logo_market.png
- * À exécuter si vous modifiez le logo : php generate_pwa_icons.php
+ * Génère les icônes PWA depuis image/logo_market.jpeg (ou .png en secours).
+ * Usage : php generate_pwa_icons.php
  */
 
-$source = __DIR__ . '/image/logo_market.png';
+$sources = [
+    __DIR__ . '/image/logo_market.jpeg',
+    __DIR__ . '/image/logo_market.jpg',
+    __DIR__ . '/image/logo_market.png',
+];
+
+$source = null;
+foreach ($sources as $candidate) {
+    if (is_file($candidate)) {
+        $source = $candidate;
+        break;
+    }
+}
+
 $iconsDir = __DIR__ . '/icons';
 
-if (!file_exists($source)) {
-    die("Erreur : image/logo_market.png introuvable.\n");
+if ($source === null) {
+    fwrite(STDERR, "Erreur : logo introuvable (logo_market.jpeg / .png).\n");
+    exit(1);
 }
 
 if (!extension_loaded('gd')) {
-    die("Erreur : l'extension GD de PHP est requise.\n");
+    fwrite(STDERR, "Erreur : l'extension GD de PHP est requise.\n");
+    exit(1);
 }
 
-$image = @imagecreatefrompng($source);
+if (!is_dir($iconsDir) && !mkdir($iconsDir, 0755, true)) {
+    fwrite(STDERR, "Erreur : impossible de créer le dossier icons/.\n");
+    exit(1);
+}
+
+/**
+ * @return resource|false
+ */
+function pwa_load_image($path)
+{
+    $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    if ($ext === 'jpeg' || $ext === 'jpg') {
+        return @imagecreatefromjpeg($path);
+    }
+    if ($ext === 'png') {
+        return @imagecreatefrompng($path);
+    }
+    if ($ext === 'webp' && function_exists('imagecreatefromwebp')) {
+        return @imagecreatefromwebp($path);
+    }
+    return false;
+}
+
+/**
+ * @param resource $source
+ */
+function pwa_write_square_icon($source, $size, $dest, $paddingRatio = 0.1)
+{
+    $canvas = imagecreatetruecolor($size, $size);
+    if (!$canvas) {
+        return false;
+    }
+
+    $white = imagecolorallocate($canvas, 255, 255, 255);
+    imagefill($canvas, 0, 0, $white);
+
+    imagealphablending($canvas, true);
+
+    $srcWidth = imagesx($source);
+    $srcHeight = imagesy($source);
+    if ($srcWidth <= 0 || $srcHeight <= 0) {
+        imagedestroy($canvas);
+        return false;
+    }
+
+    $padding = (int) round($size * $paddingRatio);
+    $maxDim = max(1, $size - ($padding * 2));
+    $scale = min($maxDim / $srcWidth, $maxDim / $srcHeight);
+    $targetW = max(1, (int) round($srcWidth * $scale));
+    $targetH = max(1, (int) round($srcHeight * $scale));
+    $dstX = (int) floor(($size - $targetW) / 2);
+    $dstY = (int) floor(($size - $targetH) / 2);
+
+    imagecopyresampled(
+        $canvas,
+        $source,
+        $dstX,
+        $dstY,
+        0,
+        0,
+        $targetW,
+        $targetH,
+        $srcWidth,
+        $srcHeight
+    );
+
+    $ok = imagepng($canvas, $dest, 9);
+    imagedestroy($canvas);
+
+    return $ok;
+}
+
+$image = pwa_load_image($source);
 if (!$image) {
-    die("Erreur : impossible de charger l'image source.\n");
+    fwrite(STDERR, "Erreur : impossible de charger l'image source.\n");
+    exit(1);
 }
 
-$sizes = [192, 512];
+$jobs = [
+    ['file' => 'icon-192.png', 'size' => 192, 'padding' => 0.1],
+    ['file' => 'icon-512.png', 'size' => 512, 'padding' => 0.1],
+    ['file' => 'icon-192-maskable.png', 'size' => 192, 'padding' => 0.2],
+    ['file' => 'icon-512-maskable.png', 'size' => 512, 'padding' => 0.2],
+    ['file' => 'apple-touch-icon.png', 'size' => 180, 'padding' => 0.1],
+    ['file' => 'favicon-32.png', 'size' => 32, 'padding' => 0.08],
+];
 
-foreach ($sizes as $size) {
-    $dest = $iconsDir . "/icon-{$size}.png";
-    $resized = imagecreatetruecolor($size, $size);
-    
-    if (!$resized) {
+foreach ($jobs as $job) {
+    $dest = $iconsDir . '/' . $job['file'];
+    if (!pwa_write_square_icon($image, (int) $job['size'], $dest, (float) $job['padding'])) {
         imagedestroy($image);
-        die("Erreur : impossible de créer l'image {$size}x{$size}.\n");
+        fwrite(STDERR, "Erreur : impossible d'enregistrer {$dest}.\n");
+        exit(1);
     }
-    
-    $srcWidth = imagesx($image);
-    $srcHeight = imagesy($image);
-    
-    imagecopyresampled($resized, $image, 0, 0, 0, 0, $size, $size, $srcWidth, $srcHeight);
-    
-    if (!imagepng($resized, $dest, 9)) {
-        imagedestroy($image);
-        imagedestroy($resized);
-        die("Erreur : impossible d'enregistrer {$dest}.\n");
-    }
-    
-    imagedestroy($resized);
-    echo "Icône créée : icon-{$size}.png\n";
+    echo "Icône créée : {$job['file']} ({$job['size']}x{$job['size']})\n";
 }
 
 imagedestroy($image);
-echo "Terminé. Les icônes PWA ont été générées avec succès.\n";
+
+echo "Source : " . basename($source) . "\n";
+echo "Terminé. Les icônes PWA ont été générées dans /icons/.\n";

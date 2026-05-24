@@ -2,12 +2,9 @@
 /**
  * Création rapide d'un client B2B (POST) puis redirection vers index (modal BL)
  */
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 require_once __DIR__ . '/../includes/require_access.php';
 
 

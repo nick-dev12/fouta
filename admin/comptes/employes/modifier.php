@@ -1,10 +1,5 @@
 <?php
-session_start();
-
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../../login.php');
-    exit;
-}
+require_once __DIR__ . '/../../includes/require_admin_session.php';
 
 require_once __DIR__ . '/../../includes/require_access.php';
 require_once __DIR__ . '/../../../includes/admin_permissions.php';

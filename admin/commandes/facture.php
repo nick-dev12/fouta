@@ -2,12 +2,9 @@
 /**
  * Affichage d'une facture (admin, design COLObanes)
  */
-session_start();
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+
 require_once __DIR__ . '/../includes/require_access.php';
 
 
@@ -59,6 +56,10 @@ $date_facture_aff = date('j', $d_facture) . ' ' . $mois[(int) date('n', $d_factu
 $base_url = get_site_base_url();
 $facture_url = $base_url . '/facture.php?token=' . ($token ?? '');
 
+require_once __DIR__ . '/../../includes/facture_branding.php';
+$__facture_branding = facture_resolve_branding_from_commande($commande);
+extract($__facture_branding, EXTR_SKIP);
+
 // Message WhatsApp enrichi : produits, adresse livraison, montant total, lien facture
 $lignes_produits = [];
 foreach ($produits as $p) {
@@ -73,17 +74,8 @@ $msg_whatsapp = "Bonjour " . $client_nom . ",\n\n"
     . "Montant total : " . number_format($facture['montant_total'], 0, ',', ' ') . " CFA\n"
     . "Date : " . $date_facture_aff . "\n\n"
     . "Consultez votre facture en ligne :\n" . $facture_url . "\n\n"
-    . "Cordialement,\nCOLObanes";
+    . "Cordialement,\n" . ($entreprise_nom ?? 'COLObanes');
 $whatsapp_url = !empty($tel_whatsapp) ? 'https://wa.me/' . $tel_whatsapp . '?text=' . urlencode($msg_whatsapp) : '';
-
-$entreprise_nom = 'COLObanes';
-$entreprise_rc = 'SN.DKR.2022.A.702';
-$entreprise_ninea = '009116684';
-$entreprise_adresse = 'Rond point ZAC MBAO, Dakar';
-$entreprise_tel1 = '338700070';
-$entreprise_tel2 = '';
-$entreprise_site = 'https://www.colobanes.sn';
-$entreprise_email = 'contact@colobanes.sn';
 
 $is_public = false;
 require __DIR__ . '/../../includes/facture_content.php';
