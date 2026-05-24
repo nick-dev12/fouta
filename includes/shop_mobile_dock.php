@@ -33,7 +33,8 @@
                 <span class="shop-mobile-dock__icon shop-mobile-dock__icon--badge-host" aria-hidden="true">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
-                    <span class="shop-mobile-dock__badge" aria-label="<?php echo (int) $panier_count; ?> article<?php echo $panier_count > 1 ? 's' : ''; ?> dans le panier"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
+                        <span class="shop-mobile-dock__badge"
+                            aria-label="<?php echo (int) $panier_count; ?> article<?php echo $panier_count > 1 ? 's' : ''; ?> dans le panier"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
                     <?php endif; ?>
                 </span>
                 <span class="shop-mobile-dock__label">Panier</span>
@@ -43,11 +44,10 @@
                 <span class="shop-mobile-dock__icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
                 <span class="shop-mobile-dock__label">Compte</span>
             </a>
-            <button type="button"
-                id="shopDockSidebarBtn"
-                class="shop-mobile-dock__item shop-mobile-dock__button"
+            <button type="button" id="shopDockSidebarBtn" class="shop-mobile-dock__item shop-mobile-dock__button"
                 aria-label="Ouvrir le menu catalogue">
-                <span class="shop-mobile-dock__icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>
+                <span class="shop-mobile-dock__icon" aria-hidden="true"><i
+                        class="fa-solid fa-table-cells-large"></i></span>
                 <span class="shop-mobile-dock__label">Menu</span>
             </button>
         </nav>
