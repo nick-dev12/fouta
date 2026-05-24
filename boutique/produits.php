@@ -236,9 +236,6 @@ $seo_canonical = $base . boutique_url('produits.php', BOUTIQUE_SLUG);
                             <article class="mp-card" data-produit-id="<?php echo (int)$produit['id']; ?>">
                                 <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                                     <div class="mp-card-img">
-                                        <?php if ($has_promotion): ?>
-                                        <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
-                                        <?php endif; ?>
                                         <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
                                             alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                             loading="lazy" onerror="this.src='/image/produit1.jpg'">
@@ -249,6 +246,7 @@ $seo_canonical = $base . boutique_url('produits.php', BOUTIQUE_SLUG);
                                             <?php if ($has_promotion): ?>
                                             <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
                                             <span class="mp-card-price-old"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
+                                            <span class="mp-card-badge mp-card-badge--nouveau mp-card-badge--inline">-<?php echo $pourcentage_promo; ?>%</span>
                                             <?php else: ?>
                                             <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
                                             <?php endif; ?>
@@ -328,16 +326,16 @@ $seo_canonical = $base . boutique_url('produits.php', BOUTIQUE_SLUG);
                 article.className = 'mp-card mp-card--loading-anim';
                 article.setAttribute('data-produit-id', produit.id);
                 let badgeHTML = produit.has_promotion && produit.pourcentage_promo
-                    ? `<span class="mp-card-badge mp-card-badge--nouveau">-${produit.pourcentage_promo}%</span>` : '';
+                    ? `<span class="mp-card-badge mp-card-badge--nouveau mp-card-badge--inline">-${produit.pourcentage_promo}%</span>` : '';
                 let prixHTML = produit.has_promotion
-                    ? `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span><span class="mp-card-price-old">${formatNumber(produit.prix)} FCFA</span>`
+                    ? `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span><span class="mp-card-price-old">${formatNumber(produit.prix)} FCFA</span>${badgeHTML}`
                     : `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`;
                 const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
                 const boutiqueField = boutiqueSlugForPanier
                     ? `<input type="hidden" name="boutique_slug" value="${escapeHtml(boutiqueSlugForPanier)}">` : '';
                 article.innerHTML = `
                     <a href="/produit.php?id=${produit.id}" class="mp-card-link">
-                        <div class="mp-card-img">${badgeHTML}<img src="/upload/${escapeHtml(produit.image_principale)}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
+                        <div class="mp-card-img"><img src="/upload/${escapeHtml(produit.image_principale)}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
                         <div class="mp-card-body"><p class="mp-card-title">${escapeHtml(produit.nom)}</p><div class="mp-card-price-row">${prixHTML}</div></div>
                     </a>
                     <div class="mp-card-cart"><form method="POST" action="/add-to-panier.php">

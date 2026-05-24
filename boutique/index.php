@@ -655,12 +655,12 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
 
 
     <?php
-    // Récupérer les catégories les plus populaires (visites + commandes) - Maximum 2
     $top_categories = [];
     if (file_exists(__DIR__ . '/../models/model_categories.php')) {
         require_once __DIR__ . '/../models/model_categories.php';
-        $allc = get_all_categories_for_vendeur(BOUTIQUE_ADMIN_ID);
-        $top_categories = array_slice($allc, 0, 2);
+        if (function_exists('get_top_rayons_for_vendeur_vitrine')) {
+            $top_categories = get_top_rayons_for_vendeur_vitrine(BOUTIQUE_ADMIN_ID, 2);
+        }
     }
     ?>
 
@@ -681,32 +681,54 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
             <div class="boutique-top-categories__grid">
                 <?php foreach ($top_categories as $categorie): ?>
                 <?php
-                    $categorie_image_path = '/image/produit1.jpg';
-                    if (!empty($categorie['image'])) {
-                        $upload_path = '/upload/' . htmlspecialchars($categorie['image']);
-                        $file_path = __DIR__ . '/../upload/' . $categorie['image'];
-                        if (file_exists($file_path)) {
-                            $categorie_image_path = $upload_path;
-                        }
+                    $is_generale = !empty($categorie['is_generale']);
+                    $cat_id = (int) ($categorie['id'] ?? 0);
+                    if ($is_generale) {
+                        $cat_link = boutique_url('categorie.php?generale=' . $cat_id, BOUTIQUE_SLUG);
+                    } else {
+                        $cat_link = boutique_url('categorie.php?id=' . $cat_id, BOUTIQUE_SLUG);
                     }
-                    $cat_link = boutique_url('categorie.php?id=' . (int) $categorie['id'], BOUTIQUE_SLUG);
+                    $categorie_image_path = function_exists('categorie_image_public_path')
+                        ? categorie_image_public_path($categorie)
+                        : null;
+                    if ($categorie_image_path === null || $categorie_image_path === '') {
+                        $categorie_image_path = '/image/produit1.jpg';
+                    }
+                    $nb_produits_cat = (int) ($categorie['nb_produits'] ?? 0);
+                    $meta_label = '';
+                    if (!empty($categorie['score_ventes'])) {
+                        $meta_label = (int) $categorie['score_ventes'] . ' vente' . ((int) $categorie['score_ventes'] > 1 ? 's' : '');
+                    } elseif (!empty($categorie['score_visites'])) {
+                        $meta_label = (int) $categorie['score_visites'] . ' visite' . ((int) $categorie['score_visites'] > 1 ? 's' : '');
+                    } elseif ($nb_produits_cat > 0) {
+                        $meta_label = $nb_produits_cat . ' produit' . ($nb_produits_cat > 1 ? 's' : '');
+                    }
                     ?>
                 <article class="boutique-top-cat-card">
                     <a class="boutique-top-cat-card__link" href="<?php echo htmlspecialchars($cat_link, ENT_QUOTES, 'UTF-8'); ?>">
-                        <div class="boutique-top-cat-card__shine" aria-hidden="true"></div>
                         <div class="boutique-top-cat-card__media">
-                            <img src="<?php echo $categorie_image_path; ?>"
-                                alt="<?php echo htmlspecialchars($categorie['nom']); ?>"
+                            <img src="<?php echo htmlspecialchars($categorie_image_path, ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="<?php echo htmlspecialchars($categorie['nom'] ?? 'Catégorie'); ?>"
                                 loading="lazy"
                                 decoding="async"
                                 onerror="this.src='/image/produit1.jpg'">
-                            <div class="boutique-top-cat-card__overlay" aria-hidden="true"></div>
+                            <?php if ($meta_label !== ''): ?>
+                            <span class="boutique-top-cat-card__badge">
+                                <i class="fas fa-fire-flame-curved" aria-hidden="true"></i>
+                                <?php echo htmlspecialchars($meta_label, ENT_QUOTES, 'UTF-8'); ?>
+                            </span>
+                            <?php endif; ?>
                         </div>
-                        <div class="boutique-top-cat-card__glass">
-                            <h3 class="boutique-top-cat-card__name"><?php echo htmlspecialchars($categorie['nom']); ?></h3>
-                            <span class="boutique-top-cat-card__cta">
-                                Voir la catégorie
-                                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        <div class="boutique-top-cat-card__body">
+                            <div class="boutique-top-cat-card__info">
+                                <span class="boutique-top-cat-card__kicker">Rayon</span>
+                                <h3 class="boutique-top-cat-card__name"><?php echo htmlspecialchars($categorie['nom'] ?? 'Catégorie'); ?></h3>
+                            </div>
+                            <span class="boutique-top-cat-card__btn">
+                                <span class="boutique-top-cat-card__btn-label">Découvrir</span>
+                                <span class="boutique-top-cat-card__btn-icon" aria-hidden="true">
+                                    <i class="fas fa-arrow-right"></i>
+                                </span>
                             </span>
                         </div>
                     </a>

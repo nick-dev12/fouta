@@ -50,7 +50,7 @@ if ($message !== '') {
 $produit = $produit_id > 0 ? get_produit_by_id($produit_id) : false;
 
 // Si le produit n'existe pas, rediriger vers l'accueil
-if (!$produit || $produit['statut'] != 'actif') {
+if (!$produit || !produit_est_visible_client($produit['statut'] ?? '')) {
     header('Location: index.php');
     exit;
 }
@@ -1878,7 +1878,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                             <div class="quantite-input-wrapper">
                                 <button type="button" class="quantite-btn" id="decrease-qty">-</button>
                                 <input type="number" name="quantite" id="quantite" class="quantite-input" value="1"
-                                    min="1" max="<?php echo $produit['stock']; ?>" required>
+                                    min="1" required>
                                 <button type="button" class="quantite-btn" id="increase-qty">+</button>
                             </div>
                         </div>
@@ -1953,7 +1953,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         const prixUnitaireInput = document.getElementById('option-prix-unitaire');
         const decreaseBtn = document.getElementById('decrease-qty');
         const increaseBtn = document.getElementById('increase-qty');
-        const maxStock = <?php echo $produit['stock']; ?>;
+        const maxStock = 9999;
 
         function getPrixUnitaire() {
             var prix = prixBase;
@@ -1980,7 +1980,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             if (prixUnitaireInput) prixUnitaireInput.value = prixUnitaire;
 
             var btnAdd = document.getElementById('btn-add-panier');
-            if (btnAdd) btnAdd.disabled = (quantite > maxStock || quantite <= 0);
+            if (btnAdd) btnAdd.disabled = (quantite <= 0);
         }
 
         var produitNomBase = '<?php echo addslashes(htmlspecialchars($produit['nom'])); ?>';

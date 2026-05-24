@@ -188,7 +188,7 @@ html.sk-shimmer-pending .carousel:not(.sk-loaded) .produit-content,
 html.sk-shimmer-pending .mp-trend-card:not(.sk-loaded) .mp-trend-label,
 html.sk-shimmer-pending .mp-trend-card:not(.sk-loaded) .mp-trend-sub,
 html.sk-shimmer-pending .boutique-top-cat-card:not(.sk-loaded) .boutique-top-cat-card__name,
-html.sk-shimmer-pending .boutique-top-cat-card:not(.sk-loaded) .boutique-top-cat-card__cta {
+html.sk-shimmer-pending .boutique-top-cat-card:not(.sk-loaded) .boutique-top-cat-card__btn {
   visibility: hidden;
 }
 
@@ -219,7 +219,7 @@ html.sk-shimmer-pending .boutique-top-cat-card.sk-loaded .sk-card-lines {
 .mp-trend-card.sk-loaded .mp-trend-label,
 .mp-trend-card.sk-loaded .mp-trend-sub,
 .boutique-top-cat-card.sk-loaded .boutique-top-cat-card__name,
-.boutique-top-cat-card.sk-loaded .boutique-top-cat-card__cta {
+.boutique-top-cat-card.sk-loaded .boutique-top-cat-card__btn {
   visibility: visible;
   animation: sk-fade-in 0.38s ease both;
 }

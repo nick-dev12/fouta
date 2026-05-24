@@ -40,9 +40,9 @@ function process_add_to_panier()
         return ['success' => false, 'message' => 'La quantité doit être supérieure à 0.'];
     }
 
-    // Vérifier que le produit existe et est actif
+    // Vérifier que le produit existe et est publié côté client
     $produit = get_produit_by_id($produit_id);
-    if (!$produit || $produit['statut'] != 'actif') {
+    if (!$produit || !produit_est_visible_client($produit['statut'] ?? '')) {
         return ['success' => false, 'message' => 'Ce produit n\'est pas disponible.'];
     }
 
@@ -83,16 +83,6 @@ function process_add_to_panier()
                 ? $variante['prix_promotion'] : $variante['prix'];
         }
         $prix_final = $prix_base + $surcout_poids + $surcout_taille;
-    }
-
-    // Vérifier le stock disponible
-    $vid_line = (!empty($produit['admin_id']) && produits_has_column('admin_id')) ? (int) $produit['admin_id'] : null;
-    $item_panier = is_in_panier($user_id, $produit_id, $vid_line);
-    $quantite_actuelle = $item_panier ? $item_panier['quantite'] : 0;
-    $quantite_totale = $quantite_actuelle + $quantite;
-
-    if ($quantite_totale > $produit['stock']) {
-        return ['success' => false, 'message' => 'Stock insuffisant. Stock disponible : ' . $produit['stock']];
     }
 
     // Ajouter au panier avec options
@@ -140,11 +130,6 @@ function process_update_panier()
 
     if (!$item) {
         return ['success' => false, 'message' => 'Élément du panier introuvable.'];
-    }
-
-    // Vérifier le stock
-    if ($quantite > $item['stock']) {
-        return ['success' => false, 'message' => 'Stock insuffisant. Stock disponible : ' . $item['stock']];
     }
 
     // Mettre à jour

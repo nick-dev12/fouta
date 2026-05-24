@@ -31,6 +31,27 @@ function produits_has_column($name) {
 }
 
 /**
+ * Statuts produit visibles et commandables côté client (catalogue + fiche produit).
+ */
+function produit_statuts_catalogue_client()
+{
+    return ['actif', 'rupture_stock'];
+}
+
+function produit_est_visible_client($statut)
+{
+    return in_array((string) $statut, produit_statuts_catalogue_client(), true);
+}
+
+/**
+ * Fragment SQL pour filtrer les produits publiés côté client.
+ */
+function produit_sql_statut_catalogue($alias = 'p')
+{
+    return $alias . ".statut IN ('actif', 'rupture_stock')";
+}
+
+/**
  * Fragment SQL : jointure admin (boutique) pour enrichir les listes produits marketplace
  * @return array{join: string, select: string}
  */
@@ -326,7 +347,7 @@ function get_produits_by_categorie($categorie_id, $boutique_admin_id = null)
         }
         $vj = produits_sql_vendeur_fragment();
         $placeholders = implode(', ', array_fill(0, count($catIds), '?'));
-        $where = 'p.categorie_id IN (' . $placeholders . ') AND p.statut = \'actif\'';
+        $where = 'p.categorie_id IN (' . $placeholders . ') AND p.statut IN (\'actif\', \'rupture_stock\')';
         $execParams = array_values($catIds);
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = ?';
@@ -408,7 +429,7 @@ function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = n
 
     $where_or = '(' . implode(' OR ', $conds) . ')';
     $vj = produits_sql_vendeur_fragment();
-    $where = "p.statut = 'actif' AND $where_or";
+    $where = "p.statut IN ('actif', 'rupture_stock') AND $where_or";
     if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
         $where .= ' AND p.admin_id = ?';
         $exec_params[] = (int) $boutique_admin_id;
@@ -534,7 +555,7 @@ function get_produits_similaires_rayon_generale($exclude_produit_id, $generale_i
 
     $where_or = '(' . implode(' OR ', $conds) . ')';
     $vj = produits_sql_vendeur_fragment();
-    $where = "p.statut = 'actif' AND p.id != ? AND $where_or";
+    $where = "p.statut IN ('actif', 'rupture_stock') AND p.id != ? AND $where_or";
     produits_append_region_positional($where, $exec_params, null);
 
     try {
@@ -805,7 +826,7 @@ function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id
     try {
         $vj = produits_sql_vendeur_fragment();
         $rj = produits_sql_rayon_categorie_nom_fragment();
-        $where = "p.statut = 'actif'";
+        $where = "p.statut IN ('actif', 'rupture_stock')";
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
@@ -877,7 +898,7 @@ function search_produits($recherche, $offset = 0, $limit = 20, $boutique_admin_i
 
     try {
         $term = '%' . trim($recherche) . '%';
-        $where = "p.statut = 'actif' AND (p.nom LIKE :term OR p.description LIKE :term)";
+        $where = "p.statut IN ('actif', 'rupture_stock') AND (p.nom LIKE :term OR p.description LIKE :term)";
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
@@ -944,7 +965,7 @@ function count_search_produits($recherche, $boutique_admin_id = null)
 
     try {
         $term = '%' . trim($recherche) . '%';
-        $where = "statut = 'actif' AND (nom LIKE :term OR description LIKE :term)";
+        $where = "statut IN ('actif', 'rupture_stock') AND (nom LIKE :term OR description LIKE :term)";
         $params = ['term' => $term];
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND admin_id = :boutique_admin_id';
@@ -979,7 +1000,7 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
     global $db;
 
     try {
-        $conditions = ["p.statut = 'actif'"];
+        $conditions = ["p.statut IN ('actif', 'rupture_stock')"];
         $params = [];
 
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
@@ -1083,7 +1104,7 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
     global $db;
 
     try {
-        $conditions = ["statut = 'actif'"];
+        $conditions = ["statut IN ('actif', 'rupture_stock')"];
         $params = [];
 
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
@@ -1159,7 +1180,7 @@ function count_all_produits_actifs($boutique_admin_id = null)
     global $db;
 
     try {
-        $where = "statut = 'actif'";
+        $where = "statut IN ('actif', 'rupture_stock')";
         $params = [];
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND admin_id = :boutique_admin_id';
@@ -1189,7 +1210,7 @@ function get_produits_en_promo($offset = 0, $limit = 50, $boutique_admin_id = nu
     global $db;
 
     try {
-        $where = "p.statut = 'actif' 
+        $where = "p.statut IN ('actif', 'rupture_stock') 
             AND p.prix_promotion IS NOT NULL 
             AND p.prix_promotion > 0 
             AND p.prix_promotion < p.prix";
@@ -1230,7 +1251,7 @@ function count_produits_en_promo($boutique_admin_id = null)
     global $db;
 
     try {
-        $where = "statut = 'actif' 
+        $where = "statut IN ('actif', 'rupture_stock') 
             AND prix_promotion IS NOT NULL 
             AND prix_promotion > 0 
             AND prix_promotion < prix";
@@ -1262,7 +1283,7 @@ function get_produits_nouveautes($limit = 4, $boutique_admin_id = null)
     global $db;
 
     try {
-        $where = "p.statut = 'actif'";
+        $where = "p.statut IN ('actif', 'rupture_stock')";
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
@@ -1303,7 +1324,7 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_a
     global $db;
 
     try {
-        $where = "p.statut = 'actif'";
+        $where = "p.statut IN ('actif', 'rupture_stock')";
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
@@ -1376,7 +1397,7 @@ function get_produits_vedettes($limit = 20, $boutique_admin_id = null)
                 FROM commande_produits
                 GROUP BY produit_id
             ) commande_stats ON p.id = commande_stats.produit_id
-            WHERE p.statut = 'actif' $where_extra
+            WHERE p.statut IN ('actif', 'rupture_stock') $where_extra
             HAVING score_popularite > 0
             ORDER BY score_popularite DESC, p.date_creation DESC
             LIMIT :limit
@@ -1719,7 +1740,7 @@ function search_produits_en_stock_commande_manuelle($recherche = '', $limit = 30
                    p.stock as stock_dispo
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
-            WHERE p.statut = 'actif' AND p.stock > 0
+            WHERE p.statut IN ('actif', 'rupture_stock') AND p.stock > 0
         ";
         $params = ['limit' => (int) $limit];
 
@@ -1779,7 +1800,7 @@ function get_produits_plus_vendus_marketplace($max_rows = 60)
                 WHERE co.statut <> 'annulee'
                 GROUP BY cp.produit_id
             ) v ON v.produit_id = p.id
-            WHERE p.statut = 'actif' $region_sql
+            WHERE p.statut IN ('actif', 'rupture_stock') $region_sql
             ORDER BY v.qte DESC, p.id DESC
             LIMIT " . (int) $max_rows;
         $stmt = $db->prepare($sql);

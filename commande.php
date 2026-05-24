@@ -444,7 +444,6 @@ include 'nav_bar.php';
         <h1 class="commande-page-title">
             <i class="fas fa-shopping-bag"></i> Passer la commande
         </h1>
-        <p class="commande-page-subtitle">Indiquez un numéro de téléphone pour la livraison. L'adresse est facultative.</p>
 
         <?php if ($message): ?>
         <div class="message <?php echo $message_type; ?>">
@@ -550,7 +549,6 @@ include 'nav_bar.php';
                             autocomplete="tel"
                             placeholder="+221 XX XXX XX XX"
                             value="<?php echo isset($_POST['telephone_livraison']) ? htmlspecialchars($_POST['telephone_livraison'], ENT_QUOTES, 'UTF-8') : htmlspecialchars((string) ($user['telephone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-                        <small>Numéro avec indicatif pays pour la livraison</small>
                     </div>
 
                     <div class="form-group">

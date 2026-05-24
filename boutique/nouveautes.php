@@ -38,6 +38,7 @@ $seo_canonical = $base . boutique_url('nouveautes.php', BOUTIQUE_SLUG);
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/boutique-vitrine-products.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css">
     <style>
@@ -51,13 +52,8 @@ $seo_canonical = $base . boutique_url('nouveautes.php', BOUTIQUE_SLUG);
 
         .page-header h1 {
             font-size: 32px;
-            margin-bottom: 10px;
+            margin-bottom: 0;
             font-weight: 700;
-        }
-
-        .page-header p {
-            font-size: 16px;
-            opacity: 0.9;
         }
 
         .produits-container-wrapper {
@@ -133,7 +129,6 @@ $seo_canonical = $base . boutique_url('nouveautes.php', BOUTIQUE_SLUG);
 
     <div class="page-header">
         <h1><i class="fas fa-gift"></i> Nouveautés</h1>
-        <p>Découvrez nos derniers produits ajoutés</p>
     </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
@@ -156,54 +151,51 @@ $seo_canonical = $base . boutique_url('nouveautes.php', BOUTIQUE_SLUG);
                         <a href="<?php echo htmlspecialchars(boutique_url('index.php', BOUTIQUE_SLUG)); ?>"><i class="fas fa-arrow-left"></i> Retour à l'accueil</a>
                     </div>
                 <?php else: ?>
-                    <article data-aos="fade-up" class="articles carousel11">
-                        <?php foreach ($produits as $produit): ?>
+                    <div class="carousel-produits-outer">
+                        <div class="mp-grid" id="nouveautes-grid"
+                            data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-once="true">
+                            <?php foreach ($produits as $produit): ?>
                             <?php
-                            $has_promo = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                            $prix_affichage = $has_promo ? $produit['prix_promotion'] : $produit['prix'];
-                            $pourcentage = $has_promo ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
+                            $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
+                                ? $produit['prix_promotion'] : $produit['prix'];
+                            $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
+                            $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                             ?>
-                            <div class="carousel">
-                                <a href="/produit.php?id=<?php echo (int) $produit['id']; ?>" class="product-card-link">
-                                    <div class="image-wrapper">
+                            <article class="mp-card" data-produit-id="<?php echo (int) $produit['id']; ?>">
+                                <a href="/produit.php?id=<?php echo (int) $produit['id']; ?>" class="mp-card-link">
+                                    <div class="mp-card-img">
                                         <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                                            alt="<?php echo htmlspecialchars($produit['nom']); ?>"
-                                            onerror="this.src='/image/produit1.jpg'">
+                                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
+                                            loading="lazy" onerror="this.src='/image/produit1.jpg'">
                                     </div>
-                                    <div class="produit-content">
-                                        <p id="nom"><?php echo htmlspecialchars($produit['nom']); ?></p>
-                                        <?php if (!empty($produit['categorie_nom'])): ?>
-                                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                                        <?php endif; ?>
-                                        <p class="prix">
-                                            <?php if ($has_promo): ?>
-                                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                                    FCFA</span>
-                                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                                    FCFA</span>
+                                    <div class="mp-card-body">
+                                        <p class="mp-card-title"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                                        <div class="mp-card-price-row">
+                                            <?php if ($has_promotion): ?>
+                                            <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
+                                            <span class="mp-card-price-old"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
+                                            <span class="mp-card-badge mp-card-badge--nouveau mp-card-badge--inline">-<?php echo $pourcentage_promo; ?>%</span>
                                             <?php else: ?>
-                                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                                    FCFA</span>
+                                            <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
                                             <?php endif; ?>
-                                        </p>
-                                        <?php if (!empty($produit['stock'])): ?>
-                                            <p class="produit-card-stock-info"><strong>Stock:</strong> <?php echo $produit['stock']; ?>
-                                            </p>
-                                        <?php endif; ?>
+                                        </div>
                                     </div>
                                 </a>
-                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                    <?php boutique_add_to_panier_hidden_fields(); ?>
-                                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                                    <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/nouveautes.php'); ?>">
-                                    <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                                    </button>
-                                </form>
-                            </div>
-                        <?php endforeach; ?>
-                    </article>
+                                <div class="mp-card-cart">
+                                    <form method="POST" action="/add-to-panier.php">
+                                        <?php boutique_add_to_panier_hidden_fields(); ?>
+                                        <input type="hidden" name="produit_id" value="<?php echo (int) $produit['id']; ?>">
+                                        <input type="hidden" name="quantite" value="1">
+                                        <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/nouveautes.php'); ?>">
+                                        <button type="submit" class="mp-card-btn">
+                                            <i class="fa-solid fa-cart-shopping"></i> Ajouter
+                                        </button>
+                                    </form>
+                                </div>
+                            </article>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
 
                     <?php if ($total_pages > 1): ?>
                         <div class="pagination">

@@ -136,7 +136,7 @@ function get_produits_plus_favoris_marketplace($max_rows = 60) {
             INNER JOIN favoris f ON f.produit_id = p.id
             LEFT JOIN categories c ON p.categorie_id = c.id
             " . $vj['join'] . "
-            WHERE p.statut = 'actif'
+            WHERE p.statut IN ('actif', 'rupture_stock')
             GROUP BY p.id
             ORDER BY nb_favoris DESC, p.id DESC
             LIMIT " . (int) $max_rows;

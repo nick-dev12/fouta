@@ -212,10 +212,7 @@ $seo_description = mb_substr($desc_cat, 0, 160);
                         ?>
                         <article class="mp-card">
                             <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
-                                <div class="mp-card-img">
-                                    <?php if ($has_promo): ?>
-                                    <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_reduction; ?>%</span>
-                                    <?php endif; ?>
+                                    <div class="mp-card-img">
                                     <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
                                         alt="<?php echo htmlspecialchars($produit['nom']); ?>"
                                         loading="lazy" onerror="this.src='/image/produit1.jpg'">
@@ -226,6 +223,7 @@ $seo_description = mb_substr($desc_cat, 0, 160);
                                         <?php if ($has_promo): ?>
                                         <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
                                         <span class="mp-card-price-old"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
+                                        <span class="mp-card-badge mp-card-badge--nouveau mp-card-badge--inline">-<?php echo $pourcentage_reduction; ?>%</span>
                                         <?php else: ?>
                                         <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
                                         <?php endif; ?>

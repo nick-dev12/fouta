@@ -113,7 +113,7 @@ function get_produits_plus_visites($limit = 10, $boutique_admin_id = null) {
             LEFT JOIN categories c ON p.categorie_id = c.id
             " . $vj['join'] . "
             LEFT JOIN produits_visites pv ON p.id = pv.produit_id
-            WHERE p.statut = 'actif' $extra
+            WHERE p.statut IN ('actif', 'rupture_stock') $extra
             GROUP BY p.id
             HAVING nb_visites > 0
             ORDER BY nb_visites DESC, p.date_creation DESC

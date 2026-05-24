@@ -128,15 +128,6 @@ function process_create_commande() {
         ];
     }
     
-    foreach ($panier_items as $item) {
-        if ($item['stock'] < $item['quantite']) {
-            return [
-                'success' => false,
-                'message' => 'Le stock disponible pour "' . htmlspecialchars($item['nom']) . '" est insuffisant. Stock disponible: ' . $item['stock']
-            ];
-        }
-    }
-    
     // Récupérer les choix couleur, poids, taille par panier_id (priorité: POST, sinon options du panier)
     $choix = [];
     foreach ($panier_items as $item) {

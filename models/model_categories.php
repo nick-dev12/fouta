@@ -73,7 +73,7 @@ function get_all_categories_for_vendeur($vendeur_id)
         $stmt = $db->prepare("
             SELECT DISTINCT c.*
             FROM categories c
-            INNER JOIN produits p ON p.categorie_id = c.id AND p.statut = 'actif'
+            INNER JOIN produits p ON p.categorie_id = c.id AND p.statut IN ('actif', 'rupture_stock')
             WHERE p.admin_id = :vid
             ORDER BY c.nom ASC
         ");
@@ -241,6 +241,326 @@ function get_categories_platform_for_vendeur_stock($vendeur_id) {
     } catch (PDOException $e) {
         return [];
     }
+}
+
+/**
+ * Rayons (categories_generales) pour le filtre stock vendeur :
+ * uniquement les catégories parentes où la boutique a publié au moins un produit.
+ *
+ * @return array<int, array{id:int,nom:string,sort_ordre?:int}>
+ */
+function get_generales_for_vendeur_stock_filter($vendeur_id) {
+    global $db;
+    $vendeur_id = (int) $vendeur_id;
+    if ($vendeur_id <= 0 || !categories_generales_table_exists()) {
+        return [];
+    }
+    require_once __DIR__ . '/model_produits.php';
+    if (!produits_has_column('admin_id')) {
+        return [];
+    }
+
+    $has_pcg = produits_has_column('categorie_generale_id');
+    $has_ccg = categories_has_categorie_generale_id_column();
+    $has_pivot = categories_generales_liaisons_table_exists();
+
+    $joins = ' INNER JOIN `produits` p ON p.`admin_id` = :vid LEFT JOIN `categories` c ON c.`id` = p.`categorie_id` ';
+    $conds = [];
+
+    if ($has_pcg) {
+        $conds[] = '(p.`categorie_generale_id` IS NOT NULL AND p.`categorie_generale_id` > 0 AND p.`categorie_generale_id` = cg.`id`)';
+    }
+    if ($has_ccg) {
+        $conds[] = '(c.`categorie_generale_id` IS NOT NULL AND c.`categorie_generale_id` > 0 AND c.`categorie_generale_id` = cg.`id`)';
+    }
+    if ($has_pivot) {
+        $conds[] = 'EXISTS (
+            SELECT 1 FROM `categories_categories_generales` ccg
+            WHERE ccg.`categorie_id` = p.`categorie_id` AND ccg.`categorie_generale_id` = cg.`id`
+        )';
+    }
+    if (empty($conds)) {
+        return [];
+    }
+
+    try {
+        $sql = '
+            SELECT DISTINCT cg.`id`, cg.`nom`, cg.`sort_ordre`
+            FROM `categories_generales` cg
+            ' . $joins . '
+            WHERE (' . implode(' OR ', $conds) . ')
+            ORDER BY cg.`sort_ordre` ASC, cg.`nom` ASC
+        ';
+        $st = $db->prepare($sql);
+        $st->execute(['vid' => $vendeur_id]);
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Résout l'ID du rayon (categories_generales) d'un produit pour filtres stock.
+ */
+function produit_rayon_id_resolu($produit) {
+    if (!is_array($produit)) {
+        return 0;
+    }
+    if (!empty($produit['categorie_generale_id'])) {
+        return (int) $produit['categorie_generale_id'];
+    }
+    $cid = (int) ($produit['categorie_id'] ?? 0);
+    if ($cid <= 0) {
+        return 0;
+    }
+    if (categories_has_categorie_generale_id_column()) {
+        $cat = get_categorie_by_id($cid);
+        if ($cat && !empty($cat['categorie_generale_id'])) {
+            return (int) $cat['categorie_generale_id'];
+        }
+    }
+    if (function_exists('plateforme_get_rayons_ids_for_categorie')) {
+        $rayons = plateforme_get_rayons_ids_for_categorie($cid);
+        if (!empty($rayons)) {
+            return (int) $rayons[0];
+        }
+    }
+    return 0;
+}
+
+/**
+ * Top 2 rayons (categories_generales) pour la vitrine boutique vendeur.
+ * Score : visites produits + ventes (quantités), repli sur le nombre de produits actifs.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function get_top_rayons_for_vendeur_vitrine($vendeur_id, $limit = 2) {
+    global $db;
+    $vendeur_id = (int) $vendeur_id;
+    $limit = max(1, (int) $limit);
+    if ($vendeur_id <= 0) {
+        return [];
+    }
+
+    require_once __DIR__ . '/model_produits.php';
+    if (!produits_has_column('admin_id') || !categories_generales_table_exists()) {
+        return _top_categories_vendeur_vitrine_fallback($vendeur_id, $limit);
+    }
+
+    try {
+        $st = $db->prepare("
+            SELECT p.*
+            FROM produits p
+            WHERE p.admin_id = :vid AND p.statut IN ('actif', 'rupture_stock')
+        ");
+        $st->execute(['vid' => $vendeur_id]);
+        $produits = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return _top_categories_vendeur_vitrine_fallback($vendeur_id, $limit);
+    }
+
+    if (empty($produits)) {
+        return [];
+    }
+
+    $produit_ids = [];
+    $produit_par_id = [];
+    $generale_produits = [];
+    foreach ($produits as $p) {
+        $pid = (int) ($p['id'] ?? 0);
+        if ($pid <= 0) {
+            continue;
+        }
+        $produit_ids[] = $pid;
+        $produit_par_id[$pid] = $p;
+        $gid = produit_rayon_id_resolu($p);
+        if ($gid > 0) {
+            if (!isset($generale_produits[$gid])) {
+                $generale_produits[$gid] = 0;
+            }
+            $generale_produits[$gid]++;
+        }
+    }
+
+    if (empty($generale_produits)) {
+        return _top_categories_vendeur_vitrine_fallback($vendeur_id, $limit);
+    }
+
+    $scores = [];
+    foreach (array_keys($generale_produits) as $gid) {
+        $scores[(int) $gid] = [
+            'visites' => 0,
+            'ventes' => 0,
+            'produits' => (int) $generale_produits[$gid],
+            'score' => (int) $generale_produits[$gid],
+        ];
+    }
+
+    if (!empty($produit_ids)) {
+        $ph = implode(', ', array_fill(0, count($produit_ids), '?'));
+        try {
+            $stV = $db->prepare("
+                SELECT pv.produit_id, COUNT(*) AS nb
+                FROM produits_visites pv
+                WHERE pv.produit_id IN ($ph)
+                GROUP BY pv.produit_id
+            ");
+            $stV->execute($produit_ids);
+            foreach ($stV->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $pid = (int) ($row['produit_id'] ?? 0);
+                $nb = (int) ($row['nb'] ?? 0);
+                if ($pid <= 0 || $nb <= 0 || !isset($produit_par_id[$pid])) {
+                    continue;
+                }
+                $gid = produit_rayon_id_resolu($produit_par_id[$pid]);
+                if ($gid > 0 && isset($scores[$gid])) {
+                    $scores[$gid]['visites'] += $nb;
+                    $scores[$gid]['score'] += $nb;
+                }
+            }
+        } catch (PDOException $e) {
+        }
+
+        try {
+            $stS = $db->prepare("
+                SELECT cp.produit_id, SUM(cp.quantite) AS nb
+                FROM commande_produits cp
+                WHERE cp.produit_id IN ($ph)
+                GROUP BY cp.produit_id
+            ");
+            $stS->execute($produit_ids);
+            foreach ($stS->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $pid = (int) ($row['produit_id'] ?? 0);
+                $nb = (int) ($row['nb'] ?? 0);
+                if ($pid <= 0 || $nb <= 0 || !isset($produit_par_id[$pid])) {
+                    continue;
+                }
+                $gid = produit_rayon_id_resolu($produit_par_id[$pid]);
+                if ($gid > 0 && isset($scores[$gid])) {
+                    $scores[$gid]['ventes'] += $nb;
+                    $scores[$gid]['score'] += $nb * 2;
+                }
+            }
+        } catch (PDOException $e) {
+        }
+    }
+
+    uasort($scores, function ($a, $b) {
+        if ($a['score'] !== $b['score']) {
+            return $b['score'] <=> $a['score'];
+        }
+        if ($a['ventes'] !== $b['ventes']) {
+            return $b['ventes'] <=> $a['ventes'];
+        }
+        if ($a['visites'] !== $b['visites']) {
+            return $b['visites'] <=> $a['visites'];
+        }
+        return $b['produits'] <=> $a['produits'];
+    });
+
+    $top_ids = array_slice(array_keys($scores), 0, $limit);
+    $out = [];
+    foreach ($top_ids as $gid) {
+        $row = get_categorie_generale_by_id((int) $gid);
+        if (!$row || empty($row['nom'])) {
+            continue;
+        }
+        $row['is_generale'] = true;
+        $row['score_visites'] = $scores[$gid]['visites'];
+        $row['score_ventes'] = $scores[$gid]['ventes'];
+        $row['nb_produits'] = $scores[$gid]['produits'];
+        $out[] = $row;
+    }
+
+    if (count($out) < $limit) {
+        $fallback = _top_categories_vendeur_vitrine_fallback($vendeur_id, $limit - count($out));
+        foreach ($fallback as $fb) {
+            $dup = false;
+            foreach ($out as $ex) {
+                if ((int) ($ex['id'] ?? 0) === (int) ($fb['id'] ?? 0) && !empty($ex['is_generale']) === !empty($fb['is_generale'])) {
+                    $dup = true;
+                    break;
+                }
+            }
+            if (!$dup) {
+                $out[] = $fb;
+            }
+        }
+    }
+
+    return array_slice($out, 0, $limit);
+}
+
+/**
+ * Repli vitrine : catégories feuille du vendeur (visites + ventes).
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function _top_categories_vendeur_vitrine_fallback($vendeur_id, $limit = 2) {
+    global $db;
+    $vendeur_id = (int) $vendeur_id;
+    $limit = max(1, (int) $limit);
+    $cats = get_all_categories_for_vendeur($vendeur_id);
+    if (empty($cats)) {
+        return [];
+    }
+
+    $scores = [];
+    foreach ($cats as $c) {
+        $cid = (int) ($c['id'] ?? 0);
+        if ($cid <= 0) {
+            continue;
+        }
+        $scores[$cid] = ['visites' => 0, 'ventes' => 0, 'produits' => 0, 'score' => 0, 'row' => $c];
+    }
+
+    try {
+        $st = $db->prepare("
+            SELECT p.categorie_id,
+                   COUNT(DISTINCT pv.id) AS nb_visites,
+                   COALESCE(SUM(cp.quantite), 0) AS nb_ventes,
+                   COUNT(DISTINCT p.id) AS nb_produits
+            FROM produits p
+            LEFT JOIN produits_visites pv ON pv.produit_id = p.id
+            LEFT JOIN commande_produits cp ON cp.produit_id = p.id
+            WHERE p.admin_id = :vid AND p.statut IN ('actif', 'rupture_stock')
+            GROUP BY p.categorie_id
+        ");
+        $st->execute(['vid' => $vendeur_id]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            $cid = (int) ($row['categorie_id'] ?? 0);
+            if ($cid <= 0 || !isset($scores[$cid])) {
+                continue;
+            }
+            $v = (int) ($row['nb_visites'] ?? 0);
+            $s = (int) ($row['nb_ventes'] ?? 0);
+            $p = (int) ($row['nb_produits'] ?? 0);
+            $scores[$cid]['visites'] = $v;
+            $scores[$cid]['ventes'] = $s;
+            $scores[$cid]['produits'] = $p;
+            $scores[$cid]['score'] = $v + ($s * 2) + $p;
+        }
+    } catch (PDOException $e) {
+        foreach ($scores as $cid => &$sc) {
+            $sc['score'] = 1;
+        }
+        unset($sc);
+    }
+
+    uasort($scores, function ($a, $b) {
+        return $b['score'] <=> $a['score'];
+    });
+
+    $out = [];
+    foreach (array_slice($scores, 0, $limit, true) as $sc) {
+        $row = $sc['row'];
+        $row['is_generale'] = false;
+        $row['score_visites'] = $sc['visites'];
+        $row['score_ventes'] = $sc['ventes'];
+        $row['nb_produits'] = $sc['produits'];
+        $out[] = $row;
+    }
+    return $out;
 }
 
 /**
@@ -498,7 +818,7 @@ function get_all_categories_with_count()
         $stmt = $db->prepare("
             SELECT c.*, COUNT(p.id) as nb_produits
             FROM categories c
-            LEFT JOIN produits p ON c.id = p.categorie_id AND p.statut = 'actif'
+            LEFT JOIN produits p ON c.id = p.categorie_id AND p.statut IN ('actif', 'rupture_stock')
             GROUP BY c.id
             ORDER BY c.nom ASC
         ");
@@ -533,14 +853,14 @@ function get_top_categories($limit = 5)
                 SELECT p.categorie_id, COUNT(pv.id) as nb_visites
                 FROM produits_visites pv
                 INNER JOIN produits p ON pv.produit_id = p.id
-                WHERE p.statut = 'actif'
+                WHERE p.statut IN ('actif', 'rupture_stock')
                 GROUP BY p.categorie_id
             ) visites_stats ON c.id = visites_stats.categorie_id
             LEFT JOIN (
                 SELECT p.categorie_id, COUNT(cp.id) as nb_commandes
                 FROM commande_produits cp
                 INNER JOIN produits p ON cp.produit_id = p.id
-                WHERE p.statut = 'actif'
+                WHERE p.statut IN ('actif', 'rupture_stock')
                 GROUP BY p.categorie_id
             ) commandes_stats ON c.id = commandes_stats.categorie_id
             HAVING score_popularite > 0
@@ -1331,7 +1651,7 @@ function get_subcategories_with_active_products_for_general($general_id, $boutiq
                 $psc_sql = $psc_ok ? "
                     OR EXISTS (
                         SELECT 1 FROM `produits_sous_categories` psc
-                        INNER JOIN `produits` p2 ON p2.`id` = psc.`produit_id` AND p2.`statut` = 'actif' AND p2.`admin_id` = :aid2
+                        INNER JOIN `produits` p2 ON p2.`id` = psc.`produit_id` AND p2.`statut` IN ('actif', 'rupture_stock') AND p2.`admin_id` = :aid2
                         WHERE psc.`categorie_id` = c.`id`
                     )" : '';
                 $st = $db->prepare("
@@ -1341,7 +1661,7 @@ function get_subcategories_with_active_products_for_general($general_id, $boutiq
                       AND (
                         EXISTS (
                             SELECT 1 FROM `produits` p
-                            WHERE p.`categorie_id` = c.`id` AND p.`statut` = 'actif' AND p.`admin_id` = :aid
+                            WHERE p.`categorie_id` = c.`id` AND p.`statut` IN ('actif', 'rupture_stock') AND p.`admin_id` = :aid
                         )
                         $psc_sql
                       )
@@ -1352,7 +1672,7 @@ function get_subcategories_with_active_products_for_general($general_id, $boutiq
                 $psc_sql = $psc_ok ? "
                     OR EXISTS (
                         SELECT 1 FROM `produits_sous_categories` psc
-                        INNER JOIN `produits` p2 ON p2.`id` = psc.`produit_id` AND p2.`statut` = 'actif'
+                        INNER JOIN `produits` p2 ON p2.`id` = psc.`produit_id` AND p2.`statut` IN ('actif', 'rupture_stock')
                         WHERE psc.`categorie_id` = c.`id`
                     )" : '';
                 $st = $db->prepare("
@@ -1362,7 +1682,7 @@ function get_subcategories_with_active_products_for_general($general_id, $boutiq
                       AND (
                         EXISTS (
                             SELECT 1 FROM `produits` p
-                            WHERE p.`categorie_id` = c.`id` AND p.`statut` = 'actif'
+                            WHERE p.`categorie_id` = c.`id` AND p.`statut` IN ('actif', 'rupture_stock')
                         )
                         $psc_sql
                       )
@@ -1376,7 +1696,7 @@ function get_subcategories_with_active_products_for_general($general_id, $boutiq
             $st = $db->prepare("
                 SELECT DISTINCT c.`id`, c.`nom`
                 FROM `categories` c
-                INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`statut` = 'actif' AND p.`admin_id` = :aid
+                INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`statut` IN ('actif', 'rupture_stock') AND p.`admin_id` = :aid
                 WHERE c.`parent_id` = :gid AND c.`admin_id` = :aid2
                 ORDER BY c.`nom` ASC
             ");
@@ -1385,7 +1705,7 @@ function get_subcategories_with_active_products_for_general($general_id, $boutiq
             $st = $db->prepare("
                 SELECT DISTINCT c.`id`, c.`nom`
                 FROM `categories` c
-                INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`statut` = 'actif'
+                INNER JOIN `produits` p ON p.`categorie_id` = c.`id` AND p.`statut` IN ('actif', 'rupture_stock')
                 WHERE c.`parent_id` = :gid AND c.`admin_id` IS NOT NULL
                 ORDER BY c.`nom` ASC
             ");

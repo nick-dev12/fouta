@@ -59,9 +59,17 @@ if (isset($_SESSION['success_message'])) {
 
 // ---- Catégories pour le filtre ----
 $vf_stock = function_exists('admin_vendeur_filter_id') ? admin_vendeur_filter_id() : null;
-$categories = function_exists('admin_categories_list_for_session')
-    ? admin_categories_list_for_session()
-    : get_all_categories();
+$stock_filtre_par_rayon = false;
+$categories = [];
+if ($vf_stock !== null && function_exists('get_generales_for_vendeur_stock_filter')) {
+    $categories = get_generales_for_vendeur_stock_filter($vf_stock);
+    $stock_filtre_par_rayon = !empty($categories);
+}
+if (empty($categories)) {
+    $categories = function_exists('admin_categories_list_for_session')
+        ? admin_categories_list_for_session()
+        : get_all_categories();
+}
 $categories = is_array($categories) ? $categories : [];
 
 // ---- Produits du vendeur connecté (ou tous pour admin plateforme) ----
@@ -76,8 +84,16 @@ $page       = max(1, isset($_GET['page']) ? (int)$_GET['page']         : 1);
 $per_page   = 15;
 
 // ---- Filtrage ----
-$produits_filtres = array_values(array_filter($tous_produits, function($p) use ($recherche, $cat_filter, $statut_filter) {
-    if ($cat_filter > 0 && (int)($p['categorie_id'] ?? 0) !== $cat_filter) return false;
+$produits_filtres = array_values(array_filter($tous_produits, function($p) use ($recherche, $cat_filter, $statut_filter, $stock_filtre_par_rayon) {
+    if ($cat_filter > 0) {
+        if ($stock_filtre_par_rayon && function_exists('produit_rayon_id_resolu')) {
+            if (produit_rayon_id_resolu($p) !== $cat_filter) {
+                return false;
+            }
+        } elseif ((int)($p['categorie_id'] ?? 0) !== $cat_filter) {
+            return false;
+        }
+    }
     if ($statut_filter !== '' && ($p['statut'] ?? '') !== $statut_filter) return false;
     if ($recherche !== '') {
         $needle = mb_strtolower($recherche);

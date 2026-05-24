@@ -213,12 +213,26 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
             box-shadow: var(--ombre-gourmande);
         }
 
-        .panier-item-image {
+        .panier-item-img {
+            flex: 0 0 120px;
             width: 120px;
             height: 120px;
-            object-fit: cover;
+            align-self: flex-start;
             border-radius: 8px;
             border: 1px solid var(--glass-border);
+            background: var(--blanc-casse, #fafafa);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panier-item-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            display: block;
         }
 
         .panier-item-info {
@@ -518,9 +532,15 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
                 flex-direction: column;
             }
 
-            .panier-item-image {
+            .panier-item-img {
+                flex: 0 0 auto;
                 width: 100%;
                 height: 200px;
+            }
+
+            .panier-item-image {
+                width: 100%;
+                height: 100%;
             }
         }
 
@@ -636,14 +656,9 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
                                         <div class="quantite-controls">
                                             <button type="button" class="quantite-btn decrease-btn">-</button>
                                             <input type="number" name="quantite" class="quantite-input"
-                                                value="<?php echo $item['quantite']; ?>" min="1"
-                                                max="<?php echo $item['stock']; ?>" required>
+                                                value="<?php echo $item['quantite']; ?>" min="1" required>
                                             <button type="button" class="quantite-btn increase-btn">+</button>
                                         </div>
-
-                                        <button type="submit" class="btn-update">
-                                            <i class="fas fa-sync-alt"></i> Mettre à jour
-                                        </button>
                                     </form>
 
                                     <form method="POST" action="" style="display: inline;"
@@ -665,11 +680,6 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
                                         </div>
                                     </div>
                                 </div>
-
-                                <p class="panier-stock-info">
-                                    Stock disponible: <?php echo $item['stock']; ?>
-                                    <?php echo htmlspecialchars($item['unite']); ?>
-                                </p>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -731,27 +741,45 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
 
 
     <script>
-        // Gestion des boutons + et - pour la quantité
+        function submitPanierQuantiteForm(form) {
+            if (!form) return;
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
+        }
+
         document.querySelectorAll('.increase-btn').forEach(btn => {
             btn.addEventListener('click', function () {
+                const form = this.closest('.panier-update-form');
                 const input = this.parentElement.querySelector('.quantite-input');
-                const max = parseInt(input.getAttribute('max'));
-                let value = parseInt(input.value) || 1;
-                if (value < max) {
-                    value++;
-                    input.value = value;
-                }
+                let value = parseInt(input.value, 10) || 1;
+                value++;
+                input.value = value;
+                submitPanierQuantiteForm(form);
             });
         });
 
         document.querySelectorAll('.decrease-btn').forEach(btn => {
             btn.addEventListener('click', function () {
+                const form = this.closest('.panier-update-form');
                 const input = this.parentElement.querySelector('.quantite-input');
-                let value = parseInt(input.value) || 1;
+                let value = parseInt(input.value, 10) || 1;
                 if (value > 1) {
                     value--;
                     input.value = value;
+                    submitPanierQuantiteForm(form);
                 }
+            });
+        });
+
+        document.querySelectorAll('.panier-update-form .quantite-input').forEach(input => {
+            input.addEventListener('change', function () {
+                let value = parseInt(this.value, 10) || 1;
+                if (value < 1) value = 1;
+                this.value = value;
+                submitPanierQuantiteForm(this.closest('.panier-update-form'));
             });
         });
     </script>
