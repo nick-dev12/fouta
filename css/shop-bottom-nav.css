@@ -126,14 +126,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: clamp(4px, 1vw, 6px);
+    gap: clamp(3px, 0.8vw, 5px);
     width: 100%;
     max-width: none;
     min-width: 0;
     margin: 0;
-    padding: clamp(8px, 2vw, 12px) clamp(4px, 1vw, 8px);
+    padding: clamp(5px, 1.4vw, 9px) clamp(3px, 0.8vw, 6px);
     border-radius: 12px;
-    min-height: 4.875rem;
+    min-height: 3.75rem;
     box-sizing: border-box;
     border: 1px solid rgba(53, 100, 166, 0.12);
     position: relative;
@@ -180,7 +180,7 @@
   /* Icône : cadre neutre sans fond coloré (couleur du glyphe uniquement par onglet) */
   .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon {
     margin-right: 0;
-    border-radius: 12px;
+    border-radius: 10px;
     border: none;
     background: transparent;
     box-shadow: none;
@@ -189,14 +189,15 @@
     place-items: center;
     flex-shrink: 0;
     transition: color 0.2s ease;
-    font-size: clamp(1.15rem, 4vw, 1.4rem);
-    width: clamp(40px, 11vw, 48px);
-    height: clamp(40px, 11vw, 48px);
+    width: 34px;
+    height: 34px;
+    font-size: 0; /* taille portée par i directement */
   }
 
   .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon i {
     line-height: 1;
     color: inherit;
+    font-size: clamp(18px, 4.5vw, 22px);
   }
 
   .shop-bottom-dock .shop-dock-primary > .menu-item.menu-item--dock-mini:nth-child(1) .menu-item__icon {
@@ -273,10 +274,14 @@
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon {
-      width: clamp(26px, 7vw, 32px);
-      height: clamp(26px, 7vw, 32px);
+      width: 28px;
+      height: 28px;
       border-radius: 8px;
-      font-size: clamp(1.52rem, 7.25vw, 2.05rem);
+      font-size: 0;
+    }
+
+    .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon i {
+      font-size: clamp(16px, 7vw, 20px);
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__badge--dock {
@@ -300,9 +305,9 @@
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini {
-      min-height: 3.5rem;
-      padding: clamp(4px, 1vw, 7px) clamp(3px, 0.8vw, 5px);
-      gap: clamp(2px, 0.65vw, 4px);
+      min-height: 2.75rem;
+      padding: clamp(3px, 0.75vw, 6px) clamp(2px, 0.6vw, 4px);
+      gap: clamp(2px, 0.5vw, 3px);
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.58);
       background: rgba(255, 255, 255, 0.36);
@@ -322,14 +327,18 @@
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon {
-      width: auto;
-      height: auto;
-      min-width: 1.85rem;
-      font-size: clamp(1.45rem, 3.85vw, 2rem);
+      width: 32px;
+      height: 32px;
+      min-width: unset;
+      font-size: 0;
+    }
+
+    .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon i {
+      font-size: clamp(17px, 3vw, 21px);
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__text {
-      font-size: clamp(0.72rem, 1.95vw, 0.84375rem);
+      font-size: clamp(0.68rem, 1.75vw, 0.8rem);
     }
 
     .shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__badge--dock {

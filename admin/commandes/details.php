@@ -73,14 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         if (update_commande_statut($commande_id, 'livraison_en_cours', $admin_traitant)) {
             $statut_mis_a_jour = 'livraison_en_cours';
         }
-    } elseif (isset($_POST['changer_statut'])) {
-        $nouveau_statut = $_POST['statut'] ?? '';
-        if (in_array($nouveau_statut, ['en_attente', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'paye', 'annulee'])) {
-            if (update_commande_statut($commande_id, $nouveau_statut, $admin_traitant)) {
-                $statut_mis_a_jour = $nouveau_statut;
-            } else {
-                $_SESSION['error_message'] = 'Impossible de mettre à jour le statut. Vérifiez que la migration "add_statut_paye_commandes" a été exécutée et que la commande contient des produits.';
-            }
+    } elseif (isset($_POST['confirmer_livraison'])) {
+        if (update_commande_statut($commande_id, 'livree', $admin_traitant)) {
+            $statut_mis_a_jour = 'livree';
         }
     }
 
@@ -153,20 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             </div>
         </header>
 
-    <?php if (isset($_SESSION['success_message'])): ?>
-        <div class="message success" role="status">
-            <i class="fas fa-check-circle" aria-hidden="true"></i>
-            <span><?php echo htmlspecialchars($_SESSION['success_message'] ?? '');
-            unset($_SESSION['success_message']); ?></span>
-        </div>
-    <?php endif; ?>
-    <?php if (isset($_SESSION['error_message'])): ?>
-        <div class="message error" role="alert">
-            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-            <span><?php echo htmlspecialchars($_SESSION['error_message'] ?? '');
-            unset($_SESSION['error_message']); ?></span>
-        </div>
-    <?php endif; ?>
+    <?php /* success / error affichés via flash toast — voir footer.php */ ?>
 
     <?php
     ob_start();
@@ -193,65 +175,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 <p>Le paiement est enregistré et le stock a été mis à jour. La commande est terminée.</p>
             </div>
         <?php else: ?>
-            <div class="statut-form cmd-statut-form">
-                <div class="form-group">
-                    <label>Statut actuel</label>
-                    <div class="statut-current-wrap cmd-statut-current">
-                        <span class="commande-statut statut-<?php echo $statut_safe_class; ?>">
-                            <?php echo htmlspecialchars($statut_display); ?>
-                        </span>
+            <?php
+            $csf_steps = [
+                ['key' => 'en_attente',        'label' => 'En attente',      'sub' => 'Commande reçue',        'icon' => 'fa-clock'],
+                ['key' => 'prise_en_charge',   'label' => 'Prise en charge', 'sub' => 'Traitement en cours',   'icon' => 'fa-hand-paper'],
+                ['key' => 'livraison_en_cours','label' => 'En livraison',    'sub' => 'Expédiée au client',    'icon' => 'fa-truck'],
+                ['key' => 'livree',            'label' => 'Livrée',          'sub' => 'Réception confirmée',   'icon' => 'fa-circle-check'],
+            ];
+            $csf_order = [
+                'en_attente'        => 0,
+                'confirmee'         => 0,
+                'prise_en_charge'   => 1,
+                'livraison_en_cours'=> 2,
+                'livree'            => 3,
+                'paye'              => 3,
+            ];
+            $csf_current_idx = $csf_order[$statut_raw] ?? 0;
+            ?>
+            <div class="csf-stepper">
+                <div class="csf-track">
+                    <?php foreach ($csf_steps as $si => $step):
+                        $s_done   = $si < $csf_current_idx;
+                        $s_active = $si === $csf_current_idx;
+                        $s_cls    = $s_done ? 'done' : ($s_active ? 'active' : 'pending');
+                    ?>
+                    <div class="csf-node csf-node--<?php echo $s_cls; ?>">
+                        <div class="csf-node__mark" aria-hidden="true">
+                            <?php if ($s_done): ?><i class="fas fa-check"></i><?php else: ?><i class="fas <?php echo $step['icon']; ?>"></i><?php endif; ?>
+                        </div>
+                        <div class="csf-node__text">
+                            <span class="csf-node__label"><?php echo $step['label']; ?></span>
+                            <span class="csf-node__sub"><?php echo $step['sub']; ?></span>
+                        </div>
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <?php if (in_array($commande['statut'], ['en_attente', 'confirmee'])): ?>
-                        <form method="POST" action="">
-                            <button type="submit" name="prendre_en_charge" class="btn-primary btn-prise-charge">
-                                <i class="fas fa-hand-paper"></i> Prendre en charge la commande
-                            </button>
-                        </form>
-
-                    <?php elseif ($commande['statut'] == 'prise_en_charge'): ?>
-                        <form method="POST" action="">
-                            <button type="submit" name="expedier" class="btn-primary btn-expedier">
-                                <i class="fas fa-shipping-fast"></i> Mettre en livraison
-                            </button>
-                        </form>
-
-                    <?php elseif ($commande['statut'] == 'livraison_en_cours'): ?>
-                        <div class="alert-livraison">
-                            <p><i class="fas fa-truck" aria-hidden="true"></i> Livraison en cours</p>
-                            <p class="sub">Choisissez <strong>Payée</strong> dans le changement manuel de statut après confirmation du règlement (mise à jour du stock).</p>
-                        </div>
+                    <?php if ($si < count($csf_steps) - 1): ?>
+                        <div class="csf-line csf-line--<?php echo $si < $csf_current_idx ? 'done' : 'pending'; ?>"></div>
                     <?php endif; ?>
+                    <?php endforeach; ?>
                 </div>
-
-                <div class="actions-divider cmd-actions-divider">
-                    <h3>Changement manuel de statut</h3>
+                <div class="csf-action-zone">
+                    <?php if (in_array($commande['statut'], ['en_attente', 'confirmee'])): ?>
                     <form method="POST" action="">
-                        <div class="form-group">
-                            <label for="statut">Nouveau statut</label>
-                            <select id="statut" name="statut" required>
-                                <option value="en_attente" <?php echo $commande['statut'] == 'en_attente' ? 'selected' : ''; ?>>En Attente</option>
-                                <option value="prise_en_charge" <?php echo $commande['statut'] == 'prise_en_charge' ? 'selected' : ''; ?>>Prise en charge</option>
-                                <option value="en_preparation" <?php echo $commande['statut'] == 'en_preparation' ? 'selected' : ''; ?>>En Préparation</option>
-                                <option value="livraison_en_cours" <?php echo $commande['statut'] == 'livraison_en_cours' ? 'selected' : ''; ?>>Livraison en cours</option>
-                                <option value="paye" <?php echo $commande['statut'] == 'paye' ? 'selected' : ''; ?>>Payée (décrémente le stock)</option>
-                                <option value="annulee" <?php echo $commande['statut'] == 'annulee' ? 'selected' : ''; ?>>Annulée</option>
-                            </select>
-                        </div>
-                        <?php if ($commande['notes']): ?>
-                            <div class="form-group">
-                                <label>Notes</label>
-                                <div class="notes-box">
-                                    <?php echo nl2br(htmlspecialchars($commande['notes'] ?? '')); ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                        <button type="submit" name="changer_statut" class="btn-primary">
-                            <i class="fas fa-save"></i> Mettre à jour le statut
+                        <button type="submit" name="prendre_en_charge" class="csf-action-btn csf-action-btn--charge">
+                            <span class="csf-action-btn__icon"><i class="fas fa-hand-paper"></i></span>
+                            <span class="csf-action-btn__body"><strong>Prendre en charge</strong><small>Le client sera notifié immédiatement</small></span>
+                            <i class="fas fa-chevron-right csf-action-btn__arrow" aria-hidden="true"></i>
                         </button>
                     </form>
+                    <?php elseif ($commande['statut'] === 'prise_en_charge'): ?>
+                    <form method="POST" action="">
+                        <button type="submit" name="expedier" class="csf-action-btn csf-action-btn--ship">
+                            <span class="csf-action-btn__icon"><i class="fas fa-truck"></i></span>
+                            <span class="csf-action-btn__body"><strong>Mettre en livraison</strong><small>Notifie le client que sa commande est en route</small></span>
+                            <i class="fas fa-chevron-right csf-action-btn__arrow" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                    <?php elseif ($commande['statut'] === 'livraison_en_cours'): ?>
+                    <form method="POST" action="">
+                        <button type="submit" name="confirmer_livraison" class="csf-action-btn csf-action-btn--confirm">
+                            <span class="csf-action-btn__icon"><i class="fas fa-circle-check"></i></span>
+                            <span class="csf-action-btn__body"><strong>Confirmer la réception</strong><small>Marque la commande comme livrée au client</small></span>
+                            <i class="fas fa-check csf-action-btn__arrow" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                    <?php endif; ?>
+                    <?php if ($commande['notes']): ?>
+                    <div class="csf-notes">
+                        <p class="csf-notes__label"><i class="fas fa-comment-alt"></i> Notes</p>
+                        <div class="csf-notes__body"><?php echo nl2br(htmlspecialchars($commande['notes'])); ?></div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endif; ?>
@@ -270,14 +263,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             'admin_contact_in_live' => true,
             'admin_compact_meta_row' => true,
             'wrap_class' => 'cc-products-anchor commande-suivi-detail cmd-suivi-admin-embed',
-            'slot_after_suivi_body_html' => $cmd_suivi_status_slot_html,
+            'slot_replace_progress_html' => $cmd_suivi_status_slot_html,
         ]);
         ?>
     </section>
 
     <section class="cmd-products-section" aria-labelledby="cmd-products-heading">
         <div class="cmd-products-section__head">
-            <h2 id="cmd-products-heading"><i class="fas fa-box-open" aria-hidden="true"></i> Lignes de commande</h2>
+            <div class="cmd-products-section__head-left">
+                <div class="cmd-products-section__icon" aria-hidden="true"><i class="fas fa-receipt"></i></div>
+                <div>
+                    <h2 id="cmd-products-heading">Lignes de commande</h2>
+                    <p class="cmd-products-section__sub"><?php echo count($produits); ?> article<?php echo count($produits) > 1 ? 's' : ''; ?></p>
+                </div>
+            </div>
         </div>
 
         <div class="cmd-products-list">
@@ -287,96 +286,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 <p>Aucune ligne produit enregistrée pour cette commande.</p>
             </div>
             <?php else: ?>
-            <?php foreach ($produits as $produit): ?>
-                <?php $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? ''); ?>
-                <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : ($produit['produit_nom'] ?? ''); ?>
-                <div class="cmd-produit-card">
-                    <img src="/upload/<?php echo htmlspecialchars($img_src ?? ''); ?>"
-                        alt="<?php echo htmlspecialchars($nom_affichage ?? ''); ?>"
-                        onerror="this.src='/image/produit1.jpg'">
-                    <div class="produit-info">
-                        <h4><?php echo htmlspecialchars($nom_affichage ?? ''); ?></h4>
-                        <div class="produit-info-lignes">
-                            <div class="info-ligne">Quantité: <?php echo $produit['quantite']; ?></div>
-                            <div class="info-ligne">Prix unitaire: <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA</div>
-                        </div>
-                        <?php if (!empty($produit['couleur']) || !empty($produit['poids']) || !empty($produit['taille']) || !empty($produit['variante_nom']) || (!empty($produit['surcout_poids']) && $produit['surcout_poids'] > 0) || (!empty($produit['surcout_taille']) && $produit['surcout_taille'] > 0)): ?>
-                        <div class="produit-options-detail">
-                            <?php if (!empty($produit['variante_nom'])): ?>
-                            <div class="option-detail option-variante">
-                                <span class="option-label">Variante:</span>
-                                <span class="option-value"><?php echo htmlspecialchars($produit['variante_nom'] ?? ''); ?></span>
-                            </div>
-                            <?php endif; ?>
+            <?php foreach ($produits as $idx => $produit): ?>
+                <?php
+                $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? '');
+                $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : ($produit['produit_nom'] ?? '');
+                ?>
+                <div class="cpd-row">
+                    <div class="cpd-row__num" aria-hidden="true"><?php echo $idx + 1; ?></div>
+                    <div class="cpd-row__img-wrap">
+                        <img src="/upload/<?php echo htmlspecialchars($img_src ?? ''); ?>"
+                            alt="<?php echo htmlspecialchars($nom_affichage ?? ''); ?>"
+                            class="cpd-row__img"
+                            onerror="this.src='/image/produit1.jpg'">
+                    </div>
+                    <div class="cpd-row__body">
+                        <p class="cpd-row__name"><?php echo htmlspecialchars($nom_affichage ?? ''); ?></p>
+                        <div class="cpd-row__chips">
+                            <span class="cpd-chip cpd-chip--qty">
+                                <i class="fas fa-cubes"></i> <?php echo (int)$produit['quantite']; ?> pièce<?php echo $produit['quantite'] > 1 ? 's' : ''; ?>
+                            </span>
+                            <span class="cpd-chip cpd-chip--unit">
+                                <?php echo number_format((float)$produit['prix_unitaire'], 0, ',', ' '); ?> FCFA / u
+                            </span>
                             <?php if (!empty($produit['couleur'])): ?>
                             <?php
                             $hex = trim($produit['couleur']);
                             $is_hex = preg_match('/^#[0-9A-Fa-f]{6}$/', $hex);
                             $nom_couleur = format_couleur_commande($hex);
                             ?>
-                            <div class="option-detail option-couleur">
-                                <span class="option-label">Couleur:</span>
+                            <span class="cpd-chip cpd-chip--color">
                                 <?php if ($is_hex): ?>
-                                <span class="couleur-swatch-large" style="background-color:<?php echo htmlspecialchars($hex ?? ''); ?>;" title="<?php echo htmlspecialchars($hex ?? ''); ?>"></span>
+                                <span class="cpd-chip__swatch" style="background:<?php echo htmlspecialchars($hex); ?>;"></span>
                                 <?php endif; ?>
-                                <span class="option-value"><?php echo htmlspecialchars($nom_couleur ?? ''); ?></span>
-                            </div>
+                                <?php echo htmlspecialchars($nom_couleur); ?>
+                            </span>
                             <?php endif; ?>
-                            <?php 
+                            <?php if (!empty($produit['variante_nom'])): ?>
+                            <span class="cpd-chip cpd-chip--variant"><i class="fas fa-tag"></i> <?php echo htmlspecialchars($produit['variante_nom']); ?></span>
+                            <?php endif; ?>
+                            <?php
                             $poids_raw = $produit['poids'] ?? '';
                             $taille_raw = $produit['taille'] ?? '';
                             $surcout_p = isset($produit['surcout_poids']) ? (float)$produit['surcout_poids'] : 0;
                             $surcout_t = isset($produit['surcout_taille']) ? (float)$produit['surcout_taille'] : 0;
                             $poids_lignes = parse_poids_taille_commande($poids_raw, $surcout_p);
                             $taille_lignes = parse_poids_taille_commande($taille_raw, $surcout_t);
-                            $afficher_poids = !empty($poids_lignes);
-                            $afficher_taille = !empty($taille_lignes);
-                            ?>
-                            <?php if ($afficher_poids): ?>
-                            <div class="option-detail option-poids">
-                                <span class="option-label">Poids:</span>
-                                <div class="option-value options-lignes">
-                                    <?php foreach ($poids_lignes as $opt): ?>
-                                    <div class="option-ligne"><?php 
-                                    echo htmlspecialchars($opt['v'] ?? ''); 
-                                    if (($opt['s'] ?? 0) > 0) echo ' (poids +' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)';
-                                    ?></div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                            <?php if ($afficher_taille): ?>
-                            <div class="option-detail option-taille">
-                                <span class="option-label">Taille:</span>
-                                <div class="option-value options-lignes">
-                                    <?php foreach ($taille_lignes as $opt): ?>
-                                    <div class="option-ligne"><?php 
-                                    echo htmlspecialchars($opt['v'] ?? ''); 
-                                    if (($opt['s'] ?? 0) > 0) echo ' (taille +' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)';
-                                    ?></div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                            <?php endif; ?>
+                            foreach ($poids_lignes as $opt): ?>
+                            <span class="cpd-chip cpd-chip--poids"><i class="fas fa-weight-hanging"></i> <?php echo htmlspecialchars($opt['v'] ?? ''); ?><?php if (($opt['s'] ?? 0) > 0) echo ' (+' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)'; ?></span>
+                            <?php endforeach; ?>
+                            <?php foreach ($taille_lignes as $opt): ?>
+                            <span class="cpd-chip cpd-chip--taille"><i class="fas fa-ruler"></i> <?php echo htmlspecialchars($opt['v'] ?? ''); ?><?php if (($opt['s'] ?? 0) > 0) echo ' (+' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)'; ?></span>
+                            <?php endforeach; ?>
                         </div>
-                        <?php endif; ?>
                     </div>
-                    <div class="produit-total">
-                        <?php echo number_format($produit['prix_total'], 0, ',', ' '); ?> FCFA
+                    <div class="cpd-row__total">
+                        <span><?php echo number_format((float)$produit['prix_total'], 0, ',', ' '); ?></span>
+                        <small>FCFA</small>
                     </div>
                 </div>
             <?php endforeach; ?>
 
-            <div class="cmd-products-total">
+            <div class="cpd-totals">
                 <?php
                 $sous_total = array_sum(array_column($produits, 'prix_total'));
                 $frais = isset($commande['frais_livraison']) ? (float) $commande['frais_livraison'] : 0;
                 ?>
                 <?php if ($frais > 0): ?>
-                    <p class="cmd-products-total__line">Sous-total produits <strong><?php echo number_format($sous_total, 0, ',', ' '); ?> FCFA</strong></p>
-                    <p class="cmd-products-total__line">Frais de livraison <strong><?php echo number_format($frais, 0, ',', ' '); ?> FCFA</strong></p>
+                <div class="cpd-totals__line">
+                    <span><i class="fas fa-box-open"></i> Sous-total produits</span>
+                    <strong><?php echo number_format($sous_total, 0, ',', ' '); ?> FCFA</strong>
+                </div>
+                <div class="cpd-totals__line">
+                    <span><i class="fas fa-truck"></i> Frais de livraison</span>
+                    <strong><?php echo number_format($frais, 0, ',', ' '); ?> FCFA</strong>
+                </div>
+                <div class="cpd-totals__divider"></div>
                 <?php endif; ?>
-                <h3>Total commande <span class="total-value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</span></h3>
+                <div class="cpd-totals__grand">
+                    <span>Total commande</span>
+                    <div class="cpd-totals__grand-value">
+                        <?php echo number_format((float)$commande['montant_total'], 0, ',', ' '); ?>
+                        <small>FCFA</small>
+                    </div>
+                </div>
             </div>
             <?php endif; ?>
         </div>

@@ -378,9 +378,11 @@ if (!empty($produits)) {
                         $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
                         ?>
                         <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
-                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
-                            alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
-                            onerror="this.src='/image/produit1.jpg'">
+                        <div class="produit-card-img">
+                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                                alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
+                                onerror="this.src='/image/produit1.jpg'">
+                        </div>
                         <div class="produit-card-body">
                             <h3 class="produit-card-nom"><?php echo htmlspecialchars($produit['nom']); ?></h3>
                             <p class="produit-card-categorie">

@@ -149,12 +149,26 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
+    <style>
+        @keyframes catCardFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #produits-container > .mp-card { animation: catCardFadeIn 0.22s ease-out both; }
+        #produits-container > .mp-card:nth-child(1) { animation-delay: 0.00s; }
+        #produits-container > .mp-card:nth-child(2) { animation-delay: 0.03s; }
+        #produits-container > .mp-card:nth-child(3) { animation-delay: 0.06s; }
+        #produits-container > .mp-card:nth-child(4) { animation-delay: 0.09s; }
+        #produits-container > .mp-card:nth-child(n+5){ animation-delay: 0.00s; }
+        .mp-card--pending { display: none !important; }
+        .mp-card--revealing { animation: catCardFadeIn 0.22s ease-out both; }
+        #cat-load-indicator { text-align:center; padding:20px; display:none; }
+    </style>
 </head>
 
 <body>
@@ -314,6 +328,78 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
     </main>
 
     <?php include __DIR__ . '/footer.php'; ?>
+
+    <script>
+        (function () {
+            const container = document.getElementById('produits-container');
+            if (!container) return;
+            const cards = Array.from(container.querySelectorAll('.mp-card'));
+            const BATCH = 20;
+            if (cards.length <= BATCH) return;
+
+            // Masquer les cartes au-delà du premier lot
+            for (let i = BATCH; i < cards.length; i++) {
+                cards[i].classList.add('mp-card--pending');
+            }
+
+            // Indicateur spinner
+            const loader = document.createElement('div');
+            loader.id = 'cat-load-indicator';
+            loader.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:1.6rem;color:var(--couleur-dominante);"></i>';
+            container.insertAdjacentElement('afterend', loader);
+
+            // Compteur
+            const counter = document.createElement('p');
+            counter.id = 'cat-count';
+            counter.style.cssText = 'text-align:center;font-size:14px;color:var(--gris-moyen);margin-top:8px;';
+            counter.innerHTML = 'Affichés\u00a0: <span id="cat-count-n">' + BATCH + '</span>\u00a0/ ' + cards.length + ' produits';
+            loader.insertAdjacentElement('afterend', counter);
+
+            let shown = BATCH;
+            let sentinel = null;
+
+            function placeSentinel() {
+                if (sentinel) sentinel.remove();
+                sentinel = document.createElement('div');
+                sentinel.style.height = '1px';
+                cards[shown - 1].insertAdjacentElement('afterend', sentinel);
+                obs.observe(sentinel);
+            }
+
+            const obs = new IntersectionObserver(function (entries) {
+                if (!entries[0].isIntersecting) return;
+                obs.disconnect();
+
+                loader.style.display = 'block';
+                setTimeout(function () {
+                    const next = cards.slice(shown, shown + BATCH);
+                    next.forEach(function (c) {
+                        c.classList.remove('mp-card--pending');
+                        c.classList.add('mp-card--revealing');
+                    });
+                    shown += next.length;
+                    const countEl = document.getElementById('cat-count-n');
+                    if (countEl) countEl.textContent = shown;
+                    loader.style.display = 'none';
+
+                    if (shown < cards.length) {
+                        placeSentinel();
+                    } else {
+                        if (sentinel) sentinel.remove();
+                        counter.style.display = 'none';
+                    }
+                }, 80);
+            }, { rootMargin: '200px' });
+
+            if ('IntersectionObserver' in window) {
+                placeSentinel();
+            } else {
+                // Fallback : tout afficher d'un coup
+                cards.forEach(function (c) { c.classList.remove('mp-card--pending'); });
+                counter.style.display = 'none';
+            }
+        })();
+    </script>
 
 </body>
 

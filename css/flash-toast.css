@@ -1,0 +1,207 @@
+/**
+ * Flash Toast — notifications élégantes coin supérieur droit
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+/* ── Conteneur ─────────────────────────────────────────── */
+.flash-toast-host {
+    position: fixed;
+    top: max(20px, env(safe-area-inset-top, 0px));
+    right: max(16px, env(safe-area-inset-right, 0px));
+    z-index: 12050;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    width: min(calc(100vw - 32px), 390px);
+    pointer-events: none;
+}
+
+/* ── Toast de base ─────────────────────────────────────── */
+.flash-toast {
+    pointer-events: auto;
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.04),
+        0 12px 30px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transform: translateX(calc(100% + 30px));
+    opacity: 0;
+    transition:
+        transform 0.38s cubic-bezier(0.21, 1.02, 0.36, 1),
+        opacity 0.30s ease;
+    font-family: 'Poppins', sans-serif;
+}
+
+.flash-toast.is-visible {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.flash-toast.is-leaving {
+    transform: translateX(calc(100% + 30px));
+    opacity: 0;
+}
+
+/* ── Bande colorée gauche ──────────────────────────────── */
+.flash-toast__stripe {
+    width: 5px;
+    flex-shrink: 0;
+    align-self: stretch;
+    border-radius: 0;
+}
+
+.flash-toast--success .flash-toast__stripe { background: linear-gradient(180deg, #22c55e, #16a34a); }
+.flash-toast--error   .flash-toast__stripe { background: linear-gradient(180deg, #ef4444, #b91c1c); }
+.flash-toast--info    .flash-toast__stripe { background: linear-gradient(180deg, #3564a6, #1e3f7a); }
+.flash-toast--warning .flash-toast__stripe { background: linear-gradient(180deg, #f97316, #c2410c); }
+
+/* ── Contenu interne ───────────────────────────────────── */
+.flash-toast__inner {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 15px 13px 15px 16px;
+    min-width: 0;
+}
+
+/* ── Icône ────────────────────────────────────────────── */
+.flash-toast__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.05rem;
+}
+
+.flash-toast--success .flash-toast__icon { background: rgba(34, 197, 94, 0.12);  color: #15803d; }
+.flash-toast--error   .flash-toast__icon { background: rgba(239, 68, 68, 0.11);  color: #b91c1c; }
+.flash-toast--info    .flash-toast__icon { background: rgba(53, 100, 166, 0.12); color: #3564a6; }
+.flash-toast--warning .flash-toast__icon { background: rgba(249, 115, 22, 0.12); color: #c2410c; }
+
+/* ── Texte ────────────────────────────────────────────── */
+.flash-toast__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 2px;
+}
+
+.flash-toast__title {
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.flash-toast--success .flash-toast__title { color: #15803d; }
+.flash-toast--error   .flash-toast__title { color: #b91c1c; }
+.flash-toast--info    .flash-toast__title { color: #3564a6; }
+.flash-toast--warning .flash-toast__title { color: #c2410c; }
+
+.flash-toast__message {
+    margin: 0;
+    font-size: 0.845rem;
+    line-height: 1.5;
+    color: #374151;
+    word-break: break-word;
+    font-weight: 500;
+}
+
+/* ── Bouton fermer ────────────────────────────────────── */
+.flash-toast__close {
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px 6px;
+    font-size: 0.85rem;
+    line-height: 1;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 11px;
+    margin-right: 10px;
+    border-radius: 6px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.flash-toast__close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #374151;
+}
+
+/* ── Barre de progression ────────────────────────────── */
+.flash-toast__progress {
+    position: absolute;
+    left: 5px;
+    bottom: 0;
+    height: 3px;
+    border-radius: 0 0 2px 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+.flash-toast__progress::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: inherit;
+    animation: flash-toast-progress 5s linear forwards;
+}
+
+.flash-toast--success .flash-toast__progress::after { background: #22c55e; }
+.flash-toast--error   .flash-toast__progress::after { background: #ef4444; }
+.flash-toast--info    .flash-toast__progress::after { background: #3564a6; }
+.flash-toast--warning .flash-toast__progress::after { background: #f97316; }
+
+@keyframes flash-toast-progress {
+    from { transform: scaleX(1); transform-origin: left; }
+    to   { transform: scaleX(0); transform-origin: left; }
+}
+
+/* ── Responsive mobile ───────────────────────────────── */
+@media (max-width: 600px) {
+    .flash-toast-host {
+        top: max(14px, env(safe-area-inset-top, 0px));
+        right: max(10px, env(safe-area-inset-right, 0px));
+        left: max(10px, env(safe-area-inset-left, 0px));
+        width: auto;
+    }
+
+    .flash-toast {
+        border-radius: 14px;
+    }
+
+    .flash-toast__inner {
+        padding: 13px 11px 13px 14px;
+        gap: 11px;
+    }
+
+    .flash-toast__icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+    }
+
+    .flash-toast__title  { font-size: 0.72rem; }
+    .flash-toast__message { font-size: 0.80rem; }
+    .flash-toast__close { margin-top: 9px; margin-right: 8px; }
+}

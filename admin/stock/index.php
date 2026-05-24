@@ -1,8 +1,7 @@
 <?php
 /**
- * Gestion du stock - Catégories et produits
- * Contenu déplacé depuis categories/index.php
- * Utilise la table produits et la colonne stock (plus de table stock_articles)
+ * Gestion du stock — affichage direct des produits avec recherche/filtres/pagination
+ * Programmation procédurale uniquement
  */
 
 session_start();
@@ -21,23 +20,25 @@ if (empty($_SESSION['admin_csrf'])) {
     $_SESSION['admin_csrf'] = bin2hex(random_bytes(32));
 }
 
-$cat_modal_error = '';
-$cat_modal_open = false;
-$cat_modal_nom = '';
-$cat_modal_description = '';
+$__stock_role = function_exists('admin_normalize_role_for_route')
+    ? admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin')
+    : 'admin';
+$stock_catalogue_vendeur_seul = ($__stock_role === 'vendeur' && function_exists('get_categories_platform_for_vendeur_stock'));
 
 require_once __DIR__ . '/../../models/model_categories.php';
 require_once __DIR__ . '/../../models/model_produits.php';
-$__stock_role_idx = function_exists('admin_normalize_role_for_route')
-    ? admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin')
-    : 'admin';
-$stock_catalogue_vendeur_seul = ($__stock_role_idx === 'vendeur' && function_exists('get_categories_platform_for_vendeur_stock'));
+
+// ---- Modal nouvelle catégorie ----
+$cat_modal_error       = '';
+$cat_modal_open        = false;
+$cat_modal_nom         = '';
+$cat_modal_description = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['stock_add_categorie']) && !$stock_catalogue_vendeur_seul) {
     $tok = $_POST['csrf_token'] ?? '';
-    if (!hash_equals((string) ($_SESSION['admin_csrf'] ?? ''), (string) $tok)) {
+    if (!hash_equals((string)($_SESSION['admin_csrf'] ?? ''), (string)$tok)) {
         $cat_modal_error = 'Session expirée ou formulaire invalide. Veuillez réessayer.';
-        $cat_modal_open = true;
+        $cat_modal_open  = true;
     } else {
         require_once __DIR__ . '/../../controllers/controller_categories.php';
         $cat_modal_result = process_add_categorie();
@@ -46,10 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['stock_add_categorie']
             header('Location: index.php');
             exit;
         }
-        $cat_modal_error = $cat_modal_result['message'] ?? 'Une erreur est survenue.';
-        $cat_modal_open = true;
-        $cat_modal_nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : '';
-        $cat_modal_description = isset($_POST['description']) ? trim((string) $_POST['description']) : '';
+        $cat_modal_error       = $cat_modal_result['message'] ?? 'Une erreur est survenue.';
+        $cat_modal_open        = true;
+        $cat_modal_nom         = isset($_POST['nom'])         ? trim((string)$_POST['nom'])         : '';
+        $cat_modal_description = isset($_POST['description']) ? trim((string)$_POST['description']) : '';
     }
 }
 
@@ -59,19 +60,58 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
-if ($stock_catalogue_vendeur_seul) {
-    $categories = get_categories_platform_for_vendeur_stock((int) ($_SESSION['admin_id'] ?? 0));
-} else {
-    $categories = get_all_categories();
-}
-$nb_cat = count($categories);
+// ---- Catégories pour le filtre ----
+$vf_stock = function_exists('admin_vendeur_filter_id') ? admin_vendeur_filter_id() : null;
+$categories = function_exists('admin_categories_list_for_session')
+    ? admin_categories_list_for_session()
+    : get_all_categories();
+$categories = is_array($categories) ? $categories : [];
 
-$rayons_avec_produits = [];
-if (function_exists('get_categories_generales_avec_produits_actifs')) {
-    $rayon_boutique_id = !empty($stock_catalogue_vendeur_seul) ? (int) ($_SESSION['admin_id'] ?? 0) : null;
-    $rayons_avec_produits = get_categories_generales_avec_produits_actifs(
-        ($rayon_boutique_id !== null && $rayon_boutique_id > 0) ? $rayon_boutique_id : null
-    );
+// ---- Produits du vendeur connecté (ou tous pour admin plateforme) ----
+$tous_produits = get_all_produits(null, $vf_stock);
+$tous_produits = is_array($tous_produits) ? $tous_produits : [];
+
+// ---- Paramètres de recherche & filtre ----
+$recherche  = isset($_GET['search'])  ? trim((string)$_GET['search'])  : '';
+$cat_filter = isset($_GET['cat_id'])  ? (int)$_GET['cat_id']           : 0;
+$statut_filter = isset($_GET['statut']) ? trim($_GET['statut'])         : '';
+$page       = max(1, isset($_GET['page']) ? (int)$_GET['page']         : 1);
+$per_page   = 15;
+
+// ---- Filtrage ----
+$produits_filtres = array_values(array_filter($tous_produits, function($p) use ($recherche, $cat_filter, $statut_filter) {
+    if ($cat_filter > 0 && (int)($p['categorie_id'] ?? 0) !== $cat_filter) return false;
+    if ($statut_filter !== '' && ($p['statut'] ?? '') !== $statut_filter) return false;
+    if ($recherche !== '') {
+        $needle = mb_strtolower($recherche);
+        $hay    = mb_strtolower(implode(' ', [
+            $p['nom'] ?? '', $p['description'] ?? '', $p['categorie_nom'] ?? '', $p['statut'] ?? ''
+        ]));
+        if (strpos($hay, $needle) === false) return false;
+    }
+    return true;
+}));
+
+// ---- Pagination ----
+$nb_total_filtres = count($produits_filtres);
+$nb_pages         = max(1, (int)ceil($nb_total_filtres / $per_page));
+$page             = min($page, $nb_pages);
+$offset_page      = ($page - 1) * $per_page;
+$produits_page    = array_slice($produits_filtres, $offset_page, $per_page);
+
+// ---- Stats globales ----
+$nb_total  = count($tous_produits);
+$nb_actif  = count(array_filter($tous_produits, fn($p) => ($p['statut'] ?? '') === 'actif'));
+$nb_rupture= count(array_filter($tous_produits, fn($p) => ($p['statut'] ?? '') === 'rupture_stock'));
+$nb_inactif= $nb_total - $nb_actif - $nb_rupture;
+
+// Helper URL de pagination
+function stock_pag_url(int $pg, string $search, int $cat, string $statut): string {
+    $params = ['page' => $pg];
+    if ($search !== '') $params['search'] = $search;
+    if ($cat > 0)        $params['cat_id'] = $cat;
+    if ($statut !== '')  $params['statut']  = $statut;
+    return 'index.php?' . http_build_query($params);
 }
 ?>
 <!DOCTYPE html>
@@ -81,912 +121,955 @@ if (function_exists('get_categories_generales_avec_produits_actifs')) {
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion du stock — Administration</title>
+    <title>Stock &mdash; Administration</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <style>
-        /* Page stock — cohérent avec variables.css (importé via admin-dashboard) */
-        .stock-page {
-            --stock-radius: 18px;
-            --stock-radius-sm: 12px;
-        }
-
-        .stock-shell {
-            max-width: 1180px;
+        /* ===== STOCK INDEX v2 ===== */
+        .stk-page {
+            max-width: 1120px;
             margin: 0 auto;
-            padding: 1rem 1.25rem 3rem;
+            padding: clamp(14px, 3.5vw, 32px) clamp(12px, 3.5vw, 22px) 90px;
+            display: flex; flex-direction: column; gap: 20px;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
         }
 
-        .stock-hero {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 1.25rem 1.5rem;
-            padding: 1.6rem 1.75rem;
-            margin-bottom: 1.35rem;
-            background: var(--fond-secondaire);
-            border: 1px solid var(--border-input);
-            border-radius: var(--stock-radius);
-            box-shadow: var(--ombre-douce);
-            border-left: 5px solid var(--couleur-dominante);
-            position: relative;
-            overflow: hidden;
+        /* ---- Header ---- */
+        .stk-header {
+            display: flex; align-items: center;
+            justify-content: space-between; flex-wrap: wrap; gap: 12px;
         }
 
-        .stock-hero::after {
-            content: "";
-            position: absolute;
-            top: -40%;
-            right: -15%;
-            width: 45%;
-            height: 140%;
-            background: radial-gradient(ellipse, var(--bleu-pale) 0%, transparent 70%);
-            pointer-events: none;
+        .stk-header__left  { display: flex; flex-direction: column; gap: 3px; }
+
+        .stk-header__eyebrow {
+            font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.12em;
+            color: #059669; display: flex; align-items: center; gap: 5px;
         }
 
-        .stock-hero__title-wrap {
-            position: relative;
-            z-index: 1;
+        .stk-header__title {
+            font-size: clamp(1.25rem, 3vw, 1.7rem);
+            font-weight: 800; color: var(--titres, #0d0d0d);
+            font-family: var(--font-titres, 'Poppins', sans-serif);
+            line-height: 1.15; letter-spacing: -0.025em;
         }
 
-        .stock-hero h1 {
-            margin: 0 0 0.35rem;
-            font-family: var(--font-titres);
-            font-size: clamp(1.45rem, 2.5vw, 1.85rem);
-            font-weight: 700;
-            color: var(--titres);
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
+        .stk-header__actions { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+
+        /* ---- Boutons ---- */
+        .stk-btn {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 9px 18px; border-radius: 11px;
+            font-size: 0.81rem; font-weight: 700;
+            cursor: pointer; border: none;
+            text-decoration: none; font-family: var(--font-corps, 'Poppins', sans-serif);
+            transition: all 0.2s; white-space: nowrap;
         }
 
-        .stock-hero h1 i {
-            color: var(--couleur-dominante);
-            font-size: 1.1em;
+        .stk-btn--primary { background: #059669; color: #fff; box-shadow: 0 4px 14px rgba(5,150,105,0.25); }
+        .stk-btn--primary:hover { background: #047857; transform: translateY(-1px); }
+        .stk-btn--outline { background: #fff; color: var(--couleur-dominante, #3564a6); border: 1.5px solid rgba(53,100,166,0.22); }
+        .stk-btn--outline:hover { background: rgba(53,100,166,0.05); }
+        .stk-btn--blue { background: var(--couleur-dominante, #3564a6); color: #fff; box-shadow: 0 4px 14px rgba(53,100,166,0.25); }
+        .stk-btn--blue:hover { background: #2d5690; transform: translateY(-1px); }
+
+        /* ---- Hero ---- */
+        .stk-hero {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #059669 100%);
+            border-radius: 20px;
+            padding: clamp(18px, 3vw, 32px);
+            position: relative; overflow: hidden;
+            box-shadow: 0 16px 44px rgba(5,150,105,0.28);
         }
 
-        .stock-hero__badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.35rem 0.85rem;
-            border-radius: 999px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            background: var(--fond-principal);
-            color: var(--couleur-dominante);
-            border: 1px solid var(--border-input);
-            box-shadow: 0 1px 4px rgba(53, 100, 166, 0.08);
+        .stk-hero::before {
+            content: ''; position: absolute; top: -60px; right: -40px;
+            width: 220px; height: 220px; background: rgba(255,255,255,0.06);
+            border-radius: 50%; pointer-events: none;
         }
 
-        .stock-hero__actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.65rem;
-            position: relative;
-            z-index: 1;
+        .stk-hero::after {
+            content: ''; position: absolute; bottom: -70px; right: 90px;
+            width: 170px; height: 170px; background: rgba(255,255,255,0.04);
+            border-radius: 50%; pointer-events: none;
         }
 
-        .stock-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.72rem 1.15rem;
-            border-radius: var(--stock-radius-sm);
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-            border: 2px solid transparent;
+        .stk-hero__inner {
+            display: flex; align-items: flex-start;
+            justify-content: space-between; flex-wrap: wrap; gap: 14px; position: relative;
         }
 
-        .stock-btn--ghost {
-            background: var(--fond-principal);
-            color: var(--couleur-dominante);
-            border-color: var(--border-input);
-            box-shadow: 0 2px 8px rgba(53, 100, 166, 0.08);
+        .stk-hero__label  { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,.55); margin-bottom: 4px; }
+        .stk-hero__count  { font-size: clamp(1.9rem, 4.5vw, 3rem); font-weight: 900; color: #fff; font-family: var(--font-titres, 'Poppins', sans-serif); line-height: 1; letter-spacing: -.03em; }
+        .stk-hero__sub    { font-size: 0.79rem; color: rgba(255,255,255,.58); margin-top: 4px; }
+
+        .stk-hero__pills  { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 14px; }
+
+        .stk-hero__pill {
+            background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
+            border-radius: 50px; padding: 6px 14px;
+            display: flex; align-items: center; gap: 6px;
+            color: #fff; font-size: 0.77rem; font-weight: 600;
         }
 
-        .stock-btn--ghost:hover {
-            border-color: var(--couleur-dominante);
-            box-shadow: var(--ombre-douce);
-            transform: translateY(-2px);
+        .stk-hero__pill--ok  { background: rgba(134,239,172,.18); border-color: rgba(134,239,172,.3); }
+        .stk-hero__pill--warn{ background: rgba(255,193,7,.15); border-color: rgba(255,193,7,.3); }
+        .stk-hero__pill--err { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.25); }
+
+        .stk-hero__cta {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.22);
+            border-radius: 12px; color: #fff;
+            font-size: 0.82rem; font-weight: 700;
+            text-decoration: none; transition: background .2s; white-space: nowrap; align-self: flex-start;
         }
 
-        .stock-btn--accent {
-            background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
-            color: var(--texte-clair);
-            box-shadow: var(--ombre-promo);
-        }
+        .stk-hero__cta:hover { background: rgba(255,255,255,.26); }
 
-        .stock-btn--accent:hover {
-            background: linear-gradient(135deg, var(--couleur-dominante-hover) 0%, var(--bleu-fonce) 100%);
-            transform: translateY(-2px);
-        }
-
-        .stock-banner-ok {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            padding: 0.9rem 1.1rem;
-            margin-bottom: 1.25rem;
-            border-radius: var(--stock-radius-sm);
-            background: var(--success-bg);
-            border: 1px solid var(--success-border);
-            color: var(--titres);
-            font-weight: 500;
-        }
-
-        .stock-banner-ok i {
-            color: var(--couleur-dominante);
-        }
-
-        .stock-section {
-            background: var(--fond-principal);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--stock-radius);
-            padding: 1.35rem 1.35rem 1.6rem;
-            box-shadow: var(--glass-shadow);
-        }
-
-        .stock-section__head {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            margin-bottom: 1.35rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-input);
-        }
-
-        .stock-section__head h2 {
-            margin: 0;
-            font-family: var(--font-titres);
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--titres);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .stock-section__head h2 i {
-            color: var(--accent-promo);
-        }
-
-        .stock-cat-grid {
+        /* ---- Stat cards ---- */
+        .stk-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(152px, 250px));
-            gap: 1rem;
-            justify-content: start;
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            gap: 12px;
         }
 
-        .stock-cat-card {
-            display: flex;
-            flex-direction: column;
-            background: var(--fond-principal);
-            border-radius: var(--stock-radius-sm);
-            overflow: hidden;
-            box-shadow: 0 2px 14px rgba(53, 100, 166, 0.06);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            border: 1px solid var(--border-input);
-            max-width: 250px;
-            width: 100%;
-            min-width: 0;
-            justify-self: center;
+        .stk-stat {
+            background: #fff; border-radius: 15px;
+            border: 1px solid rgba(53,100,166,.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,.04);
+            padding: 16px 15px;
+            display: flex; align-items: center; gap: 13px;
+            transition: transform .2s, box-shadow .2s;
         }
 
-        .stock-cat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--ombre-gourmande);
-            border-color: rgba(53, 100, 166, 0.35);
+        .stk-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(53,100,166,.1); }
+
+        .stk-stat__icon {
+            width: 42px; height: 42px; border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.95rem; flex-shrink: 0;
         }
 
-        .stock-cat-card__media {
-            position: relative;
-            flex-shrink: 0;
-            height: 120px;
-            max-height: 120px;
-            background: linear-gradient(180deg, var(--fond-secondaire) 0%, var(--blanc-neige) 100%);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .stk-stat--total   .stk-stat__icon { background: rgba(5,150,105,.1);  color: #059669; }
+        .stk-stat--actif   .stk-stat__icon { background: rgba(34,197,94,.1);  color: #15803d; }
+        .stk-stat--rupture .stk-stat__icon { background: rgba(239,68,68,.1);  color: #b91c1c; }
+        .stk-stat--inactif .stk-stat__icon { background: rgba(156,163,175,.15); color: #6b7280; }
+
+        .stk-stat__val { font-size: 1.55rem; font-weight: 900; color: var(--titres, #0d0d0d); line-height: 1.0; font-family: var(--font-titres, 'Poppins', sans-serif); }
+        .stk-stat__lbl { font-size: 0.7rem; font-weight: 700; color: var(--gris-moyen, #737373); text-transform: uppercase; letter-spacing: .06em; }
+
+        /* ---- Alert ---- */
+        .stk-alert {
+            display: flex; align-items: flex-start; gap: 11px;
+            padding: 13px 17px; border-radius: 13px;
+            font-size: 0.83rem; font-weight: 500;
+            background: rgba(34,197,94,.09); border: 1px solid rgba(34,197,94,.22); color: #15803d;
         }
 
-        .stock-cat-card__media img {
-            max-width: 100%;
-            max-height: 120px;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            display: block;
+        .stk-alert i { margin-top: 2px; font-size: 1rem; flex-shrink: 0; }
+
+        /* ---- Barre de recherche & filtres ---- */
+        .stk-filters {
+            background: #fff; border-radius: 16px;
+            border: 1px solid rgba(53,100,166,.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,.04);
+            padding: 16px 18px;
         }
 
-        .stock-cat-card__placeholder {
-            width: 100%;
-            max-height: 120px;
-            height: 120px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--couleur-dominante);
-            font-size: clamp(1.35rem, 5vw, 1.85rem);
-            opacity: 0.55;
+        .stk-filters__form {
+            display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
         }
 
-        .stock-cat-card__body {
-            padding: 0.75rem 0.82rem 0.85rem;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            gap: 0.45rem;
+        .stk-filters__group { display: flex; flex-direction: column; gap: 4px; }
+
+        .stk-filters__label {
+            font-size: 0.68rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .06em;
+            color: var(--gris-moyen, #737373);
         }
 
-        .stock-cat-card__body h3 {
-            margin: 0;
-            font-size: 0.92rem;
-            font-weight: 700;
-            color: var(--titres);
-            line-height: 1.28;
+        .stk-filters__search {
+            display: flex; align-items: center; gap: 0;
+            border: 1.5px solid rgba(53,100,166,.18);
+            border-radius: 10px; background: #f9fbff;
+            overflow: hidden; transition: border-color .2s, box-shadow .2s;
+            flex: 1; min-width: 200px;
         }
 
-        .stock-cat-card__desc {
-            margin: 0;
-            font-size: 0.78rem;
-            line-height: 1.38;
-            color: var(--texte-mute);
-            flex: 1;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .stk-filters__search:focus-within {
+            border-color: var(--couleur-dominante, #3564a6);
+            box-shadow: 0 0 0 3px rgba(53,100,166,.1);
         }
 
-        .stock-cat-card__actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.45rem;
-            margin-top: 0.25rem;
+        .stk-filters__search-icon {
+            padding: 0 12px; color: var(--gris-clair, #a3a3a3); font-size: .85rem;
         }
 
-        .stock-cat-card__actions a {
-            flex: 1 1 auto;
-            min-width: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.35rem;
-            padding: 0.42rem 0.5rem;
-            border-radius: 9px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: background 0.15s, color 0.15s, transform 0.15s;
+        .stk-filters__search input {
+            flex: 1; border: none; background: transparent;
+            padding: 10px 10px 10px 0; font-size: .86rem;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+            color: var(--titres, #0d0d0d); outline: none;
         }
 
-        .stock-act-view {
-            background: var(--bleu-pale);
-            color: var(--couleur-dominante);
-            border: 1px solid var(--border-input);
+        .stk-filters__select {
+            padding: 10px 14px; border-radius: 10px;
+            border: 1.5px solid rgba(53,100,166,.18);
+            background: #f9fbff; font-size: .86rem;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+            color: var(--titres, #0d0d0d); outline: none;
+            transition: border-color .2s, box-shadow .2s; cursor: pointer;
         }
 
-        .stock-act-view:hover {
-            background: var(--couleur-dominante);
-            color: var(--texte-clair);
-            transform: translateY(-1px);
+        .stk-filters__select:focus {
+            border-color: var(--couleur-dominante, #3564a6);
+            box-shadow: 0 0 0 3px rgba(53,100,166,.1);
         }
 
-        .stock-act-edit {
-            background: var(--fond-secondaire);
-            color: var(--gris-fonce);
-            border: 1px solid var(--border-input);
+        .stk-filters__submit {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 20px; border-radius: 10px;
+            background: #059669; color: #fff;
+            font-size: .82rem; font-weight: 700;
+            border: none; cursor: pointer;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+            transition: background .2s; white-space: nowrap;
         }
 
-        .stock-act-edit:hover {
-            border-color: var(--couleur-dominante);
-            color: var(--couleur-dominante);
+        .stk-filters__submit:hover { background: #047857; }
+
+        .stk-filters__reset {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 16px; border-radius: 10px;
+            background: rgba(0,0,0,.04); color: var(--gris-moyen, #737373);
+            font-size: .8rem; font-weight: 600;
+            border: none; cursor: pointer;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+            text-decoration: none; transition: background .2s;
         }
 
-        .stock-act-del {
-            background: var(--error-bg);
-            color: var(--orange-fonce);
-            border: 1px solid var(--error-border);
+        .stk-filters__reset:hover { background: rgba(0,0,0,.08); color: var(--titres, #0d0d0d); }
+
+        .stk-filters__results {
+            margin-top: 10px; font-size: .78rem;
+            color: var(--gris-moyen, #737373); display: flex; align-items: center; gap: 6px;
         }
 
-        .stock-act-del:hover {
-            background: var(--orange);
-            color: var(--texte-clair);
-            border-color: var(--orange);
+        .stk-filters__results strong { color: var(--titres, #0d0d0d); }
+
+        /* ---- Grille produits ---- */
+        .stk-section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 10px;
         }
 
-        .stock-empty {
-            text-align: center;
-            padding: 2.75rem 1.5rem;
-            background: var(--fond-secondaire);
-            border-radius: var(--stock-radius-sm);
-            border: 1px dashed var(--border-input);
+        .stk-section-title {
+            font-size: 1.02rem; font-weight: 800;
+            color: var(--titres, #0d0d0d);
+            font-family: var(--font-titres, 'Poppins', sans-serif);
+            display: flex; align-items: center; gap: 8px;
         }
 
-        .stock-empty i {
-            font-size: 2.5rem;
-            color: var(--couleur-dominante);
-            opacity: 0.45;
-            margin-bottom: 1rem;
+        .stk-section-title::before {
+            content: ''; width: 4px; height: 17px; border-radius: 3px;
+            background: #059669; display: inline-block;
         }
 
-        .stock-empty h3 {
-            margin: 0 0 0.5rem;
-            font-family: var(--font-titres);
-            color: var(--titres);
+        .stk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+            gap: 14px;
         }
 
-        .stock-empty p {
-            margin: 0 0 1.25rem;
-            color: var(--texte-mute);
-            font-size: 0.95rem;
-        }
-
-        @media (max-width: 640px) {
-            .stock-hero {
-                padding: 1.25rem;
-            }
-
-            .stock-hero__actions {
-                width: 100%;
-            }
-
-            .stock-btn {
-                flex: 1 1 auto;
-                justify-content: center;
-            }
-
-            .stock-cat-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 0.55rem 0.45rem;
-                justify-content: stretch;
-            }
-
-            .stock-cat-card {
-                min-width: 0;
-                max-width: min(250px, 100%);
-            }
-
-            .stock-cat-card__media {
-                height: 120px;
-                max-height: 120px;
-            }
-
-            .stock-cat-card__placeholder {
-                height: 120px;
-                max-height: 120px;
-                font-size: 1.15rem;
-            }
-
-            .stock-cat-card__body {
-                padding: 0.4rem 0.4rem 0.5rem;
-                gap: 0.28rem;
-            }
-
-            .stock-cat-card__body h3 {
-                font-size: 0.72rem;
-                font-weight: 700;
-                line-height: 1.2;
-            }
-
-            .stock-cat-card__desc {
-                font-size: 0.6rem;
-                line-height: 1.28;
-                -webkit-line-clamp: 2;
-                line-clamp: 2;
-            }
-
-            .stock-cat-card .stock-rayon-count {
-                font-size: 0.58rem;
-                line-height: 1.2;
-                margin: 0;
-                font-weight: 600;
-            }
-
-            .stock-cat-card .stock-rayon-count i {
-                font-size: 0.7em;
-                margin-right: 0.15em;
-            }
-
-            .stock-cat-card__actions {
-                flex-direction: column;
-                align-items: stretch;
-                margin-top: 0.1rem;
-                gap: 0.28rem;
-            }
-
-            .stock-cat-card__actions a {
-                min-width: 0;
-                font-size: 0.55rem;
-                font-weight: 600;
-                padding: 0.3rem 0.32rem;
-                border-radius: 8px;
-                gap: 0.2rem;
-            }
-
-            .stock-cat-card__actions a i {
-                font-size: 0.75em;
-            }
-        }
-
-        button.stock-btn {
+        /* ---- Carte produit ---- */
+        .stk-card {
+            background: #fff; border-radius: 17px;
+            border: 1px solid rgba(53,100,166,.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,.05);
+            overflow: hidden; display: flex; flex-direction: column;
             cursor: pointer;
-            font-family: inherit;
-            border: none;
+            transition: transform .2s, box-shadow .2s;
         }
 
-        /* Modal plein écran — nouvelle catégorie */
+        .stk-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(53,100,166,.13); }
+
+        /* Image */
+        .stk-card__img-wrap {
+            position: relative; aspect-ratio: 4/3; overflow: hidden; background: #f1f5f9;
+        }
+
+        .stk-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
+        .stk-card:hover .stk-card__img { transform: scale(1.05); }
+
+        /* Badge statut */
+        .stk-card__badge {
+            position: absolute; top: 8px; right: 8px;
+            font-size: .66rem; font-weight: 700;
+            padding: 3px 9px; border-radius: 20px;
+            display: inline-flex; align-items: center; gap: 4px;
+            backdrop-filter: blur(6px);
+        }
+
+        .stk-card__badge--actif    { background: rgba(34,197,94,.18); color: #fff; border: 1px solid rgba(134,239,172,.35); }
+        .stk-card__badge--inactif  { background: rgba(0,0,0,.45); color: rgba(255,255,255,.8); }
+        .stk-card__badge--rupture_stock { background: rgba(239,68,68,.18); color: #fff; border: 1px solid rgba(239,68,68,.4); }
+
+        /* Stock bas */
+        .stk-card__stock-bar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 5px 10px;
+            background: linear-gradient(0deg, rgba(0,0,0,.55) 0%, transparent 100%);
+            color: #fff; font-size: .69rem; font-weight: 700;
+            display: flex; align-items: center; gap: 4px;
+        }
+
+        .stk-card__stock-bar.low { color: #fca5a5; }
+        .stk-card__stock-bar.empty { color: #f87171; }
+
+        /* Body */
+        .stk-card__body { padding: 13px 14px 11px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+
+        .stk-card__name {
+            font-size: .88rem; font-weight: 800;
+            color: var(--titres, #0d0d0d);
+            font-family: var(--font-titres, 'Poppins', sans-serif);
+            line-height: 1.2;
+            overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+        }
+
+        .stk-card__cat {
+            font-size: .71rem; color: var(--gris-moyen, #737373); font-weight: 600;
+        }
+
+        .stk-card__prix-row { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; }
+        .stk-card__prix     { font-size: 1.02rem; font-weight: 900; color: var(--titres, #0d0d0d); font-family: var(--font-titres, 'Poppins', sans-serif); }
+        .stk-card__unit     { font-size: .65rem; font-weight: 600; color: var(--gris-moyen, #737373); }
+        .stk-card__promo    { font-size: .72rem; font-weight: 700; color: #15803d; background: rgba(34,197,94,.1); padding: 1px 7px; border-radius: 6px; }
+
+        /* Footer */
+        .stk-card__footer {
+            display: flex; gap: 7px;
+            padding: 10px 14px;
+            border-top: 1px solid rgba(53,100,166,.07);
+            background: rgba(53,100,166,.02);
+        }
+
+        .stk-card-btn {
+            flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+            padding: 7px 10px; border-radius: 8px;
+            font-size: .75rem; font-weight: 700;
+            text-decoration: none; border: none; cursor: pointer;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+            transition: all .18s;
+        }
+
+        .stk-card-btn--stock  { background: rgba(5,150,105,.1); color: #059669; }
+        .stk-card-btn--stock:hover  { background: #059669; color: #fff; }
+        .stk-card-btn--edit   { background: rgba(53,100,166,.08); color: var(--couleur-dominante, #3564a6); }
+        .stk-card-btn--edit:hover   { background: var(--couleur-dominante, #3564a6); color: #fff; }
+        .stk-card-btn--delete { background: rgba(239,68,68,.08); color: #b91c1c; }
+        .stk-card-btn--delete:hover { background: #ef4444; color: #fff; }
+
+        /* ---- Pagination ---- */
+        .stk-pagination {
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px; flex-wrap: wrap;
+        }
+
+        .stk-pag-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 10px;
+            font-size: .82rem; font-weight: 700;
+            text-decoration: none; color: var(--titres, #0d0d0d);
+            background: #fff; border: 1.5px solid rgba(53,100,166,.14);
+            transition: all .18s; font-family: var(--font-corps, 'Poppins', sans-serif);
+        }
+
+        .stk-pag-btn:hover { background: rgba(53,100,166,.07); border-color: var(--couleur-dominante, #3564a6); }
+        .stk-pag-btn--active { background: #059669; color: #fff; border-color: #059669; box-shadow: 0 4px 10px rgba(5,150,105,.3); }
+        .stk-pag-btn--prev, .stk-pag-btn--next { width: auto; padding: 0 14px; gap: 5px; }
+        .stk-pag-btn--disabled { opacity: .38; pointer-events: none; }
+
+        .stk-pag-info { font-size: .78rem; color: var(--gris-moyen, #737373); padding: 0 6px; }
+
+        /* ---- Empty state ---- */
+        .stk-empty {
+            background: #fff; border-radius: 18px;
+            border: 1px solid rgba(53,100,166,.08);
+            padding: 54px 24px; text-align: center;
+            color: var(--gris-moyen, #737373);
+        }
+
+        .stk-empty__icon {
+            width: 68px; height: 68px; border-radius: 18px;
+            background: rgba(5,150,105,.08); color: #059669;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; margin: 0 auto 16px;
+        }
+
+        .stk-empty h3 { font-size: 1rem; font-weight: 700; color: var(--titres, #0d0d0d); margin-bottom: 6px; }
+        .stk-empty p  { font-size: .84rem; max-width: 340px; margin: 0 auto 18px; }
+
+        /* ===== MODAL CATÉGORIE (repris du design original) ===== */
         .stock-cat-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 10050;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: clamp(0.75rem, 3vw, 1.5rem);
-            background: rgba(13, 13, 13, 0.55);
+            position: fixed; inset: 0; z-index: 10050;
+            display: flex; align-items: center; justify-content: center;
+            padding: clamp(.75rem,3vw,1.5rem);
+            background: rgba(13,13,13,.55);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.28s ease, visibility 0.28s ease;
+            opacity: 0; visibility: hidden;
+            transition: opacity .28s ease, visibility .28s ease;
         }
 
-        .stock-cat-modal.stock-cat-modal--open {
-            opacity: 1;
-            visibility: visible;
-        }
+        .stock-cat-modal.stock-cat-modal--open { opacity: 1; visibility: visible; }
 
         .stock-cat-modal__panel {
-            width: 100%;
-            max-width: 32rem;
-            max-height: min(92vh, 46rem);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            background: var(--fond-principal);
+            width: 100%; max-width: 32rem; max-height: min(92vh,46rem);
+            overflow: hidden; display: flex; flex-direction: column;
+            background: var(--fond-principal, #fff);
             border-radius: 22px;
-            box-shadow:
-                0 25px 60px rgba(53, 100, 166, 0.22),
-                0 0 0 1px rgba(53, 100, 166, 0.12);
-            transform: translateY(12px) scale(0.98);
-            transition: transform 0.32s cubic-bezier(0.34, 1.2, 0.64, 1);
+            box-shadow: 0 25px 60px rgba(53,100,166,.22), 0 0 0 1px rgba(53,100,166,.12);
+            transform: translateY(12px) scale(.98);
+            transition: transform .32s cubic-bezier(.34,1.2,.64,1);
         }
 
-        .stock-cat-modal.stock-cat-modal--open .stock-cat-modal__panel {
-            transform: translateY(0) scale(1);
-        }
+        .stock-cat-modal.stock-cat-modal--open .stock-cat-modal__panel { transform: translateY(0) scale(1); }
 
         .stock-cat-modal__head {
-            flex-shrink: 0;
-            padding: 1.35rem 1.35rem 1rem;
-            background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
-            color: var(--texte-clair);
-            position: relative;
+            flex-shrink: 0; padding: 1.35rem 1.35rem 1rem;
+            background: linear-gradient(135deg, var(--couleur-dominante,#3564a6) 0%, var(--bleu-fonce,#2d5690) 100%);
+            color: #fff; position: relative;
         }
 
         .stock-cat-modal__head-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.2);
-            margin-bottom: 0.75rem;
-            font-size: 1.25rem;
+            width: 48px; height: 48px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,.2); margin-bottom: .75rem; font-size: 1.25rem;
         }
 
-        .stock-cat-modal__head h2 {
-            margin: 0;
-            font-family: var(--font-titres);
-            font-size: 1.35rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-
-        .stock-cat-modal__head p {
-            margin: 0.4rem 0 0;
-            font-size: 0.88rem;
-            opacity: 0.92;
-            line-height: 1.45;
-        }
+        .stock-cat-modal__head h2 { margin: 0; font-size: 1.35rem; font-weight: 700; }
+        .stock-cat-modal__head p  { margin: .4rem 0 0; font-size: .88rem; opacity: .92; line-height: 1.45; }
 
         .stock-cat-modal__close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 42px;
-            height: 42px;
-            border: none;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.18);
-            color: var(--texte-clair);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.15rem;
-            transition: background 0.2s ease, transform 0.2s ease;
+            position: absolute; top: 1rem; right: 1rem;
+            width: 42px; height: 42px; border: none; border-radius: 12px;
+            background: rgba(255,255,255,.18); color: #fff;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 1.15rem; transition: background .2s, transform .2s;
         }
 
-        .stock-cat-modal__close:hover {
-            background: rgba(255, 255, 255, 0.28);
-            transform: scale(1.05);
-        }
+        .stock-cat-modal__close:hover { background: rgba(255,255,255,.28); transform: scale(1.05); }
 
-        .stock-cat-modal__body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.35rem 1.35rem 1.5rem;
-            -webkit-overflow-scrolling: touch;
-        }
+        .stock-cat-modal__body { flex: 1; overflow-y: auto; padding: 1.35rem 1.35rem 1.5rem; }
 
         .stock-cat-modal__err {
-            display: flex;
-            gap: 0.65rem;
-            padding: 0.85rem 1rem;
-            margin-bottom: 1.15rem;
-            border-radius: 12px;
-            background: var(--error-bg);
-            border: 1px solid var(--error-border);
-            color: var(--titres);
-            font-size: 0.88rem;
-            line-height: 1.45;
+            display: flex; gap: .65rem; padding: .85rem 1rem; margin-bottom: 1.15rem;
+            border-radius: 12px; background: rgba(255,107,53,.1); border: 1px solid rgba(255,107,53,.2);
+            color: var(--titres, #0d0d0d); font-size: .88rem; line-height: 1.45;
         }
 
-        .stock-cat-modal__err i {
-            flex-shrink: 0;
-            margin-top: 0.1rem;
-            color: var(--orange);
-        }
+        .stock-cat-modal__err i { flex-shrink: 0; margin-top: .1rem; color: var(--orange,#FF6B35); }
 
-        .stock-cat-field {
-            margin-bottom: 1.15rem;
-        }
+        .stock-cat-field { margin-bottom: 1.15rem; }
 
         .stock-cat-field label {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--titres);
-            margin-bottom: 0.45rem;
+            display: flex; align-items: center; gap: .35rem;
+            font-size: .82rem; font-weight: 600; color: var(--titres,#0d0d0d); margin-bottom: .45rem;
         }
 
-        .stock-cat-field label .hint {
-            font-weight: 400;
-            color: var(--texte-mute);
-        }
+        .stock-cat-field label .hint { font-weight: 400; color: var(--gris-moyen,#737373); }
 
         .stock-cat-field input[type="text"],
         .stock-cat-field textarea {
-            width: 100%;
-            padding: 0.85rem 1rem;
-            border: 2px solid var(--border-input);
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-family: var(--font-corps);
-            color: var(--texte-fonce);
-            background: var(--fond-principal);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            width: 100%; padding: .85rem 1rem;
+            border: 2px solid rgba(53,100,166,.18); border-radius: 12px;
+            font-size: .95rem; font-family: var(--font-corps,inherit);
+            color: var(--titres,#0d0d0d); background: var(--fond-principal,#fff);
+            transition: border-color .2s, box-shadow .2s; box-sizing: border-box;
         }
 
-        .stock-cat-field textarea {
-            min-height: 6.5rem;
-            resize: vertical;
-        }
+        .stock-cat-field textarea { min-height: 6.5rem; resize: vertical; }
 
-        .stock-cat-field input:focus,
-        .stock-cat-field textarea:focus {
-            outline: none;
-            border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 4px var(--focus-ring);
+        .stock-cat-field input:focus, .stock-cat-field textarea:focus {
+            outline: none; border-color: var(--couleur-dominante,#3564a6);
+            box-shadow: 0 0 0 4px rgba(53,100,166,.1);
         }
 
         .stock-cat-file {
-            position: relative;
-            border: 2px dashed var(--border-input);
-            border-radius: 14px;
-            padding: 1.1rem 1rem;
-            text-align: center;
-            background: var(--fond-secondaire);
-            transition: border-color 0.2s ease, background 0.2s ease;
+            position: relative; border: 2px dashed rgba(53,100,166,.22);
+            border-radius: 14px; padding: 1.1rem 1rem; text-align: center;
+            background: #fafbff; transition: border-color .2s, background .2s;
         }
 
-        .stock-cat-file:hover {
-            border-color: var(--couleur-dominante);
-            background: var(--bleu-pale);
-        }
+        .stock-cat-file:hover { border-color: var(--couleur-dominante,#3564a6); background: rgba(53,100,166,.04); }
 
-        .stock-cat-file input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
-        }
-
-        .stock-cat-file__hint {
-            font-size: 0.8rem;
-            color: var(--texte-mute);
-            margin-top: 0.35rem;
-        }
+        .stock-cat-file input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        .stock-cat-file__hint { font-size: .8rem; color: var(--gris-moyen,#737373); margin-top: .35rem; }
 
         .stock-cat-modal__actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.65rem;
-            margin-top: 1.25rem;
-            padding-top: 1.1rem;
-            border-top: 1px solid var(--border-input);
+            display: flex; flex-wrap: wrap; gap: .65rem;
+            margin-top: 1.25rem; padding-top: 1.1rem;
+            border-top: 1px solid rgba(53,100,166,.1);
         }
 
         .stock-cat-modal__btn {
-            flex: 1 1 auto;
-            min-width: 8rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-            padding: 0.85rem 1.1rem;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.92rem;
-            cursor: pointer;
-            font-family: inherit;
-            border: none;
-            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            flex: 1 1 auto; min-width: 8rem;
+            display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+            padding: .85rem 1.1rem; border-radius: 12px;
+            font-weight: 600; font-size: .92rem;
+            cursor: pointer; font-family: inherit; border: none; transition: transform .18s;
         }
 
         .stock-cat-modal__btn--ghost {
-            background: var(--fond-secondaire);
-            color: var(--gris-fonce);
-            border: 2px solid var(--border-input);
+            background: #f9fafb; color: var(--gris-fonce,#4a4a4a);
+            border: 2px solid rgba(53,100,166,.18);
         }
 
-        .stock-cat-modal__btn--ghost:hover {
-            border-color: var(--couleur-dominante);
-            color: var(--couleur-dominante);
-        }
+        .stock-cat-modal__btn--ghost:hover { border-color: var(--couleur-dominante,#3564a6); color: var(--couleur-dominante,#3564a6); }
 
         .stock-cat-modal__btn--primary {
-            background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
-            color: var(--texte-clair);
-            box-shadow: var(--ombre-promo);
+            background: linear-gradient(135deg, var(--couleur-dominante,#3564a6) 0%, var(--bleu-fonce,#2d5690) 100%);
+            color: #fff; box-shadow: 0 4px 14px rgba(53,100,166,.25);
         }
 
-        .stock-cat-modal__btn--primary:hover {
-            transform: translateY(-2px);
+        .stock-cat-modal__btn--primary:hover { transform: translateY(-2px); }
+
+        body.stock-cat-modal-active { overflow: hidden; }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            .stk-page { gap: 16px; padding-bottom: 96px; }
+
+            .stk-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .stk-header__actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .stk-header__actions .stk-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 8px 10px;
+                font-size: 0.74rem;
+            }
+
+            .stk-hero {
+                padding: 16px 14px;
+                border-radius: 16px;
+            }
+
+            .stk-hero__inner {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .stk-hero__count { font-size: 1.75rem; }
+            .stk-hero__sub { font-size: 0.72rem; }
+
+            .stk-hero__pills {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+                margin-top: 10px;
+            }
+
+            .stk-hero__pill {
+                justify-content: center;
+                padding: 7px 10px;
+                font-size: 0.7rem;
+                border-radius: 10px;
+            }
+
+            .stk-hero__cta {
+                width: 100%;
+                justify-content: center;
+                padding: 9px 12px;
+                font-size: 0.74rem;
+            }
+
+            .stk-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .stk-stat {
+                padding: 12px 10px;
+                border-radius: 14px;
+                gap: 10px;
+            }
+
+            .stk-stat__icon { width: 36px; height: 36px; font-size: 0.85rem; }
+            .stk-stat__val { font-size: 1.25rem; }
+            .stk-stat__lbl { font-size: 0.62rem; }
+
+            .stk-filters {
+                padding: 14px 12px;
+                border-radius: 14px;
+            }
+
+            .stk-filters__form {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .stk-filters__search,
+            .stk-filters__group,
+            .stk-filters__select {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .stk-filters__submit {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
-        body.stock-cat-modal-active {
-            overflow: hidden;
+        @media (max-width: 640px) {
+            .stk-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
         }
 
-        .stock-section--rayons {
-            margin-bottom: 1.35rem;
-        }
-
-        .stock-rayon-count {
-            margin: 0;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--couleur-dominante);
+        @media (max-width: 380px) {
+            .stk-grid { grid-template-columns: 1fr; }
+            .stk-header__actions { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 
-<body class="stock-page<?php echo ($cat_modal_open && empty($stock_catalogue_vendeur_seul)) ? ' stock-cat-modal-active' : ''; ?>">
+<body class="<?php echo ($cat_modal_open && !$stock_catalogue_vendeur_seul) ? 'stock-cat-modal-active' : ''; ?>">
     <?php include '../includes/nav.php'; ?>
 
-    <div class="stock-shell">
-        <header class="stock-hero">
-            <div class="stock-hero__title-wrap">
-                <h1><i class="fas fa-boxes-stacked" aria-hidden="true"></i> Gestion du stock</h1>
-                <span class="stock-hero__badge" aria-live="polite">
-                    <i class="fas fa-tags" aria-hidden="true"></i>
-                    <?php echo (int) $nb_cat; ?>
-                    <?php if (!empty($stock_catalogue_vendeur_seul)): ?>
-                        rayon<?php echo $nb_cat > 1 ? 's' : ''; ?> (sous-cat. plateforme) avec produits
-                    <?php else: ?>
-                        catégorie<?php echo $nb_cat > 1 ? 's' : ''; ?>
-                    <?php endif; ?>
-                </span>
+    <div class="stk-page">
+
+        <!-- ===== HEADER ===== -->
+        <header class="stk-header">
+            <div class="stk-header__left">
+                <p class="stk-header__eyebrow"><i class="fas fa-boxes-stacked"></i> Inventaire &amp; stock</p>
+                <h1 class="stk-header__title">Gestion du stock</h1>
             </div>
-            <div class="stock-hero__actions">
-                <a href="mouvements.php" class="stock-btn stock-btn--ghost">
-                    <i class="fas fa-history" aria-hidden="true"></i> Historique des mouvements
+            <div class="stk-header__actions">
+                <a href="mouvements.php" class="stk-btn stk-btn--outline">
+                    <i class="fas fa-history"></i> Mouvements
                 </a>
-                <?php if (empty($stock_catalogue_vendeur_seul)): ?>
-                <button type="button" class="stock-btn stock-btn--accent js-open-stock-cat-modal">
-                    <i class="fas fa-plus" aria-hidden="true"></i> Nouvelle catégorie
-                </button>
+                <?php if (!$stock_catalogue_vendeur_seul): ?>
+                    <button type="button" class="stk-btn stk-btn--outline js-open-stock-cat-modal">
+                        <i class="fas fa-folder-plus"></i> Catégorie
+                    </button>
                 <?php endif; ?>
-        </div>
+                <a href="../produits/ajouter.php" class="stk-btn stk-btn--primary">
+                    <i class="fas fa-plus"></i> Nouveau produit
+                </a>
+            </div>
         </header>
 
-    <?php if (!empty($success_message)): ?>
-        <div class="stock-banner-ok" role="status">
-            <i class="fas fa-check-circle" aria-hidden="true"></i>
-            <span><?php echo htmlspecialchars($success_message); ?></span>
-        </div>
-    <?php endif; ?>
-
-        <?php if (!empty($rayons_avec_produits)): ?>
-        <section class="stock-section stock-section--rayons" aria-labelledby="stock-rayons-heading">
-            <div class="stock-section__head">
-                <h2 id="stock-rayons-heading"><i class="fas fa-store" aria-hidden="true"></i>
-                    Rayons — produits publiés
-                </h2>
-            </div>
-            <div class="stock-cat-grid">
-                <?php foreach ($rayons_avec_produits as $rayon): ?>
-                <article class="stock-cat-card">
-                    <div class="stock-cat-card__media">
-                        <div class="stock-cat-card__placeholder" aria-hidden="true">
-                            <i class="<?php echo htmlspecialchars(categorie_fa_icon_class($rayon)); ?>"></i>
+        <!-- ===== HERO ===== -->
+        <div class="stk-hero">
+            <div class="stk-hero__inner">
+                <div>
+                    <p class="stk-hero__label">Total en stock</p>
+                    <div class="stk-hero__count"><?php echo $nb_total; ?></div>
+                    <p class="stk-hero__sub">produit<?php echo $nb_total > 1 ? 's' : ''; ?> enregistr&eacute;<?php echo $nb_total > 1 ? 's' : ''; ?></p>
+                    <div class="stk-hero__pills">
+                        <div class="stk-hero__pill stk-hero__pill--ok">
+                            <i class="fas fa-circle-check" style="font-size:.68rem;"></i>
+                            <strong><?php echo $nb_actif; ?></strong> actif<?php echo $nb_actif > 1 ? 's' : ''; ?>
                         </div>
+                        <?php if ($nb_rupture > 0): ?>
+                            <div class="stk-hero__pill stk-hero__pill--err">
+                                <i class="fas fa-triangle-exclamation" style="font-size:.68rem;"></i>
+                                <strong><?php echo $nb_rupture; ?></strong> rupture<?php echo $nb_rupture > 1 ? 's' : ''; ?>
+                            </div>
+                        <?php endif; ?>
+                        <?php if ($nb_inactif > 0): ?>
+                            <div class="stk-hero__pill">
+                                <i class="fas fa-eye-slash" style="font-size:.68rem;"></i>
+                                <strong><?php echo $nb_inactif; ?></strong> inactif<?php echo $nb_inactif > 1 ? 's' : ''; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                    <div class="stock-cat-card__body">
-                        <h3><?php echo htmlspecialchars($rayon['nom'] ?? ''); ?></h3>
-                        <p class="stock-cat-card__desc">
-                            <?php
-                            $rdesc = trim((string) ($rayon['description'] ?? ''));
-                            echo $rdesc !== '' ? htmlspecialchars($rdesc) : 'Produits actifs listés pour ce rayon.';
-                            ?>
-                        </p>
-                        <p class="stock-rayon-count">
-                            <i class="fas fa-box-open" aria-hidden="true"></i>
-                            <?php echo (int) ($rayon['nb_produits_actifs'] ?? 0); ?>
-                            produit<?php echo ((int) ($rayon['nb_produits_actifs'] ?? 0)) > 1 ? 's' : ''; ?> publié<?php echo ((int) ($rayon['nb_produits_actifs'] ?? 0)) > 1 ? 's' : ''; ?>
-                        </p>
-                        <div class="stock-cat-card__actions">
-                            <a href="../produits/index.php?categorie_generale_id=<?php echo (int) ($rayon['id'] ?? 0); ?>"
-                                class="stock-act-view">
-                                <i class="fas fa-list" aria-hidden="true"></i> Voir les produits publiés
-                            </a>
-                        </div>
-                    </div>
-                </article>
-                <?php endforeach; ?>
+                </div>
+                <a href="../produits/ajouter.php" class="stk-hero__cta">
+                    <i class="fas fa-plus"></i> Ajouter un produit
+                </a>
             </div>
-        </section>
-        <?php endif; ?>
-
-        <section class="stock-section" aria-labelledby="stock-cat-heading">
-            <div class="stock-section__head">
-                <h2 id="stock-cat-heading"><i class="fas fa-layer-group" aria-hidden="true"></i>
-                    <?php echo !empty($stock_catalogue_vendeur_seul) ? 'Sous-catégories plateforme (vos produits)' : 'Catalogue par catégorie'; ?>
-                </h2>
         </div>
 
-        <?php if (empty($categories)): ?>
-            <div class="stock-empty">
-                <i class="fas fa-tags" aria-hidden="true"></i>
-                <h3>Aucune catégorie</h3>
-                <p><?php echo !empty($stock_catalogue_vendeur_seul)
-                    ? 'Les rayons et sous-catégories sont gérés par la plateforme. Les catégories apparaîtront ici dès que vous aurez classé des produits dans une sous-catégorie lors de l’ajout d’article.'
-                    : 'Créez une première catégorie pour organiser vos produits et le stock.'; ?></p>
-                <?php if (empty($stock_catalogue_vendeur_seul)): ?>
-                <button type="button" class="stock-btn stock-btn--accent js-open-stock-cat-modal">
-                    <i class="fas fa-plus" aria-hidden="true"></i> Ajouter une catégorie
-                </button>
-                <?php endif; ?>
+        <!-- ===== STAT CARDS ===== -->
+        <div class="stk-stats">
+            <div class="stk-stat stk-stat--total">
+                <div class="stk-stat__icon"><i class="fas fa-boxes-stacked"></i></div>
+                <div><div class="stk-stat__val"><?php echo $nb_total; ?></div><div class="stk-stat__lbl">Total</div></div>
             </div>
+            <div class="stk-stat stk-stat--actif">
+                <div class="stk-stat__icon"><i class="fas fa-eye"></i></div>
+                <div><div class="stk-stat__val"><?php echo $nb_actif; ?></div><div class="stk-stat__lbl">Actifs</div></div>
+            </div>
+            <div class="stk-stat stk-stat--rupture">
+                <div class="stk-stat__icon"><i class="fas fa-triangle-exclamation"></i></div>
+                <div><div class="stk-stat__val"><?php echo $nb_rupture; ?></div><div class="stk-stat__lbl">Ruptures</div></div>
+            </div>
+            <div class="stk-stat stk-stat--inactif">
+                <div class="stk-stat__icon"><i class="fas fa-eye-slash"></i></div>
+                <div><div class="stk-stat__val"><?php echo $nb_inactif; ?></div><div class="stk-stat__lbl">Inactifs</div></div>
+            </div>
+        </div>
+
+        <!-- ===== FILTRES ===== -->
+        <div class="stk-filters">
+            <form method="get" action="index.php" class="stk-filters__form" id="stk-filter-form">
+                <!-- Recherche -->
+                <div class="stk-filters__group" style="flex:2;min-width:200px;">
+                    <label class="stk-filters__label" for="stk-search">Recherche</label>
+                    <div class="stk-filters__search">
+                        <span class="stk-filters__search-icon"><i class="fas fa-magnifying-glass"></i></span>
+                        <input type="text" id="stk-search" name="search"
+                            value="<?php echo htmlspecialchars($recherche); ?>"
+                            placeholder="Nom, description, statut&hellip;">
+                    </div>
+                </div>
+
+                <!-- Catégorie -->
+                <div class="stk-filters__group">
+                    <label class="stk-filters__label" for="stk-cat">Cat&eacute;gorie</label>
+                    <select id="stk-cat" name="cat_id" class="stk-filters__select">
+                        <option value="0">Toutes les cat&eacute;gories</option>
+                        <?php foreach ($categories as $cat): ?>
+                            <option value="<?php echo (int)$cat['id']; ?>"
+                                <?php echo $cat_filter === (int)$cat['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($cat['nom']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Statut -->
+                <div class="stk-filters__group">
+                    <label class="stk-filters__label" for="stk-statut">Statut</label>
+                    <select id="stk-statut" name="statut" class="stk-filters__select">
+                        <option value="">Tous les statuts</option>
+                        <option value="actif"         <?php echo $statut_filter === 'actif'          ? 'selected' : ''; ?>>Actif</option>
+                        <option value="inactif"       <?php echo $statut_filter === 'inactif'        ? 'selected' : ''; ?>>Inactif</option>
+                        <option value="rupture_stock" <?php echo $statut_filter === 'rupture_stock'  ? 'selected' : ''; ?>>Rupture de stock</option>
+                    </select>
+                </div>
+
+                <div class="stk-filters__group" style="flex-direction:row;gap:8px;align-items:flex-end;">
+                    <button type="submit" class="stk-filters__submit">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                    <?php if ($recherche !== '' || $cat_filter > 0 || $statut_filter !== ''): ?>
+                        <a href="index.php" class="stk-filters__reset">
+                            <i class="fas fa-xmark"></i> R&eacute;initialiser
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </form>
+
+            <p class="stk-filters__results">
+                <i class="fas fa-list-check"></i>
+                <strong><?php echo $nb_total_filtres; ?></strong> produit<?php echo $nb_total_filtres > 1 ? 's' : ''; ?> trouv&eacute;<?php echo $nb_total_filtres > 1 ? 's' : ''; ?>
+                &mdash; page <strong><?php echo $page; ?></strong> / <?php echo $nb_pages; ?>
+                &nbsp;&nbsp;&bull;&nbsp;&nbsp; affichage par <strong><?php echo $per_page; ?></strong>
+            </p>
+        </div>
+
+        <!-- ===== GRILLE PRODUITS ===== -->
+        <?php if (empty($produits_page)): ?>
+            <div class="stk-empty">
+                <div class="stk-empty__icon"><i class="fas fa-box-open"></i></div>
+                <h3><?php echo ($recherche !== '' || $cat_filter > 0 || $statut_filter !== '') ? 'Aucun produit trouv&eacute;' : 'Aucun produit enregistr&eacute;'; ?></h3>
+                <p>
+                    <?php if ($recherche !== '' || $cat_filter > 0 || $statut_filter !== ''): ?>
+                        Essayez d&apos;autres crit&egrave;res de recherche ou <a href="index.php" style="color:#059669;font-weight:600;">r&eacute;initialisez les filtres</a>.
+                    <?php else: ?>
+                        Ajoutez votre premier produit pour commencer &agrave; g&eacute;rer votre stock.
+                    <?php endif; ?>
+                </p>
+                <a href="../produits/ajouter.php" class="stk-btn stk-btn--primary">
+                    <i class="fas fa-plus"></i> Ajouter un produit
+                </a>
+            </div>
+
         <?php else: ?>
-            <div class="stock-cat-grid">
-                <?php foreach ($categories as $categorie): ?>
-                <article class="stock-cat-card">
-                    <div class="stock-cat-card__media">
-                        <?php if (!empty($categorie['image'])): ?>
-                                <img src="/upload/<?php echo htmlspecialchars($categorie['image']); ?>"
-                            alt=""
-                            onerror="this.onerror=null;this.src='/image/produit1.jpg'">
-                            <?php else: ?>
-                        <div class="stock-cat-card__placeholder" aria-hidden="true">
-                                    <i class="fas fa-tag"></i>
-                                </div>
-                            <?php endif; ?>
+
+            <div class="stk-section-head">
+                <h2 class="stk-section-title">Produits (<?php echo $nb_total_filtres; ?>)</h2>
+                <a href="../produits/ajouter.php" class="stk-btn stk-btn--primary" style="font-size:.78rem;padding:8px 16px;">
+                    <i class="fas fa-plus"></i> Ajouter
+                </a>
+            </div>
+
+            <div class="stk-grid">
+                <?php foreach ($produits_page as $produit):
+                    $statut_p   = $produit['statut'] ?? 'inactif';
+                    $stock_nb   = (int)($produit['stock'] ?? 0);
+                    $stock_cls  = $stock_nb === 0 ? 'empty' : ($stock_nb <= 3 ? 'low' : '');
+                    $badge_lbl  = match($statut_p) {
+                        'actif'         => 'Actif',
+                        'inactif'       => 'Inactif',
+                        'rupture_stock' => 'Rupture',
+                        default         => ucfirst($statut_p),
+                    };
+                ?>
+                    <article class="stk-card"
+                        onclick="window.location='../produits/ajuster-stock.php?id=<?php echo (int)$produit['id']; ?>'">
+
+                        <div class="stk-card__img-wrap">
+                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>"
+                                alt="<?php echo htmlspecialchars($produit['nom'] ?? ''); ?>"
+                                class="stk-card__img"
+                                onerror="this.src='/image/produit1.jpg'">
+
+                            <span class="stk-card__badge stk-card__badge--<?php echo htmlspecialchars($statut_p); ?>">
+                                <?php echo $badge_lbl; ?>
+                            </span>
+
+                            <div class="stk-card__stock-bar <?php echo $stock_cls; ?>">
+                                <i class="fas fa-warehouse" style="font-size:.65rem;"></i>
+                                Stock&nbsp;<strong><?php echo $stock_nb; ?></strong>
+                            </div>
                         </div>
-                    <div class="stock-cat-card__body">
-                        <h3><?php echo htmlspecialchars($categorie['nom']); ?></h3>
-                        <p class="stock-cat-card__desc">
-                                <?php echo htmlspecialchars($categorie['description'] ?? 'Aucune description'); ?>
-                            </p>
-                        <div class="stock-cat-card__actions">
-                            <a href="../categories/produits.php?id=<?php echo (int) $categorie['id']; ?>"
-                                class="stock-act-view">
-                                <i class="fas fa-box" aria-hidden="true"></i> Produits
-                            </a>
-                            <?php if (empty($stock_catalogue_vendeur_seul)): ?>
-                            <a href="../categories/modifier.php?id=<?php echo (int) $categorie['id']; ?>"
-                                class="stock-act-edit">
-                                <i class="fas fa-edit" aria-hidden="true"></i> Modifier
-                            </a>
-                            <a href="../categories/supprimer.php?id=<?php echo (int) $categorie['id']; ?>"
-                                class="stock-act-del"
-                                onclick="return confirm('Supprimer cette catégorie ?');">
-                                <i class="fas fa-trash" aria-hidden="true"></i> Supprimer
-                            </a>
-                            <?php endif; ?>
+
+                        <div class="stk-card__body">
+                            <div class="stk-card__name"><?php echo htmlspecialchars($produit['nom'] ?? ''); ?></div>
+                            <div class="stk-card__cat"><?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans cat&eacute;gorie'); ?></div>
+                            <div class="stk-card__prix-row">
+                                <span class="stk-card__prix"><?php echo number_format((float)($produit['prix'] ?? 0), 0, ',', ' '); ?></span>
+                                <span class="stk-card__unit">FCFA</span>
+                                <?php if (!empty($produit['prix_promotion'])): ?>
+                                    <span class="stk-card__promo">&minus;&nbsp;<?php echo number_format((float)$produit['prix_promotion'], 0, ',', ' '); ?></span>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                    </div>
-                </article>
+
+                        <div class="stk-card__footer" onclick="event.stopPropagation()">
+                            <a href="../produits/modifier.php?id=<?php echo (int)$produit['id']; ?>"
+                                class="stk-card-btn stk-card-btn--edit">
+                                <i class="fas fa-pen"></i> Modifier
+                            </a>
+                            <a href="../produits/supprimer.php?id=<?php echo (int)$produit['id']; ?>"
+                                class="stk-card-btn stk-card-btn--delete"
+                                onclick="event.stopPropagation();return confirm('Supprimer ce produit ?');">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </article>
                 <?php endforeach; ?>
             </div>
-        <?php endif; ?>
-    </section>
-    </div>
 
-    <?php if (empty($stock_catalogue_vendeur_seul)): ?>
-    <div class="stock-cat-modal<?php echo $cat_modal_open ? ' stock-cat-modal--open' : ''; ?>" id="stockCatModal"
-        role="dialog" aria-modal="true" aria-labelledby="stockCatModalTitle"<?php echo $cat_modal_open ? '' : ' hidden'; ?>>
+            <!-- ===== PAGINATION ===== -->
+            <?php if ($nb_pages > 1): ?>
+                <nav class="stk-pagination" aria-label="Pagination">
+
+                    <!-- Précédent -->
+                    <?php if ($page > 1): ?>
+                        <a href="<?php echo stock_pag_url($page - 1, $recherche, $cat_filter, $statut_filter); ?>"
+                            class="stk-pag-btn stk-pag-btn--prev">
+                            <i class="fas fa-chevron-left"></i> Pr&eacute;c.
+                        </a>
+                    <?php else: ?>
+                        <span class="stk-pag-btn stk-pag-btn--prev stk-pag-btn--disabled">
+                            <i class="fas fa-chevron-left"></i> Pr&eacute;c.
+                        </span>
+                    <?php endif; ?>
+
+                    <!-- Pages numérotées -->
+                    <?php
+                    $window = 2;
+                    for ($i = 1; $i <= $nb_pages; $i++):
+                        if ($i === 1 || $i === $nb_pages || abs($i - $page) <= $window):
+                    ?>
+                        <?php if (abs($i - $page) === $window + 1 && $i !== 1 && $i !== $nb_pages): ?>
+                            <span class="stk-pag-info">&hellip;</span>
+                        <?php endif; ?>
+                        <a href="<?php echo stock_pag_url($i, $recherche, $cat_filter, $statut_filter); ?>"
+                            class="stk-pag-btn <?php echo $i === $page ? 'stk-pag-btn--active' : ''; ?>">
+                            <?php echo $i; ?>
+                        </a>
+                    <?php endif; endfor; ?>
+
+                    <!-- Suivant -->
+                    <?php if ($page < $nb_pages): ?>
+                        <a href="<?php echo stock_pag_url($page + 1, $recherche, $cat_filter, $statut_filter); ?>"
+                            class="stk-pag-btn stk-pag-btn--next">
+                            Suiv. <i class="fas fa-chevron-right"></i>
+                        </a>
+                    <?php else: ?>
+                        <span class="stk-pag-btn stk-pag-btn--next stk-pag-btn--disabled">
+                            Suiv. <i class="fas fa-chevron-right"></i>
+                        </span>
+                    <?php endif; ?>
+
+                </nav>
+            <?php endif; ?>
+
+        <?php endif; ?>
+
+    </div><!-- /.stk-page -->
+
+    <!-- ===== MODAL NOUVELLE CATÉGORIE ===== -->
+    <?php if (!$stock_catalogue_vendeur_seul): ?>
+    <div class="stock-cat-modal<?php echo $cat_modal_open ? ' stock-cat-modal--open' : ''; ?>"
+        id="stockCatModal" role="dialog" aria-modal="true"
+        aria-labelledby="stockCatModalTitle"<?php echo $cat_modal_open ? '' : ' hidden'; ?>>
         <div class="stock-cat-modal__panel" role="document">
             <div class="stock-cat-modal__head">
                 <button type="button" class="stock-cat-modal__close js-close-stock-cat-modal" aria-label="Fermer">
-                    <i class="fas fa-times" aria-hidden="true"></i>
+                    <i class="fas fa-times"></i>
                 </button>
-                <div class="stock-cat-modal__head-icon" aria-hidden="true">
-                    <i class="fas fa-folder-plus"></i>
-                </div>
-                <h2 id="stockCatModalTitle">Nouvelle catégorie</h2>
-                <p>Renseignez le nom de votre rayon. L’image et la description sont optionnelles pour mettre en valeur le
-                    catalogue.</p>
+                <div class="stock-cat-modal__head-icon"><i class="fas fa-folder-plus"></i></div>
+                <h2 id="stockCatModalTitle">Nouvelle cat&eacute;gorie</h2>
+                <p>Renseignez le nom de votre rayon. L&rsquo;image et la description sont optionnelles.</p>
             </div>
             <div class="stock-cat-modal__body">
                 <?php if ($cat_modal_error !== ''): ?>
-                <div class="stock-cat-modal__err" role="alert">
-                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                    <span><?php echo $cat_modal_error; ?></span>
-                </div>
+                    <div class="stock-cat-modal__err" role="alert">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span><?php echo $cat_modal_error; ?></span>
+                    </div>
                 <?php endif; ?>
-
                 <form method="post" action="" enctype="multipart/form-data" id="stockCatModalForm">
                     <input type="hidden" name="stock_add_categorie" value="1">
-                    <input type="hidden" name="csrf_token"
-                        value="<?php echo htmlspecialchars($_SESSION['admin_csrf'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
                     <div class="stock-cat-field">
                         <label for="stock_cat_nom">Nom <span class="hint">(obligatoire)</span></label>
-                        <input type="text" id="stock_cat_nom" name="nom" required maxlength="255" autocomplete="off"
-                            placeholder="Ex. Freinage, Huiles moteur…"
+                        <input type="text" id="stock_cat_nom" name="nom" required maxlength="255"
+                            autocomplete="off" placeholder="Ex. Huiles, Fruits&hellip;"
                             value="<?php echo htmlspecialchars($cat_modal_nom, ENT_QUOTES, 'UTF-8'); ?>">
                     </div>
 
                     <div class="stock-cat-field">
                         <label for="stock_cat_desc">Description <span class="hint">(optionnel)</span></label>
                         <textarea id="stock_cat_desc" name="description"
-                            placeholder="Quelques mots pour décrire ce rayon aux clients."><?php echo htmlspecialchars($cat_modal_description, ENT_QUOTES, 'UTF-8'); ?></textarea>
+                            placeholder="Quelques mots pour d&eacute;crire ce rayon."><?php echo htmlspecialchars($cat_modal_description, ENT_QUOTES, 'UTF-8'); ?></textarea>
                     </div>
 
                     <div class="stock-cat-field">
                         <label>Visuel <span class="hint">(optionnel)</span></label>
                         <div class="stock-cat-file">
-                            <i class="fas fa-cloud-arrow-up" style="font-size:1.35rem;color:var(--couleur-dominante);margin-bottom:0.35rem;"></i>
+                            <i class="fas fa-cloud-arrow-up" style="font-size:1.35rem;color:#3564a6;display:block;margin-bottom:.35rem;"></i>
                             <div><strong>Glissez une image</strong> ou cliquez pour parcourir</div>
-                            <p class="stock-cat-file__hint">JPG, PNG, GIF ou WEBP — max. 20 Mo</p>
+                            <p class="stock-cat-file__hint">JPG, PNG, GIF ou WebP — max. 20 Mo</p>
                             <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp">
                         </div>
                     </div>
 
                     <div class="stock-cat-modal__actions">
-                        <button type="button" class="stock-cat-modal__btn stock-cat-modal__btn--ghost js-close-stock-cat-modal">
-                            Annuler
-                        </button>
+                        <button type="button" class="stock-cat-modal__btn stock-cat-modal__btn--ghost js-close-stock-cat-modal">Annuler</button>
                         <button type="submit" class="stock-cat-modal__btn stock-cat-modal__btn--primary">
-                            <i class="fas fa-check" aria-hidden="true"></i> Enregistrer la catégorie
+                            <i class="fas fa-check"></i> Enregistrer la cat&eacute;gorie
                         </button>
                     </div>
                 </form>
@@ -996,41 +1079,35 @@ if (function_exists('get_categories_generales_avec_produits_actifs')) {
     <?php endif; ?>
 
     <script>
-        (function () {
-            var modal = document.getElementById('stockCatModal');
-            if (!modal) return;
+    (function () {
+        var modal = document.getElementById('stockCatModal');
+        if (!modal) return;
 
-            function openModal() {
-                modal.classList.add('stock-cat-modal--open');
-                modal.removeAttribute('hidden');
-                document.body.classList.add('stock-cat-modal-active');
-            }
+        function openModal() {
+            modal.classList.add('stock-cat-modal--open');
+            modal.removeAttribute('hidden');
+            document.body.classList.add('stock-cat-modal-active');
+        }
 
-            function closeModal() {
-                modal.classList.remove('stock-cat-modal--open');
-                modal.setAttribute('hidden', 'hidden');
-                document.body.classList.remove('stock-cat-modal-active');
-            }
+        function closeModal() {
+            modal.classList.remove('stock-cat-modal--open');
+            modal.setAttribute('hidden', 'hidden');
+            document.body.classList.remove('stock-cat-modal-active');
+        }
 
-            document.querySelectorAll('.js-open-stock-cat-modal').forEach(function (btn) {
-                btn.addEventListener('click', openModal);
-            });
-            document.querySelectorAll('.js-close-stock-cat-modal').forEach(function (btn) {
-                btn.addEventListener('click', closeModal);
-            });
-
-            modal.addEventListener('click', function (e) {
-                if (e.target === modal) closeModal();
-            });
-
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && modal.classList.contains('stock-cat-modal--open')) closeModal();
-            });
-
-        })();
+        document.querySelectorAll('.js-open-stock-cat-modal').forEach(function(btn) {
+            btn.addEventListener('click', openModal);
+        });
+        document.querySelectorAll('.js-close-stock-cat-modal').forEach(function(btn) {
+            btn.addEventListener('click', closeModal);
+        });
+        modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('stock-cat-modal--open')) closeModal();
+        });
+    })();
     </script>
 
     <?php include '../includes/footer.php'; ?>
 </body>
-
 </html>

@@ -29,14 +29,16 @@ $add_produit_error_message = '';
 $add_produit_post_error = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_add_produit'])) {
     require_once __DIR__ . '/../controllers/controller_produits.php';
+    require_once __DIR__ . '/../includes/flash_toast.php';
     $add_result = process_add_produit();
     if (!empty($add_result['success'])) {
-        $_SESSION['success_message'] = $add_result['message'];
+        flash_toast_push('success', $add_result['message']);
         header('Location: dashboard.php');
         exit;
     }
-    $add_produit_error_message = $add_result['message'] ?? 'Erreur lors de l’ajout.';
+    $add_produit_error_message = $add_result['message'] ?? "Erreur lors de l'ajout.";
     $add_produit_post_error = true;
+    flash_toast_push('error', $add_produit_error_message);
 }
 
 $__role_dash = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
@@ -64,7 +66,8 @@ $vf_dash = admin_vendeur_filter_id();
 $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
 $categories = admin_categories_list_for_session();
-$produits = get_all_produits(null, $vf_dash);
+$produits_all = get_all_produits(null, $vf_dash);
+$produits = is_array($produits_all) ? array_slice($produits_all, 0, 6) : [];
 
 if (!empty($produits)) {
     $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id) {
@@ -108,95 +111,818 @@ if (!empty($produits)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <style>
-        .admin-filters-bar {
+        /* ===== DASHBOARD VENDEUR v2 ===== */
+
+        .dash-v2-page {
+            padding: clamp(16px, 3vw, 32px);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ---- Header ---- */
+        .dash-v2-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .dash-v2-header__left { display: flex; flex-direction: column; gap: 2px; }
+
+        .dash-v2-header__eyebrow {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--bleu-clair, #4a7ab8);
+        }
+
+        .dash-v2-header__title {
+            font-size: clamp(1.35rem, 3vw, 1.85rem);
+            font-weight: 800;
+            color: var(--titres, #0d0d0d);
+            font-family: var(--font-titres);
+            line-height: 1.15;
+            letter-spacing: -0.025em;
+        }
+
+        .dash-v2-header__title .highlight { color: var(--couleur-dominante, #3564a6); }
+
+        .dash-v2-header__actions {
+            display: flex;
+            gap: 9px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ---- Boutons toolbar ---- */
+        .dash-v2-tool-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border-radius: 11px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            font-family: var(--font-corps);
+            transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+            white-space: nowrap;
+        }
+
+        .dash-v2-tool-btn--primary {
+            background: var(--couleur-dominante, #3564a6);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(53,100,166,0.28);
+        }
+
+        .dash-v2-tool-btn--primary:hover {
+            background: var(--bleu-fonce, #2d5690);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(53,100,166,0.38);
+        }
+
+        .dash-v2-tool-btn--outline {
+            background: #fff;
+            color: var(--couleur-dominante, #3564a6);
+            border: 1.5px solid rgba(53,100,166,0.22);
+        }
+
+        .dash-v2-tool-btn--outline:hover { background: rgba(53,100,166,0.05); }
+
+        .dash-v2-tool-btn--ghost {
+            background: transparent;
+            color: var(--gris-fonce, #4a4a4a);
+            border: 1.5px solid rgba(0,0,0,0.1);
+        }
+
+        .dash-v2-tool-btn--ghost:hover { background: rgba(0,0,0,0.04); }
+
+        /* ---- Notification ---- */
+        .dash-v2-notif {
+            padding: 13px 20px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-size: 0.87rem;
+            font-weight: 600;
+        }
+
+        .dash-v2-notif--success {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.25);
+            color: #15803d;
+        }
+
+        /* ---- Hero carte Vue d'ensemble ---- */
+        .dash-v2-hero {
+            background: linear-gradient(135deg, var(--couleur-dominante, #3564a6) 0%, #1e3f7a 55%, #0f2550 100%);
+            border-radius: 22px;
+            padding: clamp(22px, 3.5vw, 38px);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 18px 50px rgba(53,100,166,0.32);
+        }
+
+        .dash-v2-hero::before {
+            content: '';
+            position: absolute;
+            top: -70px; right: -50px;
+            width: 300px; height: 300px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .dash-v2-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; right: 80px;
+            width: 220px; height: 220px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .dash-v2-hero__label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+        }
+
+        .dash-v2-hero__amount {
+            font-size: clamp(1.9rem, 5vw, 3.2rem);
+            font-weight: 900;
+            color: #fff;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            font-family: var(--font-titres);
+        }
+
+        .dash-v2-hero__amount sup {
+            font-size: 0.38em;
+            font-weight: 600;
+            opacity: 0.7;
+            vertical-align: super;
+            margin-right: 2px;
+        }
+
+        .dash-v2-hero__amount span.currency {
+            font-size: 0.42em;
+            font-weight: 600;
+            opacity: 0.75;
+            margin-left: 6px;
+        }
+
+        .dash-v2-hero__meta {
+            margin-top: 22px;
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
-            align-items: end;
-            margin-bottom: 20px;
-            padding: 16px;
-            background: #fff;
-            border: 1px solid #ececec;
-            border-radius: 12px;
+            align-items: center;
         }
 
-        .admin-filter-field {
-            flex: 1 1 220px;
-        }
-
-        .admin-filter-field label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #6b2f20;
-        }
-
-        .admin-filter-field input,
-        .admin-filter-field select {
-            width: 100%;
-            padding: 11px 14px;
-            border: 1px solid #d9d9d9;
-            border-radius: 10px;
-            background: #fff;
-        }
-
-        .admin-filter-actions {
+        .dash-v2-hero__pill {
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 50px;
+            padding: 8px 18px;
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-size: 0.83rem;
+            font-weight: 600;
+        }
+
+        .dash-v2-hero__pill i { font-size: 0.88rem; opacity: 0.85; }
+        .dash-v2-hero__pill strong { font-size: 1.07em; }
+
+        .dash-v2-hero__pill--warn {
+            background: rgba(255,193,7,0.2);
+            border-color: rgba(255,193,7,0.35);
+        }
+
+        .dash-v2-hero__voir-tout {
+            margin-left: auto;
+            color: rgba(255,255,255,0.75);
+            font-size: 0.79rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s, gap 0.2s;
+        }
+
+        .dash-v2-hero__voir-tout:hover { color: #fff; gap: 8px; }
+
+        /* ---- Stat Cards ---- */
+        .dash-v2-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+            gap: 14px;
+        }
+
+        .dash-v2-stat {
+            background: #fff;
+            border-radius: 18px;
+            padding: 20px;
+            border: 1px solid rgba(53,100,166,0.08);
+            box-shadow: 0 2px 14px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .dash-v2-stat:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 26px rgba(53,100,166,0.14);
+        }
+
+        .dash-v2-stat__icon {
+            width: 50px; height: 50px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        .dash-v2-stat--total .dash-v2-stat__icon { background: rgba(53,100,166,0.1); color: var(--couleur-dominante, #3564a6); }
+        .dash-v2-stat--attente .dash-v2-stat__icon { background: rgba(255,193,7,0.12); color: #c8960f; }
+        .dash-v2-stat--prise .dash-v2-stat__icon { background: rgba(255,107,53,0.12); color: var(--orange, #FF6B35); }
+        .dash-v2-stat--livraison .dash-v2-stat__icon { background: rgba(34,197,94,0.12); color: #16a34a; }
+
+        .dash-v2-stat__content { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+        .dash-v2-stat__label {
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--gris-moyen, #737373);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dash-v2-stat__value {
+            font-size: 1.9rem;
+            font-weight: 900;
+            color: var(--titres, #0d0d0d);
+            line-height: 1.05;
+            font-family: var(--font-titres);
+        }
+
+        .dash-v2-stat__hint {
+            font-size: 0.71rem;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            margin-top: 3px;
+            width: fit-content;
+        }
+
+        .dash-v2-stat--attente .dash-v2-stat__hint {
+            background: rgba(255,193,7,0.14);
+            color: #9a6800;
+        }
+
+        /* ---- Alertes ---- */
+        .dash-v2-alert {
+            background: linear-gradient(135deg, rgba(255,193,7,0.09) 0%, rgba(255,193,7,0.04) 100%);
+            border: 1px solid rgba(255,193,7,0.28);
+            border-radius: 14px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
             flex-wrap: wrap;
         }
 
-        .btn-filter-reset {
+        .dash-v2-alert i { color: #c8960f; font-size: 1.08rem; flex-shrink: 0; }
+
+        .dash-v2-alert__text {
+            flex: 1;
+            font-size: 0.87rem;
+            font-weight: 600;
+            color: #7a5c00;
+            min-width: 0;
+        }
+
+        .dash-v2-alert__btn {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            padding: 11px 16px;
-            border-radius: 10px;
-            border: 1px solid #d9d9d9;
-            color: #6b2f20;
-            background: #fff;
+            gap: 6px;
+            background: #c8960f;
+            color: #fff;
+            font-size: 0.79rem;
+            font-weight: 700;
+            padding: 7px 16px;
+            border-radius: 50px;
             text-decoration: none;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .dash-v2-alert__btn:hover { background: #a97c0b; }
+
+        /* ---- Layout 2 colonnes ---- */
+        .dash-v2-mid {
+            display: grid;
+            grid-template-columns: 1fr 330px;
+            gap: 18px;
+        }
+
+        @media (max-width: 920px) { .dash-v2-mid { grid-template-columns: 1fr; } }
+
+        /* ---- Card générique ---- */
+        .dash-v2-card {
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid rgba(53,100,166,0.08);
+            box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .dash-v2-card__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 17px 22px 13px;
+            border-bottom: 1px solid rgba(53,100,166,0.07);
+        }
+
+        .dash-v2-card__head h3 {
+            font-size: 0.93rem;
+            font-weight: 700;
+            color: var(--titres);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .dash-v2-card__head h3 i {
+            width: 30px; height: 30px;
+            border-radius: 9px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.82rem;
+            background: rgba(53,100,166,0.1);
+            color: var(--couleur-dominante, #3564a6);
+        }
+
+        .dash-v2-card__link {
+            font-size: 0.77rem;
+            font-weight: 700;
+            color: var(--couleur-dominante, #3564a6);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: gap 0.18s;
+        }
+
+        .dash-v2-card__link:hover { gap: 7px; }
+
+        /* ---- Lignes commandes ---- */
+        .dash-commande-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 22px;
+            gap: 11px;
+            border-bottom: 1px solid rgba(53,100,166,0.05);
+            transition: background 0.14s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .dash-commande-row:last-child { border-bottom: none; }
+        .dash-commande-row:hover { background: rgba(53,100,166,0.03); }
+
+        .dash-commande-row__num {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--couleur-dominante, #3564a6);
+            min-width: 62px;
+        }
+
+        .dash-commande-row__client { flex: 1; min-width: 0; }
+
+        .dash-commande-row__name {
+            font-size: 0.86rem;
             font-weight: 600;
+            color: var(--titres);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .produit-card-linkable {
+        .dash-commande-row__date {
+            font-size: 0.72rem;
+            color: var(--gris-moyen, #737373);
+        }
+
+        .dash-commande-row__amount {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--titres);
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        .dash-commande-row__amount small {
+            font-size: 0.69em;
+            font-weight: 500;
+            color: var(--gris-moyen);
+        }
+
+        /* ---- Badges statut ---- */
+        .dash-badge {
+            font-size: 0.69rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 50px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .dash-badge--attente  { background: rgba(255,193,7,0.14); color: #9a6800; }
+        .dash-badge--prise    { background: rgba(255,107,53,0.14); color: #c04a10; }
+        .dash-badge--livraison { background: rgba(53,100,166,0.12); color: var(--bleu-fonce, #2d5690); }
+        .dash-badge--livree   { background: rgba(34,197,94,0.12); color: #15803d; }
+        .dash-badge--paye     { background: rgba(34,197,94,0.12); color: #15803d; }
+        .dash-badge--annulee  { background: rgba(239,68,68,0.1); color: #b91c1c; }
+
+        /* ---- Accès rapides ---- */
+        .dash-quick-item {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            padding: 14px 22px;
+            border-bottom: 1px solid rgba(53,100,166,0.05);
+            text-decoration: none;
+            color: var(--titres);
+            transition: background 0.14s;
+            background: transparent;
+            border-left: none; border-right: none; border-top: none;
+            width: 100%;
+            text-align: left;
             cursor: pointer;
+            font-family: var(--font-corps);
         }
 
-        .produit-card-linkable:hover .produit-card-nom {
-            color: #c26638;
+        .dash-quick-item:last-child { border-bottom: none; }
+        .dash-quick-item:hover { background: rgba(53,100,166,0.04); }
+
+        .dash-quick-item__icon {
+            width: 40px; height: 40px;
+            border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.88rem;
+            flex-shrink: 0;
         }
 
-        /* Modal plein écran — ajout produit (même principe que produits/index.php) */
-        .adm-modal-add-produit[hidden] {
-            display: none !important;
+        .dash-quick-item:nth-child(1) .dash-quick-item__icon { background: rgba(53,100,166,0.1); color: var(--couleur-dominante); }
+        .dash-quick-item:nth-child(2) .dash-quick-item__icon { background: rgba(34,197,94,0.12); color: #16a34a; }
+        .dash-quick-item:nth-child(3) .dash-quick-item__icon { background: rgba(255,193,7,0.14); color: #b57d0e; }
+        .dash-quick-item:nth-child(4) .dash-quick-item__icon { background: rgba(255,107,53,0.12); color: var(--orange, #FF6B35); }
+        .dash-quick-item:nth-child(5) .dash-quick-item__icon { background: rgba(139,92,246,0.12); color: #7c3aed; }
+
+        .dash-quick-item__text { flex: 1; }
+        .dash-quick-item__label { font-size: 0.87rem; font-weight: 600; color: var(--titres); }
+        .dash-quick-item__sub { font-size: 0.72rem; color: var(--gris-moyen, #737373); margin-top: 1px; }
+        .dash-quick-item__arrow { color: var(--gris-clair, #a3a3a3); font-size: 0.73rem; }
+
+        /* ---- Section Produits ---- */
+        .dash-v2-products-section {
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid rgba(53,100,166,0.08);
+            box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+            overflow: hidden;
         }
+
+        .dash-v2-products-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 19px 24px 15px;
+            border-bottom: 1px solid rgba(53,100,166,0.07);
+        }
+
+        .dash-v2-products-head h2 {
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: var(--titres);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dash-v2-products-head h2 i {
+            width: 33px; height: 33px;
+            border-radius: 10px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.87rem;
+            background: rgba(53,100,166,0.1);
+            color: var(--couleur-dominante, #3564a6);
+        }
+
+        .dash-v2-products-head__count {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(53,100,166,0.09);
+            color: var(--couleur-dominante, #3564a6);
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 50px;
+        }
+
+        .dash-v2-products-head__right {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            flex-wrap: wrap;
+        }
+
+        /* Filtres */
+        .dash-v2-filters {
+            padding: 13px 24px;
+            background: rgba(53,100,166,0.025);
+            border-bottom: 1px solid rgba(53,100,166,0.05);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .dash-v2-filter-field {
+            flex: 1 1 190px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .dash-v2-filter-field label {
+            font-size: 0.73rem;
+            font-weight: 700;
+            color: var(--gris-moyen, #737373);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        .dash-v2-filter-field input,
+        .dash-v2-filter-field select {
+            padding: 9px 13px;
+            border: 1px solid rgba(53,100,166,0.18);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-family: var(--font-corps);
+            background: #fff;
+            color: var(--titres);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .dash-v2-filter-field input:focus,
+        .dash-v2-filter-field select:focus {
+            outline: none;
+            border-color: var(--couleur-dominante, #3564a6);
+            box-shadow: 0 0 0 3px rgba(53,100,166,0.1);
+        }
+
+        .dash-v2-filter-actions { display: flex; gap: 8px; align-items: flex-end; }
+
+        .btn-v2-filter {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 17px;
+            background: var(--couleur-dominante, #3564a6);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font-corps);
+            transition: background 0.2s;
+        }
+
+        .btn-v2-filter:hover { background: var(--bleu-fonce, #2d5690); }
+
+        .btn-v2-reset {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 13px;
+            background: #fff;
+            color: var(--gris-fonce, #4a4a4a);
+            border: 1px solid rgba(53,100,166,0.18);
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            font-family: var(--font-corps);
+            transition: background 0.2s;
+        }
+
+        .btn-v2-reset:hover { background: rgba(53,100,166,0.05); }
+
+        /* Grille produits */
+        .dash-v2-produits-grid {
+            padding: 20px 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+            gap: 15px;
+        }
+
+        .dash-v2-produit-card {
+            border-radius: 14px;
+            border: 1px solid rgba(53,100,166,0.09);
+            background: #fff;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.22s, box-shadow 0.22s;
+            position: relative;
+        }
+
+        .dash-v2-produit-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 28px rgba(53,100,166,0.14);
+        }
+
+        .dash-v2-produit-card__img {
+            width: 100%;
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            background: var(--blanc-neige, #f5f5f5);
+        }
+
+        .dash-v2-produit-card__img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.35s;
+        }
+
+        .dash-v2-produit-card:hover .dash-v2-produit-card__img img { transform: scale(1.07); }
+
+        .dash-v2-produit-card__badge {
+            position: absolute;
+            top: 9px; left: 9px;
+            font-size: 0.67rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 50px;
+        }
+
+        .dash-v2-produit-card__badge--actif    { background: rgba(34,197,94,0.15); color: #15803d; }
+        .dash-v2-produit-card__badge--inactif  { background: rgba(100,100,100,0.12); color: #555; }
+        .dash-v2-produit-card__badge--rupture  { background: rgba(239,68,68,0.12); color: #b91c1c; }
+
+        .dash-v2-produit-card__body { padding: 12px 14px; }
+
+        .dash-v2-produit-card__name {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--titres);
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dash-v2-produit-card__cat {
+            font-size: 0.71rem;
+            color: var(--gris-moyen, #737373);
+            margin-bottom: 7px;
+        }
+
+        .dash-v2-produit-card__prix-row {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            margin-bottom: 5px;
+            flex-wrap: wrap;
+        }
+
+        .dash-v2-produit-card__prix {
+            font-size: 0.99rem;
+            font-weight: 800;
+            color: var(--couleur-dominante, #3564a6);
+            font-family: var(--font-titres);
+        }
+
+        .dash-v2-produit-card__prix-unit { font-size: 0.67rem; font-weight: 600; color: var(--gris-moyen, #737373); }
+
+        .dash-v2-produit-card__promo {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--orange, #FF6B35);
+            background: rgba(255,107,53,0.1);
+            padding: 1px 7px;
+            border-radius: 50px;
+        }
+
+        .dash-v2-produit-card__stock {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.74rem;
+            color: var(--gris-moyen, #737373);
+        }
+
+        .dash-v2-produit-card__stock strong { color: var(--titres); font-weight: 700; }
+
+        .dash-v2-produit-card__actions { display: flex; gap: 7px; margin-top: 10px; }
+
+        .dash-v2-btn-edit {
+            flex: 1;
+            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+            padding: 7px 0;
+            background: rgba(53,100,166,0.08);
+            color: var(--couleur-dominante, #3564a6);
+            border: none;
+            border-radius: 8px;
+            font-size: 0.77rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: var(--font-corps);
+        }
+
+        .dash-v2-btn-edit:hover { background: rgba(53,100,166,0.15); }
+
+        .dash-v2-btn-delete {
+            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+            padding: 7px 11px;
+            background: rgba(239,68,68,0.08);
+            color: #b91c1c;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.77rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: var(--font-corps);
+        }
+
+        .dash-v2-btn-delete:hover { background: rgba(239,68,68,0.16); }
+
+        /* Empty state */
+        .dash-v2-empty {
+            padding: 48px 24px;
+            text-align: center;
+            color: var(--gris-moyen, #737373);
+        }
+
+        .dash-v2-empty i { font-size: 2.5rem; opacity: 0.3; display: block; margin-bottom: 12px; }
+        .dash-v2-empty p { font-size: 0.9rem; margin-bottom: 18px; }
+
+        /* Modal plein écran */
+        .adm-modal-add-produit[hidden] { display: none !important; }
+
         .adm-modal-add-produit {
             position: fixed;
             inset: 0;
             z-index: 9990;
             display: flex;
             flex-direction: column;
-            background: rgba(13, 13, 13, 0.52);
+            background: rgba(13,13,13,0.52);
             backdrop-filter: blur(6px);
         }
+
         .adm-modal-add-produit-inner {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 0;
-            margin: 0;
-            max-width: none;
             width: 100%;
             align-self: stretch;
-            background: linear-gradient(165deg, var(--fond-secondaire, #fafafa) 0%, var(--blanc, #fff) 42%, rgba(53, 100, 166, 0.04) 100%);
-            border-radius: 0;
-            box-shadow: none;
-            border: none;
+            background: linear-gradient(165deg, var(--fond-secondaire, #fafafa) 0%, var(--blanc, #fff) 42%, rgba(53,100,166,0.04) 100%);
             border-top: 3px solid var(--couleur-dominante, #3564a6);
             overflow: hidden;
         }
+
         .adm-modal-add-head {
             flex-shrink: 0;
             display: flex;
@@ -205,8 +931,9 @@ if (!empty($produits)) {
             gap: 16px;
             padding: 16px 22px;
             background: var(--blanc, #fff);
-            border-bottom: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
+            border-bottom: 1px solid var(--glass-border, rgba(0,0,0,0.08));
         }
+
         .adm-modal-add-head h2 {
             margin: 0;
             font-size: 1.28rem;
@@ -217,42 +944,128 @@ if (!empty($produits)) {
             align-items: center;
             gap: 10px;
         }
-        .adm-modal-add-head h2 i {
-            color: var(--couleur-dominante, #3564a6);
-        }
-        .adm-modal-add-head-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+
+        .adm-modal-add-head h2 i { color: var(--couleur-dominante, #3564a6); }
+
+        .adm-modal-add-head-actions { display: flex; align-items: center; gap: 10px; }
+
         .adm-modal-add-close {
-            width: 44px;
-            height: 44px;
+            width: 44px; height: 44px;
             border: none;
             border-radius: 12px;
-            background: rgba(53, 100, 166, 0.1);
+            background: rgba(53,100,166,0.1);
             color: var(--couleur-dominante, #3564a6);
             font-size: 1.5rem;
-            line-height: 1;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: background 0.2s, color 0.2s;
         }
+
         .adm-modal-add-close:hover {
             background: var(--couleur-dominante, #3564a6);
-            color: var(--texte-clair, #fff);
+            color: #fff;
         }
+
         .adm-modal-add-body {
             flex: 1;
             overflow: auto;
             -webkit-overflow-scrolling: touch;
             padding: 22px 24px 40px;
         }
-        .adm-modal-add-body .form-add-container {
-            max-width: 1280px;
-            margin: 0 auto;
+
+        .adm-modal-add-body .form-add-container { max-width: 1280px; margin: 0 auto; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dash-v2-page { gap: 16px; }
+
+            .dash-v2-hero {
+                padding: 18px 16px;
+                border-radius: 16px;
+            }
+
+            .dash-v2-hero__amount { font-size: 1.75rem; }
+            .dash-v2-hero__label  { font-size: 0.66rem; letter-spacing: 0.1em; margin-bottom: 5px; }
+
+            .dash-v2-hero__meta {
+                margin-top: 14px;
+                gap: 8px;
+            }
+
+            .dash-v2-hero__pill {
+                padding: 5px 11px;
+                font-size: 0.74rem;
+            }
+
+            .dash-v2-hero__voir-tout {
+                padding: 6px 14px;
+                font-size: 0.72rem;
+            }
+
+            .dash-v2-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .dash-v2-stat {
+                padding: 13px 12px;
+                border-radius: 14px;
+                gap: 10px;
+            }
+
+            .dash-v2-stat__icon { width: 38px; height: 38px; font-size: 0.9rem; border-radius: 11px; }
+            .dash-v2-stat__value { font-size: 1.45rem; }
+            .dash-v2-stat__label { font-size: 0.62rem; }
+
+            .dash-v2-mid { grid-template-columns: 1fr; gap: 14px; }
+
+            .dash-v2-card { border-radius: 16px; }
+
+            .dash-commande-row { padding: 10px 16px; gap: 9px; }
+            .dash-commande-row__num { min-width: 52px; font-size: 0.8rem; }
+            .dash-commande-row__name { font-size: 0.8rem; }
+            .dash-commande-row__date { font-size: 0.66rem; }
+            .dash-commande-row__amount { font-size: 0.82rem; }
+
+            .dash-quick-item { padding: 12px 16px; gap: 10px; }
+            .dash-quick-item__icon { width: 36px; height: 36px; font-size: 0.82rem; border-radius: 10px; }
+            .dash-quick-item__label { font-size: 0.82rem; }
+            .dash-quick-item__sub   { font-size: 0.68rem; }
+
+            .dash-v2-filters {
+                padding: 12px 16px;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .dash-v2-filter-field { flex: none; width: 100%; }
+
+            .dash-v2-filter-actions {
+                width: 100%;
+                display: flex;
+                gap: 8px;
+            }
+
+            .dash-v2-filter-actions .btn-v2-filter,
+            .dash-v2-filter-actions .btn-v2-reset {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .dash-v2-produits-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                padding: 14px 12px;
+                gap: 10px;
+            }
+
+            .dash-v2-header__actions .hide-sm { display: none; }
+        }
+
+        @media (max-width: 380px) {
+            .dash-v2-stats { grid-template-columns: 1fr; }
+            .dash-v2-produits-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -260,46 +1073,26 @@ if (!empty($produits)) {
 <body>
     <?php include 'includes/nav.php'; ?>
 
-    <!-- Barre de navigation verticale -->
-
-    <!-- Contenu principal -->
     <div class="contents-container">
-        <header class="dashboard-page-header" aria-label="En-tête du tableau de bord">
-            <div class="dashboard-page-header__intro">
-                <p class="dashboard-page-header__eyebrow">Espace administration</p>
-                <h1 class="dashboard-page-header__title">
-                    <i class="fas fa-chart-line" aria-hidden="true"></i>
-                    <span>Tableau de bord</span>
-                </h1>
-            </div>
-            <div class="dashboard-page-header__toolbar" role="group" aria-label="Actions rapides">
-                <button type="button" id="btn-install-pwa" class="dash-tool-btn dash-tool-btn--ghost"
-                    title="Installer l'application COLObanes sur cet appareil" style="display: none;">
-                    <i class="fas fa-download" aria-hidden="true"></i>
-                    <span>Installer l’appli</span>
-                </button>
-                <button type="button" id="btn-enable-notifications" class="dash-tool-btn dash-tool-btn--outline"
-                    data-notify-type="admin"
-                    title="Recevoir des notifications push pour les nouvelles commandes">
-                    <i class="fas fa-bell-slash" aria-hidden="true"></i>
-                    <span>Activer les notifications</span>
-                </button>
-                <a href="/index.php" class="dash-tool-btn dash-tool-btn--outline"
-                    title="Visiter la vitrine Colobanes (site public)">
-                    <i class="fas fa-store" aria-hidden="true"></i>
-                    <span>Visiter Colobanes</span>
-                </a>
-                <button type="button" id="btnOpenAddProduitModalDash" class="dash-tool-btn dash-tool-btn--primary">
-                    <i class="fas fa-plus" aria-hidden="true"></i>
-                    <span>Nouveau produit</span>
-                </button>
-            </div>
-        </header>
+    <div class="dash-v2-page">
+
+        <?php
+        // ---- Données ----
+        $total_commandes = count_commandes_by_statut(null, $vf_dash);
+        $commandes_perso_en_attente = count_commandes_personnalisees_by_statut('en_attente', $vf_dash);
+        $en_attente = count_commandes_by_statut('en_attente', $vf_dash);
+        $prise_en_charge = count_commandes_by_statut('prise_en_charge', $vf_dash);
+        $livraison_en_cours = count_commandes_by_statut('livraison_en_cours', $vf_dash);
+        $stats_ventes = get_stats_commandes_vendues_globales($vf_dash);
+        $ca_total = $stats_ventes['ca_total'] ?? 0;
+        $nb_produits = count($produits_all);
+        $toutes_commandes = get_all_commandes(null, $vf_dash);
+        $commandes_recentes = array_slice(is_array($toutes_commandes) ? $toutes_commandes : [], 0, 6);
+        $admin_prenom = htmlspecialchars($_SESSION['admin_prenom'] ?? $_SESSION['admin_nom'] ?? 'Vendeur');
+        ?>
 
         <?php if (!empty($success_message)): ?>
-            <div class="message success" style="margin-bottom: 20px;">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
-            </div>
+        <?php /* affiché via flash toast */ ?>
         <?php endif; ?>
 
         <?php
@@ -307,104 +1100,240 @@ if (!empty($produits)) {
             $test_msg = $_SESSION['notification_test_message'];
             $test_type = $_SESSION['notification_test_type'] ?? 'success';
             unset($_SESSION['notification_test_message'], $_SESSION['notification_test_type']);
-            ?>
-            <div class="alert-box message-<?php echo htmlspecialchars($test_type); ?>" style="margin-bottom: 20px;">
-                <p><i class="fas fa-<?php echo $test_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
-                    <?php echo htmlspecialchars($test_msg); ?></p>
-            </div>
-            <?php
-        }
-        // Récupérer les statistiques des commandes (filtrées par boutique si vendeur)
-        $total_commandes = count_commandes_by_statut(null, $vf_dash);
-        $commandes_perso_en_attente = count_commandes_personnalisees_by_statut('en_attente', $vf_dash);
-        $en_attente = count_commandes_by_statut('en_attente', $vf_dash);
-        $prise_en_charge = count_commandes_by_statut('prise_en_charge', $vf_dash);
-        $livraison_en_cours = count_commandes_by_statut('livraison_en_cours', $vf_dash);
         ?>
+            <div class="dash-v2-notif dash-v2-notif--success">
+                <i class="fas fa-<?php echo $test_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
+                <?php echo htmlspecialchars($test_msg); ?>
+            </div>
+        <?php } ?>
 
-        <!-- Statistiques des commandes -->
-        <div class="stats-grid">
-            <div class="stat-card stat-total">
-                <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
-                <div class="stat-info">
-                    <h3>Total Commandes</h3>
-                    <div class="stat-value"><?php echo $total_commandes; ?></div>
-                </div>
+        <!-- ===== HEADER ===== -->
+        <header class="dash-v2-header">
+            <div class="dash-v2-header__left">
+                <p class="dash-v2-header__eyebrow">Espace Vendeur</p>
+                <h1 class="dash-v2-header__title">
+                    Bonjour, <span class="highlight"><?php echo $admin_prenom; ?></span> &#x1F44B;
+                </h1>
             </div>
-            <div class="stat-card stat-en-attente">
-                <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                <div class="stat-info">
-                    <h3>En Attente</h3>
-                    <div class="stat-value"><?php echo $en_attente; ?></div>
-                </div>
+            <div class="dash-v2-header__actions">
+                <button type="button" id="btn-install-pwa" class="dash-v2-tool-btn dash-v2-tool-btn--ghost"
+                    style="display:none;" title="Installer l'application">
+                    <i class="fas fa-download"></i>
+                    <span class="hide-sm">Installer</span>
+                </button>
+                <button type="button" id="btn-enable-notifications" class="dash-v2-tool-btn dash-v2-tool-btn--outline"
+                    data-notify-type="admin" title="Activer les notifications">
+                    <i class="fas fa-bell-slash"></i>
+                </button>
+                <a href="/index.php" class="dash-v2-tool-btn dash-v2-tool-btn--outline" title="Voir la boutique">
+                    <i class="fas fa-store"></i>
+                    <span class="hide-sm">Ma boutique</span>
+                </a>
+                <button type="button" id="btnOpenAddProduitModalDash" class="dash-v2-tool-btn dash-v2-tool-btn--primary">
+                    <i class="fas fa-plus"></i>
+                    Nouveau produit
+                </button>
             </div>
-            <div class="stat-card stat-prise">
-                <div class="stat-icon"><i class="fas fa-box-open"></i></div>
-                <div class="stat-info">
-                    <h3>Prise en charge</h3>
-                    <div class="stat-value"><?php echo $prise_en_charge; ?></div>
-                </div>
+        </header>
+
+        <!-- ===== HERO VUE D'ENSEMBLE ===== -->
+        <div class="dash-v2-hero">
+            <p class="dash-v2-hero__label">Vue d'ensemble &mdash; Total des ventes</p>
+            <div class="dash-v2-hero__amount">
+                <?php echo number_format($ca_total, 0, ',', ' '); ?><span class="currency">FCFA</span>
             </div>
-            <div class="stat-card stat-livraison">
-                <div class="stat-icon"><i class="fas fa-truck"></i></div>
-                <div class="stat-info">
-                    <h3>Livraison en cours</h3>
-                    <div class="stat-value"><?php echo $livraison_en_cours; ?></div>
+            <div class="dash-v2-hero__meta">
+                <div class="dash-v2-hero__pill">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Commandes &nbsp;<strong><?php echo $total_commandes; ?></strong></span>
                 </div>
+                <div class="dash-v2-hero__pill">
+                    <i class="fas fa-box"></i>
+                    <span>Produits &nbsp;<strong><?php echo $nb_produits; ?></strong></span>
+                </div>
+                <?php if ($en_attente > 0): ?>
+                    <div class="dash-v2-hero__pill dash-v2-hero__pill--warn">
+                        <i class="fas fa-clock"></i>
+                        <span><strong><?php echo $en_attente; ?></strong> en attente</span>
+                    </div>
+                <?php endif; ?>
+                <a href="commandes/index.php" class="dash-v2-hero__voir-tout">
+                    Voir tout <i class="fas fa-arrow-right"></i>
+                </a>
             </div>
         </div>
 
-        <!-- Lien rapide vers les commandes -->
-        <?php if ($en_attente > 0 || $prise_en_charge > 0): ?>
-            <div class="alert-box">
-                <p>
-                    <i class="fas fa-exclamation-circle"></i>
+        <!-- ===== STAT CARDS ===== -->
+        <div class="dash-v2-stats">
+            <a href="commandes/index.php" class="dash-v2-stat dash-v2-stat--total">
+                <div class="dash-v2-stat__icon"><i class="fas fa-shopping-bag"></i></div>
+                <div class="dash-v2-stat__content">
+                    <span class="dash-v2-stat__label">Total commandes</span>
+                    <span class="dash-v2-stat__value"><?php echo $total_commandes; ?></span>
+                </div>
+            </a>
+            <a href="commandes/index.php?statut=en_attente" class="dash-v2-stat dash-v2-stat--attente">
+                <div class="dash-v2-stat__icon"><i class="fas fa-clock"></i></div>
+                <div class="dash-v2-stat__content">
+                    <span class="dash-v2-stat__label">En attente</span>
+                    <span class="dash-v2-stat__value"><?php echo $en_attente; ?></span>
                     <?php if ($en_attente > 0): ?>
-                        <?php echo $en_attente; ?> commande<?php echo $en_attente > 1 ? 's' : ''; ?> en attente de prise en
-                        charge
-                    <?php elseif ($prise_en_charge > 0): ?>
-                        <?php echo $prise_en_charge; ?> commande<?php echo $prise_en_charge > 1 ? 's' : ''; ?>
-                        prise<?php echo $prise_en_charge > 1 ? 's' : ''; ?> en charge,
-                        prête<?php echo $prise_en_charge > 1 ? 's' : ''; ?> à être
-                        expédiée<?php echo $prise_en_charge > 1 ? 's' : ''; ?>
+                        <span class="dash-v2-stat__hint">
+                            <i class="fas fa-circle" style="font-size:.4rem;"></i> Action requise
+                        </span>
                     <?php endif; ?>
-                </p>
-                <a href="commandes/index.php" class="btn-alert">
-                    <i class="fas fa-arrow-right"></i> Gérer les commandes
+                </div>
+            </a>
+            <a href="commandes/index.php?statut=prise_en_charge" class="dash-v2-stat dash-v2-stat--prise">
+                <div class="dash-v2-stat__icon"><i class="fas fa-box-open"></i></div>
+                <div class="dash-v2-stat__content">
+                    <span class="dash-v2-stat__label">Prise en charge</span>
+                    <span class="dash-v2-stat__value"><?php echo $prise_en_charge; ?></span>
+                </div>
+            </a>
+            <a href="commandes/index.php?statut=livraison_en_cours" class="dash-v2-stat dash-v2-stat--livraison">
+                <div class="dash-v2-stat__icon"><i class="fas fa-truck"></i></div>
+                <div class="dash-v2-stat__content">
+                    <span class="dash-v2-stat__label">Livraison en cours</span>
+                    <span class="dash-v2-stat__value"><?php echo $livraison_en_cours; ?></span>
+                </div>
+            </a>
+        </div>
+
+        <!-- ===== ALERTES ===== -->
+        <?php if ($en_attente > 0): ?>
+            <div class="dash-v2-alert">
+                <i class="fas fa-exclamation-circle"></i>
+                <span class="dash-v2-alert__text">
+                    <strong><?php echo $en_attente; ?></strong>
+                    commande<?php echo $en_attente > 1 ? 's' : ''; ?> en attente de prise en charge
+                </span>
+                <a href="commandes/index.php" class="dash-v2-alert__btn">
+                    <i class="fas fa-arrow-right"></i> Traiter
                 </a>
             </div>
         <?php endif; ?>
 
         <?php if ($commandes_perso_en_attente > 0): ?>
-            <div class="alert-box" style="margin-top: 15px;">
-                <p>
-                    <i class="fas fa-palette"></i>
-                    <?php echo $commandes_perso_en_attente; ?>
-                    commande<?php echo $commandes_perso_en_attente > 1 ? 's' : ''; ?>
-                    personnalisée<?php echo $commandes_perso_en_attente > 1 ? 's' : ''; ?> en attente
-                </p>
-                <a href="commandes-personnalisees/index.php" class="btn-alert">
-                    <i class="fas fa-arrow-right"></i> Voir les commandes personnalisées
+            <div class="dash-v2-alert">
+                <i class="fas fa-palette"></i>
+                <span class="dash-v2-alert__text">
+                    <strong><?php echo $commandes_perso_en_attente; ?></strong>
+                    commande<?php echo $commandes_perso_en_attente > 1 ? 's' : ''; ?> personnalisée<?php echo $commandes_perso_en_attente > 1 ? 's' : ''; ?> en attente
+                </span>
+                <a href="commandes-personnalisees/index.php" class="dash-v2-alert__btn">
+                    <i class="fas fa-arrow-right"></i> Voir
                 </a>
             </div>
         <?php endif; ?>
 
-        <!-- Section produits -->
-        <section class="produits-section">
-            <div class="section-title">
-                <h2><i class="fas fa-box"></i> Mes Produits (<?php echo count($produits); ?>)</h2>
+        <!-- ===== COMMANDES RÉCENTES + ACCÈS RAPIDES ===== -->
+        <div class="dash-v2-mid">
+
+            <!-- Commandes récentes -->
+            <div class="dash-v2-card">
+                <div class="dash-v2-card__head">
+                    <h3><i class="fas fa-list-alt"></i> Commandes récentes</h3>
+                    <a href="commandes/index.php" class="dash-v2-card__link">
+                        Tout voir <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+                <?php if (empty($commandes_recentes)): ?>
+                    <div class="dash-v2-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucune commande pour le moment.</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($commandes_recentes as $c):
+                        $c_statut = $c['statut'] ?? '';
+                        $badge_class = 'dash-badge--attente';
+                        $badge_label = 'En attente';
+                        if ($c_statut === 'prise_en_charge') { $badge_class = 'dash-badge--prise'; $badge_label = 'Pris en charge'; }
+                        elseif ($c_statut === 'livraison_en_cours') { $badge_class = 'dash-badge--livraison'; $badge_label = 'En livraison'; }
+                        elseif ($c_statut === 'livree') { $badge_class = 'dash-badge--livree'; $badge_label = 'Livr&eacute;e'; }
+                        elseif ($c_statut === 'paye') { $badge_class = 'dash-badge--paye'; $badge_label = 'Pay&eacute;e'; }
+                        elseif ($c_statut === 'annulee') { $badge_class = 'dash-badge--annulee'; $badge_label = 'Annul&eacute;e'; }
+                        $client = trim(($c['user_prenom'] ?? '') . ' ' . ($c['user_nom'] ?? ''));
+                        if (empty($client)) $client = 'Client #' . ((int) ($c['user_id'] ?? 0));
+                        $date_fmt = isset($c['date_commande']) ? date('d/m/Y', strtotime($c['date_commande'])) : '&mdash;';
+                    ?>
+                        <a href="commandes/details.php?id=<?php echo (int) $c['id']; ?>" class="dash-commande-row">
+                            <span class="dash-commande-row__num">#<?php echo (int) $c['id']; ?></span>
+                            <span class="dash-commande-row__client">
+                                <span class="dash-commande-row__name"><?php echo htmlspecialchars($client); ?></span>
+                                <span class="dash-commande-row__date"><?php echo $date_fmt; ?></span>
+                            </span>
+                            <span class="dash-commande-row__amount">
+                                <?php echo number_format((float) ($c['montant_total'] ?? 0), 0, ',', ' '); ?>
+                                <small>FCFA</small>
+                            </span>
+                            <span class="dash-badge <?php echo $badge_class; ?>"><?php echo $badge_label; ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
 
-            <form method="GET" action="" class="admin-filters-bar">
-                <div class="admin-filter-field">
+            <!-- Accès rapides -->
+            <div class="dash-v2-card">
+                <div class="dash-v2-card__head">
+                    <h3><i class="fas fa-bolt"></i> Acc&egrave;s rapides</h3>
+                </div>
+                <a href="stock/index.php" class="dash-quick-item">
+                    <div class="dash-quick-item__icon"><i class="fas fa-box"></i></div>
+                    <div class="dash-quick-item__text">
+                        <div class="dash-quick-item__label">Mes produits</div>
+                        <div class="dash-quick-item__sub"><?php echo $nb_produits; ?> produit<?php echo $nb_produits > 1 ? 's' : ''; ?> publi&eacute;<?php echo $nb_produits > 1 ? 's' : ''; ?></div>
+                    </div>
+                    <i class="fas fa-chevron-right dash-quick-item__arrow"></i>
+                </a>
+                <a href="ventes/index.php" class="dash-quick-item">
+                    <div class="dash-quick-item__icon"><i class="fas fa-chart-bar"></i></div>
+                    <div class="dash-quick-item__text">
+                        <div class="dash-quick-item__label">Mes revenus</div>
+                        <div class="dash-quick-item__sub"><?php echo number_format($ca_total, 0, ',', ' '); ?> FCFA</div>
+                    </div>
+                    <i class="fas fa-chevron-right dash-quick-item__arrow"></i>
+                </a>
+                <a href="parametres.php" class="dash-quick-item">
+                    <div class="dash-quick-item__icon"><i class="fas fa-cog"></i></div>
+                    <div class="dash-quick-item__text">
+                        <div class="dash-quick-item__label">Param&egrave;tres</div>
+                        <div class="dash-quick-item__sub">Infos boutique et contact</div>
+                    </div>
+                    <i class="fas fa-chevron-right dash-quick-item__arrow"></i>
+                </a>
+            </div>
+
+        </div><!-- /.dash-v2-mid -->
+
+        <!-- ===== SECTION PRODUITS ===== -->
+        <div class="dash-v2-products-section">
+            <div class="dash-v2-products-head">
+                <h2>
+                    <i class="fas fa-store-alt"></i>
+                    Mes Produits
+                    <span class="dash-v2-products-head__count"><?php echo $nb_produits; ?></span>
+                </h2>
+                <div class="dash-v2-products-head__right">
+                    <a href="produits/index.php" class="dash-v2-tool-btn dash-v2-tool-btn--outline" style="font-size:.8rem;padding:8px 14px;">
+                        <i class="fas fa-external-link-alt"></i> G&eacute;rer
+                    </a>
+                    <button type="button" id="btnOpenAddProduitModalHeader" class="dash-v2-tool-btn dash-v2-tool-btn--primary" style="font-size:.8rem;padding:8px 14px;">
+                        <i class="fas fa-plus"></i> Ajouter
+                    </button>
+                </div>
+            </div>
+
+            <form method="GET" action="" class="dash-v2-filters">
+                <div class="dash-v2-filter-field">
                     <label for="recherche">Recherche</label>
-                    <input type="text" id="recherche" name="recherche" placeholder="Nom, description, statut..."
+                    <input type="text" id="recherche" name="recherche" placeholder="Nom, description..."
                         value="<?php echo htmlspecialchars($recherche); ?>">
                 </div>
-                <div class="admin-filter-field">
-                    <label for="categorie_id">Catégorie</label>
+                <div class="dash-v2-filter-field">
+                    <label for="categorie_id">Cat&eacute;gorie</label>
                     <select id="categorie_id" name="categorie_id">
-                        <option value="0">Toutes les catégories</option>
+                        <option value="0">Toutes les cat&eacute;gories</option>
                         <?php foreach ($categories as $categorie): ?>
                             <option value="<?php echo (int) $categorie['id']; ?>"
                                 <?php echo $categorie_id === (int) $categorie['id'] ? 'selected' : ''; ?>>
@@ -413,69 +1342,68 @@ if (!empty($produits)) {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="admin-filter-actions">
-                    <button type="submit" class="btn-primary">
+                <div class="dash-v2-filter-actions">
+                    <button type="submit" class="btn-v2-filter">
                         <i class="fas fa-search"></i> Filtrer
                     </button>
-                    <a href="dashboard.php" class="btn-filter-reset">
-                        <i class="fas fa-rotate-left"></i>&nbsp;Réinitialiser
+                    <a href="dashboard.php" class="btn-v2-reset">
+                        <i class="fas fa-rotate-left"></i> Reset
                     </a>
                 </div>
             </form>
 
             <?php if (empty($produits)): ?>
-                <div class="empty-state">
+                <div class="dash-v2-empty">
                     <i class="fas fa-box-open"></i>
-                    <p>Aucun produit enregistré pour le moment.</p>
-                    <button type="button" class="btn-primary" id="btnOpenAddProduitModalDashEmpty">
+                    <p>Aucun produit enregistr&eacute; pour le moment.</p>
+                    <button type="button" class="dash-v2-tool-btn dash-v2-tool-btn--primary" id="btnOpenAddProduitModalDashEmpty">
                         <i class="fas fa-plus"></i> Ajouter le premier produit
                     </button>
                 </div>
             <?php else: ?>
-                <!-- Grille de produits -->
-                <div class="produits-grid">
-                    <?php foreach ($produits as $produit): ?>
-                        <?php
-                        $statut_class = 'statut-actif';
-                        if ($produit['statut'] == 'inactif') {
-                            $statut_class = 'statut-inactif';
-                        } elseif ($produit['statut'] == 'rupture_stock') {
-                            $statut_class = 'statut-rupture';
-                        }
-                        $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
-                        ?>
-                        <div class="produit-card produit-card-linkable"
+                <div class="dash-v2-produits-grid">
+                    <?php foreach ($produits as $produit):
+                        $badge_cls = 'dash-v2-produit-card__badge--actif';
+                        $badge_lbl = 'Actif';
+                        if ($produit['statut'] === 'inactif') { $badge_cls = 'dash-v2-produit-card__badge--inactif'; $badge_lbl = 'Inactif'; }
+                        elseif ($produit['statut'] === 'rupture_stock') { $badge_cls = 'dash-v2-produit-card__badge--rupture'; $badge_lbl = 'Rupture'; }
+                    ?>
+                        <div class="dash-v2-produit-card produit-card-linkable"
                             data-href="produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
-                            <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
-                                alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
-                                onerror="this.src='/image/produit1.jpg'">
-                            <div class="produit-card-body">
-                                <h3 class="produit-card-nom"><?php echo htmlspecialchars($produit['nom']); ?></h3>
-                                <p class="produit-card-categorie">
-                                    <?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie'); ?>
-                                </p>
-                                <p class="produit-card-prix">
-                                    <?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                    <span class="prix-unite">FCFA</span>
-                                    <?php if ($produit['prix_promotion']): ?>
-                                        <span class="prix-promo">
-                                            (Promo: <?php echo number_format($produit['prix_promotion'], 0, ',', ' '); ?> FCFA)
+                            <div class="dash-v2-produit-card__img">
+                                <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                                    alt="<?php echo htmlspecialchars($produit['nom']); ?>"
+                                    onerror="this.src='/image/produit1.jpg'">
+                            </div>
+                            <span class="dash-v2-produit-card__badge <?php echo $badge_cls; ?>"><?php echo $badge_lbl; ?></span>
+                            <div class="dash-v2-produit-card__body">
+                                <div class="dash-v2-produit-card__name"><?php echo htmlspecialchars($produit['nom']); ?></div>
+                                <div class="dash-v2-produit-card__cat">
+                                    <?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans cat&eacute;gorie'); ?>
+                                </div>
+                                <div class="dash-v2-produit-card__prix-row">
+                                    <span class="dash-v2-produit-card__prix">
+                                        <?php echo number_format($produit['prix'], 0, ',', ' '); ?>
+                                    </span>
+                                    <span class="dash-v2-produit-card__prix-unit">FCFA</span>
+                                    <?php if (!empty($produit['prix_promotion'])): ?>
+                                        <span class="dash-v2-produit-card__promo">
+                                            &minus; <?php echo number_format($produit['prix_promotion'], 0, ',', ' '); ?>
                                         </span>
                                     <?php endif; ?>
-                                </p>
-                                <p class="produit-card-stock">
-                                    Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span>
-
-                                </p>
-                                <div class="produit-card-actions">
-                                    <a href="produits/modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
+                                </div>
+                                <div class="dash-v2-produit-card__stock">
+                                    <i class="fas fa-warehouse" style="font-size:.68rem;"></i>
+                                    Stock:&nbsp;<strong><?php echo (int) $produit['stock']; ?></strong>
+                                </div>
+                                <div class="dash-v2-produit-card__actions">
+                                    <a href="produits/modifier.php?id=<?php echo (int) $produit['id']; ?>" class="dash-v2-btn-edit">
                                         <i class="fas fa-edit"></i> Modifier
                                     </a>
-                                    <a href="produits/supprimer.php?id=<?php echo $produit['id']; ?>"
-                                        class="btn-card btn-delete"
-                                        onclick="return confirm('Supprimer ce produit ?\n\nCette action est définitive. Cliquez sur OK pour supprimer ou sur Annuler pour annuler.');">
-                                        <i class="fas fa-trash"></i> Supprimer
+                                    <a href="produits/supprimer.php?id=<?php echo (int) $produit['id']; ?>"
+                                        class="dash-v2-btn-delete"
+                                        onclick="return confirm('Supprimer ce produit ? Action irr\u00e9versible.');">
+                                        <i class="fas fa-trash"></i>
                                     </a>
                                 </div>
                             </div>
@@ -483,8 +1411,10 @@ if (!empty($produits)) {
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-        </section>
-    </div>
+        </div>
+
+    </div><!-- /.dash-v2-page -->
+    </div><!-- /.contents-container -->
 
     <?php
     $add_produit_modal = true;
@@ -510,29 +1440,40 @@ if (!empty($produits)) {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var modalAdd = document.getElementById('modalAddProduitDash');
-            var btnOpenDash = document.getElementById('btnOpenAddProduitModalDash');
-            var btnOpenDashEmpty = document.getElementById('btnOpenAddProduitModalDashEmpty');
+            var btnsOpen = [
+                document.getElementById('btnOpenAddProduitModalDash'),
+                document.getElementById('btnOpenAddProduitModalDashEmpty'),
+                document.getElementById('btnOpenAddProduitModalSide'),
+                document.getElementById('btnOpenAddProduitModalHeader')
+            ];
             var btnCloseDash = document.getElementById('btnCloseAddProduitModalDash');
             var btnCancelModal = document.getElementById('btn-fap-cancel-modal');
+
             function openAddModalDash() {
                 if (!modalAdd) return;
                 modalAdd.removeAttribute('hidden');
                 modalAdd.setAttribute('aria-hidden', 'false');
                 document.body.style.overflow = 'hidden';
             }
+
             function closeAddModalDash() {
                 if (!modalAdd) return;
                 modalAdd.setAttribute('hidden', '');
                 modalAdd.setAttribute('aria-hidden', 'true');
                 document.body.style.overflow = '';
             }
-            if (btnOpenDash) btnOpenDash.addEventListener('click', openAddModalDash);
-            if (btnOpenDashEmpty) btnOpenDashEmpty.addEventListener('click', openAddModalDash);
+
+            btnsOpen.forEach(function(btn) {
+                if (btn) btn.addEventListener('click', openAddModalDash);
+            });
+
             if (btnCloseDash) btnCloseDash.addEventListener('click', closeAddModalDash);
             if (btnCancelModal) btnCancelModal.addEventListener('click', closeAddModalDash);
+
             if (modalAdd) modalAdd.addEventListener('click', function (ev) {
                 if (ev.target === modalAdd) closeAddModalDash();
             });
+
             document.addEventListener('keydown', function (ev) {
                 if (ev.key === 'Escape' && modalAdd && !modalAdd.hasAttribute('hidden')) {
                     var vm = document.getElementById('fapVarianteModal');
@@ -540,9 +1481,11 @@ if (!empty($produits)) {
                     closeAddModalDash();
                 }
             });
+
             if (modalAdd && !modalAdd.hasAttribute('hidden')) {
                 document.body.style.overflow = 'hidden';
             }
+
             try {
                 var q = new URLSearchParams(window.location.search);
                 if (q.get('open_add') === '1') {
@@ -556,18 +1499,16 @@ if (!empty($produits)) {
                 }
             } catch (e) {}
 
-            document.querySelectorAll('.produit-card-linkable').forEach(function(card) {
-                card.addEventListener('click', function(event) {
-                    if (event.target.closest('a, button, input, select, textarea, form')) {
-                        return;
-                    }
+            // Clic sur carte produit
+            document.querySelectorAll('.produit-card-linkable').forEach(function (card) {
+                card.addEventListener('click', function (event) {
+                    if (event.target.closest('a, button, input, select, textarea, form')) return;
                     var href = card.getAttribute('data-href');
-                    if (href) {
-                        window.location.href = href;
-                    }
+                    if (href) window.location.href = href;
                 });
             });
 
+            // PWA install
             var installBtn = document.getElementById('btn-install-pwa');
             var deferredPrompt;
 
@@ -583,16 +1524,12 @@ if (!empty($produits)) {
                 if (installBtn) {
                     installBtn.addEventListener('click', function () {
                         if (!deferredPrompt) {
-                            alert(
-                                'L\'installation n\'est pas disponible. Essayez depuis Chrome ou Edge en mode HTTPS.'
-                            );
+                            alert("L'installation n'est pas disponible. Essayez depuis Chrome ou Edge en mode HTTPS.");
                             return;
                         }
                         deferredPrompt.prompt();
                         deferredPrompt.userChoice.then(function (choiceResult) {
-                            if (choiceResult.outcome === 'accepted') {
-                                installBtn.style.display = 'none';
-                            }
+                            if (choiceResult.outcome === 'accepted') installBtn.style.display = 'none';
                             deferredPrompt = null;
                         });
                     });
@@ -601,3 +1538,6 @@ if (!empty($produits)) {
         });
     </script>
     <?php include 'includes/footer.php'; ?>
+</body>
+
+</html>

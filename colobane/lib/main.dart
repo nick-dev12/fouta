@@ -7,17 +7,20 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:app_links/app_links.dart';
 import 'dart:convert';
 import 'dart:collection';
+import 'dart:async';
 import 'services/fcm_service.dart';
 import 'services/social_auth_service.dart';
-import 'dart:async';
 
 /// URL de la marketplace chargée dans la WebView (production)
 const String kMarketplaceBaseUrl = 'https://colobanes.com/';
 const Color kBleuPrincipal = Color(0xFF3564A6);
 const Color kBleuPrincipalFonce = Color(0xFF2D5690);
 const Color kOrangePromo = Color(0xFFFF6B35);
+/// Durée max de l'écran de chargement initial
+const Duration kInitialLoaderMaxDuration = Duration(seconds: 5);
 /// Bleu marine proche du logo « banes »
 const Color kBleuLogoMarine = Color(0xFF1A3A5C);
 
@@ -108,18 +111,66 @@ class _WebViewScreenState extends State<WebViewScreen>
   bool isLoading = true;
   bool isInitialLoad = true; // Pour distinguer le premier chargement
   double progress = 0;
+  double _simulatedProgress = 0;
   String? _currentUrl; // Sauvegarder l'URL actuelle
+  String? _deepLinkInitUrl; // URL reçue via deep link (prioritaire)
+  Timer? _loaderMaxTimer;
+  Timer? _progressSimTimer;
+  StreamSubscription<Uri>? _deepLinkSub; // Abonnement aux deep links entrants
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _startInitialLoadTimers();
     _initializeFCM();
-    _loadSavedUrl();
+    // Les deep links sont initialisés EN PREMIER pour prendre priorité
+    _initDeepLinks().then((_) => _loadSavedUrl());
+  }
+
+  void _startInitialLoadTimers() {
+    _loaderMaxTimer = Timer(kInitialLoaderMaxDuration, _forceFinishInitialLoad);
+    _progressSimTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (!mounted || !isInitialLoad) return;
+      setState(() {
+        if (_simulatedProgress < 0.9) {
+          _simulatedProgress = (_simulatedProgress + 0.018).clamp(0.0, 0.9);
+        }
+      });
+    });
+  }
+
+  double get _loaderProgress {
+    return progress > _simulatedProgress ? progress : _simulatedProgress;
+  }
+
+  void _forceFinishInitialLoad() {
+    if (!mounted || !isInitialLoad) return;
+    _finishInitialLoad();
+  }
+
+  void _finishInitialLoad() {
+    _loaderMaxTimer?.cancel();
+    _progressSimTimer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      isLoading = false;
+      isInitialLoad = false;
+      progress = 1.0;
+      _simulatedProgress = 1.0;
+    });
+  }
+
+  Future<void> _postLoadSetup() async {
+    await _injectJavaScript();
+    await _registerFCMTokenInWebView();
   }
 
   @override
   void dispose() {
+    _loaderMaxTimer?.cancel();
+    _progressSimTimer?.cancel();
+    _deepLinkSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -153,8 +204,42 @@ class _WebViewScreenState extends State<WebViewScreen>
     }
   }
 
+  // Initialiser la gestion des deep links (Android App Links + iOS Universal Links)
+  Future<void> _initDeepLinks() async {
+    final appLinks = AppLinks();
+
+    // Lien ayant lancé l'app à froid (cold start)
+    try {
+      final initialUri = await appLinks.getInitialLink();
+      if (initialUri != null && _isMarketplaceHost(initialUri.host)) {
+        _deepLinkInitUrl = initialUri.toString();
+        _currentUrl = _deepLinkInitUrl;
+      }
+    } catch (_) {}
+
+    // Liens reçus quand l'app est déjà ouverte (warm/hot start)
+    _deepLinkSub = appLinks.uriLinkStream.listen((uri) {
+      if (_isMarketplaceHost(uri.host)) {
+        final url = uri.toString();
+        if (webViewController != null) {
+          webViewController!.loadUrl(
+            urlRequest: URLRequest(url: WebUri(url)),
+          );
+        } else {
+          // L'app vient de démarrer : on mémorise l'URL pour qu'elle soit
+          // chargée dès que la WebView sera prête
+          _currentUrl = url;
+          _deepLinkInitUrl = url;
+        }
+      }
+    }, onError: (_) {});
+  }
+
   // Charger l'URL sauvegardée (invalide l'ancien domaine Aria)
+  // Ne s'applique que si aucun deep link n'a été reçu au lancement
   Future<void> _loadSavedUrl() async {
+    // Un deep link est prioritaire sur l'URL sauvegardée
+    if (_deepLinkInitUrl != null) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedUrl = prefs.getString('last_webview_url');
@@ -736,19 +821,12 @@ class _WebViewScreenState extends State<WebViewScreen>
                   });
                 },
                 onLoadStop: (controller, url) async {
-                  setState(() {
-                    isLoading = false;
-                    isInitialLoad =
-                        false; // Après le premier chargement, ce n'est plus le chargement initial
-                  });
-                  // Sauvegarder l'URL actuelle
                   if (url != null) {
                     _currentUrl = url.toString();
-                    await _saveCurrentUrl();
+                    unawaited(_saveCurrentUrl());
                   }
-                  await _injectJavaScript();
-                  // Envoyer le token FCM après le chargement de la page
-                  await _registerFCMTokenInWebView();
+                  _finishInitialLoad();
+                  unawaited(_postLoadSetup());
                 },
                 onProgressChanged: (controller, progress) {
                   // Ne mettre à jour que si la différence est significative pour éviter trop de rebuilds
@@ -786,7 +864,7 @@ class _WebViewScreenState extends State<WebViewScreen>
             ),
             // Loader plein écran uniquement au lancement
             if (isLoading && isInitialLoad)
-              _MarketplaceLoader(progress: progress),
+              _MarketplaceLoader(progress: _loaderProgress),
             // Barre de progression discrète en haut pour les navigations
             if (isLoading && !isInitialLoad)
               _TopProgressBar(progress: progress),
@@ -797,7 +875,7 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 }
 
-// Widget personnalisé pour le loader avec logo et barre de progression
+// Écran de chargement initial — fond blanc, logo, barre orange, textes bleu
 class _MarketplaceLoader extends StatefulWidget {
   final double progress;
 
@@ -809,96 +887,166 @@ class _MarketplaceLoader extends StatefulWidget {
 
 class _MarketplaceLoaderState extends State<_MarketplaceLoader>
     with TickerProviderStateMixin {
-  static const Color _senegalRouge = Color(0xFFE31B23);
-  static const Color _senegalJaune = Color(0xFFFCD116);
-  static const Color _senegalVert = Color(0xFF00853F);
+  static const double _ringSize = 196;
+  static const double _circleSize = 158;
 
+  late AnimationController _entryController;
   late AnimationController _pulseController;
-  late Animation<double> _scaleAnimation;
-  late AnimationController _ribbonController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _entryScaleAnimation;
+  late Animation<double> _pulseScaleAnimation;
+  late Animation<Offset> _slideAnimation;
+  double _displayProgress = 0;
+  AnimationController? _progressAnimController;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1400),
+    _displayProgress = widget.progress.clamp(0.0, 1.0);
+    _entryController = AnimationController(
       vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
+    _fadeAnimation = CurvedAnimation(
+      parent: _entryController,
+      curve: Curves.easeOutCubic,
+    );
+    _entryScaleAnimation = Tween<double>(begin: 0.88, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: Curves.easeOutBack),
+    );
+    _pulseScaleAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _entryController, curve: Curves.easeOutCubic),
+    );
+    _entryController.forward();
+  }
 
-    _ribbonController = AnimationController(
-      duration: const Duration(milliseconds: 2400),
+  @override
+  void didUpdateWidget(covariant _MarketplaceLoader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final target = widget.progress.clamp(0.0, 1.0);
+    if ((target - _displayProgress).abs() > 0.001) {
+      _animateProgressTo(target);
+    }
+  }
+
+  void _animateProgressTo(double target) {
+    _progressAnimController?.dispose();
+    final begin = _displayProgress;
+    final controller = AnimationController(
       vsync: this,
-    )..repeat();
+      duration: const Duration(milliseconds: 420),
+    );
+    _progressAnimController = controller;
+    final animation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeOutCubic,
+    );
+    animation.addListener(() {
+      if (!mounted) return;
+      setState(() {
+        _displayProgress = begin + (target - begin) * animation.value;
+      });
+    });
+    controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed ||
+          status == AnimationStatus.dismissed) {
+        controller.dispose();
+        if (_progressAnimController == controller) {
+          _progressAnimController = null;
+        }
+      }
+    });
+    controller.forward();
   }
 
   @override
   void dispose() {
+    _progressAnimController?.dispose();
+    _entryController.dispose();
     _pulseController.dispose();
-    _ribbonController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final p = widget.progress.clamp(0.0, 1.0);
+    final percent = (_displayProgress * 100).round().clamp(0, 100);
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.lerp(kOrangePromo, Colors.white, 0.06)!,
-            kBleuLogoMarine,
-            const Color(0xFF0D2238),
-          ],
-          stops: const [0.0, 0.52, 1.0],
-        ),
-      ),
+    return ColoredBox(
+      color: Colors.white,
       child: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation: _ribbonController,
-                  builder: (context, _) {
-                    final slide =
-                        (_ribbonController.value * 200 - 60).clamp(-60.0, 140.0);
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ScaleTransition(
+                      scale: _entryScaleAnimation,
                       child: SizedBox(
-                        height: 5,
-                        width: 168,
+                        width: _ringSize,
+                        height: _ringSize,
                         child: Stack(
-                          clipBehavior: Clip.hardEdge,
+                          alignment: Alignment.center,
                           children: [
-                            const Row(
-                              children: [
-                                Expanded(child: ColoredBox(color: _senegalRouge)),
-                                Expanded(child: ColoredBox(color: _senegalJaune)),
-                                Expanded(child: ColoredBox(color: _senegalVert)),
-                              ],
+                            SizedBox(
+                              width: _ringSize,
+                              height: _ringSize,
+                              child: CircularProgressIndicator(
+                                value: _displayProgress.clamp(0.02, 1.0),
+                                strokeWidth: 5.5,
+                                strokeCap: StrokeCap.round,
+                                backgroundColor:
+                                    kBleuPrincipal.withValues(alpha: 0.14),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  kOrangePromo,
+                                ),
+                              ),
                             ),
-                            Positioned.fill(
-                              child: Transform.translate(
-                                offset: Offset(slide, 0),
-                                child: Container(
-                                  width: 56,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0),
-                                        Colors.white.withValues(alpha: 0.38),
-                                        Colors.white.withValues(alpha: 0),
-                                      ],
-                                    ),
+                            Container(
+                              width: _circleSize,
+                              height: _circleSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: kBleuPrincipal.withValues(alpha: 0.12),
+                                border: Border.all(
+                                  color: kBleuPrincipal.withValues(alpha: 0.22),
+                                  width: 1.5,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: ScaleTransition(
+                                scale: _pulseScaleAnimation,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(22),
+                                  child: Image.asset(
+                                    'assets/images/app_icon.png',
+                                    fit: BoxFit.contain,
+                                    errorBuilder:
+                                        (context, error, stackTrace) {
+                                      return Icon(
+                                        Icons.storefront_rounded,
+                                        size: 72,
+                                        color: kBleuPrincipal.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
@@ -906,186 +1054,81 @@ class _MarketplaceLoaderState extends State<_MarketplaceLoader>
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 28),
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: child,
-                    );
-                  },
-                  child: Container(
-                    width: 136,
-                    height: 136,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.22),
-                          blurRadius: 28,
-                          offset: const Offset(0, 14),
-                          spreadRadius: -4,
-                        ),
-                        BoxShadow(
-                          color: kOrangePromo.withValues(alpha: 0.35),
-                          blurRadius: 24,
-                          spreadRadius: -8,
-                        ),
-                      ],
                     ),
-                    padding: const EdgeInsets.all(14),
-                    child: Image.asset(
-                      'assets/images/app_icon.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.shopping_cart_rounded,
-                          size: 64,
-                          color: kBleuLogoMarine,
+                    const SizedBox(height: 36),
+                    Text(
+                      'Bienvenue au marché',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
+                        letterSpacing: 0.2,
+                        color: kBleuPrincipal,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text.rich(
+                      textAlign: TextAlign.center,
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'COLO',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: kBleuPrincipal,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'banes',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: kOrangePromo,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 260),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: animation,
+                            child: child,
+                          ),
                         );
                       },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'COLO',
+                      child: Text(
+                        '$percent%',
+                        key: ValueKey<int>(percent),
                         style: TextStyle(
-                          fontSize: 30,
+                          fontSize: 40,
                           fontWeight: FontWeight.w800,
-                          color: kOrangePromo,
-                          letterSpacing: 0.5,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'banes',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.35),
-                              blurRadius: 10,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'MARCHÉ EN LIGNE • GLOBAL MARKETPLACE',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    letterSpacing: 1.1,
-                    height: 1.35,
-                    color: Colors.white.withValues(alpha: 0.76),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Chargement du marché…',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 36),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          height: 8,
-                          width: double.infinity,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              ColoredBox(
-                                color: Colors.white.withValues(alpha: 0.18),
-                              ),
-                              FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: p,
-                                heightFactor: 1,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0.95),
-                                        Color.lerp(
-                                          Colors.white,
-                                          kOrangePromo,
-                                          0.55,
-                                        )!,
-                                      ],
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.45,
-                                        ),
-                                        blurRadius: 10,
-                                        spreadRadius: 0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${(p * 100).toInt()}%',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.82),
-                          fontWeight: FontWeight.w600,
+                          color: kBleuPrincipalFonce,
                           fontFeatures: const [FontFeature.tabularFigures()],
+                          height: 1,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 36),
-                SizedBox(
-                  width: 30,
-                  height: 30,
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.white.withValues(alpha: 0.85),
                     ),
-                    strokeWidth: 3,
-                  ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Chargement en cours…',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: kBleuPrincipal.withValues(alpha: 0.62),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -1094,7 +1137,7 @@ class _MarketplaceLoaderState extends State<_MarketplaceLoader>
   }
 }
 
-// Barre de progression discrète en haut de l'écran pour les navigations
+// Barre de progression discrète en haut pour les navigations suivantes
 class _TopProgressBar extends StatelessWidget {
   final double progress;
 
@@ -1102,34 +1145,39 @@ class _TopProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = progress.clamp(0.0, 1.0);
+
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
-      child: Container(
-        height: 3,
-        child: Stack(
-          children: [
-            // Barre de progression
-            FractionallySizedBox(
-              widthFactor: progress.clamp(0.0, 1.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [kBleuPrincipal, kOrangePromo],
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(end: p),
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        builder: (context, animatedP, _) {
+          return SizedBox(
+            height: 3,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: animatedP.clamp(0.0, 1.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: kOrangePromo,
+                    boxShadow: [
+                      BoxShadow(
+                        color: kOrangePromo.withValues(alpha: 0.35),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: kBleuPrincipal.withValues(alpha: 0.45),
-                      blurRadius: 6,
-                      spreadRadius: 1,
-                    ),
-                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

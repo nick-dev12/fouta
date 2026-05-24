@@ -57,14 +57,27 @@ $seo_canonical = $base . '/produits.php';
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <style>
+        @keyframes produitsFadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #produits-container {
+            animation: produitsFadeIn 0.25s ease-out both;
+        }
+        .mp-card { animation: produitsFadeIn 0.22s ease-out both; }
+        .mp-card:nth-child(1)  { animation-delay: 0.00s; }
+        .mp-card:nth-child(2)  { animation-delay: 0.03s; }
+        .mp-card:nth-child(3)  { animation-delay: 0.06s; }
+        .mp-card:nth-child(4)  { animation-delay: 0.09s; }
+        .mp-card:nth-child(n+5){ animation-delay: 0.00s; }
+        .mp-card--loading-anim { animation: produitsFadeIn 0.22s ease-out both; }
         .produits-page-header {
             background: var(--couleur-dominante);
             padding: 40px 20px;
@@ -173,6 +186,56 @@ $seo_canonical = $base . '/produits.php';
             padding: 6px 12px;
             border-radius: 20px;
         }
+
+        /* ---- Responsive header produits ---- */
+        @media (max-width: 768px) {
+            .produits-page-header {
+                padding: 28px 16px;
+                margin-bottom: 24px;
+            }
+            .produits-page-header h1 {
+                font-size: 22px;
+                margin-bottom: 8px;
+            }
+            .produits-page-header p {
+                font-size: 13px;
+            }
+            .filtres-actifs {
+                gap: 8px;
+                font-size: 12px;
+            }
+            .filtres-actifs span {
+                padding: 4px 10px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .produits-page-header {
+                padding: 18px 12px;
+                margin-bottom: 16px;
+            }
+            .produits-page-header h1 {
+                font-size: 16px;
+                margin-bottom: 6px;
+                line-height: 1.3;
+            }
+            .produits-page-header h1 i {
+                font-size: 14px;
+            }
+            .produits-page-header p {
+                font-size: 11px;
+            }
+            .filtres-actifs {
+                gap: 6px;
+                margin-top: 8px;
+            }
+            .filtres-actifs span {
+                padding: 3px 8px;
+                font-size: 11px;
+                border-radius: 14px;
+            }
+        }
     </style>
 </head>
 
@@ -212,75 +275,67 @@ $seo_canonical = $base . '/produits.php';
     <div class="produits-container-wrapper">
         <section class="section00">
             <section class="produit_vedetes">
-                <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                    data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-                    class="articles carousel11" id="produits-container">
+                <div class="mp-grid" id="produits-container" style="padding: 0 12px;">
                     <?php if (empty($produits_tous)): ?>
-                        <!-- Message si aucun produit -->
-                        <div style="text-align: center; padding: 40px; color: var(--gris-moyen); width: 100%;">
+                        <div style="text-align: center; padding: 40px; color: var(--gris-moyen); width: 100%; grid-column: 1/-1;">
                             <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
                             <p style="font-size: 16px;">Aucun produit publié pour le moment.</p>
                         </div>
                     <?php else: ?>
                         <?php foreach ($produits_tous as $produit): ?>
                             <?php
-                            // Calculer le prix à afficher
                             $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
                                 ? $produit['prix_promotion']
                                 : $produit['prix'];
                             $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
                             $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                             ?>
-                            <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
-                                <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
-                                    <div class="image-wrapper">
+                            <article class="mp-card" data-produit-id="<?php echo (int)$produit['id']; ?>">
+                                <a href="produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
+                                    <div class="mp-card-img">
+                                        <?php if ($has_promotion): ?>
+                                        <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
+                                        <?php endif; ?>
                                         <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
                                             alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
+                                            loading="lazy"
                                             onerror="this.src='/image/produit1.jpg'">
                                     </div>
-                                    <div class="produit-content">
-                                        <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                                        <?php echo produit_card_boutique_line_html($produit); ?>
-                                        <?php if (!empty($produit['categorie_nom'])): ?>
-                                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                                        <?php endif; ?>
-                                        <p class="prix">
+                                    <div class="mp-card-body">
+                                        <p class="mp-card-title"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                                        <div class="mp-card-price-row">
                                             <?php if ($has_promotion): ?>
-                                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                                    FCFA</span>
-                                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                                    FCFA</span>
+                                                <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
+                                                <span class="mp-card-price-old"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
                                             <?php else: ?>
-                                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                                    FCFA</span>
+                                                <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
                                             <?php endif; ?>
-                                        </p>
-
+                                        </div>
                                     </div>
                                 </a>
-                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                                    <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url"
-                                        value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produits.php'); ?>">
-                                    <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                                    </button>
-                                </form>
-                            </div>
+                                <div class="mp-card-cart">
+                                    <form method="POST" action="/add-to-panier.php">
+                                        <input type="hidden" name="produit_id" value="<?php echo (int)$produit['id']; ?>">
+                                        <input type="hidden" name="quantite" value="1">
+                                        <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produits.php'); ?>">
+                                        <button type="submit" class="mp-card-btn">
+                                            <i class="fa-solid fa-cart-shopping"></i> Ajouter
+                                        </button>
+                                    </form>
+                                </div>
+                            </article>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </article>
+                </div>
 
                 <?php if (!empty($produits_tous) && $total_produits > 20): ?>
-                    <div style="text-align: center; margin-top: 40px; padding: 20px;">
-                        <button id="btn-voir-plus" class="btn-voir-plus" onclick="chargerPlusProduits()">
-                            <i class="fas fa-chevron-down"></i> Voir plus
-                        </button>
-                        <p id="produits-count" class="produits-count">
-                            Affichés: <span id="count-actuel">20</span> / <?php echo $total_produits; ?> produits
-                        </p>
+                    <div id="infinite-sentinel" style="height:1px;"></div>
+                    <div id="loading-indicator" style="display:none;text-align:center;padding:24px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:1.6rem;color:var(--couleur-dominante);"></i>
                     </div>
+                    <p id="produits-count" class="produits-count">
+                        Affichés : <span id="count-actuel">20</span> / <?php echo $total_produits; ?> produits
+                    </p>
                 <?php endif; ?>
             </section>
         </section>
@@ -288,162 +343,96 @@ $seo_canonical = $base . '/produits.php';
 
     <?php include('footer.php'); ?>
 
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script>
-        AOS.init();
+        (function () {
+            let offsetActuel = 20;
+            const limit = 20;
+            const totalProduits = <?php echo $total_produits; ?>;
+            let loading = false;
+            const container   = document.getElementById('produits-container');
+            const sentinel    = document.getElementById('infinite-sentinel');
+            const loader      = document.getElementById('loading-indicator');
+            const countEl     = document.getElementById('count-actuel');
 
-        let offsetActuel = 20; // On a déjà affiché les 20 premiers
-        const limit = 20;
-        const totalProduits = <?php echo $total_produits; ?>;
-        const apiBaseParams = '<?php
-        $p = ['offset' => 0, 'limit' => 20];
-        if ($has_filters) {
-            if (!empty($recherche_actuelle))
-                $p['recherche'] = $recherche_actuelle;
-            if ($prix_min !== null)
-                $p['prix_min'] = $prix_min;
-            if ($prix_max !== null)
-                $p['prix_max'] = $prix_max;
-            if ($categorie_id !== null)
-                $p['categorie'] = $categorie_id;
-            $p['tri'] = $tri;
-        }
-        echo http_build_query($p);
-        ?>';
+            const apiBaseParams = '<?php
+            $p = ['offset' => 0, 'limit' => 20];
+            if ($has_filters) {
+                if (!empty($recherche_actuelle)) $p['recherche'] = $recherche_actuelle;
+                if ($prix_min !== null)           $p['prix_min']  = $prix_min;
+                if ($prix_max !== null)           $p['prix_max']  = $prix_max;
+                if ($categorie_id !== null)       $p['categorie'] = $categorie_id;
+                $p['tri'] = $tri;
+            }
+            echo http_build_query($p);
+            ?>';
 
-        function getApiUrl() {
-            const params = new URLSearchParams(apiBaseParams);
-            params.set('offset', offsetActuel);
-            return 'api/get_produits.php?' + params.toString();
-        }
+            function getApiUrl() {
+                const params = new URLSearchParams(apiBaseParams);
+                params.set('offset', offsetActuel);
+                return 'api/get_produits.php?' + params.toString();
+            }
 
-        function chargerPlusProduits() {
-            const btn = document.getElementById('btn-voir-plus');
-            const container = document.getElementById('produits-container');
-            const countActuel = document.getElementById('count-actuel');
+            function formatNumber(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0'); }
 
-            // Désactiver le bouton pendant le chargement
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+            function escapeHtml(t) {
+                const d = document.createElement('div');
+                d.textContent = t == null ? '' : t;
+                return d.innerHTML;
+            }
 
-            // Faire la requête AJAX
-            fetch(getApiUrl())
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.produits.length > 0) {
-                        // Ajouter les nouveaux produits
-                        data.produits.forEach(produit => {
-                            const div = document.createElement('div');
-                            div.className = 'carousel';
-                            div.setAttribute('data-produit-id', produit.id);
+            function buildCard(produit) {
+                const article = document.createElement('article');
+                article.className = 'mp-card mp-card--loading-anim';
+                article.setAttribute('data-produit-id', produit.id);
+                let badgeHTML = produit.has_promotion && produit.pourcentage_promo
+                    ? `<span class="mp-card-badge mp-card-badge--nouveau">-${produit.pourcentage_promo}%</span>` : '';
+                let prixHTML = produit.has_promotion
+                    ? `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span><span class="mp-card-price-old">${formatNumber(produit.prix)} FCFA</span>`
+                    : `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`;
+                const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                article.innerHTML = `
+                    <a href="produit.php?id=${produit.id}" class="mp-card-link">
+                        <div class="mp-card-img">${badgeHTML}<img src="/upload/${escapeHtml(produit.image_principale)}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
+                        <div class="mp-card-body"><p class="mp-card-title">${escapeHtml(produit.nom)}</p><div class="mp-card-price-row">${prixHTML}</div></div>
+                    </a>
+                    <div class="mp-card-cart"><form method="POST" action="/add-to-panier.php">
+                        <input type="hidden" name="produit_id" value="${produit.id}">
+                        <input type="hidden" name="quantite" value="1">
+                        <input type="hidden" name="return_url" value="${returnUrl}">
+                        <button type="submit" class="mp-card-btn"><i class="fa-solid fa-cart-shopping"></i> Ajouter</button>
+                    </form></div>`;
+                return article;
+            }
 
-                            let promoHTML = '';
-                            if (produit.has_promotion) {
-                                promoHTML = `<span class="span2">${formatNumber(produit.prix)}fca</span>
-                                             <span class="span3">-${produit.pourcentage_promo}%</span>`;
-                            }
+            function charger() {
+                if (loading || offsetActuel >= totalProduits || !sentinel) return;
+                loading = true;
+                if (loader) loader.style.display = 'block';
 
-                            let categorieStock = '';
-                            if (produit.categorie_nom) {
-                                categorieStock += produit.categorie_nom;
-                            }
-                            if (produit.stock) {
-                                categorieStock += (categorieStock ? ' | ' : '') + 'Stock: ' + produit.stock;
-                            }
-
-                            let prixHTML = '';
-                            if (produit.has_promotion) {
-                                prixHTML = `<span class="span2">${formatNumber(produit.prix)} FCFA</span>
-                                            <span class="prix-promo">${formatNumber(produit.prix_affichage)} FCFA</span>
-                                            <span class="span3">-${produit.pourcentage_promo}%</span>`;
-                            } else {
-                                prixHTML =
-                                    `${formatNumber(produit.prix_affichage)}<span class="span1"> FCFA</span>`;
-                            }
-
-                            let stockHTML = '';
-                            if (produit.stock) {
-                                stockHTML = `<p class="produit-card-stock-info">
-                                    <strong>Stock:</strong> ${produit.stock}
-                                    ${produit.poids ? `(${escapeHtml(produit.poids)})` : ''}
-                                </p>`;
-                            }
-
-                            const returnUrl = (window.location.pathname + window.location.search).replace(/&/g,
-                                '&amp;').replace(/"/g, '&quot;');
-                            div.innerHTML = `
-                                <a href="produit.php?id=${produit.id}" class="product-card-link">
-                                    <div class="image-wrapper">
-                                        <img src="/upload/${produit.image_principale}" 
-                                             alt="${escapeHtml(produit.nom)}"
-                                             onerror="this.src='/image/produit1.jpg'">
-                                    </div>
-                                    <div class="produit-content">
-                                        <p id="nom">${escapeHtml(produit.nom)}</p>
-                                        ${boutiqueCardLineHtml(produit)}
-                                        ${produit.categorie_nom ? `<p id="ville">${escapeHtml(produit.categorie_nom)}</p>` : ''}
-                                        <p class="prix">${prixHTML}</p>
-                                        ${stockHTML}
-                                    </div>
-                                </a>
-                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                    <input type="hidden" name="produit_id" value="${produit.id}">
-                                    <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url" value="${returnUrl}">
-                                    <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                                    </button>
-                                </form>
-                            `;
-
-                            container.appendChild(div);
-                        });
-
-                        // Mettre à jour le compteur
-                        offsetActuel += data.produits.length;
-                        countActuel.textContent = offsetActuel;
-
-                        // Vérifier s'il reste des produits
-                        if (offsetActuel >= totalProduits) {
-                            btn.style.display = 'none';
-                        } else {
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fas fa-chevron-down"></i> Voir plus';
+                fetch(getApiUrl())
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success && data.produits.length > 0) {
+                            data.produits.forEach(p => container.appendChild(buildCard(p)));
+                            offsetActuel += data.produits.length;
+                            if (countEl) countEl.textContent = offsetActuel;
                         }
-                    } else {
-                        // Plus de produits à charger
-                        btn.style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur lors du chargement:', error);
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-chevron-down"></i> Voir plus';
-                    alert('Une erreur est survenue lors du chargement des produits.');
-                });
-        }
-
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text == null ? '' : text;
-            return div.innerHTML;
-        }
-
-        function boutiqueCardLineHtml(produit) {
-            if (!produit.boutique_nom && !produit.boutique_href) {
-                return '';
+                        if (offsetActuel >= totalProduits && sentinel) sentinel.remove();
+                    })
+                    .catch(() => {})
+                    .finally(() => {
+                        loading = false;
+                        if (loader) loader.style.display = 'none';
+                    });
             }
-            if (produit.boutique_href) {
-                return '<p class="produit-card-boutique"><a href="' + escapeHtml(produit.boutique_href) +
-                    '" class="produit-card-boutique-link">' + escapeHtml(produit.boutique_nom) + '</a></p>';
+
+            if (sentinel && 'IntersectionObserver' in window) {
+                const obs = new IntersectionObserver(entries => {
+                    if (entries[0].isIntersecting) charger();
+                }, { rootMargin: '200px' });
+                obs.observe(sentinel);
             }
-            return '<p class="produit-card-boutique"><span class="produit-card-boutique-label">' +
-                escapeHtml(produit.boutique_nom) + '</span></p>';
-        }
+        })();
     </script>
 </body>
 

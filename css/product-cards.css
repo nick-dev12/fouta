@@ -3,6 +3,25 @@
  * Basé sur le design de l'image fournie
  */
 
+/* ---- Masquer boutique + catégorie/ville dans les cards produit ---- */
+.produit-card-boutique,
+.produit-card-boutique-link,
+.produit-card-boutique-label,
+.carousel .produit-card-boutique,
+.produit_vedete .articles .carousel .produit-card-boutique,
+.produit_vedetes .articles .carousel .produit-card-boutique,
+.carousel11 .carousel .produit-card-boutique {
+    display: none !important;
+}
+
+.carousel #ville,
+.produit_vedete .articles .carousel #ville,
+.produit_vedetes .articles .carousel #ville,
+.carousel11 .carousel #ville,
+.carousel1-flex-mode .carousel #ville {
+    display: none !important;
+}
+
 /* Container : flex + space-around + wrap pour disposition automatique */
 .produits-container,
 .produit_vedete .articles,

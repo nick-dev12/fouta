@@ -4,5 +4,11 @@
 <dict>
 	<key>aps-environment</key>
 	<string>development</string>
+	<!-- Universal Links : ouvre l'app quand un lien colobanes.com est cliqué sur iOS -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:colobanes.com</string>
+		<string>applinks:www.colobanes.com</string>
+	</array>
 </dict>
 </plist>

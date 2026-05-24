@@ -9,6 +9,7 @@ require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/models/model_visites.php';
 require_once __DIR__ . '/models/model_variantes.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
+require_once __DIR__ . '/includes/flash_toast.php';
 
 // Récupérer l'ID du produit depuis l'URL ou POST
 $produit_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -20,23 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['produit_id'])) {
 $message = '';
 $message_type = '';
 
-// Vérifier si c'est une redirection après ajout au panier (pattern Post-Redirect-Get)
-if (isset($_GET['added']) && ($_GET['added'] === 'success' || $_GET['added'] === '1')) {
-    $message = 'Produit ajouté au panier avec succès.';
-    $message_type = 'success';
-}
-if (isset($_GET['error'])) {
-    $message = htmlspecialchars($_GET['error']);
-    $message_type = 'error';
-}
-
 // Traitement du formulaire POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_to_panier') {
     $result = process_add_to_panier();
 
     // Redirection vers le panier après ajout réussi
     if ($result['success']) {
-        header('Location: /panier.php?added=1');
+        flash_toast_push('success', 'Produit ajouté au panier avec succès.');
+        header('Location: /panier.php');
         exit;
     }
     // Redirection vers la connexion si non connecté
@@ -48,6 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
     $message = $result['message'] ?? '';
     $message_type = 'error';
+}
+
+if ($message !== '') {
+    flash_toast_queue_page($message_type !== '' ? $message_type : 'error', $message);
 }
 
 // Récupérer les informations du produit
@@ -1549,14 +1545,6 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <?php include('nav_bar.php') ?>
 
     <div class="produit-detail-container">
-        <?php if ($message): ?>
-            <div class="message <?php echo $message_type; ?>" id="message-alert">
-                <span><?php echo htmlspecialchars($message); ?></span>
-                <button type="button" class="message-close" onclick="closeMessage()" aria-label="Fermer">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        <?php endif; ?>
 
         <aside class="produit-boutique-rail" aria-label="Boutique du vendeur">
             <div class="produit-boutique-rail__inner">
@@ -2226,33 +2214,6 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         if (quantiteInput) {
             updatePrixTotal();
         }
-
-        // Gestion du message de succès/erreur
-        function closeMessage() {
-            const message = document.getElementById('message-alert');
-            if (message) {
-                message.classList.add('fade-out');
-                setTimeout(() => {
-                    message.style.display = 'none';
-                    // Supprimer le paramètre ?added=success de l'URL
-                    if (window.location.search.includes('added=success')) {
-                        const url = new URL(window.location);
-                        url.searchParams.delete('added');
-                        window.history.replaceState({}, '', url);
-                    }
-                }, 300);
-            }
-        }
-
-        // Fermer automatiquement après 3 secondes si c'est un message de succès
-        document.addEventListener('DOMContentLoaded', function () {
-            const message = document.getElementById('message-alert');
-            if (message && message.classList.contains('success')) {
-                setTimeout(() => {
-                    closeMessage();
-                }, 3000);
-            }
-        });
     </script>
 
 </body>

@@ -1,33 +1,33 @@
 <?php
 /**
- * Page de liste des slides
+ * Gestion du slider — redesign v2
  * Programmation procédurale uniquement
  */
 
 session_start();
 
-// Vérifier si l'admin est connecté
 if (!isset($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit;
 }
 
-// Afficher le message de succès s'il existe
 $success_message = '';
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
     unset($_SESSION['success_message']);
 }
 
-// Récupérer les slides (vendeur : uniquement les siens pour la vitrine)
 require_once __DIR__ . '/../../models/model_slider.php';
 $slides = get_all_slides(null);
-if (isset($_SESSION['admin_role']) && ($_SESSION['admin_role'] ?? '') === 'vendeur' && !empty($_SESSION['admin_id'])) {
-    $mid = (int) $_SESSION['admin_id'];
-    $slides = array_values(array_filter($slides, function ($s) use ($mid) {
-        return isset($s['admin_id']) && (int) $s['admin_id'] === $mid;
-    }));
+$is_vendeur = isset($_SESSION['admin_role']) && ($_SESSION['admin_role'] ?? '') === 'vendeur' && !empty($_SESSION['admin_id']);
+if ($is_vendeur) {
+    $mid    = (int)$_SESSION['admin_id'];
+    $slides = array_values(array_filter($slides, fn($s) => isset($s['admin_id']) && (int)$s['admin_id'] === $mid));
 }
+
+$nb_total  = count($slides);
+$nb_actif  = count(array_filter($slides, fn($s) => ($s['statut'] ?? '') === 'actif'));
+$nb_inactif = $nb_total - $nb_actif;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -36,78 +36,497 @@ if (isset($_SESSION['admin_role']) && ($_SESSION['admin_role'] ?? '') === 'vende
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion du Slider - Administration</title>
+    <title>Gestion du Slider &mdash; Administration</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <style>
+        /* ===== SLIDER INDEX v2 ===== */
+
+        .sl-page {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: clamp(16px, 4vw, 36px) clamp(14px, 4vw, 24px) 90px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+        }
+
+        /* ---- Header ---- */
+        .sl-page-header {
+            display: flex; align-items: center;
+            justify-content: space-between; flex-wrap: wrap; gap: 12px;
+        }
+
+        .sl-page-header__left { display: flex; flex-direction: column; gap: 3px; }
+
+        .sl-page-header__eyebrow {
+            font-size: 0.73rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.12em;
+            color: var(--couleur-dominante, #3564a6);
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        .sl-page-header__title {
+            font-size: clamp(1.3rem, 3vw, 1.75rem);
+            font-weight: 800; color: var(--titres, #0d0d0d);
+            font-family: var(--font-titres, 'Poppins', sans-serif);
+            line-height: 1.15; letter-spacing: -0.025em;
+        }
+
+        .sl-page-header__actions { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+
+        /* ---- Boutons ---- */
+        .sl-btn {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 9px 18px; border-radius: 11px;
+            font-size: 0.81rem; font-weight: 700;
+            cursor: pointer; border: none;
+            text-decoration: none; font-family: var(--font-corps, 'Poppins', sans-serif);
+            transition: all 0.2s; white-space: nowrap;
+        }
+
+        .sl-btn--primary { background: var(--couleur-dominante, #3564a6); color: #fff; box-shadow: 0 4px 14px rgba(53,100,166,0.25); }
+        .sl-btn--primary:hover { background: var(--bleu-fonce, #2d5690); transform: translateY(-1px); }
+        .sl-btn--outline { background: #fff; color: var(--couleur-dominante, #3564a6); border: 1.5px solid rgba(53,100,166,0.22); }
+        .sl-btn--outline:hover { background: rgba(53,100,166,0.05); }
+
+        /* ---- Hero ---- */
+        .sl-hero {
+            background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 55%, #4f46e5 100%);
+            border-radius: 20px;
+            padding: clamp(20px, 3.5vw, 34px);
+            position: relative; overflow: hidden;
+            box-shadow: 0 16px 44px rgba(67,56,202,0.3);
+        }
+
+        .sl-hero::before {
+            content: ''; position: absolute; top: -60px; right: -40px;
+            width: 230px; height: 230px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%; pointer-events: none;
+        }
+
+        .sl-hero::after {
+            content: ''; position: absolute; bottom: -70px; right: 90px;
+            width: 180px; height: 180px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 50%; pointer-events: none;
+        }
+
+        .sl-hero__inner {
+            display: flex; align-items: flex-start;
+            justify-content: space-between; flex-wrap: wrap; gap: 16px;
+            position: relative;
+        }
+
+        .sl-hero__label {
+            font-size: 0.73rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.12em;
+            color: rgba(255,255,255,0.55); margin-bottom: 5px;
+        }
+
+        .sl-hero__count {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 900; color: #fff;
+            font-family: var(--font-titres, 'Poppins', sans-serif);
+            line-height: 1.0; letter-spacing: -0.03em;
+        }
+
+        .sl-hero__sub { font-size: 0.8rem; color: rgba(255,255,255,0.58); margin-top: 4px; }
+
+        .sl-hero__pills { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+        .sl-hero__pill {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 50px; padding: 6px 16px;
+            display: flex; align-items: center; gap: 7px;
+            color: #fff; font-size: 0.78rem; font-weight: 600;
+        }
+
+        .sl-hero__pill--on  { background: rgba(134,239,172,0.18); border-color: rgba(134,239,172,0.3); }
+        .sl-hero__pill--off { background: rgba(255,255,255,0.08); }
+
+        .sl-hero__cta {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 11px 22px;
+            background: rgba(255,255,255,0.15);
+            border: 1.5px solid rgba(255,255,255,0.22);
+            border-radius: 12px; color: #fff;
+            font-size: 0.83rem; font-weight: 700;
+            text-decoration: none; transition: background 0.2s;
+            white-space: nowrap; align-self: flex-start;
+        }
+
+        .sl-hero__cta:hover { background: rgba(255,255,255,0.26); }
+
+        /* ---- Stat cards ---- */
+        .sl-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 13px;
+        }
+
+        .sl-stat {
+            background: #fff; border-radius: 16px;
+            border: 1px solid rgba(53,100,166,0.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            padding: 18px 16px;
+            display: flex; align-items: center; gap: 14px;
+            text-decoration: none; color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .sl-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(53,100,166,0.12); }
+
+        .sl-stat__icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
+        }
+
+        .sl-stat--total   .sl-stat__icon { background: rgba(67,56,202,0.1); color: #4338ca; }
+        .sl-stat--actif   .sl-stat__icon { background: rgba(34,197,94,0.1); color: #15803d; }
+        .sl-stat--inactif .sl-stat__icon { background: rgba(156,163,175,0.15); color: #6b7280; }
+
+        .sl-stat__val { font-size: 1.6rem; font-weight: 900; color: var(--titres, #0d0d0d); line-height: 1.0; font-family: var(--font-titres, 'Poppins', sans-serif); }
+        .sl-stat__lbl { font-size: 0.72rem; font-weight: 700; color: var(--gris-moyen, #737373); text-transform: uppercase; letter-spacing: 0.06em; }
+
+        /* ---- Alert success ---- */
+        .sl-alert {
+            display: flex; align-items: flex-start; gap: 11px;
+            padding: 14px 18px; border-radius: 14px;
+            font-size: 0.84rem; font-weight: 500;
+            background: rgba(34,197,94,0.09);
+            border: 1px solid rgba(34,197,94,0.22); color: #15803d;
+        }
+
+        .sl-alert i { margin-top: 2px; font-size: 1rem; flex-shrink: 0; }
+
+        /* ---- Section head ---- */
+        .sl-section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 10px;
+        }
+
+        .sl-section-head__title {
+            font-size: 1.05rem; font-weight: 800;
+            color: var(--titres, #0d0d0d);
+            font-family: var(--font-titres, 'Poppins', sans-serif);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .sl-section-head__title::before {
+            content: ''; display: inline-block;
+            width: 4px; height: 18px; border-radius: 3px;
+            background: #4338ca;
+        }
+
+        /* ---- Grille de slides ---- */
+        .sl-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 16px;
+        }
+
+        /* ---- Carte slide ---- */
+        .sl-card {
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid rgba(53,100,166,0.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .sl-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(53,100,166,0.13); }
+
+        .sl-card--inactive { opacity: 0.72; }
+
+        /* Image */
+        .sl-card__img-wrap {
+            position: relative;
+            aspect-ratio: 16 / 7;
+            overflow: hidden;
+            background: #f1f5f9;
+        }
+
+        .sl-card__img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.35s;
+        }
+
+        .sl-card:hover .sl-card__img { transform: scale(1.04); }
+
+        /* Overlay ordre */
+        .sl-card__order-badge {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(6px);
+            color: #fff; font-size: 0.72rem; font-weight: 700;
+            padding: 4px 10px; border-radius: 20px;
+            display: flex; align-items: center; gap: 4px;
+        }
+
+        /* Badge statut */
+        .sl-card__status-badge {
+            position: absolute; top: 10px; right: 10px;
+            font-size: 0.69rem; font-weight: 700;
+            padding: 4px 10px; border-radius: 20px;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+
+        .sl-card__status-badge--actif {
+            background: rgba(34,197,94,0.18);
+            backdrop-filter: blur(6px);
+            color: #fff;
+            border: 1px solid rgba(134,239,172,0.3);
+        }
+
+        .sl-card__status-badge--inactif {
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(6px);
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Body */
+        .sl-card__body { padding: 16px 18px 14px; flex: 1; display: flex; flex-direction: column; gap: 7px; }
+
+        .sl-card__title {
+            font-size: 0.93rem; font-weight: 800;
+            color: var(--titres, #0d0d0d);
+            font-family: var(--font-titres, 'Poppins', sans-serif);
+            line-height: 1.2;
+            display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+
+        .sl-card__para {
+            font-size: 0.78rem; color: var(--gris-moyen, #737373);
+            line-height: 1.5;
+            display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            flex: 1;
+        }
+
+        .sl-card__btn-info {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.73rem; color: #4338ca; font-weight: 600;
+            background: rgba(67,56,202,0.08); border-radius: 7px;
+            padding: 4px 10px; width: fit-content;
+        }
+
+        /* Footer actions */
+        .sl-card__footer {
+            display: flex; gap: 8px;
+            padding: 12px 18px;
+            border-top: 1px solid rgba(53,100,166,0.07);
+            background: rgba(53,100,166,0.02);
+        }
+
+        .sl-card-btn {
+            flex: 1; display: inline-flex; align-items: center;
+            justify-content: center; gap: 6px;
+            padding: 8px 12px; border-radius: 9px;
+            font-size: 0.79rem; font-weight: 700;
+            text-decoration: none;
+            transition: all 0.18s; border: none; cursor: pointer;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+        }
+
+        .sl-card-btn--edit   { background: rgba(67,56,202,0.1); color: #4338ca; }
+        .sl-card-btn--edit:hover   { background: #4338ca; color: #fff; }
+        .sl-card-btn--delete { background: rgba(239,68,68,0.08); color: #b91c1c; }
+        .sl-card-btn--delete:hover { background: #ef4444; color: #fff; }
+
+        /* ---- Empty state ---- */
+        .sl-empty {
+            background: #fff; border-radius: 18px;
+            border: 1px solid rgba(53,100,166,0.08);
+            padding: 60px 24px; text-align: center;
+            color: var(--gris-moyen, #737373);
+        }
+
+        .sl-empty__icon {
+            width: 70px; height: 70px; border-radius: 18px;
+            background: rgba(67,56,202,0.08); color: #4338ca;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.9rem; margin: 0 auto 18px;
+        }
+
+        .sl-empty h3 { font-size: 1.05rem; font-weight: 700; color: var(--titres, #0d0d0d); margin-bottom: 7px; }
+        .sl-empty p  { font-size: 0.86rem; max-width: 340px; margin: 0 auto 20px; }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 600px) {
+            .sl-stats { grid-template-columns: 1fr 1fr; }
+            .sl-grid  { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 
 <body>
     <?php include '../includes/nav.php'; ?>
 
-    <div class="content-header">
-        <h1><i class="fas fa-images"></i> Gestion du Slider</h1>
-        <div class="header-actions">
-            <a href="ajouter.php" class="btn-primary">
-                <i class="fas fa-plus"></i> Nouveau Slide
-            </a>
-        </div>
-    </div>
+    <div class="sl-page">
 
-    <?php if (!empty($success_message)): ?>
-    <div class="message success">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
-    </div>
-    <?php endif; ?>
+        <!-- ===== PAGE HEADER ===== -->
+        <header class="sl-page-header">
+            <div class="sl-page-header__left">
+                <p class="sl-page-header__eyebrow">
+                    <i class="fas fa-images"></i> Contenu publicitaire
+                </p>
+                <h1 class="sl-page-header__title">Gestion du Slider</h1>
+            </div>
+            <div class="sl-page-header__actions">
+                <a href="../parametres.php" class="sl-btn sl-btn--outline">
+                    <i class="fas fa-arrow-left"></i> Param&egrave;tres
+                </a>
+                <a href="ajouter.php" class="sl-btn sl-btn--primary">
+                    <i class="fas fa-plus"></i> Nouveau slide
+                </a>
+            </div>
+        </header>
 
-    <section class="produits-section">
-        <div class="section-title">
-            <h2><i class="fas fa-images"></i> Slides du Carrousel (<?php echo count($slides); ?>)</h2>
-        </div>
-
-        <?php if (empty($slides)): ?>
-        <div style="text-align: center; padding: 40px; color: #666;">
-            <i class="fas fa-images" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
-            <p>Aucun slide enregistré pour le moment.</p>
-            <a href="ajouter.php" class="btn-primary" style="margin-top: 20px; display: inline-block;">
-                <i class="fas fa-plus"></i> Ajouter le premier slide
-            </a>
-        </div>
-        <?php else: ?>
-        <div class="slides-grid">
-            <?php foreach ($slides as $slide): ?>
-            <div class="slide-card">
-                <img src="/upload/slider/<?php echo htmlspecialchars($slide['image']); ?>"
-                    alt="<?php echo htmlspecialchars($slide['titre']); ?>" class="slide-image"
-                    onerror="this.src='/image/produit1.jpg'">
-                <div class="slide-body">
-                    <h3 class="slide-titre"><?php echo htmlspecialchars($slide['titre']); ?></h3>
-                    <p class="slide-paragraphe"><?php echo htmlspecialchars($slide['paragraphe']); ?></p>
-                    <div class="slide-info">
-                        <span>Ordre: <?php echo $slide['ordre']; ?></span>
-                        <span class="statut-badge statut-<?php echo $slide['statut']; ?>">
-                            <?php echo ucfirst($slide['statut']); ?>
-                        </span>
-                    </div>
-                    <?php if ($slide['bouton_texte']): ?>
-                    <p class="slide-bouton-info">
-                        <i class="fas fa-link"></i> Bouton: <?php echo htmlspecialchars($slide['bouton_texte']); ?>
+        <!-- ===== HERO ===== -->
+        <div class="sl-hero">
+            <div class="sl-hero__inner">
+                <div>
+                    <p class="sl-hero__label">Carrousel principal</p>
+                    <div class="sl-hero__count"><?php echo $nb_total; ?></div>
+                    <p class="sl-hero__sub">
+                        slide<?php echo $nb_total > 1 ? 's' : ''; ?> enregistr&eacute;<?php echo $nb_total > 1 ? 's' : ''; ?>
                     </p>
-                    <?php endif; ?>
-                    <div class="slide-actions">
-                        <a href="modifier.php?id=<?php echo $slide['id']; ?>" class="btn-card btn-edit">
-                            <i class="fas fa-edit"></i> Modifier
-                        </a>
-                        <a href="supprimer.php?id=<?php echo $slide['id']; ?>" class="btn-card btn-delete"
-                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce slide ?');">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </a>
+                    <div class="sl-hero__pills">
+                        <div class="sl-hero__pill sl-hero__pill--on">
+                            <i class="fas fa-circle-check" style="font-size:.7rem;"></i>
+                            <span><strong><?php echo $nb_actif; ?></strong> actif<?php echo $nb_actif > 1 ? 's' : ''; ?></span>
+                        </div>
+                        <?php if ($nb_inactif > 0): ?>
+                            <div class="sl-hero__pill sl-hero__pill--off">
+                                <i class="fas fa-circle-pause" style="font-size:.7rem;"></i>
+                                <span><strong><?php echo $nb_inactif; ?></strong> inactif<?php echo $nb_inactif > 1 ? 's' : ''; ?></span>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
+                <a href="ajouter.php" class="sl-hero__cta">
+                    <i class="fas fa-plus"></i> Ajouter un slide
+                </a>
             </div>
-            <?php endforeach; ?>
         </div>
+
+        <!-- ===== STAT CARDS ===== -->
+        <div class="sl-stats">
+            <div class="sl-stat sl-stat--total">
+                <div class="sl-stat__icon"><i class="fas fa-layer-group"></i></div>
+                <div>
+                    <div class="sl-stat__val"><?php echo $nb_total; ?></div>
+                    <div class="sl-stat__lbl">Total</div>
+                </div>
+            </div>
+            <div class="sl-stat sl-stat--actif">
+                <div class="sl-stat__icon"><i class="fas fa-eye"></i></div>
+                <div>
+                    <div class="sl-stat__val"><?php echo $nb_actif; ?></div>
+                    <div class="sl-stat__lbl">Actifs</div>
+                </div>
+            </div>
+            <div class="sl-stat sl-stat--inactif">
+                <div class="sl-stat__icon"><i class="fas fa-eye-slash"></i></div>
+                <div>
+                    <div class="sl-stat__val"><?php echo $nb_inactif; ?></div>
+                    <div class="sl-stat__lbl">Inactifs</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== LISTE SLIDES ===== -->
+        <?php if (empty($slides)): ?>
+
+            <div class="sl-empty">
+                <div class="sl-empty__icon"><i class="fas fa-images"></i></div>
+                <h3>Aucun slide enregistr&eacute;</h3>
+                <p>Ajoutez votre premier slide publicitaire pour l&rsquo;afficher sur la page d&rsquo;accueil.</p>
+                <a href="ajouter.php" class="sl-btn sl-btn--primary">
+                    <i class="fas fa-plus"></i> Ajouter le premier slide
+                </a>
+            </div>
+
+        <?php else: ?>
+
+            <div class="sl-section-head">
+                <h2 class="sl-section-head__title">
+                    Slides du carrousel (<?php echo $nb_total; ?>)
+                </h2>
+            </div>
+
+            <div class="sl-grid">
+                <?php foreach ($slides as $slide):
+                    $statut      = $slide['statut'] ?? 'inactif';
+                    $is_actif    = $statut === 'actif';
+                    $titre_safe  = htmlspecialchars($slide['titre'] ?? '');
+                    $para_safe   = htmlspecialchars($slide['paragraphe'] ?? '');
+                    $img_path    = '/upload/slider/' . htmlspecialchars($slide['image'] ?? '');
+                ?>
+                    <article class="sl-card <?php echo !$is_actif ? 'sl-card--inactive' : ''; ?>">
+
+                        <!-- Image -->
+                        <div class="sl-card__img-wrap">
+                            <img src="<?php echo $img_path; ?>"
+                                alt="<?php echo $titre_safe; ?>"
+                                class="sl-card__img"
+                                onerror="this.src='/image/produit1.jpg'">
+
+                            <span class="sl-card__order-badge">
+                                <i class="fas fa-sort"></i> #<?php echo (int)$slide['ordre']; ?>
+                            </span>
+
+                            <span class="sl-card__status-badge sl-card__status-badge--<?php echo htmlspecialchars($statut); ?>">
+                                <i class="fas <?php echo $is_actif ? 'fa-circle-check' : 'fa-circle-pause'; ?>"
+                                    style="font-size:.65rem;"></i>
+                                <?php echo $is_actif ? 'Actif' : 'Inactif'; ?>
+                            </span>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="sl-card__body">
+                            <?php if ($titre_safe !== ''): ?>
+                                <h3 class="sl-card__title"><?php echo $titre_safe; ?></h3>
+                            <?php endif; ?>
+                            <?php if ($para_safe !== ''): ?>
+                                <p class="sl-card__para"><?php echo $para_safe; ?></p>
+                            <?php endif; ?>
+                            <?php if (!empty($slide['bouton_texte'])): ?>
+                                <span class="sl-card__btn-info">
+                                    <i class="fas fa-arrow-pointer"></i>
+                                    <?php echo htmlspecialchars($slide['bouton_texte']); ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="sl-card__footer">
+                            <a href="modifier.php?id=<?php echo (int)$slide['id']; ?>"
+                                class="sl-card-btn sl-card-btn--edit">
+                                <i class="fas fa-pen-to-square"></i> Modifier
+                            </a>
+                            <a href="supprimer.php?id=<?php echo (int)$slide['id']; ?>"
+                                class="sl-card-btn sl-card-btn--delete"
+                                onclick="return confirm('Supprimer ce slide définitivement ?');">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </a>
+                        </div>
+
+                    </article>
+                <?php endforeach; ?>
+            </div>
+
         <?php endif; ?>
-    </section>
+
+    </div><!-- /.sl-page -->
 
     <?php include '../includes/footer.php'; ?>
+</body>
+</html>

@@ -1,10 +1,26 @@
 # Configuration PHP pour l'upload de fichiers volumineux
 # Ces valeurs surchargent les valeurs du php.ini si nécessaire
 
+# ---------------------------------------------------------------
+# Deep Links : autoriser l'accès au dossier .well-known
+# Requis pour Android App Links (assetlinks.json)
+# et iOS Universal Links (apple-app-site-association)
+# ---------------------------------------------------------------
+<IfModule mod_headers.c>
+    <FilesMatch "^apple-app-site-association$|^assetlinks\.json$">
+        Header set Content-Type "application/json"
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+</IfModule>
+
 # Réécriture pour SEO : robots.txt et sitemap.xml
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /
+
+# Ne pas réécrire les fichiers .well-known (deep links Android/iOS)
+RewriteRule ^\.well-known/ - [L]
+
 RewriteRule ^robots\.txt$ robots.php [L]
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 

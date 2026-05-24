@@ -36,14 +36,16 @@ admin_vendeur_assert_produit_owned($produit);
 // Traiter la suppression
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     require_once __DIR__ . '/../../controllers/controller_produits.php';
+    require_once __DIR__ . '/../../includes/flash_toast.php';
     $result = process_delete_produit($produit_id);
-    
+
     if ($result['success']) {
-        $_SESSION['success_message'] = $result['message'];
+        flash_toast_push('success', $result['message']);
         header('Location: index.php');
         exit;
     } else {
         $error_message = $result['message'];
+        flash_toast_queue_page('error', $error_message);
     }
 }
 ?>

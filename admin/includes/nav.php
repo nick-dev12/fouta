@@ -110,7 +110,7 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
             <a href="<?php echo $base_path; ?>stock/index.php"
                 class="menu-item <?php echo $is_stock ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
-                <span class="menu-item__text">Stock</span>
+                <span class="menu-item__text">Produits</span>
             </a>
             <?php endif; ?>
             <?php if (!$is_vendeur_menu): ?>
@@ -321,7 +321,7 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 <a href="<?php echo $base_path; ?>stock/index.php"
                     class="menu-item menu-item--dock-mini<?php echo $vd_stock_dock_act ? ' active' : ''; ?>">
                     <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
-                    <span class="menu-item__text">Stock</span>
+                    <span class="menu-item__text">Produits</span>
                 </a>
                 <a href="<?php echo $base_path; ?>commandes/index.php"
                     class="menu-item menu-item--dock-mini menu-item--has-badge<?php echo $vd_cmd_active_nav ? ' active' : ''; ?>">
@@ -385,6 +385,356 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
             </nav>
         </div>
     </div>
+
+    <style>
+    /* ================================================================
+       ADMIN VENDEUR DOCK — REDESIGN v2
+       Barre navigation responsive mobile/tablette — fond dégradé sombre,
+       icônes squircles colorées, état actif lumineux, panel sheet premium
+       ================================================================ */
+
+    /* Variables couleurs par onglet — palette site bleu/orange */
+    #adminVendeurBottomDock {
+        --vdock-c1: #3564a6;   /* Dashboard — bleu principal */
+        --vdock-c2: #10b981;   /* Stock — vert */
+        --vdock-c3: #FF6B35;   /* Commandes — orange site */
+        --vdock-c4: #6366f1;   /* Profil — indigo */
+        --vdock-c5: #3564a6;   /* Menu — bleu principal */
+    }
+
+    @media (max-width: 1024px) {
+
+        /* ---- Dock bar — fond blanc nacré, liseré bleu du site ---- */
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-bar {
+            background: rgba(255,255,255,0.97) !important;
+            backdrop-filter: blur(22px) saturate(1.5) !important;
+            -webkit-backdrop-filter: blur(22px) saturate(1.5) !important;
+            border-top: 2px solid rgba(53,100,166,0.14) !important;
+            box-shadow: 0 -6px 28px rgba(53,100,166,0.12), 0 -1px 0 rgba(53,100,166,0.07) !important;
+            padding: 8px 10px calc(env(safe-area-inset-bottom,0px) + 8px) !important;
+            gap: 0 !important;
+        }
+
+        /* ---- Nav grid — fond transparent ---- */
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            padding: 0 !important;
+            gap: 4px !important;
+        }
+
+        /* ---- Item de base ---- */
+        #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 16px !important;
+            padding: 9px 6px !important;
+            min-height: auto !important;
+            gap: 5px !important;
+            color: var(--gris-moyen, #737373) !important;
+            box-shadow: none !important;
+            transition: background 0.2s, transform 0.15s !important;
+        }
+
+        #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini:active {
+            transform: scale(0.92) !important;
+        }
+
+        /* ---- Icône squircle ---- */
+        #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon {
+            width: 42px !important;
+            height: 42px !important;
+            min-width: 42px !important;
+            min-height: 42px !important;
+            max-width: 42px !important;
+            max-height: 42px !important;
+            border-radius: 14px !important;
+            font-size: 1.12rem !important;
+            background: #f0f4fa !important;
+            color: var(--gris-moyen, #737373) !important;
+            border: none !important;
+            transition: background 0.22s, color 0.22s, box-shadow 0.22s, transform 0.22s !important;
+        }
+
+        /* ---- Couleurs squircles par position ---- */
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(1) .menu-item__icon {
+            background: rgba(53,100,166,0.1) !important;
+            color: #3564a6 !important;
+        }
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(2) .menu-item__icon {
+            background: rgba(16,185,129,0.1) !important;
+            color: #059669 !important;
+        }
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(3) .menu-item__icon {
+            background: rgba(255,107,53,0.1) !important;
+            color: #FF6B35 !important;
+        }
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(4) .menu-item__icon {
+            background: rgba(99,102,241,0.1) !important;
+            color: #6366f1 !important;
+        }
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(5) .menu-item__icon {
+            background: rgba(53,100,166,0.1) !important;
+            color: #3564a6 !important;
+        }
+
+        /* ---- Texte label ---- */
+        #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__text {
+            font-size: 0.62rem !important;
+            font-weight: 600 !important;
+            color: var(--gris-moyen, #737373) !important;
+            margin-top: 0 !important;
+            padding: 0 2px !important;
+            letter-spacing: 0.01em !important;
+            transition: color 0.2s !important;
+        }
+
+        /* ---- État ACTIF — tuile bleu pâle + icône pleine couleur ---- */
+        #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini.active {
+            background: rgba(53,100,166,0.08) !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini.active .menu-item__text {
+            color: var(--bleu-principal, #3564a6) !important;
+            font-weight: 700 !important;
+        }
+
+        /* Squircle actif avec couleur pleine + glow */
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(1).active .menu-item__icon {
+            background: var(--vdock-c1) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 14px rgba(53,100,166,0.4) !important;
+            transform: scale(1.08) !important;
+        }
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(2).active .menu-item__icon {
+            background: var(--vdock-c2) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 14px rgba(16,185,129,0.4) !important;
+            transform: scale(1.08) !important;
+        }
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(3).active .menu-item__icon {
+            background: var(--vdock-c3) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 14px rgba(255,107,53,0.4) !important;
+            transform: scale(1.08) !important;
+        }
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(4).active .menu-item__icon {
+            background: var(--vdock-c4) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 14px rgba(99,102,241,0.4) !important;
+            transform: scale(1.08) !important;
+        }
+        #adminVendeurBottomDock.shop-bottom-dock .shop-dock-primary > .menu-item:nth-child(5).active .menu-item__icon {
+            background: var(--vdock-c5) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 14px rgba(53,100,166,0.4) !important;
+            transform: scale(1.08) !important;
+        }
+
+        /* ---- Badge commandes ---- */
+        #adminVendeurBottomDock.shop-bottom-dock .menu-item__badge--dock {
+            background: var(--orange, #FF6B35) !important;
+            border: 2px solid #fff !important;
+            font-size: 0.6rem !important;
+            font-weight: 800 !important;
+            min-width: 1.1rem !important;
+            height: 1.1rem !important;
+            line-height: 1.1rem !important;
+            top: 4px !important;
+            right: 8px !important;
+            padding: 0 4px !important;
+        }
+
+        /* ---- Point hint sur bouton Menu ---- */
+        #adminVendeurBottomDock.shop-bottom-dock
+            button.menu-item.menu-item--dock-mini.menu-item--dock-mini-btn--hint
+            .menu-item__icon--hint-host::after {
+            background: var(--orange, #FF6B35) !important;
+            border: 2px solid #fff !important;
+            width: 8px !important;
+            height: 8px !important;
+            top: -3px !important;
+            right: -3px !important;
+        }
+
+        /* ---- Mobile strict (< 600px) ---- */
+        @media (max-width: 599px) {
+            #adminVendeurBottomDock.shop-bottom-dock .shop-dock-bar {
+                padding: 6px 6px calc(env(safe-area-inset-bottom,0px) + 6px) !important;
+            }
+            #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini {
+                padding: 7px 4px !important;
+                border-radius: 13px !important;
+            }
+            #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon {
+                width: 36px !important;
+                height: 36px !important;
+                min-width: 36px !important;
+                min-height: 36px !important;
+                max-width: 36px !important;
+                max-height: 36px !important;
+                border-radius: 11px !important;
+                font-size: 1rem !important;
+            }
+            #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__text {
+                font-size: 0.56rem !important;
+            }
+        }
+
+        /* ---- Tablette (600–1024px) ---- */
+        @media (min-width: 600px) and (max-width: 1024px) {
+            #adminVendeurBottomDock.shop-bottom-dock .shop-dock-bar {
+                padding: 10px 20px calc(env(safe-area-inset-bottom,0px) + 10px) !important;
+            }
+            #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini {
+                padding: 10px 10px !important;
+                border-radius: 18px !important;
+            }
+            #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__icon {
+                width: 48px !important;
+                height: 48px !important;
+                min-width: 48px !important;
+                min-height: 48px !important;
+                max-width: 48px !important;
+                max-height: 48px !important;
+                border-radius: 16px !important;
+                font-size: 1.2rem !important;
+            }
+            #adminVendeurBottomDock.shop-bottom-dock .menu-item.menu-item--dock-mini .menu-item__text {
+                font-size: 0.7rem !important;
+            }
+        }
+
+        /* ================================================================
+           PANEL SHEET "Menu" — redesign premium
+           ================================================================ */
+
+        .admin-vendeur-dock-menu-panel {
+            background: #fff !important;
+            border-radius: 28px 28px 0 0 !important;
+            border: none !important;
+            box-shadow: 0 -20px 60px rgba(10,15,40,0.22), 0 -1px 0 rgba(255,255,255,0.9) !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-hd {
+            background: linear-gradient(135deg, var(--bleu-fonce, #2d5690) 0%, var(--bleu-principal, #3564a6) 100%) !important;
+            padding: 20px 20px 16px !important;
+            border-radius: 28px 28px 0 0 !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-hd strong {
+            color: #fff !important;
+            font-size: 1.02rem !important;
+            font-weight: 800 !important;
+            font-family: var(--font-titres, 'Poppins', sans-serif) !important;
+        }
+
+        .admin-vendeur-dock-menu-close {
+            background: rgba(255,255,255,0.18) !important;
+            color: #fff !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(255,255,255,0.22) !important;
+            width: 38px !important;
+            height: 38px !important;
+        }
+
+        .admin-vendeur-dock-menu-close:hover {
+            background: rgba(255,255,255,0.3) !important;
+        }
+
+        /* Items du panel en grille 2 colonnes */
+        .admin-vendeur-dock-menu-panel-nav {
+            padding: 18px 16px !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 10px !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-row {
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            gap: 9px !important;
+            padding: 18px 12px !important;
+            min-height: 92px !important;
+            border-radius: 16px !important;
+            border: 1.5px solid rgba(53,100,166,0.1) !important;
+            background: #f8faff !important;
+            text-decoration: none !important;
+            transition: background 0.2s, border-color 0.2s, transform 0.15s !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-row:hover {
+            background: rgba(53,100,166,0.07) !important;
+            border-color: rgba(53,100,166,0.22) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-row:active {
+            transform: scale(0.96) !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-row .menu-item__icon {
+            width: 46px !important;
+            height: 46px !important;
+            border-radius: 14px !important;
+            font-size: 1.1rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+
+        /* Couleurs icônes du panel */
+        .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(1) .menu-item__icon { background: rgba(53,100,166,0.12) !important; color: #3564a6 !important; }
+        .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(2) .menu-item__icon { background: rgba(249,115,22,0.12) !important; color: #f97316 !important; }
+        .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(3) .menu-item__icon { background: rgba(16,185,129,0.12) !important; color: #10b981 !important; }
+        .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-logout .menu-item__icon {
+            background: rgba(239,68,68,0.1) !important;
+            color: #b91c1c !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-row .menu-item__text {
+            font-size: 0.8rem !important;
+            font-weight: 700 !important;
+            color: var(--titres, #0d0d0d) !important;
+            white-space: nowrap !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-row.active {
+            background: rgba(53,100,166,0.07) !important;
+            border-color: rgba(53,100,166,0.25) !important;
+        }
+
+        .admin-vendeur-dock-menu-divider {
+            grid-column: 1 / -1 !important;
+            height: 1px !important;
+            background: rgba(53,100,166,0.08) !important;
+            margin: 2px 0 !important;
+        }
+
+        .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-logout:hover {
+            background: rgba(239,68,68,0.06) !important;
+            border-color: rgba(239,68,68,0.18) !important;
+        }
+
+        /* Panel tablette : 3 colonnes */
+        @media (min-width: 600px) and (max-width: 1024px) {
+            .admin-vendeur-dock-menu-panel-nav {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+
+    } /* fin @media ≤ 1024px */
+
+    </style>
 
     <script>
         (function () {

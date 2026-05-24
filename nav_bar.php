@@ -151,16 +151,26 @@ $nav_panier_href = isset($_SESSION['user_id'])
 
 $shop_nav_script = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: ($_SERVER['PHP_SELF'] ?? ''));
 $shop_dock_home_act = ($shop_nav_script === 'index.php');
+$shop_dock_produits_act = in_array($shop_nav_script, ['produits.php', 'categorie.php', 'produit.php'], true);
 $shop_dock_panier_act = in_array($shop_nav_script, ['panier.php', 'commande.php'], true);
 $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== false);
 ?>
 <link rel="stylesheet" href="/css/variables.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="/css/nabare.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
-<link rel="stylesheet" href="/css/shop-bottom-nav.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
+<link rel="stylesheet" href="/css/shop-mobile-dock.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<?php
+// Injection des couleurs personnalisées du vendeur — après variables.css pour que la surcharge prenne effet
+if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
+    if (!function_exists('boutique_echo_theme_style_override')) {
+        require_once __DIR__ . '/includes/boutique_vendeur_display.php';
+    }
+    boutique_echo_theme_style_override();
+}
+?>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
@@ -199,6 +209,20 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
 
         transform: scale(2);
         margin-left: 20px;
+    }
+
+    /* Logo vendeur (branding personnalisé) — dimensions propres, bords arrondis */
+    .nav-planete-gateau .logo img.nav-logo--branding {
+        height: 58px;
+        width: auto;
+        max-width: 160px;
+        object-fit: contain;
+        transform: none;
+        margin-left: 0;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+        background: rgba(255, 255, 255, 0.12);
+        padding: 2px;
     }
 
     .nav-top-row {
@@ -594,11 +618,12 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             height: 55px;
         }
 
-        .nav-search-wrapper {
-            max-width: 320px;
+        .nav-planete-gateau .logo img.nav-logo--branding {
+            height: 50px;
+            max-width: 140px;
         }
 
-        .nav-language-switcher {
+        .nav-search-wrapper {
             min-width: 0;
         }
 
@@ -663,6 +688,11 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
         .nav-planete-gateau .logo img {
             height: 45px;
             max-width: 120px;
+        }
+
+        .nav-planete-gateau .logo img.nav-logo--branding {
+            height: 36px;
+            max-width: 110px;
         }
 
         .nav-panier-link {
@@ -771,6 +801,11 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             object-fit: contain;
         }
 
+        .nav-planete-gateau .logo img.nav-logo--branding {
+            height: 34px;
+            max-width: 90px;
+        }
+
         .nav-compte-btn {
             padding: 6px 10px;
         }
@@ -847,14 +882,17 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             <?php
             $__nav_logo_src = '/image/logo_market.png';
             $__nav_logo_alt = SITE_BRAND_NAME;
+            $__nav_logo_is_branding = false;
             if (!empty($GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']['boutique_logo'])) {
                 $__nav_logo_src = '/upload/' . str_replace('\\', '/', $GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']['boutique_logo']);
+                $__nav_logo_is_branding = true;
                 $__bn = trim((string) ($GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']['boutique_nom'] ?? ''));
                 $__nav_logo_alt = $__bn !== '' ? $__bn : 'Boutique';
             }
             ?>
             <img src="<?php echo htmlspecialchars($__nav_logo_src, ENT_QUOTES, 'UTF-8'); ?>"
-                alt="<?php echo htmlspecialchars($__nav_logo_alt, ENT_QUOTES, 'UTF-8'); ?>">
+                alt="<?php echo htmlspecialchars($__nav_logo_alt, ENT_QUOTES, 'UTF-8'); ?>"
+                <?php if ($__nav_logo_is_branding): ?>class="nav-logo--branding"<?php endif; ?>>
         </a>
         <?php if ($nav_show_region_filter): ?>
         <div class="nav-region-wrap nav-region-wrap--top" id="navRegionWrapTop">
@@ -897,6 +935,9 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
     <div class="nav-search-wrapper">
         <form class="nav-search-form" action="<?php echo htmlspecialchars($u_produits); ?>" method="get"
             id="nav-search-form">
+            <?php if (defined('BOUTIQUE_SLUG') && BOUTIQUE_SLUG !== ''): ?>
+            <input type="hidden" name="boutique" value="<?php echo htmlspecialchars(BOUTIQUE_SLUG, ENT_QUOTES, 'UTF-8'); ?>">
+            <?php endif; ?>
             <button type="submit" class="nav-search-btn" aria-label="Rechercher">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
@@ -985,7 +1026,7 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
 
             function getCookie(name) {
                 var parts = ('; ' + document.cookie).split('; ' + name + '=');
-                if (parts.length === 2) {
+                if (parts.length >= 2) {
                     return parts.pop().split(';').shift();
                 }
                 return '';
@@ -1008,6 +1049,15 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             }
 
             function currentLangFromCookie() {
+                /* 1. localStorage — source la plus fiable (pas de problème de domaine) */
+                try {
+                    var stored = localStorage.getItem('nav_selected_lang');
+                    if (stored && /^[a-z]{2}$/.test(stored)) {
+                        return stored;
+                    }
+                } catch (e) {}
+
+                /* 2. Fallback : lecture du cookie googtrans */
                 var raw = getCookie('googtrans');
                 if (!raw) {
                     return 'fr';
@@ -1084,6 +1134,14 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
             }
 
             function applyLanguage(lang) {
+                /* Mémoriser dans localStorage pour survie multi-domaine / multi-cookie */
+                try {
+                    if (lang === 'fr') {
+                        localStorage.removeItem('nav_selected_lang');
+                    } else {
+                        localStorage.setItem('nav_selected_lang', lang);
+                    }
+                } catch (e) {}
                 if (lang === 'fr') {
                     clearCookie('googtrans');
                 } else {
@@ -1241,39 +1299,7 @@ $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== fal
     </div>
 </aside>
 
-<!-- Dock bas boutique (tablet/mobile) — même structure que le dock vendeur -->
-<div class="shop-bottom-dock" id="shopBottomDock" aria-label="Navigation boutique rapide">
-    <div class="shop-dock-bar" id="shopDockBar" aria-label="Navigation boutique réduite">
-        <nav class="shop-dock-primary" aria-label="Raccourcis">
-            <a href="<?php echo htmlspecialchars($u_home, ENT_QUOTES, 'UTF-8'); ?>"
-                class="menu-item menu-item--dock-mini<?php echo $shop_dock_home_act ? ' active' : ''; ?>">
-                <span class="menu-item__icon" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
-                <span class="menu-item__text">Accueil</span>
-            </a>
-            <button type="button"
-                id="shopDockSidebarBtn"
-                class="menu-item menu-item--dock-mini menu-item--dock-mini-btn"
-                aria-label="Ouvrir le menu catalogue">
-                <span class="menu-item__icon" aria-hidden="true"><i class="fa-solid fa-bars"></i></span>
-                <span class="menu-item__text">Menu</span>
-            </button>
-            <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
-                class="menu-item menu-item--dock-mini menu-item--has-badge<?php echo $shop_dock_panier_act ? ' active' : ''; ?>"
-                title="<?php echo isset($_SESSION['user_id']) ? 'Panier' : 'Se connecter — panier'; ?>">
-                <span class="menu-item__icon" aria-hidden="true"><i class="fa-solid fa-cart-shopping"></i></span>
-                <span class="menu-item__text">Panier</span>
-                <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
-                <span class="menu-item__badge menu-item__badge--dock" aria-label="<?php echo (int) $panier_count; ?> article<?php echo $panier_count > 1 ? 's' : ''; ?> dans le panier"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
-                <?php endif; ?>
-            </a>
-            <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>"
-                class="menu-item menu-item--dock-mini<?php echo $shop_dock_compte_act ? ' active' : ''; ?>">
-                <span class="menu-item__icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
-                <span class="menu-item__text">Compte</span>
-            </a>
-        </nav>
-    </div>
-</div>
+<?php include __DIR__ . '/includes/shop_mobile_dock.php'; ?>
 
 <section class="section1">
     <div class="section1-left">

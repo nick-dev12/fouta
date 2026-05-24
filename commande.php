@@ -469,9 +469,11 @@ include 'nav_bar.php';
                         $item_img = !empty($item['panier_variante_image']) ? $item['panier_variante_image'] : $item['image_principale'];
                         ?>
                     <div class="panier-item-summary">
-                        <img src="/upload/<?php echo htmlspecialchars($item_img); ?>"
-                            alt="<?php echo htmlspecialchars($item['nom']); ?>"
-                            onerror="this.src='/image/produit1.jpg'">
+                        <div class="panier-item-img">
+                            <img src="/upload/<?php echo htmlspecialchars($item_img); ?>"
+                                alt="<?php echo htmlspecialchars($item['nom']); ?>"
+                                onerror="this.src='/image/produit1.jpg'">
+                        </div>
                         <div class="panier-item-summary-info">
                             <?php if (!empty($item['vendeur_boutique_nom'])): ?>
                             <div class="panier-item-boutique"><i class="fas fa-store"></i> <?php echo htmlspecialchars($item['vendeur_boutique_nom']); ?></div>

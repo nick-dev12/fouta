@@ -5,29 +5,11 @@ session_start();
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
 require_once __DIR__ . '/includes/marketplace_helpers.php';
+require_once __DIR__ . '/includes/flash_toast.php';
 
 // Traitement des actions du panier
 $message = '';
 $message_type = '';
-
-// Message de succès après recommandation
-if (isset($_GET['recommande']) && $_GET['recommande'] == '1') {
-    $count = isset($_GET['count']) ? (int) $_GET['count'] : 0;
-    $message = $count > 0
-        ? $count . ' produit(s) de votre commande annulée ont été ajoutés au panier avec succès !'
-        : 'Les produits ont été ajoutés au panier avec succès !';
-    $message_type = 'success';
-}
-
-// Message après ajout direct depuis les cartes produits
-if (isset($_GET['added']) && $_GET['added'] == '1') {
-    $message = 'Produit ajouté au panier avec succès.';
-    $message_type = 'success';
-}
-if (isset($_GET['error'])) {
-    $message = htmlspecialchars($_GET['error']);
-    $message_type = 'error';
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
@@ -44,6 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
         }
     }
+}
+
+if ($message !== '') {
+    flash_toast_queue_page($message_type !== '' ? $message_type : 'info', $message);
 }
 
 // Vérifier si l'utilisateur est connecté
@@ -543,13 +529,6 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     <div class="panier-container">
         <h1 class="panier-title">Mon Panier</h1>
 
-        <?php if ($message): ?>
-            <div class="message <?php echo $message_type; ?>">
-                <i class="fas fa-<?php echo $message_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
-                <?php echo htmlspecialchars($message); ?>
-            </div>
-        <?php endif; ?>
-
         <?php if (empty($panier_items)): ?>
             <div class="panier-empty">
                 <i class="fas fa-shopping-cart"></i>
@@ -590,9 +569,11 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                         $item_categorie = (string) ($item['categorie_nom'] ?? '');
                         ?>
                         <div class="panier-item" data-item-id="<?php echo $item['panier_id']; ?>">
-                            <img src="/upload/<?php echo htmlspecialchars((string) $item_img, ENT_QUOTES, 'UTF-8'); ?>"
-                                alt="<?php echo htmlspecialchars((string) $item_nom, ENT_QUOTES, 'UTF-8'); ?>" class="panier-item-image"
-                                onerror="this.src='/image/produit1.jpg'">
+                            <div class="panier-item-img">
+                                <img src="/upload/<?php echo htmlspecialchars((string) $item_img, ENT_QUOTES, 'UTF-8'); ?>"
+                                    alt="<?php echo htmlspecialchars((string) $item_nom, ENT_QUOTES, 'UTF-8'); ?>" class="panier-item-image"
+                                    onerror="this.src='/image/produit1.jpg'">
+                            </div>
 
                             <div class="panier-item-info">
                                 <h3 class="panier-item-nom"><?php echo htmlspecialchars((string) $item_nom, ENT_QUOTES, 'UTF-8'); ?></h3>

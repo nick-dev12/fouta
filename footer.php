@@ -107,6 +107,7 @@ $__footer_show_social = ($__wa_t !== '' && preg_replace('/[^0-9]/', '', $__wa_t)
                 </li>
             </ul>
         </div>
+        <?php if (!$__footer_is_boutique): ?>
         <div class="footer_item">
             <h3 class="footer_item_titl">Informations légales</h3>
             <ul class="footer_list">
@@ -121,8 +122,9 @@ $__footer_show_social = ($__wa_t !== '' && preg_replace('/[^0-9]/', '', $__wa_t)
                 </li>
             </ul>
         </div>
+        <?php endif; ?>
     </div>
-    <?php if ($__footer_show_social): ?>
+    <?php if ($__footer_show_social && !$__footer_is_boutique): ?>
     <div class="footer_social_wrap">
         <div class="container footer_social_inner">
             <p class="footer_social_title">Suivez-nous</p>
@@ -144,3 +146,4 @@ $__footer_show_social = ($__wa_t !== '' && preg_replace('/[^0-9]/', '', $__wa_t)
     </div>
 </footer>
 <?php include __DIR__ . '/includes/social_floating.php'; ?>
+<?php require_once __DIR__ . '/includes/flash_toast.php'; flash_toast_render(); ?>

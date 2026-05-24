@@ -84,6 +84,10 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <?php if (!function_exists('boutique_echo_theme_style_override')) {
+        require_once __DIR__ . '/../includes/boutique_vendeur_display.php';
+    }
+    boutique_echo_theme_style_override(); ?>
     <style>
         /* Styles panier - Palette COLObanes */
         .panier-container {

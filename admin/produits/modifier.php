@@ -32,12 +32,17 @@ if (!$produit) {
 admin_vendeur_assert_produit_owned($produit);
 
 require_once __DIR__ . '/../../controllers/controller_produits.php';
+require_once __DIR__ . '/../../includes/flash_toast.php';
 $result = process_update_produit($produit_id);
 
 if (isset($result['success']) && $result['success']) {
-    $_SESSION['success_message'] = $result['message'];
+    flash_toast_push('success', $result['message']);
     header('Location: index.php');
     exit;
+}
+
+if (!empty($result['message'])) {
+    flash_toast_queue_page('error', $result['message']);
 }
 
 require_once __DIR__ . '/../../models/model_categories.php';

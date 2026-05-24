@@ -211,6 +211,9 @@ if (!function_exists('commande_suivi_render_dashboard')) {
         $slot_after_suivi = isset($options['slot_after_suivi_body_html'])
             ? (string) $options['slot_after_suivi_body_html']
             : '';
+        $slot_replace_progress = isset($options['slot_replace_progress_html'])
+            ? (string) $options['slot_replace_progress_html']
+            : '';
 
         $m = commande_suivi_compute_metrics($commande);
         $st = $m['st'];
@@ -224,12 +227,6 @@ if (!function_exists('commande_suivi_render_dashboard')) {
 
         echo '<div class="' . htmlspecialchars($wrap_class, ENT_QUOTES, 'UTF-8') . '">';
         ?>
-            <?php if ($suivi_confirm_success): ?>
-            <p class="cc-flash-msg cc-flash-msg--success"><i class="fas fa-circle-check"></i> Réception enregistrée avec succès.</p>
-            <?php elseif ($suivi_confirm_error): ?>
-            <p class="cc-flash-msg cc-flash-msg--error">Impossible d’enregistrer la réception pour cette commande.</p>
-            <?php endif; ?>
-
             <?php if ($admin_hint): ?>
             <p class="cc-admin-hint-msg" role="note">
                 <i class="fas fa-info-circle" aria-hidden="true"></i>
@@ -237,7 +234,7 @@ if (!function_exists('commande_suivi_render_dashboard')) {
             </p>
             <?php endif; ?>
 
-            <div class="cc-meta-row">
+            <div class="cc-meta-row" style="display:none;" aria-hidden="true">
                 <span class="cc-num-cmd"><?php echo htmlspecialchars($commande['numero_commande'] ?? $num_fallback, ENT_QUOTES, 'UTF-8'); ?></span>
                 <?php if (!$admin_compact_meta_row): ?>
                 <span>· <?php echo $dt_cmd ? date('d/m/Y à H:i', $dt_cmd) : 'Date inconnue'; ?></span>
@@ -305,6 +302,9 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                 <?php endif; ?>
             </div>
 
+            <?php if ($slot_replace_progress !== ''): ?>
+            <?php echo $slot_replace_progress; ?>
+            <?php else: ?>
             <div class="cc-progress-card">
                 <p class="cc-progress-title">Progression</p>
                 <ul class="cc-timeline" aria-label="Étapes de la livraison">
@@ -340,6 +340,7 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                     <?php endforeach; ?>
                 </ul>
             </div>
+            <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($slot_after_suivi !== ''): ?>

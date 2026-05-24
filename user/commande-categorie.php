@@ -75,6 +75,11 @@ if ($commande_id && $commande) {
 $page_is_suivi = (bool) ($commande_id && $commande);
 $nb_prod = $page_is_suivi ? count($produits_commande) : 0;
 $page_title = $page_is_suivi ? 'Suivi de commande - COLObanes' : 'Mes commandes par catégorie - COLObanes';
+
+require_once __DIR__ . '/../includes/flash_toast.php';
+if ($suivi_confirm_error) {
+    flash_toast_queue_page('error', 'Impossible d\'enregistrer la réception pour cette commande.');
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -317,10 +322,12 @@ $page_title = $page_is_suivi ? 'Suivi de commande - COLObanes' : 'Mes commandes 
                             ?>
                             <div class="produit-card-commande">
                                 <div class="produit-card-header">
-                                    <img src="<?php echo htmlspecialchars('/upload/' . $produit_image); ?>"
-                                        alt="<?php echo htmlspecialchars($produit_nom_affichage); ?>"
-                                        class="produit-card-image"
-                                        onerror="this.src='/image/produit1.jpg'">
+                                    <div class="produit-cmd-img">
+                                        <img src="<?php echo htmlspecialchars('/upload/' . $produit_image); ?>"
+                                            alt="<?php echo htmlspecialchars($produit_nom_affichage); ?>"
+                                            class="produit-card-image"
+                                            onerror="this.src='/image/produit1.jpg'">
+                                    </div>
                                     <div class="produit-card-info">
                                         <h4 class="produit-card-nom"><?php echo htmlspecialchars($produit_nom_affichage); ?></h4>
                                         <?php $numero_commande = $produit['numero_commande'] ?? null; ?>

@@ -21,6 +21,7 @@
 </script>
 <?php include __DIR__ . '/../../includes/social_floating.php'; ?>
 <?php include __DIR__ . '/../../includes/firebase_notifications_scripts.php'; ?>
+<?php require_once __DIR__ . '/../../includes/flash_toast.php'; flash_toast_render(); ?>
 </body>
 </html>
 

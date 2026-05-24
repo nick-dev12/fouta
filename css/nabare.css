@@ -266,7 +266,7 @@ nav .containernav .users img {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 9998;
+  z-index: 11500;
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
@@ -284,7 +284,7 @@ nav .containernav .users img {
   width: 312px;
   max-width: 88vw;
   height: 100vh;
-  z-index: 9999;
+  z-index: 11600;
   transform: translateX(-100%);
   transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
@@ -820,6 +820,51 @@ nav .containernav .users img {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  transition: background 0.18s, border-color 0.18s;
+}
+@media (max-width: 992px) {
+  .nav-btn-region--top {
+    height: 34px;
+    padding: 0 9px;
+    font-size: 10px;
+    border-radius: 8px;
+    max-width: 110px;
+    gap: 4px;
+  }
+}
+@media (max-width: 599px) {
+  .nav-btn-region--top {
+    height: 28px;
+    padding: 0 7px;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 7px;
+    max-width: 86px;
+    gap: 3px;
+    border-width: 1.5px;
+    letter-spacing: 0.02em;
+  }
+  .nav-btn-region--top .nav-btn-region__label {
+    max-width: 44px;
+    font-size: 9px;
+  }
+  .nav-btn-region--top .nav-btn-region__chev {
+    font-size: 7px;
+  }
+  .nav-btn-region--top i:first-child {
+    font-size: 10px;
+  }
+}
+@media (max-width: 399px) {
+  .nav-btn-region--top {
+    height: 26px;
+    padding: 0 6px;
+    font-size: 8px;
+    max-width: 74px;
+  }
+  .nav-btn-region--top .nav-btn-region__label {
+    display: none;
+  }
 }
 .nav-btn-region--top .nav-btn-region__label {
   overflow: hidden;

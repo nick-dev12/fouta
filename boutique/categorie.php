@@ -130,6 +130,7 @@ $seo_description = mb_substr($desc_cat, 0, 160);
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/boutique-vitrine-products.css<?php echo asset_version_query(); ?>">
     <style>
         /* Styles personnalisés pour les cartes produits */
@@ -201,59 +202,50 @@ $seo_description = mb_substr($desc_cat, 0, 160);
                     </a>
                 </div>
             <?php else: ?>
-                <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                    data-aos-mirror="true" data-aos-once="false" data-aos-anchor-placement="top-bottom"
-                    class="articles  carousel11">
+                <div class="mp-grid" data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000"
+                    data-aos-once="false" style="padding: 0 12px;">
                     <?php foreach ($produits as $produit): ?>
                         <?php
-                        // Vérifier si promotion disponible
                         $has_promo = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                        $prix_principal = number_format($produit['prix'], 0, ',', ' ');
-                        $prix_promo_value = $has_promo ? number_format($produit['prix_promotion'], 0, ',', ' ') : '';
-                        $pourcentage_reduction = 0;
-                        if ($has_promo) {
-                            $pourcentage_reduction = round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100);
-                        }
+                        $prix_affichage = $has_promo ? $produit['prix_promotion'] : $produit['prix'];
+                        $pourcentage_reduction = $has_promo ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                         ?>
-                        <div class="carousel">
-                            <a href="/produit.php?id=<?php echo (int) $produit['id']; ?>" class="product-card-link">
-                                <div class="image-wrapper">
+                        <article class="mp-card">
+                            <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
+                                <div class="mp-card-img">
+                                    <?php if ($has_promo): ?>
+                                    <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_reduction; ?>%</span>
+                                    <?php endif; ?>
                                     <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
                                         alt="<?php echo htmlspecialchars($produit['nom']); ?>"
-                                        onerror="this.src='/image/produit1.jpg'">
+                                        loading="lazy" onerror="this.src='/image/produit1.jpg'">
                                 </div>
-                                <div class="produit-content">
-                                    <p id="nom"><?php echo htmlspecialchars($produit['nom']); ?></p>
-
-                                    <p class="prix">
+                                <div class="mp-card-body">
+                                    <p class="mp-card-title"><?php echo htmlspecialchars($produit['nom']); ?></p>
+                                    <div class="mp-card-price-row">
                                         <?php if ($has_promo): ?>
-                                            <span class="span2"><?php echo $prix_principal; ?> FCFA</span>
-                                            <span class="prix-promo"><?php echo $prix_promo_value; ?> FCFA</span>
-                                            <span class="span3">-<?php echo $pourcentage_reduction; ?>%</span>
+                                        <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
+                                        <span class="mp-card-price-old"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
                                         <?php else: ?>
-                                            <?php echo $prix_principal; ?><span class="span1"> FCFA</span>
+                                        <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
                                         <?php endif; ?>
-                                    </p>
-                                    <?php if (!empty($produit['stock'])): ?>
-                                        <p class="produit-card-stock-info">
-                                            <strong>Stock:</strong> <?php echo $produit['stock']; ?>
-
-                                        </p>
-                                    <?php endif; ?>
+                                    </div>
                                 </div>
                             </a>
-                            <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                <?php boutique_add_to_panier_hidden_fields(); ?>
-                                <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                                <input type="hidden" name="quantite" value="1">
-                                <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/categorie.php'); ?>">
-                                <button type="submit" class="btn-add-cart">
-                                    <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                                </button>
-                            </form>
-                        </div>
+                            <div class="mp-card-cart">
+                                <form method="POST" action="/add-to-panier.php">
+                                    <?php boutique_add_to_panier_hidden_fields(); ?>
+                                    <input type="hidden" name="produit_id" value="<?php echo (int)$produit['id']; ?>">
+                                    <input type="hidden" name="quantite" value="1">
+                                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/categorie.php'); ?>">
+                                    <button type="submit" class="mp-card-btn">
+                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter
+                                    </button>
+                                </form>
+                            </div>
+                        </article>
                     <?php endforeach; ?>
-                </article>
+                </div>
             <?php endif; ?>
         </section>
     </section>
