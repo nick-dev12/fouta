@@ -2160,8 +2160,11 @@ $seo_canonical = $base . '/';
     $total_produits = 0;
     if (file_exists(__DIR__ . '/models/model_produits.php')) {
         require_once __DIR__ . '/models/model_produits.php';
-        $produits_nouveaux = get_all_produits_paginated(0, 12);
-        $produits_tous = get_all_produits_paginated(0, 24);
+        require_once __DIR__ . '/includes/catalogue_shuffle.php';
+        $seed_nouveaux = catalogue_nouveau_seed('index_nouveaux');
+        $seed_tous = catalogue_nouveau_seed('index_tous');
+        $produits_nouveaux = get_all_produits_paginated(0, 12, null, $seed_nouveaux);
+        $produits_tous = get_all_produits_paginated(0, 24, null, $seed_tous);
         $total_produits = count_all_produits_actifs();
     }
     if (file_exists(__DIR__ . '/models/model_visites.php')) {
@@ -2176,6 +2179,10 @@ $seo_canonical = $base . '/';
     }
     if (!is_array($produits_tous)) {
         $produits_tous = [];
+    }
+    if (!empty($produits_populaires) && file_exists(__DIR__ . '/includes/catalogue_shuffle.php')) {
+        require_once __DIR__ . '/includes/catalogue_shuffle.php';
+        $produits_populaires = catalogue_melanger_produits($produits_populaires);
     }
 
     $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';

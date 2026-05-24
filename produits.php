@@ -4,10 +4,12 @@ session_start();
 // Inclusion des modèles
 require_once __DIR__ . '/models/model_produits.php';
 require_once __DIR__ . '/includes/produit_boutique_line.php';
+require_once __DIR__ . '/includes/catalogue_shuffle.php';
 
 // Récupérer les produits (recherche + filtres ou tous)
 $produits_tous = [];
 $total_produits = 0;
+$catalogue_seed = null;
 $recherche_actuelle = isset($_GET['recherche']) ? trim($_GET['recherche']) : '';
 $prix_min = isset($_GET['prix_min']) && $_GET['prix_min'] !== '' ? (float) $_GET['prix_min'] : null;
 $prix_max = isset($_GET['prix_max']) && $_GET['prix_max'] !== '' ? (float) $_GET['prix_max'] : null;
@@ -20,7 +22,9 @@ if (file_exists(__DIR__ . '/models/model_produits.php')) {
         $produits_tous = search_produits_with_filters($recherche_actuelle, $prix_min, $prix_max, $categorie_id, $tri, 0, 20);
         $total_produits = count_search_produits_with_filters($recherche_actuelle, $prix_min, $prix_max, $categorie_id);
     } else {
-        $produits_tous = get_all_produits_paginated(0, 20);
+        $seed_param = isset($_GET['seed']) ? (int) $_GET['seed'] : null;
+        $catalogue_seed = catalogue_seed_pagination('produits', $seed_param, $seed_param === null);
+        $produits_tous = get_all_produits_paginated(0, 20, null, $catalogue_seed);
         $total_produits = count_all_produits_actifs();
     }
 }
@@ -362,6 +366,8 @@ $seo_canonical = $base . '/produits.php';
                 if ($prix_max !== null)           $p['prix_max']  = $prix_max;
                 if ($categorie_id !== null)       $p['categorie'] = $categorie_id;
                 $p['tri'] = $tri;
+            } elseif ($catalogue_seed !== null) {
+                $p['seed'] = (int) $catalogue_seed;
             }
             echo http_build_query($p);
             ?>';

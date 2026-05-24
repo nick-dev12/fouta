@@ -3,20 +3,15 @@ session_start();
 
 require_once __DIR__ . '/models/model_produits.php';
 require_once __DIR__ . '/includes/produit_boutique_line.php';
+require_once __DIR__ . '/includes/catalogue_shuffle.php';
 
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 $limit = 20;
 $offset = ($page - 1) * $limit;
+$seed_param = isset($_GET['seed']) ? (int) $_GET['seed'] : null;
+$catalogue_seed = catalogue_seed_pagination('nouveautes', $seed_param, $seed_param === null);
 
-$produits = get_produits_nouveautes_paginated($offset, $limit);
-if (!empty($produits) && is_array($produits)) {
-    if (function_exists('random_int')) {
-        mt_srand((int) (microtime(true) * 1000000) + random_int(0, 9999));
-    } else {
-        mt_srand((int) (microtime(true) * 1000000));
-    }
-    shuffle($produits);
-}
+$produits = get_all_produits_paginated($offset, $limit, null, $catalogue_seed);
 $total_produits = count_all_produits_actifs();
 $total_pages = $total_produits > 0 ? (int) ceil($total_produits / $limit) : 1;
 
@@ -98,17 +93,17 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
                 <?php if ($total_pages > 1): ?>
                 <nav class="mp-pagination" aria-label="Pagination">
                     <?php if ($page > 1): ?>
-                    <a href="?page=<?php echo $page - 1; ?>"><i class="fas fa-chevron-left" aria-hidden="true"></i> Précédent</a>
+                    <a href="?page=<?php echo $page - 1; ?>&seed=<?php echo (int) $catalogue_seed; ?>"><i class="fas fa-chevron-left" aria-hidden="true"></i> Précédent</a>
                     <?php endif; ?>
                     <?php for ($i = 1; $i <= min($total_pages, 10); $i++): ?>
                         <?php if ($i === $page): ?>
                     <span class="is-current" aria-current="page"><?php echo $i; ?></span>
                         <?php else: ?>
-                    <a href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    <a href="?page=<?php echo $i; ?>&seed=<?php echo (int) $catalogue_seed; ?>"><?php echo $i; ?></a>
                         <?php endif; ?>
                     <?php endfor; ?>
                     <?php if ($page < $total_pages): ?>
-                    <a href="?page=<?php echo $page + 1; ?>">Suivant <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+                    <a href="?page=<?php echo $page + 1; ?>&seed=<?php echo (int) $catalogue_seed; ?>">Suivant <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
                     <?php endif; ?>
                 </nav>
                 <?php endif; ?>

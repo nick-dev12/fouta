@@ -85,12 +85,8 @@ if ($generale_id > 0) {
 }
 
 if (!empty($produits) && is_array($produits)) {
-    if (function_exists('random_int')) {
-        mt_srand((int) (microtime(true) * 1000000) + random_int(0, 9999));
-    } else {
-        mt_srand((int) (microtime(true) * 1000000));
-    }
-    shuffle($produits);
+    require_once __DIR__ . '/includes/catalogue_shuffle.php';
+    $produits = catalogue_melanger_produits($produits);
 }
 
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)

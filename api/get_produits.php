@@ -11,6 +11,7 @@ require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_admin.php';
 require_once __DIR__ . '/../includes/marketplace_helpers.php';
+require_once __DIR__ . '/../includes/catalogue_shuffle.php';
 
 $boutique_admin_id = null;
 if (!empty($_GET['boutique'])) {
@@ -35,11 +36,17 @@ if ($limit < 1 || $limit > 50) $limit = 20;
 
 $has_filters = !empty($recherche) || $prix_min !== null || $prix_max !== null || $categorie_id !== null || $tri !== 'date';
 
+$shuffle_seed = null;
+if (!$has_filters && $boutique_admin_id === null) {
+    $seed_param = isset($_GET['seed']) ? (int) $_GET['seed'] : null;
+    $shuffle_seed = catalogue_seed_pagination('produits', $seed_param, false);
+}
+
 // Récupérer les produits (avec ou sans filtres)
 if ($has_filters) {
     $produits = search_produits_with_filters($recherche, $prix_min, $prix_max, $categorie_id, $tri, $offset, $limit, $boutique_admin_id);
 } else {
-    $produits = get_all_produits_paginated($offset, $limit, $boutique_admin_id);
+    $produits = get_all_produits_paginated($offset, $limit, $boutique_admin_id, $shuffle_seed);
 }
 
 // Formater les produits pour le JSON

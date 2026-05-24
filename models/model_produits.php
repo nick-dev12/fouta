@@ -798,7 +798,7 @@ function ensure_produit_identifiant_interne($produit_id)
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits
  */
-function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id = null)
+function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id = null, $shuffle_seed = null)
 {
     global $db;
 
@@ -811,6 +811,10 @@ function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id
         }
         $rf = produits_region_sql_with_alias($boutique_admin_id);
         $where .= $rf['sql'];
+        $order = 'p.date_creation DESC';
+        if ($shuffle_seed !== null && $shuffle_seed !== '') {
+            $order = 'RAND(' . max(1, (int) $shuffle_seed) . ')';
+        }
         $stmt = $db->prepare("
             SELECT p.*, " . $rj['categorie_nom_sql'] . " as categorie_nom " . $vj['select'] . "
             FROM produits p 
@@ -818,7 +822,7 @@ function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id
             " . $rj['join'] . "
             " . $vj['join'] . "
             WHERE $where
-            ORDER BY p.date_creation DESC
+            ORDER BY $order
             LIMIT :limit OFFSET :offset
         ");
 
@@ -1294,7 +1298,7 @@ function get_produits_nouveautes($limit = 4, $boutique_admin_id = null)
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits les plus récents
  */
-function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_admin_id = null)
+function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_admin_id = null, $shuffle_seed = null)
 {
     global $db;
 
@@ -1304,6 +1308,10 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_a
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
         $where .= produits_region_sql_with_alias($boutique_admin_id)['sql'];
+        $order = 'p.date_creation DESC, p.date_modification DESC';
+        if ($shuffle_seed !== null && $shuffle_seed !== '') {
+            $order = 'RAND(' . max(1, (int) $shuffle_seed) . ')';
+        }
         $vj = produits_sql_vendeur_fragment();
         $rj = produits_sql_rayon_categorie_nom_fragment();
         $stmt = $db->prepare("
@@ -1313,7 +1321,7 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_a
             " . $rj['join'] . "
             " . $vj['join'] . "
             WHERE $where
-            ORDER BY p.date_creation DESC, p.date_modification DESC
+            ORDER BY $order
             LIMIT :limit OFFSET :offset
         ");
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
@@ -1802,12 +1810,8 @@ function get_produits_nouveautes_aleatoires_panneau($retour = 4, $pool = 50)
     if (empty($rows)) {
         return [];
     }
-    if (function_exists('random_int')) {
-        mt_srand((int) (microtime(true) * 1000000) + random_int(0, 9999));
-    } else {
-        mt_srand((int) (microtime(true) * 1000000));
-    }
-    shuffle($rows);
+    require_once __DIR__ . '/../includes/catalogue_shuffle.php';
+    $rows = catalogue_melanger_produits($rows);
     return array_slice($rows, 0, $retour);
 }
 
