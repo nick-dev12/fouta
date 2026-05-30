@@ -170,7 +170,7 @@ if (!empty($_SESSION['super_admin_inscription_ok'])) {
                 </div>
                 <button type="submit" class="btn-submit"><i class="fas fa-sign-in-alt"></i> Se connecter</button>
             </form>
-            <p class="footer-text"><a href="/admin/login.php">Espace boutique / admin</a> — <a href="/index.php">Site public</a></p>
+            <p class="footer-text"><a href="/choix-connexion.php">Espace boutique / admin</a> — <a href="/index.php">Site public</a></p>
         </div>
     </div>
 </body>

@@ -91,6 +91,12 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
     })();
 </script>
 
+<?php
+if ($is_vendeur_menu) {
+    require_once dirname(__DIR__, 2) . '/includes/admin_vendeur_theme.php';
+    admin_echo_vendeur_theme_style_override();
+}
+?>
 <div class="admin-container<?php echo $is_vendeur_menu ? ' admin-shell--vendeur-dock' : ''; ?>">
     <!-- Barre de navigation verticale -->
     <aside class="admin-sidebar<?php echo $is_vendeur_menu ? ' admin-sidebar--vendeur' : ''; ?>" id="adminSidebar">
@@ -289,18 +295,17 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
             );
             $vd_param_sheet_active = (
                 $current_page === 'parametres.php' ||
-                $current_page === 'parametres-boutique-vendeur.php' ||
-                strpos($current_dir, '/parametres') !== false ||
+                (strpos($current_dir, '/parametres') !== false && $current_page !== 'parametres-boutique-vendeur.php') ||
                 $is_zones_livraison ||
                 $is_comptes
             );
+            $vd_appearance_dock_act = ($current_page === 'parametres-boutique-vendeur.php');
             $vd_profil_dock_act = ($current_page === 'profil.php');
             $vd_dashboard_dock_act = (($current_page === 'dashboard.php') || ($is_produits && $current_page === 'index.php'));
             $vd_stock_dock_act = $is_stock;
             $vd_caisse_dock_act = ($is_caisse && !$is_caisse_encaisser);
-            $vd_clients_dock_act = $is_users;
             $vdock_menu_hint_sheet = (
-                $vd_clients_dock_act ||
+                $vd_appearance_dock_act ||
                 $vd_caisse_dock_act ||
                 $vd_param_sheet_active
             );
@@ -361,10 +366,10 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
                 </button>
             </header>
             <nav class="admin-vendeur-dock-menu-panel-nav" aria-label="Menu étendu">
-                <a href="<?php echo $base_path; ?>users/index.php"
-                    class="menu-item menu-item--dock-sheet-row<?php echo $vd_clients_dock_act ? ' active' : ''; ?>">
-                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-store"></i></span>
-                    <span class="menu-item__text">Clients</span>
+                <a href="<?php echo $base_path; ?>parametres-boutique-vendeur.php"
+                    class="menu-item menu-item--dock-sheet-row<?php echo $vd_appearance_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-palette"></i></span>
+                    <span class="menu-item__text">Apparence boutique</span>
                 </a>
                 <a href="<?php echo $base_path; ?>caisse/index.php"
                     class="menu-item menu-item--dock-sheet-row<?php echo $vd_caisse_dock_act ? ' active' : ''; ?>">
@@ -395,11 +400,11 @@ if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres 
 
     /* Variables couleurs par onglet — palette site bleu/orange */
     #adminVendeurBottomDock {
-        --vdock-c1: #3564a6;   /* Dashboard — bleu principal */
+        --vdock-c1: var(--couleur-dominante, #3564a6);   /* Dashboard */
         --vdock-c2: #10b981;   /* Stock — vert */
-        --vdock-c3: #FF6B35;   /* Commandes — orange site */
+        --vdock-c3: var(--orange, #FF6B35);   /* Commandes */
         --vdock-c4: #6366f1;   /* Profil — indigo */
-        --vdock-c5: #3564a6;   /* Menu — bleu principal */
+        --vdock-c5: var(--couleur-dominante, #3564a6);   /* Menu */
     }
 
     @media (max-width: 1024px) {

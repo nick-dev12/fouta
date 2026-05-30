@@ -50,7 +50,6 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
             <div class="auth-card">
                 <div class="auth-card__inner">
                     <div class="auth-card__head">
-                        <div class="auth-card__icon" aria-hidden="true"><i class="fas fa-store"></i></div>
                         <h1>Créer ma boutique</h1>
                     </div>
 
@@ -61,9 +60,9 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                     <?php endif; ?>
 
                     <?php
-                    $google_auth_type = 'auto';
-                    $google_auth_redirect = '/admin/dashboard.php';
-                    $google_auth_position = 'top';
+                    $social_auth_type = 'vendor';
+                    $social_auth_redirect = '/admin/dashboard.php';
+                    $social_auth_position = 'top';
                     include __DIR__ . '/../includes/google_auth_button.php';
                     ?>
 

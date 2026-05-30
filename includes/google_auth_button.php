@@ -29,7 +29,10 @@ $position_class = $social_auth_position === 'top' ? ' social-auth--top' : ' soci
             data-social-auth-type="<?php echo htmlspecialchars($social_auth_type, ENT_QUOTES, 'UTF-8'); ?>"
             data-social-auth-redirect="<?php echo htmlspecialchars($social_auth_redirect, ENT_QUOTES, 'UTF-8'); ?>">
             <span class="google-auth-btn__icon" aria-hidden="true">G</span>
-            <span>Continuer avec Google</span>
+            <span class="social-auth-btn__label">
+                <span class="social-auth-btn__label-full">Continuer avec Google</span>
+                <span class="social-auth-btn__label-short" aria-hidden="true">Google</span>
+            </span>
         </button>
 
         <button type="button"
@@ -37,11 +40,12 @@ $position_class = $social_auth_position === 'top' ? ' social-auth--top' : ' soci
             data-social-auth-type="<?php echo htmlspecialchars($social_auth_type, ENT_QUOTES, 'UTF-8'); ?>"
             data-social-auth-redirect="<?php echo htmlspecialchars($social_auth_redirect, ENT_QUOTES, 'UTF-8'); ?>">
             <span class="apple-auth-btn__icon" aria-hidden="true"><i class="fab fa-apple"></i></span>
-            <span>Continuer avec Apple</span>
+            <span class="social-auth-btn__label">
+                <span class="social-auth-btn__label-full">Continuer avec Apple</span>
+                <span class="social-auth-btn__label-short" aria-hidden="true">Apple</span>
+            </span>
         </button>
     </div>
-
-    <p class="social-auth-message" aria-live="polite"></p>
 
     <?php if ($social_auth_position === 'top'): ?>
         <div class="social-auth__divider"><span>ou</span></div>

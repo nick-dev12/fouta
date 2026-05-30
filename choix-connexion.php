@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
-<body class="auth-page auth-page--<?php echo $active_login_mode === 'phone' ? 'phone' : 'email'; ?>">
+<body class="auth-page page-choix-connexion auth-page--<?php echo $active_login_mode === 'phone' ? 'phone' : 'email'; ?>">
     <header class="auth-header">
         <a class="logo" href="/index.php">
             <img src="/image/logo_market.png" alt="COLObanes">
@@ -130,7 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
         <div class="auth-card">
             <div class="auth-card__inner">
             <div class="auth-card__head">
-                <div class="auth-card__icon" aria-hidden="true"><i class="fas fa-right-to-bracket"></i></div>
                 <h1>Connexion</h1>
             </div>
 

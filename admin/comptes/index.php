@@ -144,7 +144,7 @@ $admins_actifs = count(array_filter($admins, function ($a) {
                         Vous êtes connecté en tant que <strong><?php echo htmlspecialchars($_SESSION['vendeur_collaborateur_nom'] ?? 'collaborateur', ENT_QUOTES, 'UTF-8'); ?></strong>.
                         Seul le titulaire de la boutique peut créer ou désactiver des comptes d’accès.
                     <?php else: ?>
-                        Créez des accès pour des personnes qui se connectent avec le <strong>numéro de téléphone</strong> et le <strong>mot de passe</strong> définis ici (connexion vendeur sur la page de login admin).
+                        Créez des accès pour des personnes qui se connectent avec le <strong>numéro de téléphone</strong> et le <strong>mot de passe</strong> définis ici (connexion vendeur sur la page <a href="/choix-connexion.php">Connexion</a>).
                     <?php endif; ?>
                 </p>
             <?php endif; ?>

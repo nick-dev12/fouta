@@ -1,0 +1,20 @@
+[24-Apr-2026 07:36:24 UTC] PHP Warning:  Trying to access array offset on false in /home/ariaqqrw/samapiece.it.com/models/model_panier.php on line 93
+[19-May-2026 19:50:29 UTC] PHP Warning:  Trying to access array offset on false in /home/ariaqqrw/colobanes.com/models/model_panier.php on line 93
+[19-May-2026 19:51:09 UTC] PHP Warning:  Trying to access array offset on false in /home/ariaqqrw/colobanes.com/models/model_panier.php on line 93
+[24-May-2026 07:12:26 UTC] PHP Warning:  require_once(/home/ariaqqrw/colobanes.com/../includes/auth_redirect.php): Failed to open stream: No such file or directory in /home/ariaqqrw/colobanes.com/choix-connexion.php on line 7
+[24-May-2026 07:12:26 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/ariaqqrw/colobanes.com/../includes/auth_redirect.php' (include_path='.:/opt/alt/php83/usr/share/pear:/opt/alt/php83/usr/share/php:/usr/share/pear:/usr/share/php') in /home/ariaqqrw/colobanes.com/choix-connexion.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/ariaqqrw/colobanes.com/choix-connexion.php on line 7
+[24-May-2026 07:12:36 UTC] PHP Warning:  require_once(/home/ariaqqrw/colobanes.com/../includes/auth_redirect.php): Failed to open stream: No such file or directory in /home/ariaqqrw/colobanes.com/choix-connexion.php on line 7
+[24-May-2026 07:12:36 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/ariaqqrw/colobanes.com/../includes/auth_redirect.php' (include_path='.:/opt/alt/php83/usr/share/pear:/opt/alt/php83/usr/share/php:/usr/share/pear:/usr/share/php') in /home/ariaqqrw/colobanes.com/choix-connexion.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/ariaqqrw/colobanes.com/choix-connexion.php on line 7
+[24-May-2026 07:12:45 UTC] PHP Warning:  require_once(/home/ariaqqrw/colobanes.com/../includes/auth_redirect.php): Failed to open stream: No such file or directory in /home/ariaqqrw/colobanes.com/choix-connexion.php on line 7
+[24-May-2026 07:12:45 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/ariaqqrw/colobanes.com/../includes/auth_redirect.php' (include_path='.:/opt/alt/php83/usr/share/pear:/opt/alt/php83/usr/share/php:/usr/share/pear:/usr/share/php') in /home/ariaqqrw/colobanes.com/choix-connexion.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/ariaqqrw/colobanes.com/choix-connexion.php on line 7
+[24-May-2026 10:29:39 UTC] PHP Warning:  Trying to access array offset on false in /home/ariaqqrw/colobanes.com/models/model_panier.php on line 93
+[25-May-2026 16:10:16 UTC] PHP Warning:  Trying to access array offset on false in /home/ariaqqrw/colobanes.com/models/model_panier.php on line 93

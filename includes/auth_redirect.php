@@ -50,7 +50,7 @@ if (!function_exists('auth_clear_portal_cookie')) {
 
 if (!function_exists('admin_login_redirect_url')) {
     /**
-     * URL de connexion selon le type de compte (cookie portail).
+     * URL de connexion unifiée (choix-connexion.php).
      *
      * @param string|null $redirect_after
      */
@@ -66,13 +66,8 @@ if (!function_exists('admin_login_redirect_url')) {
         }
 
         $qs = $redirect_after !== '' ? ('?redirect=' . urlencode($redirect_after)) : '';
-        $portal = $_COOKIE['colobane_auth_portal'] ?? '';
 
-        if ($portal === 'vendeur' || $portal === 'client' || $portal === 'choix') {
-            return '/choix-connexion.php' . $qs;
-        }
-
-        return '/admin/login.php' . $qs;
+        return '/choix-connexion.php' . $qs;
     }
 }
 

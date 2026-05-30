@@ -62,6 +62,12 @@
 -dontwarn com.google.android.play.core.tasks.**
 -dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
 
+# Google Sign-In / Firebase Auth (release minify)
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.android.gms.**
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
+
 # Flutter Play Store Split (composants différés)
 # Conserver la classe Flutter mais ignorer les dépendances Play Core manquantes
 -keep class io.flutter.embedding.android.FlutterPlayStoreSplitApplication { *; }

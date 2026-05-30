@@ -15,11 +15,38 @@
             || !!window.flutter_inappwebview;
     }
 
+    function hasNativeAppleSignIn() {
+        return !!(window.ColobanesNative && typeof window.ColobanesNative.signInWithApple === 'function')
+            || !!window.flutter_inappwebview;
+    }
+
+    function ensureSocialAuthMessage(wrap) {
+        var msg = wrap.querySelector('.social-auth-message');
+        if (msg) return msg;
+        msg = document.createElement('p');
+        msg.className = 'social-auth-message';
+        msg.setAttribute('aria-live', 'polite');
+        var buttons = wrap.querySelector('.social-auth__buttons');
+        if (buttons) {
+            buttons.insertAdjacentElement('afterend', msg);
+        } else {
+            wrap.appendChild(msg);
+        }
+        return msg;
+    }
+
     function setMessage(button, message, isError) {
         var wrap = button.closest('.social-auth');
-        var msg = wrap ? wrap.querySelector('.social-auth-message') : null;
-        if (!msg) return;
-        msg.textContent = message || '';
+        if (!wrap) return;
+        var msg = wrap.querySelector('.social-auth-message');
+        if (!message) {
+            if (msg) msg.remove();
+            return;
+        }
+        if (!msg) {
+            msg = ensureSocialAuthMessage(wrap);
+        }
+        msg.textContent = message;
         msg.classList.toggle('is-error', !!isError);
     }
 
@@ -32,7 +59,8 @@
 
     function sendTokenToServer(button, provider, getTokenPromise) {
         if (typeof firebase === 'undefined' || !firebase.auth) {
-            if (provider === 'google' && hasNativeGoogleSignIn()) {
+            if ((provider === 'google' && hasNativeGoogleSignIn())
+                || (provider === 'apple' && hasNativeAppleSignIn())) {
                 // Firebase web optionnel si le token vient de l'app native
             } else {
                 setMessage(button, 'Firebase Auth n’est pas chargé. Rechargez la page.', true);
@@ -105,6 +133,26 @@
         throw new Error('Connexion Google native indisponible.');
     }
 
+    function getAppleIdTokenNative() {
+        if (window.ColobanesNative && typeof window.ColobanesNative.signInWithApple === 'function') {
+            return window.ColobanesNative.signInWithApple().then(function (result) {
+                if (!result || !result.idToken) {
+                    throw new Error('Token Apple introuvable depuis l’application.');
+                }
+                return result.idToken;
+            });
+        }
+        if (window.flutter_inappwebview) {
+            return window.flutter_inappwebview.callHandler('signInWithApple').then(function (result) {
+                if (!result || !result.success || !result.idToken) {
+                    throw new Error((result && result.error) ? result.error : 'Connexion Apple impossible.');
+                }
+                return result.idToken;
+            });
+        }
+        throw new Error('Connexion Apple native indisponible.');
+    }
+
     function signInWithGoogle(button) {
         if (isColobanesNativeApp()) {
             if (!hasNativeGoogleSignIn()) {
@@ -140,11 +188,16 @@
 
     function signInWithApple(button) {
         if (isColobanesNativeApp()) {
-            setMessage(
-                button,
-                'Connexion Apple : utilisez le navigateur (Safari/Chrome) ou mettez à jour l’app prochainement.',
-                true
-            );
+            if (!hasNativeAppleSignIn()) {
+                setMessage(
+                    button,
+                    'Mettez à jour l’application COLObanes pour vous connecter avec Apple.',
+                    true
+                );
+                return;
+            }
+
+            sendTokenToServer(button, 'apple', getAppleIdTokenNative);
             return;
         }
 

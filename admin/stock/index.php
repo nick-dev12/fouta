@@ -159,7 +159,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         .stk-header__eyebrow {
             font-size: 0.72rem; font-weight: 700;
             text-transform: uppercase; letter-spacing: 0.12em;
-            color: #059669; display: flex; align-items: center; gap: 5px;
+            color: var(--couleur-dominante, #059669); display: flex; align-items: center; gap: 5px;
         }
 
         .stk-header__title {
@@ -181,20 +181,25 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             transition: all 0.2s; white-space: nowrap;
         }
 
-        .stk-btn--primary { background: #059669; color: #fff; box-shadow: 0 4px 14px rgba(5,150,105,0.25); }
-        .stk-btn--primary:hover { background: #047857; transform: translateY(-1px); }
+        .stk-btn--primary {
+            background: var(--couleur-dominante, #059669); color: #fff;
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--couleur-dominante, #059669) 28%, transparent);
+        }
+        .stk-btn--primary:hover {
+            background: var(--couleur-dominante-hover, #047857); transform: translateY(-1px);
+        }
         .stk-btn--outline { background: #fff; color: var(--couleur-dominante, #3564a6); border: 1.5px solid rgba(53,100,166,0.22); }
         .stk-btn--outline:hover { background: rgba(53,100,166,0.05); }
         .stk-btn--blue { background: var(--couleur-dominante, #3564a6); color: #fff; box-shadow: 0 4px 14px rgba(53,100,166,0.25); }
-        .stk-btn--blue:hover { background: #2d5690; transform: translateY(-1px); }
+        .stk-btn--blue:hover { background: var(--couleur-dominante-hover, #2d5690); transform: translateY(-1px); }
 
         /* ---- Hero ---- */
         .stk-hero {
-            background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #059669 100%);
+            background: var(--couleur-dominante, #059669);
             border-radius: 20px;
             padding: clamp(18px, 3vw, 32px);
             position: relative; overflow: hidden;
-            box-shadow: 0 16px 44px rgba(5,150,105,0.28);
+            box-shadow: 0 16px 40px color-mix(in srgb, var(--couleur-dominante, #059669) 34%, transparent);
         }
 
         .stk-hero::before {
@@ -266,7 +271,10 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             font-size: 0.95rem; flex-shrink: 0;
         }
 
-        .stk-stat--total   .stk-stat__icon { background: rgba(5,150,105,.1);  color: #059669; }
+        .stk-stat--total   .stk-stat__icon {
+            background: color-mix(in srgb, var(--couleur-dominante, #059669) 12%, transparent);
+            color: var(--couleur-dominante, #059669);
+        }
         .stk-stat--actif   .stk-stat__icon { background: rgba(34,197,94,.1);  color: #15803d; }
         .stk-stat--rupture .stk-stat__icon { background: rgba(239,68,68,.1);  color: #b91c1c; }
         .stk-stat--inactif .stk-stat__icon { background: rgba(156,163,175,.15); color: #6b7280; }
@@ -345,14 +353,14 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         .stk-filters__submit {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 10px 20px; border-radius: 10px;
-            background: #059669; color: #fff;
+            background: var(--couleur-dominante, #059669); color: #fff;
             font-size: .82rem; font-weight: 700;
             border: none; cursor: pointer;
             font-family: var(--font-corps, 'Poppins', sans-serif);
             transition: background .2s; white-space: nowrap;
         }
 
-        .stk-filters__submit:hover { background: #047857; }
+        .stk-filters__submit:hover { background: var(--couleur-dominante-hover, #047857); }
 
         .stk-filters__reset {
             display: inline-flex; align-items: center; gap: 6px;
@@ -388,7 +396,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         .stk-section-title::before {
             content: ''; width: 4px; height: 17px; border-radius: 3px;
-            background: #059669; display: inline-block;
+            background: var(--couleur-dominante, #059669); display: inline-block;
         }
 
         .stk-grid {
@@ -479,8 +487,11 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             transition: all .18s;
         }
 
-        .stk-card-btn--stock  { background: rgba(5,150,105,.1); color: #059669; }
-        .stk-card-btn--stock:hover  { background: #059669; color: #fff; }
+        .stk-card-btn--stock  {
+            background: color-mix(in srgb, var(--couleur-dominante, #059669) 10%, transparent);
+            color: var(--couleur-dominante, #059669);
+        }
+        .stk-card-btn--stock:hover  { background: var(--couleur-dominante, #059669); color: #fff; }
         .stk-card-btn--edit   { background: rgba(53,100,166,.08); color: var(--couleur-dominante, #3564a6); }
         .stk-card-btn--edit:hover   { background: var(--couleur-dominante, #3564a6); color: #fff; }
         .stk-card-btn--delete { background: rgba(239,68,68,.08); color: #b91c1c; }
@@ -502,7 +513,11 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         }
 
         .stk-pag-btn:hover { background: rgba(53,100,166,.07); border-color: var(--couleur-dominante, #3564a6); }
-        .stk-pag-btn--active { background: #059669; color: #fff; border-color: #059669; box-shadow: 0 4px 10px rgba(5,150,105,.3); }
+        .stk-pag-btn--active {
+            background: var(--couleur-dominante, #059669); color: #fff;
+            border-color: var(--couleur-dominante, #059669);
+            box-shadow: 0 4px 10px color-mix(in srgb, var(--couleur-dominante, #059669) 30%, transparent);
+        }
         .stk-pag-btn--prev, .stk-pag-btn--next { width: auto; padding: 0 14px; gap: 5px; }
         .stk-pag-btn--disabled { opacity: .38; pointer-events: none; }
 
@@ -518,7 +533,8 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         .stk-empty__icon {
             width: 68px; height: 68px; border-radius: 18px;
-            background: rgba(5,150,105,.08); color: #059669;
+            background: color-mix(in srgb, var(--couleur-dominante, #059669) 8%, transparent);
+            color: var(--couleur-dominante, #059669);
             display: flex; align-items: center; justify-content: center;
             font-size: 1.8rem; margin: 0 auto 16px;
         }
@@ -553,7 +569,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         .stock-cat-modal__head {
             flex-shrink: 0; padding: 1.35rem 1.35rem 1rem;
-            background: linear-gradient(135deg, var(--couleur-dominante,#3564a6) 0%, var(--bleu-fonce,#2d5690) 100%);
+            background: var(--couleur-dominante, #3564a6);
             color: #fff; position: relative;
         }
 
@@ -644,8 +660,9 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         .stock-cat-modal__btn--ghost:hover { border-color: var(--couleur-dominante,#3564a6); color: var(--couleur-dominante,#3564a6); }
 
         .stock-cat-modal__btn--primary {
-            background: linear-gradient(135deg, var(--couleur-dominante,#3564a6) 0%, var(--bleu-fonce,#2d5690) 100%);
-            color: #fff; box-shadow: 0 4px 14px rgba(53,100,166,.25);
+            background: var(--couleur-dominante, #3564a6);
+            color: #fff;
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--couleur-dominante, #3564a6) 28%, transparent);
         }
 
         .stock-cat-modal__btn--primary:hover { transform: translateY(-2px); }
@@ -884,7 +901,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                 <h3><?php echo ($recherche !== '' || $cat_filter > 0 || $statut_filter !== '') ? 'Aucun produit trouv&eacute;' : 'Aucun produit enregistr&eacute;'; ?></h3>
                 <p>
                     <?php if ($recherche !== '' || $cat_filter > 0 || $statut_filter !== ''): ?>
-                        Essayez d&apos;autres crit&egrave;res de recherche ou <a href="index.php" style="color:#059669;font-weight:600;">r&eacute;initialisez les filtres</a>.
+                        Essayez d&apos;autres crit&egrave;res de recherche ou <a href="index.php" style="color:var(--couleur-dominante,#059669);font-weight:600;">r&eacute;initialisez les filtres</a>.
                     <?php else: ?>
                         Ajoutez votre premier produit pour commencer &agrave; g&eacute;rer votre stock.
                     <?php endif; ?>

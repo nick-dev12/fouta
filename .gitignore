@@ -1,4 +1,7 @@
 # Fichiers sensibles - NE JAMAIS committer
+google-services.json
+GoogleService-Info.plist
+
 # Clés privées Firebase (service account)
 sugar-paper-*.json
 gestion-scolaire-*.json

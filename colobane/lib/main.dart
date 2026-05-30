@@ -6,11 +6,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:convert';
 import 'dart:collection';
 import 'dart:async';
+import 'firebase_options.dart';
 import 'services/fcm_service.dart';
 import 'services/social_auth_service.dart';
 
@@ -58,7 +60,16 @@ void main() async {
   try {
     // Initialiser Firebase
     print('🔥 Initialisation de Firebase...');
-    await Firebase.initializeApp();
+    if (kIsWeb) {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.web);
+    } else {
+      try {
+        await Firebase.initializeApp();
+      } catch (initErr) {
+        print('⚠️ Firebase init native, repli options web: $initErr');
+        await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      }
+    }
     print('✅ Firebase initialisé avec succès');
   } catch (e) {
     print('❌ ERREUR lors de l\'initialisation Firebase: $e');
@@ -383,6 +394,13 @@ class _WebViewScreenState extends State<WebViewScreen>
         return SocialAuthService.signInWithGoogle();
       },
     );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'signInWithApple',
+      callback: (args) async {
+        return SocialAuthService.signInWithApple();
+      },
+    );
   }
 
   // Gérer la demande de caméra
@@ -637,85 +655,126 @@ class _WebViewScreenState extends State<WebViewScreen>
             });
           },
 
+          signInWithApple: function() {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('signInWithApple')
+                .then(result => {
+                  if (result && result.success && result.idToken) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Connexion Apple impossible'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
           isNativeApp: function() {
             return true;
           }
         };
         window.AriaNative = window.ColobanesNative;
 
-        // Intercepter Google AVANT le JS du site (évite signInWithPopup bloqué en WebView)
-        if (document.documentElement.getAttribute('data-colobanes-google-hook') !== '1') {
-          document.documentElement.setAttribute('data-colobanes-google-hook', '1');
+        function colobanesNativeSocialSignIn(button, provider, handlerName) {
+          if (!window.flutter_inappwebview) return;
+
+          var wrap = button.closest('.social-auth');
+          var msgEl = null;
+          var accountType = button.getAttribute('data-social-auth-type')
+            || button.getAttribute('data-google-auth-type') || 'auto';
+          var redirect = button.getAttribute('data-social-auth-redirect')
+            || button.getAttribute('data-google-auth-redirect') || '';
+          var originalHtml = button.innerHTML;
+
+          function setMsg(text, isError) {
+            if (!wrap) return;
+            if (!text) {
+              if (msgEl) { msgEl.remove(); msgEl = null; }
+              return;
+            }
+            if (!msgEl) {
+              msgEl = document.createElement('p');
+              msgEl.className = 'social-auth-message';
+              msgEl.setAttribute('aria-live', 'polite');
+              var buttons = wrap.querySelector('.social-auth__buttons');
+              if (buttons) {
+                buttons.insertAdjacentElement('afterend', msgEl);
+              } else {
+                wrap.appendChild(msgEl);
+              }
+            }
+            msgEl.textContent = text;
+            msgEl.classList.toggle('is-error', !!isError);
+          }
+
+          if (wrap) {
+            wrap.querySelectorAll('.google-auth-btn, .apple-auth-btn').forEach(function(btn) {
+              btn.disabled = true;
+            });
+          }
+          setMsg('', false);
+
+          window.flutter_inappwebview.callHandler(handlerName)
+            .then(function(result) {
+              if (!result || !result.success || !result.idToken) {
+                throw new Error((result && result.error) ? result.error : 'Connexion impossible.');
+              }
+              return fetch('/auth-firebase-callback.php', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                  idToken: result.idToken,
+                  accountType: accountType,
+                  redirect: redirect,
+                  provider: provider
+                })
+              });
+            })
+            .then(function(response) {
+              return response.json().catch(function() {
+                throw new Error('Réponse serveur invalide.');
+              });
+            })
+            .then(function(data) {
+              if (!data || !data.success || !data.redirect) {
+                throw new Error((data && data.message) ? data.message : 'Connexion refusée.');
+              }
+              window.location.href = data.redirect;
+            })
+            .catch(function(error) {
+              setMsg(error && error.message ? error.message : 'Connexion annulée ou impossible.', true);
+              if (wrap) {
+                wrap.querySelectorAll('.google-auth-btn, .apple-auth-btn').forEach(function(btn) {
+                  btn.disabled = false;
+                });
+              }
+              button.innerHTML = originalHtml;
+            });
+        }
+
+        // Intercepter Google / Apple AVANT le JS du site (évite popup bloqué en WebView)
+        if (document.documentElement.getAttribute('data-colobanes-social-hook') !== '1') {
+          document.documentElement.setAttribute('data-colobanes-social-hook', '1');
           document.addEventListener('click', function(event) {
             var googleBtn = event.target.closest('.google-auth-btn');
-            if (!googleBtn || !window.flutter_inappwebview) return;
+            var appleBtn = event.target.closest('.apple-auth-btn');
+            var btn = googleBtn || appleBtn;
+            if (!btn || !window.flutter_inappwebview) return;
 
             event.preventDefault();
             event.stopImmediatePropagation();
 
-            var wrap = googleBtn.closest('.social-auth');
-            var msgEl = wrap ? wrap.querySelector('.social-auth-message') : null;
-            var accountType = googleBtn.getAttribute('data-social-auth-type')
-              || googleBtn.getAttribute('data-google-auth-type') || 'auto';
-            var redirect = googleBtn.getAttribute('data-social-auth-redirect')
-              || googleBtn.getAttribute('data-google-auth-redirect') || '';
-            var originalHtml = googleBtn.innerHTML;
-
-            function setMsg(text, isError) {
-              if (!msgEl) return;
-              msgEl.textContent = text || '';
-              msgEl.classList.toggle('is-error', !!isError);
+            if (googleBtn) {
+              colobanesNativeSocialSignIn(googleBtn, 'google', 'signInWithGoogle');
+            } else {
+              colobanesNativeSocialSignIn(appleBtn, 'apple', 'signInWithApple');
             }
-
-            if (wrap) {
-              wrap.querySelectorAll('.google-auth-btn, .apple-auth-btn').forEach(function(btn) {
-                btn.disabled = true;
-              });
-            }
-            setMsg('', false);
-
-            window.flutter_inappwebview.callHandler('signInWithGoogle')
-              .then(function(result) {
-                if (!result || !result.success || !result.idToken) {
-                  throw new Error((result && result.error) ? result.error : 'Connexion Google impossible.');
-                }
-                return fetch('/auth-firebase-callback.php', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                  },
-                  credentials: 'same-origin',
-                  body: JSON.stringify({
-                    idToken: result.idToken,
-                    accountType: accountType,
-                    redirect: redirect,
-                    provider: 'google'
-                  })
-                });
-              })
-              .then(function(response) {
-                return response.json().catch(function() {
-                  throw new Error('Réponse serveur invalide.');
-                });
-              })
-              .then(function(data) {
-                if (!data || !data.success || !data.redirect) {
-                  throw new Error((data && data.message) ? data.message : 'Connexion refusée.');
-                }
-                window.location.href = data.redirect;
-              })
-              .catch(function(error) {
-                setMsg(error && error.message ? error.message : 'Connexion annulée ou impossible.', true);
-                if (wrap) {
-                  wrap.querySelectorAll('.google-auth-btn, .apple-auth-btn').forEach(function(btn) {
-                    btn.disabled = false;
-                  });
-                }
-                googleBtn.innerHTML = originalHtml;
-              });
           }, true);
-          console.log('ColobanesNative Google auth hook active');
+          console.log('ColobanesNative social auth hooks active');
         }
         
         console.log('ColobanesNative API initialized');

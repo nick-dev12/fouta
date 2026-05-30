@@ -203,12 +203,12 @@ function statut_class_cmd($s) {
 
         /* ---- Hero banner ---- */
         .cmd-v2-hero {
-            background: linear-gradient(135deg, var(--couleur-dominante, #3564a6) 0%, #1e3f7a 55%, #0f2550 100%);
+            background: var(--couleur-dominante, #3564a6);
             border-radius: 22px;
             padding: clamp(22px, 3vw, 36px);
             position: relative;
             overflow: hidden;
-            box-shadow: 0 16px 48px rgba(53,100,166,0.30);
+            box-shadow: 0 16px 40px color-mix(in srgb, var(--couleur-dominante, #3564a6) 34%, transparent);
         }
 
         .cmd-v2-hero::before {

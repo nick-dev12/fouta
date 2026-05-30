@@ -156,6 +156,7 @@ dependencies {
     // Firebase (versions alignées sur la BoM — ne pas fixer les versions des libs Firebase une par une)
     implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-messaging")
     
     // Note: Google Play Core a été supprimé car incompatible avec SDK 34 (Android 14)

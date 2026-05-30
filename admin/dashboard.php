@@ -230,12 +230,12 @@ if (!empty($produits)) {
 
         /* ---- Hero carte Vue d'ensemble ---- */
         .dash-v2-hero {
-            background: linear-gradient(135deg, var(--couleur-dominante, #3564a6) 0%, #1e3f7a 55%, #0f2550 100%);
+            background: var(--couleur-dominante, #3564a6);
             border-radius: 22px;
             padding: clamp(22px, 3.5vw, 38px);
             position: relative;
             overflow: hidden;
-            box-shadow: 0 18px 50px rgba(53,100,166,0.32);
+            box-shadow: 0 16px 40px color-mix(in srgb, var(--couleur-dominante, #3564a6) 34%, transparent);
         }
 
         .dash-v2-hero::before {
@@ -332,6 +332,27 @@ if (!empty($produits)) {
         .dash-v2-hero__pill--share:hover {
             background: rgba(255, 107, 53, 0.32);
             transform: translateY(-1px);
+        }
+
+        a.dash-v2-hero__pill {
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+
+        a.dash-v2-hero__pill:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-1px);
+            color: #fff;
+        }
+
+        .dash-v2-hero__pill--boutique {
+            background: rgba(255,255,255,0.18);
+            border-color: rgba(255,255,255,0.28);
+        }
+
+        .dash-v2-hero__pill--boutique:hover {
+            background: rgba(255,255,255,0.28);
         }
 
         button.dash-v2-hero__pill {
@@ -1183,10 +1204,21 @@ if (!empty($produits)) {
                     <i class="fas fa-shopping-bag"></i>
                     <span>Commandes &nbsp;<strong><?php echo $total_commandes; ?></strong></span>
                 </div>
-                <div class="dash-v2-hero__pill">
-                    <i class="fas fa-box"></i>
-                    <span>Produits &nbsp;<strong><?php echo $nb_produits; ?></strong></span>
-                </div>
+                <?php if (vendeur_share_boutique_is_available()): ?>
+                    <?php $dash_boutique_vitrine = vendeur_share_boutique_get_data(); ?>
+                    <a href="<?php echo htmlspecialchars($dash_boutique_vitrine['url'], ENT_QUOTES, 'UTF-8'); ?>"
+                        class="dash-v2-hero__pill dash-v2-hero__pill--boutique"
+                        target="_blank" rel="noopener noreferrer"
+                        title="Ouvrir votre vitrine en ligne dans un nouvel onglet">
+                        <i class="fas fa-store"></i>
+                        <span>Voir ma boutique</span>
+                    </a>
+                <?php else: ?>
+                    <div class="dash-v2-hero__pill">
+                        <i class="fas fa-box"></i>
+                        <span>Produits &nbsp;<strong><?php echo $nb_produits; ?></strong></span>
+                    </div>
+                <?php endif; ?>
                 <?php if (vendeur_share_boutique_is_available()): ?>
                     <button type="button" class="dash-v2-hero__pill dash-v2-hero__pill--share"
                         id="dashHeroShareBoutique" aria-haspopup="dialog" aria-controls="dashVendeurShareModal">

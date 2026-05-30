@@ -332,17 +332,17 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             z-index: 1;
             display: flex;
             flex-direction: row;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             align-items: center;
-            justify-content: flex-start;
-            gap: 16px 24px;
+            justify-content: space-between;
+            gap: 12px 16px;
         }
 
         .produit-boutique-rail__left {
             display: flex;
             align-items: center;
             gap: 16px;
-            flex: 1 1 240px;
+            flex: 1 1 auto;
             min-width: 0;
         }
 
@@ -416,10 +416,11 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             gap: 10px;
             width: auto;
             flex: 0 0 auto;
-            min-width: min(220px, 100%);
+            flex-shrink: 0;
             padding: 13px 20px;
             margin-top: 0;
             margin-left: auto;
+            white-space: nowrap;
             font-size: 0.9rem;
             font-weight: 600;
             font-family: var(--font-corps);
@@ -450,26 +451,63 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             opacity: 0.95;
         }
 
+        .produit-boutique-rail__cta-label-short {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .produit-detail-container > .produit-boutique-rail {
-                padding: 16px 18px;
+                padding: 12px 14px;
                 margin-bottom: 20px;
             }
 
+            .produit-boutique-rail__inner {
+                gap: 10px;
+            }
+
             .produit-boutique-rail__left {
-                flex: 1 1 100%;
+                flex: 1 1 auto;
+                gap: 10px;
+                min-width: 0;
             }
 
             .produit-boutique-rail__icon {
-                width: 48px;
-                height: 48px;
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                font-size: 1rem;
+                flex-shrink: 0;
+            }
+
+            .produit-boutique-rail__nom {
+                font-size: 0.88rem;
+            }
+
+            .produit-boutique-rail__eyebrow {
+                font-size: 10px;
             }
 
             .produit-boutique-rail__cta {
-                flex: 1 1 100%;
-                max-width: none;
-                min-width: 0;
-                margin-left: 0;
+                flex: 0 0 auto;
+                padding: 8px 12px;
+                font-size: 0.76rem;
+                gap: 6px;
+                border-radius: 12px;
+                margin-left: auto;
+            }
+
+            .produit-boutique-rail__cta i {
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .produit-boutique-rail__cta .produit-boutique-rail__cta-label-long {
+                display: none;
+            }
+
+            .produit-boutique-rail__cta .produit-boutique-rail__cta-label-short {
+                display: inline;
             }
         }
 
@@ -1558,7 +1596,12 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 <span class="produit-boutique-rail__divider" aria-hidden="true"></span>
                 <a href="<?php echo htmlspecialchars($produit_boutique_url); ?>"
                     class="produit-boutique-rail__cta">
-                    <span><?php echo $produit_boutique_slug !== '' ? 'Visiter la boutique' : 'Voir le catalogue'; ?></span>
+                    <?php if ($produit_boutique_slug !== ''): ?>
+                    <span class="produit-boutique-rail__cta-label-long">Visiter la boutique</span>
+                    <span class="produit-boutique-rail__cta-label-short" aria-hidden="true">Visiter</span>
+                    <?php else: ?>
+                    <span>Voir le catalogue</span>
+                    <?php endif; ?>
                     <i class="fas fa-arrow-right" aria-hidden="true"></i>
                 </a>
             </div>

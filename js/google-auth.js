@@ -1,11 +1,33 @@
 (function () {
     'use strict';
 
+    function ensureSocialAuthMessage(wrap) {
+        var msg = wrap.querySelector('.social-auth-message, .google-auth-message');
+        if (msg) return msg;
+        msg = document.createElement('p');
+        msg.className = 'social-auth-message';
+        msg.setAttribute('aria-live', 'polite');
+        var buttons = wrap.querySelector('.social-auth__buttons');
+        if (buttons) {
+            buttons.insertAdjacentElement('afterend', msg);
+        } else {
+            wrap.appendChild(msg);
+        }
+        return msg;
+    }
+
     function setMessage(button, message, isError) {
         var wrap = button.closest('.social-auth');
-        var msg = wrap ? wrap.querySelector('.google-auth-message') : null;
-        if (!msg) return;
-        msg.textContent = message || '';
+        if (!wrap) return;
+        var msg = wrap.querySelector('.social-auth-message, .google-auth-message');
+        if (!message) {
+            if (msg) msg.remove();
+            return;
+        }
+        if (!msg) {
+            msg = ensureSocialAuthMessage(wrap);
+        }
+        msg.textContent = message;
         msg.classList.toggle('is-error', !!isError);
     }
 

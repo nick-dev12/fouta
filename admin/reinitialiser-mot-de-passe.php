@@ -290,14 +290,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
                 </div>
                 <div class="footer-text">
                     <p><a href="mot-de-passe-oublie.php">Demander un nouveau lien</a></p>
-                    <p><a href="login.php">Retour à la connexion</a></p>
+                    <p><a href="/choix-connexion.php">Retour à la connexion</a></p>
                 </div>
             <?php elseif ($result['success']): ?>
                 <div class="success-message">
                     <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($result['message']); ?>
                 </div>
                 <div class="footer-text">
-                    <p><a href="login.php">Se connecter</a></p>
+                    <p><a href="/choix-connexion.php">Se connecter</a></p>
                 </div>
             <?php else: ?>
                 <?php if (!empty($result['message'])): ?>
@@ -335,7 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
                 </form>
 
                 <div class="footer-text">
-                    <p><a href="login.php">Retour à la connexion</a></p>
+                    <p><a href="/choix-connexion.php">Retour à la connexion</a></p>
                 </div>
             <?php endif; ?>
         </div>

@@ -3,7 +3,7 @@
  * Dock mobile/tablette de la navigation boutique.
  * Ce composant reste volontairement autonome pour eviter les conflits CSS du dock historique.
  *
- * @var string $u_home
+ * @var string $shop_dock_home_href
  * @var string $u_produits
  * @var string $nav_panier_href
  * @var string $nav_compte_href
@@ -17,7 +17,7 @@
 <div class="shop-mobile-dock" id="shopMobileDock" aria-label="Navigation boutique rapide">
     <div class="shop-mobile-dock__bar" id="shopDockBar" aria-label="Navigation boutique reduite">
         <nav class="shop-mobile-dock__nav" aria-label="Raccourcis boutique">
-            <a href="<?php echo htmlspecialchars($u_home, ENT_QUOTES, 'UTF-8'); ?>"
+            <a href="<?php echo htmlspecialchars($shop_dock_home_href ?? '/index.php', ENT_QUOTES, 'UTF-8'); ?>"
                 class="shop-mobile-dock__item<?php echo $shop_dock_home_act ? ' is-active' : ''; ?>">
                 <span class="shop-mobile-dock__icon" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
                 <span class="shop-mobile-dock__label">Accueil</span>

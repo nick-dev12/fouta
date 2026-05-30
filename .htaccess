@@ -18,8 +18,14 @@
 RewriteEngine On
 RewriteBase /
 
+# Ancienne connexion admin → connexion unifiée
+RewriteRule ^admin/login\.php$ /choix-connexion.php [R=301,L,QSA]
+
 # Ne pas réécrire les fichiers .well-known (deep links Android/iOS)
 RewriteRule ^\.well-known/ - [L]
+
+# Callback Apple Sign-In (Android)
+RewriteRule ^auth/apple-callback$ auth/apple-callback.php [L]
 
 RewriteRule ^robots\.txt$ robots.php [L]
 RewriteRule ^sitemap\.xml$ sitemap.php [L]

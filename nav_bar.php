@@ -196,7 +196,10 @@ $nav_panier_href = isset($_SESSION['user_id'])
     : '/choix-connexion.php?redirect=' . rawurlencode($nav_panier_connect_redirect);
 
 $shop_nav_script = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: ($_SERVER['PHP_SELF'] ?? ''));
-$shop_dock_home_act = ($shop_nav_script === 'index.php');
+$shop_dock_home_href = '/index.php';
+$shop_dock_home_act = (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0)
+    ? false
+    : ($shop_nav_script === 'index.php' && strpos($_SERVER['REQUEST_URI'] ?? '', '/boutique/') === false);
 $shop_dock_produits_act = in_array($shop_nav_script, ['produits.php', 'categorie.php', 'produit.php'], true);
 $shop_dock_panier_act = in_array($shop_nav_script, ['panier.php', 'commande.php'], true);
 $shop_dock_compte_act = (strpos($_SERVER['REQUEST_URI'] ?? '', '/user/') !== false);
@@ -728,28 +731,28 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         }
 
         .nav-compte-btn {
-            max-width: 168px;
-            padding: 6px 10px 6px 6px;
-            gap: 8px;
+            max-width: 132px;
+            padding: 5px 9px 5px 5px;
+            gap: 7px;
         }
 
         .nav-compte-avatar {
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
-            font-size: 13px;
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            font-size: 12px;
         }
 
         .nav-compte-avatar i {
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .nav-compte-title {
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .nav-compte-subtitle {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
         }
 
@@ -814,24 +817,43 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         }
 
         .nav-compte-btn {
-            max-width: 150px;
-            padding: 6px 8px 6px 6px;
-            gap: 7px;
+            max-width: 108px;
+            padding: 4px 7px 4px 4px;
+            gap: 5px;
         }
 
         .nav-compte-avatar {
-            width: 30px;
-            height: 30px;
-            min-width: 30px;
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            font-size: 11px;
+        }
+
+        .nav-compte-avatar i {
+            font-size: 11px;
         }
 
         .nav-compte-title {
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .nav-compte-subtitle {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 600;
+        }
+
+        /* Invité : une seule ligne « Se connecter » */
+        .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-title {
+            display: none;
+        }
+
+        .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-text {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-subtitle {
+            font-size: 9px;
         }
 
         .nav-search-wrapper {
@@ -885,11 +907,32 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         }
 
         .nav-compte-btn {
-            padding: 6px 10px;
+            max-width: 96px;
+            padding: 4px 6px 4px 4px;
+            gap: 4px;
+        }
+
+        .nav-compte-avatar {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            font-size: 10px;
+        }
+
+        .nav-compte-avatar i {
+            font-size: 10px;
+        }
+
+        .nav-compte-title {
+            font-size: 8px;
         }
 
         .nav-compte-subtitle {
-            font-size: 11px;
+            font-size: 8px;
+        }
+
+        .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-subtitle {
+            font-size: 8px;
         }
 
         .nav-panier-link {

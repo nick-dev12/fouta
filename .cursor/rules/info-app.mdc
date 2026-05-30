@@ -133,7 +133,7 @@ Les couleurs suivantes doivent être utilisées dans le design de l'application 
 ### Fonctionnalités Admin
 
 #### 1. Authentification
-- Page de connexion admin (`admin/login.php`)
+- Connexion unifiée client + admin (`choix-connexion.php`)
 - Session admin sécurisée
 - Déconnexion
 
@@ -301,7 +301,7 @@ Les couleurs suivantes doivent être utilisées dans le design de l'application 
 ├── suivi-commande.php (Suivi)
 ├── admin/
 │   ├── index.php (Redirection login)
-│   ├── login.php (Connexion admin)
+│   ├── (connexion via /choix-connexion.php à la racine)
 │   ├── logout.php (Déconnexion admin)
 │   ├── dashboard.php (Tableau de bord)
 │   ├── produits/

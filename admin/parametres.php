@@ -341,7 +341,6 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
         .prm-module-card--video    .prm-module-card__icon-wrap { background: rgba(239,68,68,0.1); color: #b91c1c; }
         .prm-module-card--logos    .prm-module-card__icon-wrap { background: rgba(34,197,94,0.1); color: #15803d; }
         .prm-module-card--livraison .prm-module-card__icon-wrap { background: rgba(255,107,53,0.1); color: var(--orange, #FF6B35); }
-        .prm-module-card--boutique .prm-module-card__icon-wrap { background: rgba(255,107,53,0.1); color: var(--orange, #FF6B35); }
         .prm-module-card--comptes  .prm-module-card__icon-wrap { background: rgba(53,100,166,0.1); color: var(--couleur-dominante, #3564a6); }
 
         .prm-module-card__title {
@@ -372,14 +371,12 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
             color: #fff;
         }
 
-        /* Orange pour vendeur */
-        .prm-module-card--boutique .prm-module-card__link,
+        /* Orange pour livraison vendeur */
         .prm-module-card--livraison .prm-module-card__link {
             background: rgba(255,107,53,0.08);
             color: var(--orange, #FF6B35);
         }
 
-        .prm-module-card--boutique .prm-module-card__link:hover,
         .prm-module-card--livraison .prm-module-card__link:hover {
             background: var(--orange, #FF6B35);
             color: #fff;
@@ -549,17 +546,6 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
             </div>
 
             <div class="prm-modules-grid">
-
-                <?php if ($__param_role === 'vendeur'): ?>
-                    <article class="prm-module-card prm-module-card--boutique">
-                        <div class="prm-module-card__icon-wrap"><i class="fas fa-palette"></i></div>
-                        <div class="prm-module-card__title">Apparence de ma boutique</div>
-                        <div class="prm-module-card__desc">Personnalisez l&apos;image, le nom, la description et les couleurs de votre vitrine en ligne.</div>
-                        <a href="parametres-boutique-vendeur.php" class="prm-module-card__link">
-                            <i class="fas fa-pen-to-square"></i> Personnaliser
-                        </a>
-                    </article>
-                <?php endif; ?>
 
                 <?php if ($__param_role !== 'vendeur'): ?>
                     <article class="prm-module-card prm-module-card--home">

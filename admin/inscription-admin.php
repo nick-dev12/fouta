@@ -6,7 +6,7 @@ require_once __DIR__ . '/../models/model_admin.php';
 // Si des admins existent : seul un admin connecté avec rôle admin peut ajouter des comptes
 if (admin_exists()) {
     if (!isset($_SESSION['admin_id'])) {
-        header('Location: login.php');
+        header('Location: /choix-connexion.php');
         exit;
     }
     if (($_SESSION['admin_role'] ?? '') !== 'admin') {
@@ -26,7 +26,7 @@ if (isset($result['success']) && $result['success']) {
         header('Location: comptes/index.php');
     } else {
         $_SESSION['inscription_success'] = $result['message'];
-        header('Location: login.php');
+        header('Location: /choix-connexion.php');
     }
     exit;
 }

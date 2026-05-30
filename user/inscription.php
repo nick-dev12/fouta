@@ -47,7 +47,7 @@ if (isset($result['success']) && $result['success']) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
-<body class="auth-page auth-page--email">
+<body class="auth-page auth-page--email page-inscription-client">
     <header class="auth-header">
         <a class="logo" href="/index.php">
             <img src="/image/logo_market.png" alt="COLObanes">
@@ -59,7 +59,6 @@ if (isset($result['success']) && $result['success']) {
             <div class="auth-card">
                 <div class="auth-card__inner">
                     <div class="auth-card__head">
-                        <div class="auth-card__icon" aria-hidden="true"><i class="fas fa-user-plus"></i></div>
                         <h1>Créer un compte</h1>
                     </div>
 
@@ -68,6 +67,13 @@ if (isset($result['success']) && $result['success']) {
                             <i class="fas fa-exclamation-circle"></i> <?php echo $result['message']; ?>
                         </div>
                     <?php endif; ?>
+
+                    <?php
+                    $social_auth_type = 'client';
+                    $social_auth_redirect = '/index.php';
+                    $social_auth_position = 'top';
+                    include __DIR__ . '/../includes/google_auth_button.php';
+                    ?>
 
                     <form method="POST" action="" id="inscriptionForm" class="auth-inscription-form">
                         <div class="form-group">
@@ -152,6 +158,7 @@ echo $inscription_redirect_get !== '' ? htmlspecialchars('?' . http_build_query(
             }
         }
     </script>
+    <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

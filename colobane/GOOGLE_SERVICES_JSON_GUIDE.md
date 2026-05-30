@@ -25,7 +25,7 @@ Vous avez besoin de :
 
 ### Étape 3 : Remplir les informations
 
-1. **Package name Android** : `com.ariaedu.app`
+1. **Package name Android** : `com.colobanes.app`
    - ⚠️ **IMPORTANT** : Doit correspondre exactement au `applicationId` dans `build.gradle.kts`
    
 2. **App nickname** (optionnel) : `Aria Mobile App`
@@ -39,7 +39,7 @@ Vous avez besoin de :
 1. Cliquez sur **"Télécharger google-services.json"**
 2. **Placez le fichier** dans :
    ```
-   gestion_scolaire/android/app/google-services.json
+   colobane/android/app/google-services.json
    ```
 
 ### Étape 5 : Vérifier le fichier
@@ -58,7 +58,7 @@ Le fichier `google-services.json` devrait ressembler à ceci :
       "client_info": {
         "mobilesdk_app_id": "1:123456789012:android:abcdef123456",
         "android_client_info": {
-          "package_name": "com.ariaedu.app"
+          "package_name": "com.colobanes.app"
         }
       },
       "oauth_client": [...],
@@ -88,12 +88,12 @@ ls gestion_scolaire/android/app/google-services.json
 ### Vérifier le package name
 Ouvrez `google-services.json` et vérifiez que :
 ```json
-"package_name": "com.ariaedu.app"
+"package_name": "com.colobanes.app"
 ```
 
 Correspond à `build.gradle.kts` :
 ```kotlin
-applicationId = "com.ariaedu.app"
+applicationId = "com.colobanes.app"
 ```
 
 ## 🔄 Après avoir ajouté le fichier

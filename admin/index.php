@@ -1,7 +1,7 @@
 <?php
 /**
  * Page d'accueil du dossier admin
- * Redirige vers login.php ou dashboard.php selon la session
+ * Redirige vers choix-connexion.php ou dashboard.php selon la session
  * Programmation procédurale uniquement
  */
 
