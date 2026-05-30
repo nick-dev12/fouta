@@ -18,6 +18,10 @@
 RewriteEngine On
 RewriteBase /
 
+# Apex unique : plus de www.colobanes.com (App Links, SEO, app mobile)
+RewriteCond %{HTTP_HOST} ^www\.colobanes\.com$ [NC]
+RewriteRule ^ https://colobanes.com%{REQUEST_URI} [R=301,L]
+
 # Ancienne connexion admin → connexion unifiée
 RewriteRule ^admin/login\.php$ /choix-connexion.php [R=301,L,QSA]
 

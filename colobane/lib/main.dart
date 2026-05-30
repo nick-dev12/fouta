@@ -28,7 +28,7 @@ const Color kBleuLogoMarine = Color(0xFF1A3A5C);
 
 bool _isMarketplaceHost(String host) {
   final h = host.toLowerCase();
-  return h == 'colobanes.com' || h == 'www.colobanes.com';
+  return h == 'colobanes.com';
 }
 
 String resolveRelativeMarketUrl(String href) {

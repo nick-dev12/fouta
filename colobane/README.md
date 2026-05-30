@@ -100,7 +100,7 @@ Documentation complémentaire dans le dépôt : fichiers `*_EXPLICATION.md`, `CH
 
 La constante **`kMarketplaceBaseUrl`** dans `lib/main.dart` définit le site chargé dans la WebView (production : `https://colobanes.com/`).
 
-Les URLs sauvegardées localement ne sont conservées que pour les domaines **`colobanes.com`** / **`www.colobanes.com`**.
+Les URLs sauvegardées localement ne sont conservées que pour le domaine **`colobanes.com`**.
 
 ### Signature Android
 

@@ -17,9 +17,7 @@ $base_xml = get_site_base_url();
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 ?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 <?php foreach ($urls as $u):
     $loc = rtrim((string) $base_xml, '/') . $u['loc'];
     $lastmod = '';

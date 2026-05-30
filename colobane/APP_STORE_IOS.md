@@ -66,8 +66,8 @@ Dans **App Privacy**, déclarer notamment :
 - Identifiants (jeton push FCM/APNs)
 - Données d'utilisation / diagnostics si collectés par Firebase (selon configuration console)
 
-URL politique de confidentialité : `https://www.colobanes.com/politique-confidentialite.php`  
-URL CGU : `https://www.colobanes.com/conditions-utilisation.php`
+URL politique de confidentialité : `https://colobanes.com/politique-confidentialite.php`
+URL CGU : `https://colobanes.com/conditions-utilisation.php`
 
 ## Après correction
 

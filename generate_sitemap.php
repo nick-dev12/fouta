@@ -12,9 +12,7 @@ $base = get_site_base_url();
 
 $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
-$xml .= '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"' . "\n";
-$xml .= '        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' . "\n";
-$xml .= '        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">' . "\n";
+$xml .= '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
 
 foreach ($urls as $u) {
     $loc = rtrim((string) $base, '/') . $u['loc'];
