@@ -1,57 +1,103 @@
-# Fichiers sensibles - NE JAMAIS committer
-google-services.json
-GoogleService-Info.plist
+# =============================================================================
+# Fichiers sensibles — NE JAMAIS committer (clés API, BDD, Firebase, signatures)
+# =============================================================================
 
-# Clés privées Firebase (service account)
+# --- Firebase / Google (clés API, OAuth, FCM) ---
+config/firebase_config.php
+config/firebase_server.php
+firebase-messaging-sw.js
+colobane/lib/firebase_options.dart
+colobane/lib/config/firebase_auth_config.dart
+
+# Exemples versionnés (sans secrets)
+!config/firebase_config.example.php
+!config/firebase_server.example.php
+!colobane/lib/config/firebase_auth_config.example.dart
+!colobane/lib/firebase_options.example.dart
+
+# Service Worker FCM : regénérer après déploiement
+#   php scripts/sync_firebase_sw.php
+
+# Google Services (Android / iOS) — clés API embarquées
+google-services.json
+**/google-services.json
+!**/google-services.json.example
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+
+# Clés privées Firebase (compte de service — secret serveur)
 sugar-paper-*.json
 gestion-scolaire-*.json
 colobanes-*.json
 colobanes-firebase-adminsdk-*.json
 *-firebase-adminsdk-*.json
 *firebase*credentials*.json
+*service*account*.json
+*serviceAccount*.json
 
-# Clés Apple Sign In (privées)
+# --- Apple Sign In (clés privées) ---
 AuthKey_*.p8
 *.p8
 
-# Configuration base de données (identifiants)
+# --- Base de données (identifiants) ---
 conn/conn.php
+conn.php
 
-# Configuration API (clés secrètes)
+# --- Configuration site / e-mail (peut contenir mots de passe SMTP, clés) ---
 config/emailjs.php
 config/email.php
 config/site.php
-config/firebase_config.php
-config/firebase_server.php
+config/assets.php
 
-# Variables d'environnement
+# Exemples config (sans secrets)
+!config/*.example.php
+!config/email.example.php
+!config/site.example.php
+
+# --- Variables d'environnement ---
 .env
 .env.*
 !.env.example
 
-# Uploads utilisateurs
+# --- Android Flutter (keystore / signatures release) ---
+colobane/android/key.properties
+colobane/android/**/*.jks
+colobane/android/**/*.keystore
+colobane/android/app/*.jks
+colobane/android/app/*.keystore
+
+# =============================================================================
+# Fichiers générés / uploads / logs
+# =============================================================================
+
 upload/
 uploads/
 
-# Logs et cache
 *.log
 logs/
 cache/
 tmp/
 temp/
+error_log
+**/error_log
 
-# IDE et éditeurs
+# =============================================================================
+# IDE, OS, archives locales
+# =============================================================================
+
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
 
-# Système d'exploitation
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Archive lourde locale (limite GitHub ~100 Mo par fichier)
 colobane.zip
 
+# Build Flutter / Android (artefacts locaux)
+colobane/build/
+colobane/.dart_tool/
+colobane/android/.gradle/
