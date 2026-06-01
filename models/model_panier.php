@@ -90,7 +90,7 @@ function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $p
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $cols = "quantite = :quantite, couleur = :couleur, poids = :poids, taille = :taille";
-        $vals = ['quantite' => $existing ? $existing['quantite'] + $quantite : $quantite, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille, 'id' => $existing['id']];
+        $vals = ['quantite' => $existing ? $existing['quantite'] + $quantite : $quantite, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille, 'id' => $existing ? $existing['id'] : null];
 
         if (_panier_has_variante_columns()) {
             $cols .= ", variante_id = :variante_id, variante_nom = :variante_nom, variante_image = :variante_image, surcout_poids = :surcout_poids, surcout_taille = :surcout_taille, prix_unitaire = :prix_unitaire";

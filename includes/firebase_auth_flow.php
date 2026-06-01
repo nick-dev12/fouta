@@ -37,6 +37,10 @@ function firebase_auth_set_user_session(array $user)
     $_SESSION['user_email'] = (string) ($user['email'] ?? '');
     $_SESSION['user_telephone'] = $user['telephone'];
     $_SESSION['user_statut'] = $user['statut'];
+    if (file_exists(__DIR__ . '/panier_invite.php')) {
+        require_once __DIR__ . '/panier_invite.php';
+        panier_fusionner_invite_apres_connexion((int) $user['id']);
+    }
 }
 
 function firebase_auth_set_admin_session(array $admin)

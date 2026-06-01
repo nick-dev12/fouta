@@ -119,15 +119,21 @@ class WebViewScreen extends StatefulWidget {
 class _WebViewScreenState extends State<WebViewScreen>
     with WidgetsBindingObserver {
   InAppWebViewController? webViewController;
-  bool isLoading = true;
-  bool isInitialLoad = true; // Pour distinguer le premier chargement
-  double progress = 0;
-  double _simulatedProgress = 0;
-  String? _currentUrl; // Sauvegarder l'URL actuelle
-  String? _deepLinkInitUrl; // URL reçue via deep link (prioritaire)
+  String? _currentUrl;
+  String? _deepLinkInitUrl;
   Timer? _loaderMaxTimer;
   Timer? _progressSimTimer;
-  StreamSubscription<Uri>? _deepLinkSub; // Abonnement aux deep links entrants
+  StreamSubscription<Uri>? _deepLinkSub;
+
+  // ValueNotifiers : les mises à jour ne rebuilde PAS la WebView,
+  // uniquement les widgets qui les écoutent (ValueListenableBuilder).
+  final _isInitialLoadNotifier = ValueNotifier<bool>(true);
+  final _isPageLoadingNotifier = ValueNotifier<bool>(false);
+  final _loaderProgressNotifier = ValueNotifier<double>(0.0);
+
+  // Progression simulée locale (pas besoin de setState)
+  double _rawProgress = 0;
+  double _simProgress = 0;
 
   @override
   void initState() {
@@ -135,28 +141,25 @@ class _WebViewScreenState extends State<WebViewScreen>
     WidgetsBinding.instance.addObserver(this);
     _startInitialLoadTimers();
     _initializeFCM();
-    // Les deep links sont initialisés EN PREMIER pour prendre priorité
     _initDeepLinks().then((_) => _loadSavedUrl());
   }
 
   void _startInitialLoadTimers() {
     _loaderMaxTimer = Timer(kInitialLoaderMaxDuration, _forceFinishInitialLoad);
-    _progressSimTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
-      if (!mounted || !isInitialLoad) return;
-      setState(() {
-        if (_simulatedProgress < 0.9) {
-          _simulatedProgress = (_simulatedProgress + 0.018).clamp(0.0, 0.9);
-        }
-      });
+    // Mise à jour du progress simulé sans setState sur le widget parent
+    // 100 ms suffit pour la barre de chargement ; 50 ms provoquait des repaints inutiles pendant le scroll WebView.
+    _progressSimTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (!mounted || !_isInitialLoadNotifier.value) return;
+      if (_simProgress < 0.9) {
+        _simProgress = (_simProgress + 0.018).clamp(0.0, 0.9);
+        final best = _rawProgress > _simProgress ? _rawProgress : _simProgress;
+        _loaderProgressNotifier.value = best;
+      }
     });
   }
 
-  double get _loaderProgress {
-    return progress > _simulatedProgress ? progress : _simulatedProgress;
-  }
-
   void _forceFinishInitialLoad() {
-    if (!mounted || !isInitialLoad) return;
+    if (!mounted || !_isInitialLoadNotifier.value) return;
     _finishInitialLoad();
   }
 
@@ -164,15 +167,13 @@ class _WebViewScreenState extends State<WebViewScreen>
     _loaderMaxTimer?.cancel();
     _progressSimTimer?.cancel();
     if (!mounted) return;
-    setState(() {
-      isLoading = false;
-      isInitialLoad = false;
-      progress = 1.0;
-      _simulatedProgress = 1.0;
-    });
+    _loaderProgressNotifier.value = 1.0;
+    _isInitialLoadNotifier.value = false;
+    _isPageLoadingNotifier.value = false;
   }
 
   Future<void> _postLoadSetup() async {
+    await _injectWebViewPerformanceOptimizations();
     await _injectJavaScript();
     await _registerFCMTokenInWebView();
   }
@@ -182,6 +183,9 @@ class _WebViewScreenState extends State<WebViewScreen>
     _loaderMaxTimer?.cancel();
     _progressSimTimer?.cancel();
     _deepLinkSub?.cancel();
+    _isInitialLoadNotifier.dispose();
+    _isPageLoadingNotifier.dispose();
+    _loaderProgressNotifier.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -784,6 +788,25 @@ class _WebViewScreenState extends State<WebViewScreen>
     await webViewController?.evaluateJavascript(source: jsCode);
   }
 
+  /// Allège le rendu CSS/JS côté page (blur, AOS, carrousels) pour un scroll fluide.
+  Future<void> _injectWebViewPerformanceOptimizations() async {
+    const perfJs = '''
+(function(){
+  document.documentElement.classList.add('is-native-app');
+  if (window.ColobanesPerf && typeof window.ColobanesPerf.refresh === 'function') {
+    window.ColobanesPerf.refresh();
+    return;
+  }
+  if (typeof AOS !== 'undefined' && AOS.init) {
+    try { AOS.init({ disable: true }); } catch (e) {}
+  }
+  document.documentElement.classList.remove('aos-not-ready', 'sk-shimmer-pending');
+  document.documentElement.classList.add('sk-shimmer-done');
+})();
+''';
+    await webViewController?.evaluateJavascript(source: perfJs);
+  }
+
   // Enregistrer le token FCM dans la WebView (utilise la session authentifiée)
   Future<void> _registerFCMTokenInWebView() async {
     try {
@@ -817,116 +840,159 @@ class _WebViewScreenState extends State<WebViewScreen>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // Empêcher la fermeture automatique
+      canPop: false,
       onPopInvoked: (didPop) async {
         if (!didPop) {
           final shouldPop = await _handleBackButton();
           if (shouldPop && context.mounted) {
-            SystemNavigator.pop(); // Fermer l'application
+            SystemNavigator.pop();
           }
         }
       },
       child: Scaffold(
-        // Désactiver la résize automatique pour améliorer les performances du clavier
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            SafeArea(
-              child: InAppWebView(
-                initialUrlRequest: URLRequest(
-                  url: WebUri(_currentUrl ?? kMarketplaceBaseUrl),
-                ),
-                initialUserScripts: UnmodifiableListView<UserScript>([
-                  UserScript(
-                    source: 'window.__COLOBANES_NATIVE_APP = true;',
-                    injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+            // RepaintBoundary isole la WebView : les repaints des overlays
+            // (loader, barre de progression) ne se propagent plus à la WebView.
+            RepaintBoundary(
+              child: SafeArea(
+                child: InAppWebView(
+                  initialUrlRequest: URLRequest(
+                    url: WebUri(_currentUrl ?? kMarketplaceBaseUrl),
                   ),
-                ]),
-                initialSettings: InAppWebViewSettings(
-                  applicationNameForUserAgent: 'ColobanesApp',
-                  javaScriptEnabled: true,
-                  domStorageEnabled: true,
-                  databaseEnabled: true,
-                  useShouldOverrideUrlLoading: true,
-                  mediaPlaybackRequiresUserGesture: false,
-                  allowsInlineMediaPlayback: true,
-                  iframeAllow: "camera",
-                  iframeAllowFullscreen: true,
-                  // Désactivé pour améliorer les performances
-                  useOnLoadResource: false,
-                  useOnDownloadStart: false,
-                  useShouldInterceptRequest: false,
-                  thirdPartyCookiesEnabled: true,
-                  cacheEnabled: true,
-                  clearCache: false,
-                  transparentBackground: false,
-                  supportZoom: true,
-                  builtInZoomControls: false,
-                  displayZoomControls: false,
-                  // Optimisations pour le clavier
-                  verticalScrollBarEnabled: true,
-                  horizontalScrollBarEnabled: true,
-                  // Désactiver les animations inutiles
-                  disableVerticalScroll: false,
-                  disableHorizontalScroll: false,
-                ),
-                onWebViewCreated: (controller) {
-                  webViewController = controller;
-                  _setupJavaScriptHandlers();
-                },
-                onLoadStart: (controller, url) {
-                  setState(() {
-                    isLoading = true;
-                  });
-                },
-                onLoadStop: (controller, url) async {
-                  if (url != null) {
-                    _currentUrl = url.toString();
-                    unawaited(_saveCurrentUrl());
-                  }
-                  _finishInitialLoad();
-                  unawaited(_postLoadSetup());
-                },
-                onProgressChanged: (controller, progress) {
-                  // Ne mettre à jour que si la différence est significative pour éviter trop de rebuilds
-                  final newProgress = progress / 100;
-                  if ((newProgress - this.progress).abs() > 0.01) {
-                    setState(() {
-                      this.progress = newProgress;
-                    });
-                  }
-                },
-                onPermissionRequest: (controller, request) async {
-                  // Caméra uniquement si le site la demande ; pas de micro (non utilisé par COLObanes)
-                  final allowed = request.resources.where((r) {
-                    final name = r.toString().toLowerCase();
-                    return name.contains('camera');
-                  }).toList();
-                  if (allowed.isEmpty) {
+                  initialUserScripts: UnmodifiableListView<UserScript>([
+                    UserScript(
+                      source: '''
+(function(){
+  window.__COLOBANES_NATIVE_APP = true;
+  document.documentElement.classList.add('is-native-app');
+})();
+''',
+                      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+                    ),
+                  ]),
+                  initialSettings: InAppWebViewSettings(
+                    applicationNameForUserAgent: 'ColobanesApp',
+                    javaScriptEnabled: true,
+                    domStorageEnabled: true,
+                    databaseEnabled: true,
+                    useShouldOverrideUrlLoading: true,
+                    mediaPlaybackRequiresUserGesture: false,
+                    allowsInlineMediaPlayback: true,
+                    iframeAllow: "camera",
+                    iframeAllowFullscreen: true,
+                    // ─── Rendu WebView Android ───────────────────────────────
+                    // Hybrid Composition (true) = défaut recommandé en
+                    // flutter_inappwebview v6 sur Android 10+ : scroll fluide 60fps.
+                    // Virtual Display (false) = mode hérité, provoque le jank / les
+                    // saccades au scroll (~12fps). On garde donc true.
+                    useHybridComposition: true,
+                    // ────────────────────────────────────────────────────────
+                    hardwareAcceleration: true,
+                    useOnLoadResource: false,
+                    useOnDownloadStart: false,
+                    useShouldInterceptRequest: false,
+                    thirdPartyCookiesEnabled: true,
+                    cacheEnabled: true,
+                    clearCache: false,
+                    transparentBackground: false,
+                    supportZoom: true,
+                    builtInZoomControls: false,
+                    displayZoomControls: false,
+                    verticalScrollBarEnabled: false,
+                    horizontalScrollBarEnabled: false,
+                    disableVerticalScroll: false,
+                    disableHorizontalScroll: false,
+                    // Désactive la page d'erreur par défaut (page blanche propre)
+                    disableDefaultErrorPage: true,
+                    // Latence tactile réduite
+                    overScrollMode: OverScrollMode.NEVER,
+                  ),
+                  onWebViewCreated: (controller) {
+                    webViewController = controller;
+                    _setupJavaScriptHandlers();
+                  },
+                  onLoadStart: (controller, url) {
+                    if (!_isInitialLoadNotifier.value) {
+                      _isPageLoadingNotifier.value = true;
+                      _loaderProgressNotifier.value = 0.0;
+                    }
+                  },
+                  onLoadStop: (controller, url) async {
+                    if (url != null) {
+                      _currentUrl = url.toString();
+                      unawaited(_saveCurrentUrl());
+                    }
+                    _finishInitialLoad();
+                    _isPageLoadingNotifier.value = false;
+                    _loaderProgressNotifier.value = 1.0;
+                    unawaited(_postLoadSetup());
+                  },
+                  onProgressChanged: (controller, progress) {
+                    final newProgress = progress / 100;
+                    if ((newProgress - _rawProgress).abs() > 0.01) {
+                      _rawProgress = newProgress;
+                      final best = _rawProgress > _simProgress ? _rawProgress : _simProgress;
+                      _loaderProgressNotifier.value = best;
+                      if (!_isInitialLoadNotifier.value) {
+                        _isPageLoadingNotifier.value = progress < 100;
+                      }
+                    }
+                  },
+                  onPermissionRequest: (controller, request) async {
+                    final allowed = request.resources.where((r) {
+                      return r.toString().toLowerCase().contains('camera');
+                    }).toList();
+                    if (allowed.isEmpty) {
+                      return PermissionResponse(
+                        resources: request.resources,
+                        action: PermissionResponseAction.DENY,
+                      );
+                    }
                     return PermissionResponse(
-                      resources: request.resources,
-                      action: PermissionResponseAction.DENY,
+                      resources: allowed,
+                      action: PermissionResponseAction.GRANT,
                     );
-                  }
-                  return PermissionResponse(
-                    resources: allowed,
-                    action: PermissionResponseAction.GRANT,
-                  );
-                },
-                onReceivedError: (controller, request, error) {
-                  print('WebView Error: ${error.description}');
-                },
-                shouldOverrideUrlLoading: (controller, navigationAction) async {
-                  return NavigationActionPolicy.ALLOW;
-                },
+                  },
+                  onReceivedError: (controller, request, error) {
+                    print('WebView Error: ${error.description}');
+                  },
+                  shouldOverrideUrlLoading: (controller, navigationAction) async {
+                    return NavigationActionPolicy.ALLOW;
+                  },
+                ),
               ),
             ),
-            // Loader plein écran uniquement au lancement
-            if (isLoading && isInitialLoad)
-              _MarketplaceLoader(progress: _loaderProgress),
-            // Barre de progression discrète en haut pour les navigations
-            if (isLoading && !isInitialLoad)
-              _TopProgressBar(progress: progress),
+
+            // Loader initial — écoute uniquement le notifier, ne rebuilde PAS la WebView
+            ValueListenableBuilder<bool>(
+              valueListenable: _isInitialLoadNotifier,
+              builder: (context, isInitialLoad, _) {
+                if (!isInitialLoad) return const SizedBox.shrink();
+                return const _MarketplaceLoader();
+              },
+            ),
+
+            // Barre de progression pour les navigations suivantes
+            ValueListenableBuilder<bool>(
+              valueListenable: _isInitialLoadNotifier,
+              builder: (context, isInitialLoad, _) {
+                if (isInitialLoad) return const SizedBox.shrink();
+                return ValueListenableBuilder<bool>(
+                  valueListenable: _isPageLoadingNotifier,
+                  builder: (context, isLoading, _) {
+                    if (!isLoading) return const SizedBox.shrink();
+                    return ValueListenableBuilder<double>(
+                      valueListenable: _loaderProgressNotifier,
+                      builder: (context, progress, _) {
+                        return _TopProgressBar(progress: progress);
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -934,11 +1000,9 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 }
 
-// Écran de chargement initial — fond blanc, logo, barre orange, textes bleu
+// Écran de chargement initial — logo marketplace + indicateur fluide (sans %)
 class _MarketplaceLoader extends StatefulWidget {
-  final double progress;
-
-  const _MarketplaceLoader({required this.progress});
+  const _MarketplaceLoader();
 
   @override
   State<_MarketplaceLoader> createState() => _MarketplaceLoaderState();
@@ -946,92 +1010,38 @@ class _MarketplaceLoader extends StatefulWidget {
 
 class _MarketplaceLoaderState extends State<_MarketplaceLoader>
     with TickerProviderStateMixin {
-  static const double _ringSize = 196;
-  static const double _circleSize = 158;
-
-  late AnimationController _entryController;
-  late AnimationController _pulseController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _entryScaleAnimation;
-  late Animation<double> _pulseScaleAnimation;
-  late Animation<Offset> _slideAnimation;
-  double _displayProgress = 0;
-  AnimationController? _progressAnimController;
+  late final AnimationController _entryController;
+  late final AnimationController _pulseController;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _entryScaleAnimation;
+  late final Animation<double> _pulseScaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _displayProgress = widget.progress.clamp(0.0, 1.0);
     _entryController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
+      duration: const Duration(milliseconds: 900),
+    )..forward();
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
 
     _fadeAnimation = CurvedAnimation(
       parent: _entryController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeOut,
     );
-    _entryScaleAnimation = Tween<double>(begin: 0.88, end: 1.0).animate(
-      CurvedAnimation(parent: _entryController, curve: Curves.easeOutBack),
-    );
-    _pulseScaleAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(
+    _entryScaleAnimation = Tween<double>(begin: 0.90, end: 1.0).animate(
       CurvedAnimation(parent: _entryController, curve: Curves.easeOutCubic),
     );
-    _entryController.forward();
-  }
-
-  @override
-  void didUpdateWidget(covariant _MarketplaceLoader oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final target = widget.progress.clamp(0.0, 1.0);
-    if ((target - _displayProgress).abs() > 0.001) {
-      _animateProgressTo(target);
-    }
-  }
-
-  void _animateProgressTo(double target) {
-    _progressAnimController?.dispose();
-    final begin = _displayProgress;
-    final controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
+    _pulseScaleAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    _progressAnimController = controller;
-    final animation = CurvedAnimation(
-      parent: controller,
-      curve: Curves.easeOutCubic,
-    );
-    animation.addListener(() {
-      if (!mounted) return;
-      setState(() {
-        _displayProgress = begin + (target - begin) * animation.value;
-      });
-    });
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed ||
-          status == AnimationStatus.dismissed) {
-        controller.dispose();
-        if (_progressAnimController == controller) {
-          _progressAnimController = null;
-        }
-      }
-    });
-    controller.forward();
   }
 
   @override
   void dispose() {
-    _progressAnimController?.dispose();
     _entryController.dispose();
     _pulseController.dispose();
     super.dispose();
@@ -1039,155 +1049,79 @@ class _MarketplaceLoaderState extends State<_MarketplaceLoader>
 
   @override
   Widget build(BuildContext context) {
-    final percent = (_displayProgress * 100).round().clamp(0, 100);
+    final size = MediaQuery.of(context).size;
+    final ringSize = (size.width * 0.70).clamp(230.0, 310.0);
+    final logoWidth = ringSize * 0.66;
 
-    return ColoredBox(
-      color: Colors.white,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFFFFF), Color(0xFFEDF2FA)],
+        ),
+      ),
       child: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ScaleTransition(
-                      scale: _entryScaleAnimation,
-                      child: SizedBox(
-                        width: _ringSize,
-                        height: _ringSize,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: _ringSize,
-                              height: _ringSize,
-                              child: CircularProgressIndicator(
-                                value: _displayProgress.clamp(0.02, 1.0),
-                                strokeWidth: 5.5,
-                                strokeCap: StrokeCap.round,
-                                backgroundColor:
-                                    kBleuPrincipal.withValues(alpha: 0.14),
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                  kOrangePromo,
-                                ),
-                              ),
+        child: Center(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ScaleTransition(
+                  scale: _entryScaleAnimation,
+                  child: SizedBox(
+                    width: ringSize,
+                    height: ringSize,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Anneau de chargement indéterminé qui tourne autour du logo
+                        SizedBox(
+                          width: ringSize,
+                          height: ringSize,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 4.5,
+                            strokeCap: StrokeCap.round,
+                            backgroundColor:
+                                kBleuPrincipal.withValues(alpha: 0.12),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              kOrangePromo,
                             ),
-                            Container(
-                              width: _circleSize,
-                              height: _circleSize,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: kBleuPrincipal.withValues(alpha: 0.12),
-                                border: Border.all(
-                                  color: kBleuPrincipal.withValues(alpha: 0.22),
-                                  width: 1.5,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: ScaleTransition(
-                                scale: _pulseScaleAnimation,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(22),
-                                  child: Image.asset(
-                                    'assets/images/app_icon.png',
-                                    fit: BoxFit.contain,
-                                    errorBuilder:
-                                        (context, error, stackTrace) {
-                                      return Icon(
-                                        Icons.storefront_rounded,
-                                        size: 72,
-                                        color: kBleuPrincipal.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 36),
-                    Text(
-                      'Bienvenue au marché',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
-                        letterSpacing: 0.2,
-                        color: kBleuPrincipal,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text.rich(
-                      textAlign: TextAlign.center,
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'COLO',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: kBleuPrincipal,
-                              letterSpacing: 0.5,
-                            ),
+                        // Logo PNG centré avec une douce pulsation
+                        ScaleTransition(
+                          scale: _pulseScaleAnimation,
+                          child: Image.asset(
+                            'assets/images/logo_market.png',
+                            width: logoWidth,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.storefront_rounded,
+                                size: 72,
+                                color: kBleuPrincipal,
+                              );
+                            },
                           ),
-                          TextSpan(
-                            text: 'banes',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: kOrangePromo,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: ScaleTransition(
-                            scale: animation,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Text(
-                        '$percent%',
-                        key: ValueKey<int>(percent),
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w800,
-                          color: kBleuPrincipalFonce,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                          height: 1,
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Chargement en cours…',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: kBleuPrincipal.withValues(alpha: 0.62),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 34),
+                Text(
+                  'Chargement du marché…',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                    color: kBleuPrincipal.withValues(alpha: 0.62),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

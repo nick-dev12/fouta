@@ -181,6 +181,7 @@ html.sk-shimmer-pending .stock-cat-card__media.sk-loaded::before {
 /* ——— Cartes : contenu texte masqué pendant le chargement ——— */
 
 html.sk-shimmer-pending .mp-card:not(.sk-loaded) .mp-card-body,
+html.sk-shimmer-pending .mp-new-card:not(.sk-loaded) .mp-new-title,
 html.sk-shimmer-pending .mp-new-card:not(.sk-loaded) .mp-new-promo,
 html.sk-shimmer-pending .mp-new-card:not(.sk-loaded) .mp-new-price,
 html.sk-shimmer-pending .mp-strip-card:not(.sk-loaded) .mp-strip-body,
@@ -212,6 +213,7 @@ html.sk-shimmer-pending .boutique-top-cat-card.sk-loaded .sk-card-lines {
 
 /* Révélation du texte avec animation */
 .mp-card.sk-loaded .mp-card-body,
+.mp-new-card.sk-loaded .mp-new-title,
 .mp-new-card.sk-loaded .mp-new-promo,
 .mp-new-card.sk-loaded .mp-new-price,
 .mp-strip-card.sk-loaded .mp-strip-body,

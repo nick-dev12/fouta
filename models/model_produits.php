@@ -519,7 +519,7 @@ function get_produits_similaires_rayon_generale($exclude_produit_id, $generale_i
     global $db;
     $exclude_produit_id = (int) $exclude_produit_id;
     $generale_id = (int) $generale_id;
-    $limit = max(1, min(24, (int) $limit));
+    $limit = max(1, min(64, (int) $limit));
     if ($generale_id <= 0 || $exclude_produit_id <= 0) {
         return [];
     }

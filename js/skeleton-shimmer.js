@@ -47,6 +47,7 @@
         '.mp-card-body',
         '.produit-content',
         '.mp-strip-body',
+        '.mp-new-title',
         '.mp-new-promo',
         '.mp-new-price',
         '.mp-trend-label',

@@ -4,6 +4,7 @@ session_start();
 // Inclusion des modèles et contrôleurs
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
+require_once __DIR__ . '/includes/panier_invite.php';
 require_once __DIR__ . '/includes/marketplace_helpers.php';
 require_once __DIR__ . '/includes/flash_toast.php';
 
@@ -32,18 +33,14 @@ if ($message !== '') {
     flash_toast_queue_page($message_type !== '' ? $message_type : 'info', $message);
 }
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['user_id'])) {
-    header('Location: /choix-connexion.php?redirect=panier');
-    exit;
-}
+$panier_utilisateur_connecte = panier_utilisateur_est_connecte();
 
-// Récupérer les produits du panier
-$panier_items = get_panier_by_user($_SESSION['user_id']);
+// Récupérer les produits du panier (BDD ou session invité)
+$panier_items = panier_get_items_courant();
 $panier_groups = group_panier_items_by_vendeur($panier_items);
 
 // Calculer le total et le nombre total d'articles
-$panier_total = get_panier_total($_SESSION['user_id']);
+$panier_total = panier_get_total_courant();
 $nombre_total_articles = 0;
 foreach ($panier_items as $item) {
     $nombre_total_articles += $item['quantite'];
@@ -146,6 +143,40 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
             transform: translateY(-2px);
             box-shadow: var(--ombre-promo);
             color: var(--texte-clair);
+        }
+
+        .btn-commander-login {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 20px;
+            background: var(--accent-promo);
+            color: var(--texte-clair);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 12px;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .btn-commander-login:hover {
+            background: var(--orange-fonce);
+            color: var(--texte-clair);
+            transform: translateY(-2px);
+        }
+
+        .panier-invite-notice {
+            font-size: 13px;
+            color: var(--gris-moyen);
+            line-height: 1.45;
+            margin: 0 0 14px;
+            padding: 10px 12px;
+            background: var(--bleu-pale);
+            border-radius: 8px;
+            border: 1px solid var(--border-input);
         }
 
         .panier-content {
@@ -709,9 +740,16 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                         </span>
                     </div>
 
+                    <?php if ($panier_utilisateur_connecte): ?>
                     <a href="/commande.php" class="btn-commander">
                         <i class="fas fa-shopping-bag"></i> Passer la commande
                     </a>
+                    <?php else: ?>
+                    <p class="panier-invite-notice">Connectez-vous pour finaliser votre commande. Votre panier est enregistré sur cet appareil.</p>
+                    <a href="/choix-connexion.php?redirect=<?php echo rawurlencode('/commande.php'); ?>" class="btn-commander-login">
+                        <i class="fas fa-user"></i> Se connecter pour passer la commande
+                    </a>
+                    <?php endif; ?>
 
                     <a href="/index.php" class="link-continuer">
                         Continuer mes achats

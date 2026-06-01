@@ -31,13 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         header('Location: /panier.php');
         exit;
     }
-    // Redirection vers la connexion si non connecté
-    if (!$result['success'] && strpos($result['message'] ?? '', 'connecté') !== false) {
-        $pid = isset($_POST['produit_id']) ? (int) $_POST['produit_id'] : 0;
-        $redirect = $pid > 0 ? '/produit.php?id=' . $pid : '/panier';
-        header('Location: /user/connexion.php?redirect=' . urlencode($redirect));
-        exit;
-    }
     $message = $result['message'] ?? '';
     $message_type = 'error';
 }
@@ -94,20 +87,29 @@ if ($produit_generale_id <= 0 && function_exists('categories_has_categorie_gener
     }
 }
 
-$produits_similaires = [];
+$similaires_affichage = 8;
+$similaires_pool = 40;
+$produits_similaires_candidats = [];
 if ($produit_generale_id > 0 && function_exists('get_produits_similaires_rayon_generale')) {
-    $produits_similaires = get_produits_similaires_rayon_generale($produit_id, $produit_generale_id, 8);
+    $produits_similaires_candidats = get_produits_similaires_rayon_generale($produit_id, $produit_generale_id, $similaires_pool);
 }
-if (empty($produits_similaires)) {
+if (empty($produits_similaires_candidats)) {
     $fallback_sim = get_produits_by_categorie($produit['categorie_id']);
     if ($fallback_sim === false) {
         $fallback_sim = [];
     }
-    $produits_similaires = array_values(array_filter($fallback_sim, function ($p) use ($produit_id) {
-        return (int) ($p['id'] ?? 0) !== (int) $produit_id;
-    }));
-    $produits_similaires = array_slice($produits_similaires, 0, 8);
+    $produits_similaires_candidats = is_array($fallback_sim) ? array_values($fallback_sim) : [];
 }
+require_once __DIR__ . '/includes/catalogue_shuffle.php';
+if (count($produits_similaires_candidats) > $similaires_pool) {
+    $seed_pool = abs(crc32(catalogue_shuffle_visiteur_cle() . '|similaires-pool|' . $produit_id)) % 2147483645 + 1;
+    $produits_similaires_candidats = array_slice(
+        catalogue_melanger_produits($produits_similaires_candidats, $seed_pool),
+        0,
+        $similaires_pool
+    );
+}
+$produits_similaires = catalogue_tirer_produits_similaires($produits_similaires_candidats, $produit_id, $similaires_affichage);
 
 $produit_boutique_nom = produit_public_boutique_label($produit);
 $produit_boutique_slug = trim((string) ($produit['vendeur_boutique_slug'] ?? ''));
@@ -1597,8 +1599,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 <a href="<?php echo htmlspecialchars($produit_boutique_url); ?>"
                     class="produit-boutique-rail__cta">
                     <?php if ($produit_boutique_slug !== ''): ?>
-                    <span class="produit-boutique-rail__cta-label-long">Visiter la boutique</span>
-                    <span class="produit-boutique-rail__cta-label-short" aria-hidden="true">Visiter</span>
+                    <span class="produit-boutique-rail__cta-label-long">Voir la boutique du vendeur</span>
+                    <span class="produit-boutique-rail__cta-label-short" aria-hidden="true">Voir la boutique</span>
                     <?php else: ?>
                     <span>Voir le catalogue</span>
                     <?php endif; ?>
@@ -1939,7 +1941,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
                     <button type="submit" class="btn-add-panier" id="btn-add-panier">
                         <i class="fa-solid fa-cart-shopping"></i>
-                        <?php echo isset($_SESSION['user_id']) ? 'Ajouter au panier' : 'Se connecter pour ajouter au panier'; ?>
+                        Ajouter au panier
                     </button>
                 </form>
 

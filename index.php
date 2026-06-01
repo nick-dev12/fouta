@@ -1786,11 +1786,23 @@ $seo_canonical = $base . '/';
         }
 
         .mp-strip-body {
-            padding: 12px 10px 14px;
+            padding: 10px 8px 12px;
+        }
+
+        .mp-strip-title {
+            margin: 0 0 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--titres);
+            line-height: 1.35;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .mp-strip-price {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: var(--titres);
             margin: 0;
@@ -2026,6 +2038,18 @@ $seo_canonical = $base . '/';
             height: 100%;
             object-fit: contain;
             object-position: center;
+        }
+
+        .mp-new-title {
+            margin: 0 0 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--titres);
+            line-height: 1.35;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .mp-new-promo {
@@ -2499,13 +2523,15 @@ $seo_canonical = $base . '/';
                             }
                             $spx = !empty($sproduit['prix_promotion']) && $sproduit['prix_promotion'] < $sproduit['prix']
                                 ? (float) $sproduit['prix_promotion'] : (float) ($sproduit['prix'] ?? 0);
+                            $snom = (string) ($sproduit['nom'] ?? 'Produit');
                             ?>
                             <a class="mp-strip-card" href="produit.php?id=<?php echo $sid; ?>">
                                 <div class="mp-strip-card-img">
                                     <img src="/upload/<?php echo htmlspecialchars($sproduit['image_principale'] ?? 'produit1.jpg'); ?>"
-                                        alt="" loading="lazy" onerror="this.src='/image/produit1.jpg'">
+                                        alt="<?php echo htmlspecialchars($snom); ?>" loading="lazy" onerror="this.src='/image/produit1.jpg'">
                                 </div>
                                 <div class="mp-strip-body">
+                                    <p class="mp-strip-title"><?php echo htmlspecialchars($snom); ?></p>
                                     <p class="mp-strip-price"><?php echo number_format($spx, 0, ',', ' '); ?> FCFA</p>
                                 </div>
                             </a>
@@ -2650,6 +2676,10 @@ $seo_canonical = $base . '/';
                     once: true,
                     offset: 24,
                     disable: function () {
+                        if (window.__COLOBANES_NATIVE_APP === true
+                            || document.documentElement.classList.contains('is-native-app')) {
+                            return true;
+                        }
                         return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
                     }
                 });

@@ -92,3 +92,44 @@ if (!function_exists('catalogue_melanger_produits')) {
         return $produits;
     }
 }
+
+if (!function_exists('catalogue_tirer_produits_similaires')) {
+    /**
+     * Mélange les candidats « similaires » puis en retourne $limit.
+     * Graine liée au produit consulté + visiteur : ordre différent d'une fiche à l'autre,
+     * stable lors d'un rafraîchissement de la même fiche.
+     *
+     * @param array $candidats Liste de produits (tableaux)
+     * @param int   $produit_courant_id Produit affiché (exclu si encore présent)
+     * @param int   $limit Nombre affiché (défaut 8)
+     * @return array
+     */
+    function catalogue_tirer_produits_similaires(array $candidats, $produit_courant_id, $limit = 8)
+    {
+        $produit_courant_id = (int) $produit_courant_id;
+        $limit = max(1, min(24, (int) $limit));
+        if ($candidats === []) {
+            return [];
+        }
+
+        $filtres = [];
+        foreach ($candidats as $p) {
+            if (!is_array($p)) {
+                continue;
+            }
+            if ((int) ($p['id'] ?? 0) === $produit_courant_id) {
+                continue;
+            }
+            $filtres[] = $p;
+        }
+        if (count($filtres) < 2) {
+            return array_slice($filtres, 0, $limit);
+        }
+
+        $visiteur = catalogue_shuffle_visiteur_cle();
+        $seed = abs(crc32($visiteur . '|produit-similaires|' . $produit_courant_id)) % 2147483645 + 1;
+        $melange = catalogue_melanger_produits($filtres, $seed);
+
+        return array_slice($melange, 0, $limit);
+    }
+}

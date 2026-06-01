@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_variantes.php';
+require_once __DIR__ . '/../includes/panier_invite.php';
 
 /**
  * Traite l'ajout d'un produit au panier
@@ -14,15 +15,12 @@ require_once __DIR__ . '/../models/model_variantes.php';
  */
 function process_add_to_panier()
 {
-    if (!isset($_SESSION['user_id'])) {
-        return ['success' => false, 'message' => 'Vous devez être connecté pour ajouter des produits au panier.'];
-    }
-
     if (!isset($_POST['produit_id']) || !isset($_POST['quantite'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
 
-    $user_id = $_SESSION['user_id'];
+    $user_connecte = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
+    $user_id = $user_connecte ? (int) $_SESSION['user_id'] : 0;
     $produit_id = (int) $_POST['produit_id'];
     $quantite = (int) $_POST['quantite'];
 
@@ -89,12 +87,21 @@ function process_add_to_panier()
     $vid = ($option_variante_id && $option_variante_id > 0) ? $option_variante_id : null;
     $vnom = $variante ? $variante['nom'] : $option_variante_nom;
     $vimg = $variante ? $variante['image'] : $option_variante_image;
-    if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
-        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final)) {
-        return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
-    } else {
+    $vendeur_id = !empty($produit['admin_id']) ? (int) $produit['admin_id'] : null;
+
+    if ($user_connecte) {
+        if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
+            $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final, $vendeur_id)) {
+            return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
+        }
         return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];
     }
+
+    if (panier_invite_add_line($produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
+        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final, $vendeur_id)) {
+        return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
+    }
+    return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];
 }
 
 /**
@@ -103,10 +110,6 @@ function process_add_to_panier()
  */
 function process_update_panier()
 {
-    if (!isset($_SESSION['user_id'])) {
-        return ['success' => false, 'message' => 'Vous devez être connecté.'];
-    }
-
     if (!isset($_POST['panier_id']) || !isset($_POST['quantite'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
@@ -116,6 +119,13 @@ function process_update_panier()
 
     if ($quantite <= 0) {
         return ['success' => false, 'message' => 'La quantité doit être supérieure à 0.'];
+    }
+
+    if (!isset($_SESSION['user_id'])) {
+        if (panier_invite_update_quantite($panier_id, $quantite)) {
+            return ['success' => true, 'message' => 'Quantité mise à jour.'];
+        }
+        return ['success' => false, 'message' => 'Élément du panier introuvable.'];
     }
 
     // Récupérer l'élément du panier pour vérifier le stock
@@ -146,15 +156,18 @@ function process_update_panier()
  */
 function process_delete_from_panier()
 {
-    if (!isset($_SESSION['user_id'])) {
-        return ['success' => false, 'message' => 'Vous devez être connecté.'];
-    }
-
     if (!isset($_POST['panier_id'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
 
     $panier_id = (int) $_POST['panier_id'];
+
+    if (!isset($_SESSION['user_id'])) {
+        if (panier_invite_delete_line($panier_id)) {
+            return ['success' => true, 'message' => 'Produit retiré du panier.'];
+        }
+        return ['success' => false, 'message' => 'Erreur lors de la suppression.'];
+    }
 
     if (delete_from_panier($panier_id)) {
         return ['success' => true, 'message' => 'Produit retiré du panier.'];

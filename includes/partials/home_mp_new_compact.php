@@ -15,16 +15,18 @@ $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion
     ? (float) $produit['prix_promotion']
     : (float) ($produit['prix'] ?? 0);
 $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
+$nom = (string) ($produit['nom'] ?? 'Produit');
 ?>
 <article class="mp-new-card">
     <span class="mp-new-badge" aria-label="Nouveau">Nouveau</span>
     <a href="produit.php?id=<?php echo $pid; ?>" class="mp-new-card-link">
         <div class="mp-new-card-img">
             <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                alt="<?php echo htmlspecialchars($produit['nom'] ?? ''); ?>"
+                alt="<?php echo htmlspecialchars($nom); ?>"
                 loading="lazy"
                 onerror="this.src='/image/produit1.jpg'">
         </div>
+        <h3 class="mp-new-title"><?php echo htmlspecialchars($nom); ?></h3>
         <?php if ($has_promotion): ?>
         <p class="mp-new-promo">Promotion en cours</p>
         <?php endif; ?>

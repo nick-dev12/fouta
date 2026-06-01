@@ -29,10 +29,10 @@
             </a>
             <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
                 class="shop-mobile-dock__item shop-mobile-dock__item--badge<?php echo $shop_dock_panier_act ? ' is-active' : ''; ?>"
-                title="<?php echo isset($_SESSION['user_id']) ? 'Panier' : 'Se connecter - panier'; ?>">
+                title="Panier">
                 <span class="shop-mobile-dock__icon shop-mobile-dock__icon--badge-host" aria-hidden="true">
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+                    <?php if ($panier_count > 0): ?>
                         <span class="shop-mobile-dock__badge"
                             aria-label="<?php echo (int) $panier_count; ?> article<?php echo $panier_count > 1 ? 's' : ''; ?> dans le panier"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
                     <?php endif; ?>

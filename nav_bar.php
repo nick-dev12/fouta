@@ -49,8 +49,14 @@ if (file_exists(__DIR__ . '/models/model_categories.php')) {
         $categories_menu = get_all_categories();
     }
 }
-// Compter les articles du panier si l'utilisateur est connecté
+// Compter les articles du panier (connecté ou invité)
 $panier_count = 0;
+$panier_invite_path = file_exists(__DIR__ . '/includes/panier_invite.php')
+    ? __DIR__ . '/includes/panier_invite.php'
+    : dirname(__DIR__) . '/includes/panier_invite.php';
+if (file_exists($panier_invite_path)) {
+    require_once $panier_invite_path;
+}
 if (isset($_SESSION['user_id'])) {
     $conn_path = file_exists(__DIR__ . '/conn/conn.php') ? __DIR__ . '/conn/conn.php' : dirname(__DIR__) . '/conn/conn.php';
     if (file_exists($conn_path)) {
@@ -74,6 +80,8 @@ if (isset($_SESSION['user_id'])) {
             $panier_count = count_panier_items($_SESSION['user_id']);
         }
     }
+} elseif (function_exists('panier_invite_count_items')) {
+    $panier_count = panier_invite_count_items();
 }
 $nav_panier_connect_redirect = $GLOBALS['nav_panier_login_redirect'] ?? '/panier.php';
 $nav_compte_href = '/choix-connexion.php';
@@ -191,9 +199,7 @@ if ($nav_compte_logged) {
         $nav_compte_avatar_letter = nav_compte_pick_initial($commercant['nom']);
     }
 }
-$nav_panier_href = isset($_SESSION['user_id'])
-    ? $u_panier
-    : '/choix-connexion.php?redirect=' . rawurlencode($nav_panier_connect_redirect);
+$nav_panier_href = isset($_SESSION['user_id']) ? $u_panier : '/panier.php';
 
 $shop_nav_script = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: ($_SERVER['PHP_SELF'] ?? ''));
 $shop_dock_home_href = '/index.php';
@@ -1040,9 +1046,9 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         <?php endif; ?>
         <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
             class="nav-panier-link"
-            title="<?php echo isset($_SESSION['user_id']) ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Se connecter pour voir le panier'; ?>">
+            title="<?php echo $panier_count > 0 ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Voir mon panier'; ?>">
             <i class="fa-solid fa-cart-shopping"></i>
-            <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+            <?php if ($panier_count > 0): ?>
                 <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
             <?php endif; ?>
         </a>
