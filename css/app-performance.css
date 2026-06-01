@@ -78,10 +78,19 @@ html.is-native-app .nav-sidebar {
 
 /* Barres fixes : couche GPU unique */
 html.is-native-app .shop-bottom-dock,
-html.is-native-app .nav-sidebar,
 html.is-native-app nav.nav-planete-gateau {
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+}
+
+/*
+ * Menu latéral : NE PAS forcer translateZ(0) ici, cela écraserait le
+ * translateX(-100%) (état fermé) / translateX(0) (état ouvert) défini dans
+ * nabare.css et laisserait le menu affiché en permanence dans la WebView.
+ * On utilise un simple indice de compositing.
+ */
+html.is-native-app .nav-sidebar {
+  will-change: transform;
 }
 
 /* AOS : pas d’animations au scroll en WebView */
