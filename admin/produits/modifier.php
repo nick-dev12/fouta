@@ -34,7 +34,8 @@ $result = process_update_produit($produit_id);
 
 if (isset($result['success']) && $result['success']) {
     flash_toast_push('success', $result['message']);
-    header('Location: index.php');
+    $ret = (($_SESSION['admin_role'] ?? '') === 'vendeur') ? '../stock/index.php' : 'index.php';
+    header('Location: ' . $ret);
     exit;
 }
 
@@ -190,11 +191,28 @@ foreach ($variantes as $v) {
     <div class="content-header content-header-form">
         <h1><i class="fas fa-edit"></i> Modifier le produit</h1>
         <div class="header-actions">
-            <a href="index.php" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Retour à la liste
+            <a href="<?php echo ($__role_mod ?? '') === 'vendeur' ? '../stock/index.php' : 'index.php'; ?>" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Retour
             </a>
         </div>
     </div>
+
+    <?php if (($produit['statut'] ?? '') === 'bloque' && function_exists('produit_bloque_champs_labels')):
+        $bloque_lbls_mod = produit_bloque_champs_labels((string) ($produit['bloque_champs'] ?? ''));
+        ?>
+        <div class="cert-alert cert-alert--error" style="max-width:900px;margin:0 auto 1rem;padding:14px 18px;border-radius:12px;" role="alert">
+            <i class="fas fa-ban"></i>
+            <span>
+                <strong>Produit bloqué par la plateforme.</strong>
+                <?php if (!empty($produit['bloque_motif'])): ?>
+                    Motif : <?php echo htmlspecialchars((string) $produit['bloque_motif'], ENT_QUOTES, 'UTF-8'); ?>.
+                <?php endif; ?>
+                <?php if (!empty($bloque_lbls_mod)): ?>
+                    Modifiez puis enregistrez : <strong><?php echo htmlspecialchars(implode(' et ', $bloque_lbls_mod), ENT_QUOTES, 'UTF-8'); ?></strong> pour lever le blocage.
+                <?php endif; ?>
+            </span>
+        </div>
+    <?php endif; ?>
 
     <section class="form-add-section">
         <div class="form-add-container">

@@ -116,7 +116,8 @@ $produits_page    = array_slice($produits_filtres, $offset_page, $per_page);
 $nb_total  = count($tous_produits);
 $nb_actif  = count(array_filter($tous_produits, fn($p) => ($p['statut'] ?? '') === 'actif'));
 $nb_rupture= count(array_filter($tous_produits, fn($p) => ($p['statut'] ?? '') === 'rupture_stock'));
-$nb_inactif= $nb_total - $nb_actif - $nb_rupture;
+$nb_bloque = count(array_filter($tous_produits, fn($p) => ($p['statut'] ?? '') === 'bloque'));
+$nb_inactif= count(array_filter($tous_produits, fn($p) => ($p['statut'] ?? '') === 'inactif'));
 
 // Helper URL de pagination
 function stock_pag_url(int $pg, string $search, int $cat, string $statut): string {
@@ -437,6 +438,25 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         .stk-card__badge--actif    { background: rgba(34,197,94,.18); color: #fff; border: 1px solid rgba(134,239,172,.35); }
         .stk-card__badge--inactif  { background: rgba(0,0,0,.45); color: rgba(255,255,255,.8); }
         .stk-card__badge--rupture_stock { background: rgba(239,68,68,.18); color: #fff; border: 1px solid rgba(239,68,68,.4); }
+        .stk-card__badge--bloque { background: rgba(255,107,53,.25); color: #fff; border: 1px solid rgba(255,107,53,.5); }
+        .stk-card--bloque { opacity: 0.92; }
+        .stk-card--bloque .stk-card__img-wrap::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 40%, rgba(13,13,13,.55));
+            pointer-events: none;
+        }
+        .stk-card__bloque-msg {
+            margin: 0 0 8px;
+            padding: 8px 10px;
+            font-size: 0.72rem;
+            line-height: 1.35;
+            color: #b45309;
+            background: rgba(255, 107, 53, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 107, 53, 0.25);
+        }
 
         /* Stock bas */
         .stk-card__stock-bar {
@@ -879,6 +899,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                         <option value="actif"         <?php echo $statut_filter === 'actif'          ? 'selected' : ''; ?>>Actif</option>
                         <option value="inactif"       <?php echo $statut_filter === 'inactif'        ? 'selected' : ''; ?>>Inactif</option>
                         <option value="rupture_stock" <?php echo $statut_filter === 'rupture_stock'  ? 'selected' : ''; ?>>Rupture de stock</option>
+                        <option value="bloque" <?php echo $statut_filter === 'bloque' ? 'selected' : ''; ?>>Bloqué (plateforme)</option>
                     </select>
                 </div>
 
@@ -919,17 +940,22 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             <div class="stk-grid">
                 <?php foreach ($produits_page as $produit):
                     $statut_p   = $produit['statut'] ?? 'inactif';
+                    $is_bloque  = ($statut_p === 'bloque');
                     $stock_nb   = (int)($produit['stock'] ?? 0);
                     $stock_cls  = $stock_nb === 0 ? 'empty' : ($stock_nb <= 3 ? 'low' : '');
                     $badge_lbl  = match($statut_p) {
                         'actif'         => 'Actif',
                         'inactif'       => 'Inactif',
                         'rupture_stock' => 'Rupture',
+                        'bloque'        => 'Bloqué',
                         default         => ucfirst($statut_p),
                     };
+                    $bloque_champs_lbl = $is_bloque && function_exists('produit_bloque_champs_labels')
+                        ? produit_bloque_champs_labels((string) ($produit['bloque_champs'] ?? ''))
+                        : [];
                 ?>
-                    <article class="stk-card"
-                        onclick="window.location='../produits/ajuster-stock.php?id=<?php echo (int)$produit['id']; ?>'">
+                    <article class="stk-card<?php echo $is_bloque ? ' stk-card--bloque' : ''; ?>"
+                        onclick="window.location='../produits/modifier.php?id=<?php echo (int)$produit['id']; ?>'">
 
                         <div class="stk-card__img-wrap">
                             <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>"
@@ -949,6 +975,14 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
                         <div class="stk-card__body">
                             <div class="stk-card__name"><?php echo htmlspecialchars($produit['nom'] ?? ''); ?></div>
+                            <?php if ($is_bloque): ?>
+                                <p class="stk-card__bloque-msg">
+                                    <i class="fas fa-ban"></i> <strong>Bloqué</strong> par la plateforme.
+                                    <?php if (!empty($bloque_champs_lbl)): ?>
+                                        Modifiez : <?php echo htmlspecialchars(implode(', ', $bloque_champs_lbl), ENT_QUOTES, 'UTF-8'); ?>.
+                                    <?php endif; ?>
+                                </p>
+                            <?php endif; ?>
                             <div class="stk-card__cat"><?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans cat&eacute;gorie'); ?></div>
                             <div class="stk-card__prix-row">
                                 <span class="stk-card__prix"><?php echo number_format((float)($produit['prix'] ?? 0), 0, ',', ' '); ?></span>

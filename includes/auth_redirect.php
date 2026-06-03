@@ -34,17 +34,36 @@ if (!function_exists('auth_set_portal_cookie')) {
     }
 }
 
-if (!function_exists('auth_clear_portal_cookie')) {
-    function auth_clear_portal_cookie()
+if (!function_exists('auth_redirect_after_login')) {
+    /**
+     * Redirection HTTP sûre après connexion (évite écran blanc / re-soumission formulaire).
+     *
+     * @param string $url URL absolue ou relative commençant par /
+     */
+    function auth_redirect_after_login($url)
     {
-        setcookie('colobane_auth_portal', '', [
-            'expires' => time() - 3600,
-            'path' => '/',
-            'domain' => '',
-            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
+        $url = trim((string) $url);
+        if ($url === '' || strpos($url, '//') !== false) {
+            $url = '/index.php';
+        }
+        if ($url[0] !== '/') {
+            $url = '/' . $url;
+        }
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        if (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Location: ' . $url, true, 303);
+        exit;
+    }
+}
+
+if (!function_exists('auth_user_is_logged_in')) {
+    function auth_user_is_logged_in()
+    {
+        return isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
     }
 }
 

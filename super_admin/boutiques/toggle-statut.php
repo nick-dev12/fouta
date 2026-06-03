@@ -47,6 +47,7 @@ if (super_admin_set_vendeur_statut($vid, $statut)) {
 $retQ = [
     'q' => isset($_POST['return_q']) ? trim((string) $_POST['return_q']) : '',
     'statut' => isset($_POST['return_statut']) ? trim((string) $_POST['return_statut']) : '',
+    'cert' => isset($_POST['return_cert']) ? trim((string) $_POST['return_cert']) : '',
     'per' => isset($_POST['return_per']) ? (int) $_POST['return_per'] : 15,
     'p' => isset($_POST['return_p']) ? (int) $_POST['return_p'] : 1,
 ];
@@ -58,6 +59,7 @@ function _sb_boutique_redirect_query(array $overrides) {
     $m = array_merge([
         'q' => '',
         'statut' => '',
+        'cert' => 'non_certifie',
         'per' => 15,
         'p' => 1,
     ], $overrides);
@@ -76,6 +78,9 @@ function _sb_boutique_redirect_query(array $overrides) {
     }
     if ($m['statut'] === 'actif' || $m['statut'] === 'inactif') {
         $q['statut'] = $m['statut'];
+    }
+    if ($m['cert'] === 'certifie' || $m['cert'] === 'non_certifie') {
+        $q['cert'] = $m['cert'];
     }
     if ((int) $m['per'] !== 15) {
         $q['per'] = (int) $m['per'];

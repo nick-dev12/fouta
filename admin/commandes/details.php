@@ -8,8 +8,8 @@ require_once __DIR__ . '/../includes/require_admin_session.php';
 
 
 
-// Récupérer l'ID de la commande
-$commande_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+// Récupérer l'ID de la commande (GET ou POST — formulaires de statut)
+$commande_id = isset($_REQUEST['id']) ? (int) $_REQUEST['id'] : 0;
 
 if ($commande_id <= 0) {
     header('Location: index.php');
@@ -56,7 +56,8 @@ $is_livree = $commande['statut'] === 'livree';
 $is_paye = $commande['statut'] === 'paye';
 
 // Traiter les actions de statut (uniquement si la commande n'est pas annulée)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
+$statut_flash_err = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && $commande_id > 0) {
     $statut_mis_a_jour = null;
 
     $admin_traitant = (int) ($_SESSION['admin_id'] ?? 0);
@@ -76,18 +77,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     }
 
     if ($statut_mis_a_jour !== null) {
-        require_once __DIR__ . '/../../services/send_commande_notification.php';
-        send_commande_status_notification(
-            (int) ($commande['user_id'] ?? 0),
-            $commande['numero_commande'],
-            $statut_mis_a_jour,
-            trim($commande['user_email'] ?? '')
-        );
+        try {
+            require_once __DIR__ . '/../../services/send_commande_notification.php';
+            send_commande_status_notification(
+                (int) ($commande['user_id'] ?? 0),
+                $commande['numero_commande'],
+                $statut_mis_a_jour,
+                trim($commande['user_email'] ?? '')
+            );
+        } catch (Throwable $e) {
+            error_log('[commandes/details] notification : ' . $e->getMessage());
+        }
         $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Le client a été notifié.';
-        header('Location: details.php?id=' . $commande_id);
+        header('Location: details.php?id=' . $commande_id, true, 303);
         exit;
     }
+
+    $statut_flash_err = 'Impossible de mettre à jour le statut. Vérifiez que la commande est dans un état compatible.';
+    $commande = get_commande_by_id($commande_id);
+    if ($commande) {
+        $statut_raw = (string) ($commande['statut'] ?? '');
+        $statut_safe_class = htmlspecialchars($statut_raw, ENT_QUOTES, 'UTF-8');
+        $statut_display = ucfirst(str_replace('_', ' ', $statut_raw));
+        if ($statut_raw === 'annulee') {
+            $statut_display = 'Annulée';
+        } elseif ($statut_raw === 'paye') {
+            $statut_display = 'Payée';
+        }
+        $is_annulee = $commande['statut'] === 'annulee';
+        $is_livree = $commande['statut'] === 'livree';
+        $is_paye = $commande['statut'] === 'paye';
+    }
 }
+
+$detail_form_action = 'details.php?id=' . (int) $commande_id;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -144,6 +167,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             </div>
         </header>
 
+    <?php if ($statut_flash_err !== ''): ?>
+        <div class="cmd-alert cmd-alert--danger" role="alert" style="margin-bottom:1rem;">
+            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($statut_flash_err, ENT_QUOTES, 'UTF-8'); ?>
+        </div>
+    <?php endif; ?>
+
     <?php /* success / error affichés via flash toast — voir footer.php */ ?>
 
     <?php
@@ -179,12 +208,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 ['key' => 'livree',            'label' => 'Livrée',          'sub' => 'Réception confirmée',   'icon' => 'fa-circle-check'],
             ];
             $csf_order = [
-                'en_attente'        => 0,
-                'confirmee'         => 0,
-                'prise_en_charge'   => 1,
-                'livraison_en_cours'=> 2,
-                'livree'            => 3,
-                'paye'              => 3,
+                'en_attente'         => 0,
+                'confirmee'          => 0,
+                'prise_en_charge'    => 1,
+                'en_preparation'     => 1,
+                'livraison_en_cours' => 2,
+                'expediee'           => 2,
+                'livree'             => 3,
+                'paye'               => 3,
             ];
             $csf_current_idx = $csf_order[$statut_raw] ?? 0;
             ?>
@@ -210,25 +241,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                     <?php endforeach; ?>
                 </div>
                 <div class="csf-action-zone">
-                    <?php if (in_array($commande['statut'], ['en_attente', 'confirmee'])): ?>
-                    <form method="POST" action="">
-                        <button type="submit" name="prendre_en_charge" class="csf-action-btn csf-action-btn--charge">
+                    <?php if (in_array($commande['statut'], ['en_attente', 'confirmee'], true)): ?>
+                    <form method="POST" action="<?php echo htmlspecialchars($detail_form_action, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="id" value="<?php echo (int) $commande_id; ?>">
+                        <button type="submit" name="prendre_en_charge" value="1" class="csf-action-btn csf-action-btn--charge">
                             <span class="csf-action-btn__icon"><i class="fas fa-hand-paper"></i></span>
                             <span class="csf-action-btn__body"><strong>Prendre en charge</strong><small>Le client sera notifié immédiatement</small></span>
                             <i class="fas fa-chevron-right csf-action-btn__arrow" aria-hidden="true"></i>
                         </button>
                     </form>
-                    <?php elseif ($commande['statut'] === 'prise_en_charge'): ?>
-                    <form method="POST" action="">
-                        <button type="submit" name="expedier" class="csf-action-btn csf-action-btn--ship">
+                    <?php elseif (in_array($commande['statut'], ['prise_en_charge', 'en_preparation'], true)): ?>
+                    <form method="POST" action="<?php echo htmlspecialchars($detail_form_action, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="id" value="<?php echo (int) $commande_id; ?>">
+                        <button type="submit" name="expedier" value="1" class="csf-action-btn csf-action-btn--ship">
                             <span class="csf-action-btn__icon"><i class="fas fa-truck"></i></span>
                             <span class="csf-action-btn__body"><strong>Mettre en livraison</strong><small>Notifie le client que sa commande est en route</small></span>
                             <i class="fas fa-chevron-right csf-action-btn__arrow" aria-hidden="true"></i>
                         </button>
                     </form>
-                    <?php elseif ($commande['statut'] === 'livraison_en_cours'): ?>
-                    <form method="POST" action="">
-                        <button type="submit" name="confirmer_livraison" class="csf-action-btn csf-action-btn--confirm">
+                    <?php elseif (in_array($commande['statut'], ['livraison_en_cours', 'expediee'], true)): ?>
+                    <form method="POST" action="<?php echo htmlspecialchars($detail_form_action, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="id" value="<?php echo (int) $commande_id; ?>">
+                        <button type="submit" name="confirmer_livraison" value="1" class="csf-action-btn csf-action-btn--confirm">
                             <span class="csf-action-btn__icon"><i class="fas fa-circle-check"></i></span>
                             <span class="csf-action-btn__body"><strong>Confirmer la réception</strong><small>Marque la commande comme livrée au client</small></span>
                             <i class="fas fa-check csf-action-btn__arrow" aria-hidden="true"></i>

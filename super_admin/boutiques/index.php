@@ -4,6 +4,7 @@
  */
 require_once __DIR__ . '/../includes/require_login.php';
 require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
+require_once dirname(__DIR__, 2) . '/models/model_vendeur_certification.php';
 
 $msg_ok = $_SESSION['super_admin_flash_ok'] ?? '';
 $msg_err = $_SESSION['super_admin_flash_err'] ?? '';
@@ -18,6 +19,7 @@ function sb_boutiques_query_params(array $overrides = []) {
         $base = [
             'q' => isset($_GET['q']) ? trim((string) $_GET['q']) : '',
             'statut' => isset($_GET['statut']) ? trim((string) $_GET['statut']) : '',
+            'cert' => isset($_GET['cert']) ? trim((string) $_GET['cert']) : 'non_certifie',
             'per' => isset($_GET['per']) ? (int) $_GET['per'] : 15,
             'p' => isset($_GET['p']) ? (int) $_GET['p'] : 1,
         ];
@@ -38,6 +40,9 @@ function sb_boutiques_query_params(array $overrides = []) {
     }
     if ($m['statut'] === 'actif' || $m['statut'] === 'inactif') {
         $q['statut'] = $m['statut'];
+    }
+    if ($m['cert'] === 'certifie' || $m['cert'] === 'non_certifie') {
+        $q['cert'] = $m['cert'];
     }
     if ((int) $m['per'] !== 15) {
         $q['per'] = (int) $m['per'];
@@ -84,6 +89,15 @@ if ($statut_filtre !== 'actif' && $statut_filtre !== 'inactif') {
     $statut_filtre = '';
 }
 
+$cert_tab = isset($_GET['cert']) ? trim((string) $_GET['cert']) : 'non_certifie';
+if ($cert_tab !== 'certifie' && $cert_tab !== 'non_certifie') {
+    $cert_tab = 'non_certifie';
+}
+$cert_col_ok = vendeur_certification_admin_column_exists();
+if (!$cert_col_ok) {
+    $cert_tab = '';
+}
+
 $per_page = isset($_GET['per']) ? (int) $_GET['per'] : 15;
 if ($per_page < 5) {
     $per_page = 5;
@@ -97,17 +111,19 @@ if ($page < 1) {
     $page = 1;
 }
 
-$total = count_boutiques_platform_filtered($search, $statut_filtre);
+$total = count_boutiques_platform_filtered($search, $statut_filtre, $cert_tab);
 $total_pages = max(1, (int) ceil($total / $per_page));
 if ($page > $total_pages) {
     $page = $total_pages;
 }
 
-$boutiques = get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_page);
+$boutiques = get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_page, $cert_tab);
 $csrf = super_admin_csrf_token();
 
 $total_plateforme = count_boutiques_platform_filtered('', '');
 $total_actives = count_boutiques_platform_filtered('', 'actif');
+$total_certifiees = $cert_col_ok ? count_boutiques_platform_filtered('', '', 'certifie') : 0;
+$total_non_certifiees = $cert_col_ok ? count_boutiques_platform_filtered('', '', 'non_certifie') : $total_plateforme;
 
 $from_row = $total > 0 ? ($page - 1) * $per_page + 1 : 0;
 $to_row = min($page * $per_page, $total);
@@ -135,7 +151,9 @@ function sb_boutiques_page_url($pageNum) {
     <?php require_once dirname(__DIR__, 2) . '/includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/vendor-cert-ribbon.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/super-admin-clients.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/super-admin-boutiques.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body class="page-users admin-clients-page sa-users-page">
@@ -181,7 +199,25 @@ function sb_boutiques_page_url($pageNum) {
             </div>
         <?php endif; ?>
 
+        <?php if ($cert_col_ok): ?>
+            <nav class="sa-btq-tabs" aria-label="Filtrer par certification">
+                <a href="<?php echo htmlspecialchars('index.php?' . http_build_query(sb_boutiques_query_params(['cert' => 'non_certifie', 'p' => 1])), ENT_QUOTES, 'UTF-8'); ?>"
+                    class="sa-btq-tab<?php echo $cert_tab === 'non_certifie' ? ' is-active' : ''; ?>">
+                    <i class="fas fa-store"></i> Non certifiées
+                    <span class="sa-btq-tab__count"><?php echo (int) $total_non_certifiees; ?></span>
+                </a>
+                <a href="<?php echo htmlspecialchars('index.php?' . http_build_query(sb_boutiques_query_params(['cert' => 'certifie', 'p' => 1])), ENT_QUOTES, 'UTF-8'); ?>"
+                    class="sa-btq-tab<?php echo $cert_tab === 'certifie' ? ' is-active' : ''; ?>">
+                    <i class="fas fa-certificate"></i> Certifiées
+                    <span class="sa-btq-tab__count"><?php echo (int) $total_certifiees; ?></span>
+                </a>
+            </nav>
+        <?php endif; ?>
+
         <form class="sa-users-toolbar" method="get" action="index.php" role="search" aria-label="Filtrer les boutiques">
+            <?php if ($cert_col_ok && $cert_tab !== ''): ?>
+                <input type="hidden" name="cert" value="<?php echo htmlspecialchars($cert_tab, ENT_QUOTES, 'UTF-8'); ?>">
+            <?php endif; ?>
             <div class="sa-users-search">
                 <label for="sb-q">Rechercher une boutique</label>
                 <div class="sa-users-search__wrap">
@@ -208,7 +244,7 @@ function sb_boutiques_page_url($pageNum) {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <a class="sa-users-filters__reset" href="index.php"><i class="fas fa-rotate-left" aria-hidden="true"></i> Réinitialiser</a>
+                <a class="sa-users-filters__reset" href="index.php<?php echo ($cert_col_ok && $cert_tab !== '') ? '?' . http_build_query(['cert' => $cert_tab]) : ''; ?>"><i class="fas fa-rotate-left" aria-hidden="true"></i> Réinitialiser</a>
             </div>
         </form>
 
@@ -237,6 +273,7 @@ function sb_boutiques_page_url($pageNum) {
                         <thead>
                             <tr>
                                 <th scope="col">Boutique</th>
+                                <?php if ($cert_col_ok): ?><th scope="col">Certification</th><?php endif; ?>
                                 <th scope="col">Identité / contact</th>
                                 <th scope="col">Produits visibles</th>
                                 <th scope="col">Statut accès</th>
@@ -252,6 +289,20 @@ function sb_boutiques_page_url($pageNum) {
                                             <span class="sa-user-cell__email" style="display:block;margin-top:4px;"><code style="background:rgba(53,100,166,.08);padding:2px 8px;border-radius:6px;font-size:0.78rem;"><?php echo htmlspecialchars((string) $b['boutique_slug'], ENT_QUOTES, 'UTF-8'); ?></code></span>
                                         <?php endif; ?>
                                     </td>
+                                    <?php if ($cert_col_ok): ?>
+                                        <td>
+                                            <?php
+                                            $cn = trim((string) ($b['certification_niveau'] ?? ''));
+                                            if ($cn !== '' && function_exists('vendeur_certification_niveau_label')):
+                                                $cert_niveau = $cn;
+                                                $cert_size = 'sm';
+                                                require dirname(__DIR__, 2) . '/includes/partials/vendeur_certification_badge.php';
+                                            else:
+                                                ?>
+                                                <span class="sa-badge sa-badge--mute">Non certifiée</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endif; ?>
                                     <td>
                                         <span class="sa-user-cell__name" style="font-weight:600;font-size:0.88rem;"><?php echo htmlspecialchars(trim($b['nom'] . ' ' . ($b['prenom'] ?? '')), ENT_QUOTES, 'UTF-8'); ?></span>
                                         <?php if (!empty($b['email'])): ?>
@@ -283,6 +334,7 @@ function sb_boutiques_page_url($pageNum) {
                                                     <input type="hidden" name="nouveau_statut" value="inactif">
                                                     <input type="hidden" name="return_q" value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_statut" value="<?php echo htmlspecialchars($statut_filtre, ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <input type="hidden" name="return_cert" value="<?php echo htmlspecialchars($cert_tab, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_per" value="<?php echo (int) $per_page; ?>">
                                                     <input type="hidden" name="return_p" value="<?php echo (int) $page; ?>">
                                                     <button type="submit" class="sa-btn-action sa-btn-action--danger"><i class="fas fa-ban" aria-hidden="true"></i> Désactiver</button>
@@ -294,6 +346,7 @@ function sb_boutiques_page_url($pageNum) {
                                                     <input type="hidden" name="nouveau_statut" value="actif">
                                                     <input type="hidden" name="return_q" value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_statut" value="<?php echo htmlspecialchars($statut_filtre, ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <input type="hidden" name="return_cert" value="<?php echo htmlspecialchars($cert_tab, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_per" value="<?php echo (int) $per_page; ?>">
                                                     <input type="hidden" name="return_p" value="<?php echo (int) $page; ?>">
                                                     <button type="submit" class="sa-btn-action sa-btn-action--primary"><i class="fas fa-check" aria-hidden="true"></i> Réactiver</button>

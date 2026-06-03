@@ -1836,4 +1836,212 @@ function get_produits_nouveautes_aleatoires_panneau($retour = 4, $pool = 50)
     return array_slice($rows, 0, $retour);
 }
 
+/**
+ * Colonnes modération plateforme (blocage produit) disponibles.
+ */
+function produit_moderation_plateforme_active()
+{
+    return produits_has_column('bloque_motif') && produits_has_column('bloque_champs');
+}
+
+/**
+ * Libellé statut produit (admin / vendeur).
+ */
+function produit_statut_label($statut)
+{
+    $map = [
+        'actif' => 'Actif',
+        'inactif' => 'Inactif',
+        'rupture_stock' => 'Rupture',
+        'bloque' => 'Bloqué',
+    ];
+    return $map[(string) $statut] ?? ucfirst((string) $statut);
+}
+
+/**
+ * Champs à corriger pour lever un blocage (labels).
+ *
+ * @return array<string, string>
+ */
+function produit_bloque_champs_labels($champs_csv)
+{
+    $out = [];
+    foreach (array_filter(array_map('trim', explode(',', (string) $champs_csv))) as $c) {
+        if ($c === 'nom') {
+            $out['nom'] = 'nom du produit';
+        } elseif ($c === 'image') {
+            $out['image'] = 'image principale';
+        }
+    }
+    return $out;
+}
+
+/**
+ * Produits publiés d'une boutique (actif, rupture, bloqué) — Super Admin.
+ *
+ * @return array
+ */
+function super_admin_get_produits_boutique($admin_id)
+{
+    global $db;
+    $admin_id = (int) $admin_id;
+    if ($admin_id <= 0) {
+        return [];
+    }
+    $extra = produit_moderation_plateforme_active()
+        ? ', p.bloque_motif, p.bloque_champs, p.bloque_nom_ref, p.bloque_image_ref, p.bloque_date'
+        : '';
+    try {
+        $stmt = $db->prepare("
+            SELECT p.id, p.nom, p.image_principale, p.statut, p.prix, p.stock, p.date_modification
+            $extra
+            FROM produits p
+            WHERE p.admin_id = :aid
+              AND p.statut IN ('actif', 'rupture_stock', 'bloque')
+            ORDER BY p.date_modification DESC, p.id DESC
+        ");
+        $stmt->execute(['aid' => $admin_id]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ? $rows : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Bloque un produit côté plateforme (masqué catalogue client).
+ *
+ * @param array<int, string> $champs 'nom' et/ou 'image'
+ */
+function super_admin_bloquer_produit($produit_id, $motif, array $champs)
+{
+    global $db;
+    if (!produit_moderation_plateforme_active()) {
+        return false;
+    }
+    $produit_id = (int) $produit_id;
+    $motif = trim((string) $motif);
+    $allowed = ['nom', 'image'];
+    $champs = array_values(array_unique(array_intersect($allowed, $champs)));
+    if ($produit_id <= 0 || $motif === '' || empty($champs)) {
+        return false;
+    }
+    $p = get_produit_by_id($produit_id);
+    if (!$p) {
+        return false;
+    }
+    $champs_csv = implode(',', $champs);
+    try {
+        $stmt = $db->prepare("
+            UPDATE produits SET
+                statut = 'bloque',
+                bloque_motif = :motif,
+                bloque_champs = :champs,
+                bloque_nom_ref = :nom_ref,
+                bloque_image_ref = :img_ref,
+                bloque_date = NOW(),
+                date_modification = NOW()
+            WHERE id = :id
+        ");
+        return $stmt->execute([
+            'id' => $produit_id,
+            'motif' => $motif,
+            'champs' => $champs_csv,
+            'nom_ref' => (string) ($p['nom'] ?? ''),
+            'img_ref' => (string) ($p['image_principale'] ?? ''),
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Débloque manuellement un produit (Super Admin).
+ */
+function super_admin_debloquer_produit($produit_id)
+{
+    global $db;
+    if (!produit_moderation_plateforme_active()) {
+        return false;
+    }
+    $produit_id = (int) $produit_id;
+    if ($produit_id <= 0) {
+        return false;
+    }
+    $p = get_produit_by_id($produit_id);
+    if (!$p || ($p['statut'] ?? '') !== 'bloque') {
+        return false;
+    }
+    $nouveau = ((int) ($p['stock'] ?? 0) > 0) ? 'actif' : 'rupture_stock';
+    try {
+        $stmt = $db->prepare("
+            UPDATE produits SET
+                statut = :st,
+                bloque_motif = NULL,
+                bloque_champs = NULL,
+                bloque_nom_ref = NULL,
+                bloque_image_ref = NULL,
+                bloque_date = NULL,
+                date_modification = NOW()
+            WHERE id = :id
+        ");
+        return $stmt->execute(['id' => $produit_id, 'st' => $nouveau]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Après modification vendeur : débloque si nom/image en cause ont été changés.
+ */
+function produit_tenter_debloquer_apres_modification($produit_id)
+{
+    global $db;
+    if (!produit_moderation_plateforme_active()) {
+        return false;
+    }
+    $p = get_produit_by_id((int) $produit_id);
+    if (!$p || ($p['statut'] ?? '') !== 'bloque') {
+        return false;
+    }
+    $champs = array_filter(array_map('trim', explode(',', (string) ($p['bloque_champs'] ?? ''))));
+    if (empty($champs)) {
+        return false;
+    }
+    $ok = true;
+    foreach ($champs as $c) {
+        if ($c === 'nom') {
+            if (trim((string) ($p['nom'] ?? '')) === trim((string) ($p['bloque_nom_ref'] ?? ''))) {
+                $ok = false;
+            }
+        } elseif ($c === 'image') {
+            if (trim((string) ($p['image_principale'] ?? '')) === trim((string) ($p['bloque_image_ref'] ?? ''))) {
+                $ok = false;
+            }
+        } else {
+            $ok = false;
+        }
+    }
+    if (!$ok) {
+        return false;
+    }
+    $nouveau = ((int) ($p['stock'] ?? 0) > 0) ? 'actif' : 'rupture_stock';
+    try {
+        $stmt = $db->prepare("
+            UPDATE produits SET
+                statut = :st,
+                bloque_motif = NULL,
+                bloque_champs = NULL,
+                bloque_nom_ref = NULL,
+                bloque_image_ref = NULL,
+                bloque_date = NULL,
+                date_modification = NOW()
+            WHERE id = :id AND statut = 'bloque'
+        ");
+        return $stmt->execute(['id' => (int) $produit_id, 'st' => $nouveau]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
 ?>

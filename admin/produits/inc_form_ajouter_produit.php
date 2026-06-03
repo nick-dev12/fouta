@@ -20,6 +20,9 @@ if (!isset($fap_edit_variantes_js) || !is_array($fap_edit_variantes_js)) {
     $fap_edit_variantes_js = [];
 }
 $categorie_id_prefill = isset($categorie_id_prefill) ? (int) $categorie_id_prefill : 0;
+if (!isset($categories) || !is_array($categories)) {
+    $categories = [];
+}
 
 $fap_existing_image_paths = [];
 if ($fap_is_edit && $fap_edit_produit) {
@@ -278,6 +281,12 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                 <?php endif; ?>
                 <?php if ($add_produit_modal): ?>
                 <input type="hidden" name="statut" value="actif">
+                <?php elseif (isset($PM['statut']) && $PM['statut'] === 'bloque'): ?>
+                <input type="hidden" name="statut" value="bloque">
+                <div class="fap-field">
+                    <label>Visibilité</label>
+                    <p class="fap-hint" style="color:#b45309;margin:0;"><i class="fas fa-ban"></i> Bloqué par la plateforme — modifiez le nom ou l’image indiqué(s) pour rétablir la visibilité.</p>
+                </div>
                 <?php else: ?>
                 <div class="fap-field">
                     <label for="statut">Visibilité</label>

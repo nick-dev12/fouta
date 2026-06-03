@@ -149,11 +149,13 @@ function super_admin_list_boutiques_with_stats() {
  *
  * @param string $search Nom, slug, e-mail, téléphone, etc.
  * @param string $statut_filtre '' | 'actif' | 'inactif'
+ * @param string $cert_filtre '' | 'certifie' | 'non_certifie'
  * @return array{sql:string,params:array}
  */
-function _super_admin_boutiques_filter_sql($search, $statut_filtre) {
+function _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre = '') {
     $search = trim((string) $search);
     $statut_filtre = (string) $statut_filtre;
+    $cert_filtre = (string) $cert_filtre;
     $parts = ["a.role = 'vendeur'"];
     $params = [];
 
@@ -172,6 +174,19 @@ function _super_admin_boutiques_filter_sql($search, $statut_filtre) {
         $params['bstat'] = $statut_filtre;
     }
 
+    $cert_col_ok = false;
+    if (file_exists(dirname(__DIR__) . '/models/model_vendeur_certification.php')) {
+        require_once dirname(__DIR__) . '/models/model_vendeur_certification.php';
+        $cert_col_ok = vendeur_certification_admin_column_exists();
+    }
+    if ($cert_col_ok && ($cert_filtre === 'certifie' || $cert_filtre === 'non_certifie')) {
+        if ($cert_filtre === 'certifie') {
+            $parts[] = "a.certification_niveau IS NOT NULL AND a.certification_niveau <> ''";
+        } else {
+            $parts[] = '(a.certification_niveau IS NULL OR a.certification_niveau = \'\')';
+        }
+    }
+
     return [
         'sql' => implode(' AND ', $parts),
         'params' => $params,
@@ -181,10 +196,10 @@ function _super_admin_boutiques_filter_sql($search, $statut_filtre) {
 /**
  * Nombre de boutiques (vendeurs) correspondant aux filtres.
  */
-function count_boutiques_platform_filtered($search, $statut_filtre) {
+function count_boutiques_platform_filtered($search, $statut_filtre, $cert_filtre = '') {
     global $db;
 
-    $f = _super_admin_boutiques_filter_sql($search, $statut_filtre);
+    $f = _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre);
     try {
         $stmt = $db->prepare('SELECT COUNT(*) FROM admin a WHERE ' . $f['sql']);
         $stmt->execute($f['params']);
@@ -199,15 +214,23 @@ function count_boutiques_platform_filtered($search, $statut_filtre) {
  *
  * @return array
  */
-function get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_page) {
+function get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_page, $cert_filtre = '') {
     global $db;
 
     $page = max(1, (int) $page);
     $per_page = max(5, min(100, (int) $per_page));
     $offset = ($page - 1) * $per_page;
 
-    $f = _super_admin_boutiques_filter_sql($search, $statut_filtre);
+    $f = _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre);
     $whereSql = $f['sql'];
+
+    $cert_select = '';
+    if (file_exists(dirname(__DIR__) . '/models/model_vendeur_certification.php')) {
+        require_once dirname(__DIR__) . '/models/model_vendeur_certification.php';
+        if (vendeur_certification_admin_column_exists()) {
+            $cert_select = ', a.certification_niveau, a.certification_date';
+        }
+    }
 
     try {
         $sql = "
@@ -221,7 +244,8 @@ function get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_p
                 a.boutique_slug,
                 a.statut,
                 a.date_creation,
-                a.role,
+                a.role
+                $cert_select,
                 COALESCE(COUNT(p.id), 0) AS nb_produits_total,
                 COALESCE(SUM(CASE WHEN p.statut IN ('actif', 'rupture_stock') THEN 1 ELSE 0 END), 0) AS nb_produits_catalogue,
                 COALESCE(SUM(CASE WHEN p.statut = 'actif' THEN 1 ELSE 0 END), 0) AS nb_produits_actifs

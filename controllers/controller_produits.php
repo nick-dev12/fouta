@@ -769,7 +769,9 @@ function process_update_produit($produit_id) {
             'unite' => $unite,
             'couleurs' => $couleurs,
             'taille' => $taille,
-            'statut' => $stock > 0 ? $statut : 'rupture_stock',
+            'statut' => (($produit['statut'] ?? '') === 'bloque')
+                ? 'bloque'
+                : ($stock > 0 ? $statut : 'rupture_stock'),
             'stock_article_id' => null,
             'etage' => $etage !== '' ? $etage : null,
             'numero_rayon' => $numero_rayon !== '' ? $numero_rayon : null
@@ -860,6 +862,11 @@ function process_update_produit($produit_id) {
             foreach ($existing_ids as $eid) {
                 if (!in_array($eid, $kept_ids)) {
                     delete_variante($eid);
+                }
+            }
+            if (($produit['statut'] ?? '') === 'bloque' && function_exists('produit_tenter_debloquer_apres_modification')) {
+                if (produit_tenter_debloquer_apres_modification($produit_id)) {
+                    $message = 'Produit modifié — le blocage plateforme est levé, votre produit est à nouveau visible sur le site.';
                 }
             }
         } else {

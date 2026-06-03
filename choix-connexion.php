@@ -7,6 +7,10 @@ require_once __DIR__ . '/includes/session_user.php';
 require_once __DIR__ . '/includes/auth_redirect.php';
 session_start();
 
+if (ob_get_level() === 0) {
+    ob_start();
+}
+
 // Après connexion (même logique que user/connexion.php)
 $redirect_after = isset($_POST['redirect']) ? trim($_POST['redirect']) : (isset($_GET['redirect']) ? trim($_GET['redirect']) : '');
 if ($redirect_after && $redirect_after[0] !== '/') {
@@ -15,20 +19,23 @@ if ($redirect_after && $redirect_after[0] !== '/') {
 $redirect_url = (!empty($redirect_after) && strpos($redirect_after, '//') === false) ? $redirect_after : '/index.php';
 
 if (isset($_SESSION['admin_id'])) {
-    header('Location: /admin/dashboard.php');
-    exit;
+    auth_redirect_after_login('/admin/dashboard.php');
 }
 
-if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
-    header('Location: ' . $redirect_url);
-    exit;
+if (auth_user_is_logged_in()) {
+    auth_redirect_after_login($redirect_url);
 }
 
 require_once __DIR__ . '/controllers/controller_users.php';
 login_attempt_unlock_if_expired();
-$result = process_unified_login();
+
+$result = ['success' => false, 'message' => '', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $result = process_unified_login();
+}
 
 if (isset($result['success']) && $result['success'] && $result['type'] === 'admin' && $result['admin']) {
+    session_regenerate_id(true);
     $_SESSION['admin_id'] = $result['admin']['id'];
     $_SESSION['admin_nom'] = $result['admin']['nom'];
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
@@ -48,11 +55,11 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
     $login_role = normalize_admin_role($result['admin']['role'] ?? 'admin');
     auth_set_portal_cookie($login_role === 'vendeur' ? 'vendeur' : 'admin');
 
-    header('Location: /admin/dashboard.php');
-    exit;
+    auth_redirect_after_login('/admin/dashboard.php');
 }
 
 if (isset($result['success']) && $result['success'] && $result['type'] === 'user' && $result['user']) {
+    session_regenerate_id(true);
     $_SESSION['user_id'] = $result['user']['id'];
     $_SESSION['user_nom'] = $result['user']['nom'];
     $_SESSION['user_prenom'] = $result['user']['prenom'];
@@ -63,12 +70,15 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'user
     auth_set_portal_cookie('client');
 
     if (file_exists(__DIR__ . '/includes/panier_invite.php')) {
-        require_once __DIR__ . '/includes/panier_invite.php';
-        panier_fusionner_invite_apres_connexion((int) $result['user']['id']);
+        try {
+            require_once __DIR__ . '/includes/panier_invite.php';
+            panier_fusionner_invite_apres_connexion((int) $result['user']['id']);
+        } catch (Throwable $e) {
+            error_log('[choix-connexion] fusion panier invité : ' . $e->getMessage());
+        }
     }
 
-    header('Location: ' . $redirect_url);
-    exit;
+    auth_redirect_after_login($redirect_url);
 }
 
 $inscription_success = '';
@@ -176,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
 
             <div id="panel-phone" class="login-panel" role="tabpanel" aria-labelledby="tab-phone"
                 <?php echo $active_login_mode !== 'phone' ? 'hidden' : ''; ?>>
-            <form method="POST" action="">
+            <form method="POST" action="choix-connexion.php<?php echo !empty($redirect_after) ? '?' . http_build_query(['redirect' => $redirect_after]) : ''; ?>">
                 <input type="hidden" name="login_mode" value="phone">
                 <?php if (!empty($redirect_after)): ?>
                 <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
@@ -217,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
 
             <div id="panel-email" class="login-panel" role="tabpanel" aria-labelledby="tab-email"
                 <?php echo $active_login_mode !== 'email' ? 'hidden' : ''; ?>>
-            <form method="POST" action="">
+            <form method="POST" action="choix-connexion.php<?php echo !empty($redirect_after) ? '?' . http_build_query(['redirect' => $redirect_after]) : ''; ?>">
                 <input type="hidden" name="login_mode" value="email">
                 <?php if (!empty($redirect_after)): ?>
                 <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
