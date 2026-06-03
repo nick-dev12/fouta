@@ -18,6 +18,14 @@ $__param_retour            = admin_role_default_redirect_path($__param_role);
 require_once __DIR__ . '/../includes/site_url.php';
 require_once __DIR__ . '/../includes/marketplace_helpers.php';
 
+$__cert_niveau_actif = null;
+$__cert_demande_en_cours = false;
+if ($__param_role === 'vendeur' && file_exists(__DIR__ . '/../models/model_vendeur_certification.php')) {
+    require_once __DIR__ . '/../models/model_vendeur_certification.php';
+    $__cert_niveau_actif = vendeur_certification_get_niveau_actif((int) ($_SESSION['admin_id'] ?? 0));
+    $__cert_demande_en_cours = vendeur_certification_get_demande_en_cours((int) ($_SESSION['admin_id'] ?? 0)) !== null;
+}
+
 $__vendeur_boutique_slug = ($__param_role === 'vendeur')
     ? trim((string)($_SESSION['admin_boutique_slug'] ?? ''))
     : '';
@@ -65,6 +73,7 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-vendeur-share.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/vendor-cert-ribbon.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== PARAMÈTRES v2 ===== */
 
@@ -445,6 +454,7 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
 
         <!-- ===== HERO IDENTITÉ ===== -->
         <div class="prm-hero">
+            <?php require __DIR__ . '/../includes/partials/vendeur_certification_hero_badge.php'; ?>
             <div class="prm-hero__inner">
                 <div class="prm-hero__avatar"><?php echo htmlspecialchars($admin_initial); ?></div>
                 <div class="prm-hero__body">
@@ -535,6 +545,54 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
             </div>
         <?php endif; ?>
 
+        <!-- ===== CERTIFICATION VENDEUR ===== -->
+        <?php if ($__param_role === 'vendeur'): ?>
+            <div class="prm-cert-banner" role="region" aria-labelledby="prm-cert-title">
+                <div class="prm-cert-banner__left">
+                    <div class="prm-cert-banner__icon"><i class="fas fa-certificate"></i></div>
+                    <div>
+                        <h3 id="prm-cert-title">Certification boutique</h3>
+                        <p>Standard, VIP ou Premium — gagnez la confiance des acheteurs avec un badge officiel.</p>
+                        <div class="prm-cert-banner__badges">
+                            <?php if ($__cert_niveau_actif): ?>
+                                <?php $cert_niveau = $__cert_niveau_actif; require __DIR__ . '/../includes/partials/vendeur_certification_badge.php'; ?>
+                            <?php else: ?>
+                                <span class="cert-badge cert-badge--standard cert-badge--sm"><i class="fas fa-shield"></i> Standard</span>
+                                <span class="cert-badge cert-badge--vip cert-badge--sm"><i class="fas fa-gem"></i> VIP</span>
+                                <span class="cert-badge cert-badge--premium cert-badge--sm"><i class="fas fa-crown"></i> Premium</span>
+                            <?php endif; ?>
+                            <?php if ($__cert_demande_en_cours): ?>
+                                <span class="cert-pill-wait"><i class="fas fa-hourglass-half"></i> En examen</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <a href="parametres/certification.php" class="prm-btn prm-btn--primary">
+                    <i class="fas fa-arrow-right"></i>
+                    <?php echo $__cert_niveau_actif ? 'Monter en niveau' : 'Demander une certification'; ?>
+                </a>
+            </div>
+            <style>
+                .prm-cert-banner {
+                    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+                    padding: 20px 22px; border-radius: 18px;
+                    background: linear-gradient(135deg, #fff 0%, #f8fbff 50%, #fffdf8 100%);
+                    border: 1px solid rgba(53,100,166,0.12);
+                    box-shadow: 0 6px 22px rgba(53,100,166,0.08);
+                }
+                .prm-cert-banner__left { display: flex; align-items: flex-start; gap: 14px; flex: 1; min-width: 220px; }
+                .prm-cert-banner__icon {
+                    width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
+                    background: linear-gradient(135deg, rgba(53,100,166,0.15), rgba(240,180,41,0.12));
+                    color: var(--couleur-dominante, #3564a6);
+                    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+                }
+                .prm-cert-banner h3 { margin: 0 0 4px; font-size: 1.05rem; font-weight: 800; color: var(--titres, #0d0d0d); }
+                .prm-cert-banner p { margin: 0 0 10px; font-size: 0.82rem; color: var(--gris-moyen, #737373); line-height: 1.45; max-width: 480px; }
+                .prm-cert-banner__badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+            </style>
+        <?php endif; ?>
+
         <!-- ===== MODULES / RACCOURCIS ===== -->
         <?php if ($__param_show_site_modules): ?>
 
@@ -583,6 +641,19 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
                         <i class="fas fa-pen-to-square"></i> G&eacute;rer le slider
                     </a>
                 </article>
+
+                <?php if ($__param_role === 'vendeur'): ?>
+                    <article class="prm-module-card" style="--mod-accent:#737373;">
+                        <div class="prm-module-card__icon-wrap" style="background:rgba(115,115,115,0.12);color:#737373;"><i class="fas fa-certificate"></i></div>
+                        <div class="prm-module-card__title">Certification</div>
+                        <div class="prm-module-card__desc">
+                            Demandez votre badge Standard, VIP ou Premium pour rassurer vos clients sur la marketplace.
+                        </div>
+                        <a href="parametres/certification.php" class="prm-module-card__link">
+                            <i class="fas fa-arrow-right"></i> Demander une certification
+                        </a>
+                    </article>
+                <?php endif; ?>
 
                 <?php if ($__param_role !== 'vendeur'): ?>
                     <article class="prm-module-card prm-module-card--video">

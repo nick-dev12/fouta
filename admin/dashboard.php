@@ -1195,6 +1195,7 @@ if (!empty($produits)) {
 
         <!-- ===== HERO VUE D'ENSEMBLE ===== -->
         <div class="dash-v2-hero">
+            <?php require __DIR__ . '/../includes/partials/vendeur_certification_hero_badge.php'; ?>
             <p class="dash-v2-hero__label">Vue d'ensemble &mdash; Total des ventes</p>
             <div class="dash-v2-hero__amount">
                 <?php echo number_format($ca_total, 0, ',', ' '); ?><span class="currency">FCFA</span>

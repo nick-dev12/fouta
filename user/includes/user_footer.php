@@ -1,6 +1,8 @@
     </main>
 </div>
 
+<?php include __DIR__ . '/user_rating_popup.php'; ?>
+
 <script>
     (function() {
         function closeUserSidebar() {

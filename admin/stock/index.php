@@ -792,6 +792,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         <!-- ===== HERO ===== -->
         <div class="stk-hero">
+            <?php require __DIR__ . '/../../includes/partials/vendeur_certification_hero_badge.php'; ?>
             <div class="stk-hero__inner">
                 <div>
                     <p class="stk-hero__label">Total en stock</p>

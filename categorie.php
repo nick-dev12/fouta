@@ -89,6 +89,13 @@ if (!empty($produits) && is_array($produits)) {
     $produits = catalogue_melanger_produits($produits);
 }
 
+if (file_exists(__DIR__ . '/models/model_produits_avis.php')) {
+    require_once __DIR__ . '/models/model_produits_avis.php';
+    if (!empty($produits) && function_exists('produits_avis_enrich_products')) {
+        $produits = produits_avis_enrich_products($produits);
+    }
+}
+
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     require_once __DIR__ . '/controllers/controller_commerce_users.php';

@@ -2085,49 +2085,35 @@ function categories_generales_insert_row($nom, $description, $icone, $sort_ordre
     $has_img_col = categories_generales_image_column_exists();
     try {
         if (categories_generales_attr_columns_exist()) {
-            $sql = '
-                INSERT INTO `categories_generales` (`nom`, `description`, `icone`, `sort_ordre`, `attr_poids`, `attr_taille`, `attr_mesure`, `attr_couleur`, `date_creation'
-                . ($has_img_col ? ', `image`' : '') . ')
-                VALUES (:nom, :descr, :icone, :so, :ap, :at, :am, :ac, NOW()'
-                . ($has_img_col ? ', :img' : '') . ')
-            ';
-            $st = $db->prepare($sql);
-            $params = [
-                'nom' => $nom,
-                'descr' => $description !== null ? (string) $description : null,
-                'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
-                'so' => (int) $sort_ordre,
-                'ap' => $ap,
-                'at' => $at,
-                'am' => $am,
-                'ac' => $ac,
-            ];
-            if ($has_img_col) {
-                $params['img'] = $img_val;
-            }
-            if ($st->execute($params)) {
-                return (int) $db->lastInsertId();
-            }
+            $cols = '`nom`, `description`, `icone`, `sort_ordre`, `attr_poids`, `attr_taille`, `attr_mesure`, `attr_couleur`, `date_creation`';
+            $vals = ':nom, :descr, :icone, :so, :ap, :at, :am, :ac, NOW()';
         } else {
-            $sql = '
-                INSERT INTO `categories_generales` (`nom`, `description`, `icone`, `sort_ordre`, `date_creation'
-                . ($has_img_col ? ', `image`' : '') . ')
-                VALUES (:nom, :descr, :icone, :so, NOW()'
-                . ($has_img_col ? ', :img' : '') . ')
-            ';
-            $st = $db->prepare($sql);
-            $params = [
-                'nom' => $nom,
-                'descr' => $description !== null ? (string) $description : null,
-                'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
-                'so' => (int) $sort_ordre,
-            ];
-            if ($has_img_col) {
-                $params['img'] = $img_val;
-            }
-            if ($st->execute($params)) {
-                return (int) $db->lastInsertId();
-            }
+            $cols = '`nom`, `description`, `icone`, `sort_ordre`, `date_creation`';
+            $vals = ':nom, :descr, :icone, :so, NOW()';
+        }
+        if ($has_img_col) {
+            $cols .= ', `image`';
+            $vals .= ', :img';
+        }
+        $sql = 'INSERT INTO `categories_generales` (' . $cols . ') VALUES (' . $vals . ')';
+        $st = $db->prepare($sql);
+        $params = [
+            'nom' => $nom,
+            'descr' => $description !== null ? (string) $description : null,
+            'icone' => $icone !== null && (string) $icone !== '' ? (string) $icone : null,
+            'so' => (int) $sort_ordre,
+        ];
+        if (categories_generales_attr_columns_exist()) {
+            $params['ap'] = $ap;
+            $params['at'] = $at;
+            $params['am'] = $am;
+            $params['ac'] = $ac;
+        }
+        if ($has_img_col) {
+            $params['img'] = $img_val;
+        }
+        if ($st->execute($params)) {
+            return (int) $db->lastInsertId();
         }
     } catch (PDOException $e) {
     }

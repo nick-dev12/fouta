@@ -27,16 +27,20 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
 
-.site-social-links__a--wa {
-    background: #25d366;
+.site-social-links__a--fb {
+    background: #1877f2;
 }
 
 .site-social-links__a--ig {
     background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366);
 }
 
-.site-social-links__a--fb {
-    background: #1877f2;
+.site-social-links__a--li {
+    background: #0a66c2;
+}
+
+.site-social-links__a--tt {
+    background: #010101;
 }
 
 .footer_social_wrap {

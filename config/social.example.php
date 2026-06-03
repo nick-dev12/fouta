@@ -6,12 +6,14 @@
  */
 
 return [
-    // Numéro WhatsApp avec indicatif pays (sans + ni espaces) - ex: 221338700070 pour Sénégal
-    'whatsapp' => '221338700070',
+    // WhatsApp : optionnel (factures admin, etc.) — non affiché footer / contact
+    'whatsapp' => '',
 
-    // URL du profil Instagram
-    'instagram' => 'https://www.instagram.com/sugarpaper1/',
+    'instagram' => 'https://www.instagram.com/colobanes_marketplace?utm_source=qr',
 
-    // URL de la page Facebook
-    'facebook' => 'https://web.facebook.com/sugarpaper.sn/',
+    'facebook' => 'https://www.facebook.com/share/1BbiPwcTuf/?mibextid=wwXIfr',
+
+    'linkedin' => 'https://www.linkedin.com/company/colobanes/about/?viewAsMember=true',
+
+    'tiktok' => 'https://www.tiktok.com/@colobanes_marketplace',
 ];

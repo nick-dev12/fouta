@@ -31,6 +31,14 @@ if ($pid <= 0) {
         </div>
         <div class="mp-card-body">
             <h3 class="mp-card-title"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?></h3>
+            <?php if (!empty($produit['avis_count'])): ?>
+                <?php
+                $note = (float) ($produit['avis_moyenne'] ?? 0);
+                $count = (int) ($produit['avis_count'] ?? 0);
+                $size = 'sm';
+                require __DIR__ . '/product_rating_stars.php';
+                ?>
+            <?php endif; ?>
             <div class="mp-card-price-row">
                 <?php if ($has_promotion): ?>
                 <span class="mp-card-price-old"><?php echo number_format((float) $produit['prix'], 0, ',', ' '); ?> FCFA</span>

@@ -27,6 +27,14 @@ $nom = (string) ($produit['nom'] ?? 'Produit');
                 onerror="this.src='/image/produit1.jpg'">
         </div>
         <h3 class="mp-new-title"><?php echo htmlspecialchars($nom); ?></h3>
+        <?php if (!empty($produit['avis_count'])): ?>
+            <?php
+            $note = (float) ($produit['avis_moyenne'] ?? 0);
+            $count = (int) ($produit['avis_count'] ?? 0);
+            $size = 'sm';
+            require __DIR__ . '/product_rating_stars.php';
+            ?>
+        <?php endif; ?>
         <?php if ($has_promotion): ?>
         <p class="mp-new-promo">Promotion en cours</p>
         <?php endif; ?>

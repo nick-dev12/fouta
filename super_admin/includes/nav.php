@@ -9,8 +9,15 @@ $is_boutiques = strpos($current_dir, '/boutiques') !== false;
 $is_utilisateurs = strpos($current_dir, '/utilisateurs') !== false;
 $is_logs = strpos($current_dir, '/logs') !== false;
 $is_parametres = strpos($current_dir, '/parametres') !== false;
+$is_certifications = strpos($current_dir, '/certifications') !== false;
 
-$base_path = ($is_boutiques || $is_utilisateurs || $is_logs || $is_parametres) ? '../' : '';
+$base_path = ($is_boutiques || $is_utilisateurs || $is_logs || $is_parametres || $is_certifications) ? '../' : '';
+
+$sa_cert_pending_count = 0;
+if (file_exists(dirname(__DIR__, 2) . '/models/model_vendeur_certification.php')) {
+    require_once dirname(__DIR__, 2) . '/models/model_vendeur_certification.php';
+    $sa_cert_pending_count = vendeur_certification_count_en_attente();
+}
 
 ?>
 <!-- Bouton menu mobile -->
@@ -49,7 +56,7 @@ $base_path = ($is_boutiques || $is_utilisateurs || $is_logs || $is_parametres) ?
         </div>
         <nav class="sidebar-menu" aria-label="Navigation super administrateur">
             <a href="<?php echo htmlspecialchars($base_path . 'dashboard.php'); ?>"
-                class="menu-item <?php echo $current_page === 'dashboard.php' && !$is_boutiques && !$is_utilisateurs && !$is_logs && !$is_parametres ? 'active' : ''; ?>">
+                class="menu-item <?php echo $current_page === 'dashboard.php' && !$is_boutiques && !$is_utilisateurs && !$is_logs && !$is_parametres && !$is_certifications ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-chart-line"></i></span>
                 <span class="menu-item__text">Tableau de bord</span>
             </a>
@@ -62,6 +69,14 @@ $base_path = ($is_boutiques || $is_utilisateurs || $is_logs || $is_parametres) ?
                 class="menu-item <?php echo $is_utilisateurs ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-users"></i></span>
                 <span class="menu-item__text">Clients plateforme</span>
+            </a>
+            <a href="<?php echo htmlspecialchars($base_path . 'certifications/index.php'); ?>"
+                class="menu-item <?php echo $is_certifications ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-certificate"></i></span>
+                <span class="menu-item__text">Certifications</span>
+                <?php if ($sa_cert_pending_count > 0): ?>
+                    <span class="menu-item__badge-cert" title="Demandes en attente"><?php echo (int) $sa_cert_pending_count; ?></span>
+                <?php endif; ?>
             </a>
             <a href="<?php echo htmlspecialchars($base_path . 'logs/index.php'); ?>"
                 class="menu-item <?php echo $is_logs ? 'active' : ''; ?>">

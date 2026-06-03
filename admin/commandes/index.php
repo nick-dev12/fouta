@@ -873,6 +873,7 @@ function statut_class_cmd($s) {
 
         <!-- ===== HERO BANNER ===== -->
         <div class="cmd-v2-hero">
+            <?php require __DIR__ . '/../../includes/partials/vendeur_certification_hero_badge.php'; ?>
             <div class="cmd-v2-hero__inner">
                 <div>
                     <p class="cmd-v2-hero__label">Montant total &mdash; Commandes &agrave; traiter</p>

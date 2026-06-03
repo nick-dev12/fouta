@@ -41,11 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 if ($flash_err === '') {
-                    $new_id = create_categorie($nom, $d !== '' ? $d : null, $img, null, $gid);
+                    $new_id = plateforme_create_sous_categorie($nom, $d !== '' ? $d : null, $img, $gid);
                     if ($new_id) {
-                        if (function_exists('categories_generales_liaisons_table_exists') && categories_generales_liaisons_table_exists()) {
-                            plateforme_set_rayons_for_categorie((int) $new_id, [$gid]);
-                        }
                         if (function_exists('plateforme_ensure_liaison_rows_for_legacy_categories')) {
                             plateforme_ensure_liaison_rows_for_legacy_categories();
                         }
@@ -53,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         header('Location: sous-categories-catalogue.php?ok=1', true, 303);
                         exit;
                     }
-                    $flash_err = 'Impossible d’enregistrer (nom en doublon ou erreur).';
+                    $flash_err = 'Impossible d’enregistrer (nom déjà utilisé dans ce rayon ou erreur).';
                 }
             }
         } elseif (isset($_POST['update_sc'])) {
@@ -83,15 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $flash_err = 'Image non valide.';
                     }
                 }
-                if ($flash_err === '' && update_categorie($id, $nom, $d !== '' ? $d : null, $img !== '' ? $img : null)) {
-                    global $db;
-                    if (categories_table_has_column('categorie_generale_id')) {
-                        $st = $db->prepare('UPDATE `categories` SET `categorie_generale_id` = :g WHERE `id` = :id');
-                        $st->execute(['g' => $gid, 'id' => $id]);
-                    }
-                    if (function_exists('categories_generales_liaisons_table_exists') && categories_generales_liaisons_table_exists()) {
-                        plateforme_set_rayons_for_categorie($id, [$gid]);
-                    }
+                if ($flash_err === '' && plateforme_update_sous_categorie($id, $nom, $d !== '' ? $d : null, $img !== '' ? $img : null, $gid)) {
                     if (function_exists('plateforme_ensure_liaison_rows_for_legacy_categories')) {
                         plateforme_ensure_liaison_rows_for_legacy_categories();
                     }
@@ -99,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: sous-categories-catalogue.php?ok=1', true, 303);
                     exit;
                 } elseif ($flash_err === '') {
-                    $flash_err = 'Modification impossible.';
+                    $flash_err = 'Modification impossible (nom déjà utilisé dans ce rayon ou erreur).';
                 }
             }
         } elseif (isset($_POST['delete_sc'])) {

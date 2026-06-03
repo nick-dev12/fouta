@@ -55,6 +55,14 @@ if ($is_vendeur_menu && !empty($_SESSION['admin_id'])) {
     $nav_commandes_en_traitement = count_commandes_en_traitement_vendeur((int) $_SESSION['admin_id']);
 }
 
+$__vendeur_cert_niveau_hero = null;
+$__vendeur_cert_notif = null;
+if ($is_vendeur_menu && !empty($_SESSION['admin_id']) && file_exists(dirname(__DIR__, 2) . '/models/model_vendeur_certification.php')) {
+    require_once dirname(__DIR__, 2) . '/models/model_vendeur_certification.php';
+    $__vendeur_cert_niveau_hero = vendeur_certification_get_niveau_actif((int) $_SESSION['admin_id']);
+    $__vendeur_cert_notif = vendeur_certification_get_notif_vendeur_pending((int) $_SESSION['admin_id']);
+}
+
 if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres || $is_commandes || $is_caisse || $is_devis || $is_users || $is_contacts || $is_zones_livraison || $is_comptes || $is_commercial_hub || $is_comptabilite_hub) {
     $base_path = '../';
 } else {

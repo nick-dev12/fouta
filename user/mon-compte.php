@@ -1071,6 +1071,3 @@ function mc_statut_icon($s) {
     </div><!-- /.mc-v2-page -->
 
     <?php include 'includes/user_footer.php'; ?>
-</body>
-
-</html>

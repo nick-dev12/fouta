@@ -26,6 +26,14 @@ $nom_short = function_exists('mb_strlen') && mb_strlen($nom) > 38 ? mb_substr($n
             <span class="mp-top-badge" aria-hidden="true">TOP</span>
         </div>
         <h3 class="mp-top-title"><?php echo htmlspecialchars($nom_short); ?></h3>
+        <?php if (!empty($produit['avis_count'])): ?>
+            <?php
+            $note = (float) ($produit['avis_moyenne'] ?? 0);
+            $count = (int) ($produit['avis_count'] ?? 0);
+            $size = 'sm';
+            require __DIR__ . '/product_rating_stars.php';
+            ?>
+        <?php endif; ?>
         <p class="mp-top-sub">Ventes à la une</p>
     </a>
     <form method="POST" action="/add-to-panier.php" class="mp-top-cart">

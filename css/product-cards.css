@@ -2,6 +2,7 @@
  * Styles pour les cartes de produits - Design moderne et professionnel
  * Basé sur le design de l'image fournie
  */
+@import url('product-rating.css');
 
 /* ---- Masquer boutique + catégorie/ville dans les cards produit ---- */
 .produit-card-boutique,

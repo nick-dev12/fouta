@@ -28,6 +28,12 @@ if (file_exists(__DIR__ . '/models/model_produits.php')) {
         $total_produits = count_all_produits_actifs();
     }
 }
+if (!empty($produits_tous) && file_exists(__DIR__ . '/models/model_produits_avis.php')) {
+    require_once __DIR__ . '/models/model_produits_avis.php';
+    if (function_exists('produits_avis_enrich_products')) {
+        $produits_tous = produits_avis_enrich_products($produits_tous);
+    }
+}
 if ($recherche_actuelle !== '' && file_exists(__DIR__ . '/models/model_recherches_catalogue.php')) {
     require_once __DIR__ . '/models/model_recherches_catalogue.php';
     $uid_log = !empty($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;

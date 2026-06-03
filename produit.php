@@ -111,11 +111,30 @@ if (count($produits_similaires_candidats) > $similaires_pool) {
 }
 $produits_similaires = catalogue_tirer_produits_similaires($produits_similaires_candidats, $produit_id, $similaires_affichage);
 
+if (file_exists(__DIR__ . '/models/model_produits_avis.php')) {
+    require_once __DIR__ . '/models/model_produits_avis.php';
+    if (function_exists('produits_avis_enrich_products')) {
+        $enriched = produits_avis_enrich_products([$produit]);
+        if (!empty($enriched[0])) {
+            $produit = $enriched[0];
+        }
+        if (!empty($produits_similaires)) {
+            $produits_similaires = produits_avis_enrich_products($produits_similaires);
+        }
+    }
+}
+
 $produit_boutique_nom = produit_public_boutique_label($produit);
 $produit_boutique_slug = trim((string) ($produit['vendeur_boutique_slug'] ?? ''));
 $produit_boutique_url = $produit_boutique_slug !== ''
     ? boutique_vitrine_entry_href($produit_boutique_slug)
     : '/produits.php';
+
+$produit_boutique_cert_niveau = null;
+if (file_exists(__DIR__ . '/models/model_vendeur_certification.php') && !empty($produit['admin_id'])) {
+    require_once __DIR__ . '/models/model_vendeur_certification.php';
+    $produit_boutique_cert_niveau = vendeur_certification_get_niveau_actif((int) $produit['admin_id']);
+}
 
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
@@ -161,6 +180,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/vendor-cert-ribbon.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <style>
         /* Styles pour la page produit - Palette gourmande */
@@ -346,6 +366,13 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             gap: 16px;
             flex: 1 1 auto;
             min-width: 0;
+        }
+
+        .produit-boutique-rail__cert {
+            flex-shrink: 0;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
         }
 
         .produit-boutique-rail__text {
@@ -1594,6 +1621,15 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                         <p class="produit-boutique-rail__eyebrow">Boutique</p>
                         <p class="produit-boutique-rail__nom"><?php echo htmlspecialchars($produit_boutique_nom); ?></p>
                     </div>
+                    <?php if ($produit_boutique_cert_niveau): ?>
+                    <div class="produit-boutique-rail__cert">
+                        <?php
+                        $cert_niveau = $produit_boutique_cert_niveau;
+                        $cert_size = 'rail';
+                        require __DIR__ . '/includes/partials/vendeur_certification_badge.php';
+                        ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <span class="produit-boutique-rail__divider" aria-hidden="true"></span>
                 <a href="<?php echo htmlspecialchars($produit_boutique_url); ?>"
@@ -1653,6 +1689,15 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             <!-- Section Informations (détails produit) -->
             <div class="produit-info-section">
                 <h1 class="produit-nom" id="produit-nom"><?php echo htmlspecialchars($produit['nom']); ?></h1>
+                <?php if (!empty($produit['avis_count'])): ?>
+                    <?php
+                    $note = (float) ($produit['avis_moyenne'] ?? 0);
+                    $count = (int) ($produit['avis_count'] ?? 0);
+                    $size = 'md';
+                    $class_extra = 'produit-rating-stars';
+                    require __DIR__ . '/includes/partials/product_rating_stars.php';
+                    ?>
+                <?php endif; ?>
 
                 <!-- Prix -->
                 <div class="produit-prix-section">

@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirmer_livraison']
                 send_commande_status_notification((int) $_SESSION['user_id'], $commande['numero_commande'], 'paye', trim($_SESSION['user_email'] ?? ''));
                 $vendeur_id = (int) ($commande['vendeur_id'] ?? 0);
                 if ($vendeur_id > 0) send_commande_vendeur_action_notification($vendeur_id, $commande_id, $commande['numero_commande'], 'R&eacute;ception confirm&eacute;e par le client (pay&eacute;e)');
-                header('Location: mes-commandes.php?livraison_confirmee=1');
+                header('Location: mes-commandes.php?livraison_confirmee=1&noter=' . $commande_id);
                 exit;
             }
         }
@@ -153,6 +153,26 @@ $commandes_affichees = match($tab) {
     default    => $commandes_actives,
 };
 
+$commandes_avis_stats = [];
+$commandes_noter_pending = [];
+if (file_exists(__DIR__ . '/../models/model_produits_avis.php')) {
+    require_once __DIR__ . '/../models/model_produits_avis.php';
+    if (!empty($commandes_affichees)) {
+        $ids_cmd = [];
+        foreach ($commandes_affichees as $c) {
+            $ids_cmd[] = (int) ($c['id'] ?? 0);
+        }
+        if (function_exists('produits_avis_moyennes_commandes')) {
+            $commandes_avis_stats = produits_avis_moyennes_commandes($ids_cmd);
+        }
+        if (function_exists('produits_avis_commandes_notation_en_attente')) {
+            $commandes_noter_pending = produits_avis_commandes_notation_en_attente((int) $_SESSION['user_id'], $ids_cmd);
+        }
+    }
+}
+
+$pr_open_noter_commande = isset($_GET['noter']) ? (int) $_GET['noter'] : 0;
+
 require_once __DIR__ . '/../includes/flash_toast.php';
 if (!empty($success_message)) {
     flash_toast_queue_page('success', $success_message);
@@ -204,14 +224,27 @@ function cmd_timeline_steps($statut) {
         ['key' => 'livraison_en_cours', 'label' => 'En livraison', 'icon' => 'fa-truck'],
         ['key' => 'livree',            'label' => 'Livr&eacute;e',  'icon' => 'fa-circle-check'],
     ];
+    if ($statut === 'annulee') {
+        return null;
+    }
+    if (in_array($statut, ['livree', 'paye'], true)) {
+        $result = [];
+        foreach ($steps as $s) {
+            $result[] = $s + ['state' => 'done'];
+        }
+        return $result;
+    }
     $order = ['en_attente' => 0, 'prise_en_charge' => 1, 'livraison_en_cours' => 2, 'livree' => 3, 'paye' => 3];
     $cur = $order[$statut] ?? -1;
-    if ($statut === 'annulee') return null;
     $result = [];
     foreach ($steps as $i => $s) {
-        if ($i < $cur)      $result[] = $s + ['state' => 'done'];
-        elseif ($i === $cur) $result[] = $s + ['state' => 'current'];
-        else                 $result[] = $s + ['state' => 'pending'];
+        if ($i < $cur) {
+            $result[] = $s + ['state' => 'done'];
+        } elseif ($i === $cur) {
+            $result[] = $s + ['state' => 'current'];
+        } else {
+            $result[] = $s + ['state' => 'pending'];
+        }
     }
     return $result;
 }
@@ -765,6 +798,17 @@ function cmd_timeline_steps($statut) {
         .uc-card-btn--reorder  { background: rgba(255,107,53,0.1); color: var(--orange, #FF6B35); }
         .uc-card-btn--reorder:hover { background: rgba(255,107,53,0.18); }
 
+        .uc-card-btn--rate {
+            background: linear-gradient(135deg, rgba(240, 180, 41, 0.22) 0%, rgba(224, 149, 0, 0.14) 100%);
+            color: #9a6b00;
+            border: 1px solid rgba(240, 180, 41, 0.35);
+            box-shadow: 0 2px 8px rgba(240, 180, 41, 0.15);
+        }
+        .uc-card-btn--rate:hover {
+            background: linear-gradient(135deg, rgba(240, 180, 41, 0.32) 0%, rgba(224, 149, 0, 0.22) 100%);
+            transform: translateY(-1px);
+        }
+
         .uc-card-btn--detail   { background: rgba(53,100,166,0.07); color: var(--gris-fonce, #4a4a4a); }
         .uc-card-btn--detail:hover { background: rgba(53,100,166,0.13); }
 
@@ -941,6 +985,13 @@ function cmd_timeline_steps($statut) {
                     $can_cancel  = in_array($st, ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation']);
                     $can_confirm = $st === 'livraison_en_cours';
                     $can_reorder = $st === 'annulee';
+                    $cmd_id = (int) ($commande['id'] ?? 0);
+                    $cmd_avis = ($cmd_id > 0 && isset($commandes_avis_stats[$cmd_id]))
+                        ? $commandes_avis_stats[$cmd_id]
+                        : ['moyenne' => 0.0, 'count' => 0];
+                    $can_noter = in_array($st, ['livree', 'paye'], true)
+                        && $cmd_id > 0
+                        && !empty($commandes_noter_pending[$cmd_id]);
                 ?>
                     <article class="uc-v2-card">
 
@@ -951,6 +1002,16 @@ function cmd_timeline_steps($statut) {
                                     <?php if ($is_urgent): ?><span class="uc-urgence" title="Action possible"></span><?php endif; ?>
                                     <span class="uc-v2-card__boutique"><?php echo htmlspecialchars($boutique_nom); ?></span>
                                 </div>
+                                <?php if (!empty($cmd_avis['count'])): ?>
+                                    <div class="uc-v2-card__rating">
+                                        <?php
+                                        $note = (float) ($cmd_avis['moyenne'] ?? 0);
+                                        $count = (int) ($cmd_avis['count'] ?? 0);
+                                        $size = 'sm';
+                                        require __DIR__ . '/../includes/partials/product_rating_stars.php';
+                                        ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <span class="uc-badge <?php echo cmd_user_badge($st); ?>">
                                 <i class="fas <?php echo cmd_user_icon($st); ?>" style="font-size:.7em;margin-right:3px;"></i>
@@ -1003,6 +1064,15 @@ function cmd_timeline_steps($statut) {
                                 class="uc-card-btn uc-card-btn--track">
                                 <i class="fas fa-route"></i> Suivre
                             </a>
+
+                            <?php if ($can_noter): ?>
+                                <button type="button"
+                                    class="uc-card-btn uc-card-btn--rate uc-btn-open-rating"
+                                    data-commande-id="<?php echo $cmd_id; ?>"
+                                    aria-label="Noter les produits de cette commande">
+                                    <i class="fas fa-star"></i> Noter
+                                </button>
+                            <?php endif; ?>
 
                             <?php if ($can_confirm): ?>
                                 <form method="post" action="" style="display:inline;">
@@ -1115,5 +1185,3 @@ function cmd_timeline_steps($statut) {
     </script>
 
     <?php include 'includes/user_footer.php'; ?>
-</body>
-</html>

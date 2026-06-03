@@ -1,16 +1,19 @@
 <?php
 /**
- * Configuration des réseaux sociaux
- * Modifiez les valeurs selon vos comptes
+ * Configuration des réseaux sociaux — COLObanes Marketplace
+ * Modifiez les valeurs selon vos comptes officiels.
  */
 
 return [
-    // Numéro WhatsApp avec indicatif pays (sans + ni espaces) - ex: 221338700070 pour Sénégal
-    'whatsapp' => '221338700070',
+    // WhatsApp : conservé pour d'autres usages (factures, etc.), non affiché dans le footer / contact
+    'whatsapp' => '',
 
-    // URL du profil Instagram
-    'instagram' => 'https://www.instagram.com/sugarpaper1/',
+    'instagram' => 'https://www.instagram.com/colobanes_marketplace?utm_source=qr',
 
-    // URL de la page Facebook
-    'facebook' => 'https://web.facebook.com/sugarpaper.sn/',
+    'facebook' => 'https://www.facebook.com/share/1BbiPwcTuf/?mibextid=wwXIfr',
+
+    'linkedin' => 'https://www.linkedin.com/company/colobanes/about/?viewAsMember=true',
+
+    // Profil TikTok officiel — à ajuster si l'URL change
+    'tiktok' => 'https://www.tiktok.com/@colobanes_marketplace',
 ];

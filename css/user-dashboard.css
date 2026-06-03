@@ -3,6 +3,8 @@
  * Fond de page uni — palette variables.css
  */
 
+@import url('product-rating.css');
+
 @import url('./variables.css');
 @import url('./shop-bottom-nav.css');
 

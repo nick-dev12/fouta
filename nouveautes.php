@@ -13,6 +13,12 @@ $catalogue_seed = catalogue_seed_pagination('nouveautes', $seed_param, $seed_par
 
 $produits = get_all_produits_paginated($offset, $limit, null, $catalogue_seed);
 $total_produits = count_all_produits_actifs();
+if (!empty($produits) && file_exists(__DIR__ . '/models/model_produits_avis.php')) {
+    require_once __DIR__ . '/models/model_produits_avis.php';
+    if (function_exists('produits_avis_enrich_products')) {
+        $produits = produits_avis_enrich_products($produits);
+    }
+}
 $total_pages = $total_produits > 0 ? (int) ceil($total_produits / $limit) : 1;
 
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {

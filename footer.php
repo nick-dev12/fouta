@@ -44,10 +44,11 @@ if ($__footer_is_boutique) {
 
 $__footer_social_cfg = file_exists(__DIR__ . '/config/social.php') ? require __DIR__ . '/config/social.php' : [];
 $__footer_social_cfg = is_array($__footer_social_cfg) ? $__footer_social_cfg : [];
-$__wa_t = trim((string) ($__footer_social_cfg['whatsapp'] ?? ''));
 $__ig_t = trim((string) ($__footer_social_cfg['instagram'] ?? ''));
 $__fb_t = trim((string) ($__footer_social_cfg['facebook'] ?? ''));
-$__footer_show_social = ($__wa_t !== '' && preg_replace('/[^0-9]/', '', $__wa_t) !== '') || $__ig_t !== '' || $__fb_t !== '';
+$__li_t = trim((string) ($__footer_social_cfg['linkedin'] ?? ''));
+$__tt_t = trim((string) ($__footer_social_cfg['tiktok'] ?? ''));
+$__footer_show_social = $__ig_t !== '' || $__fb_t !== '' || $__li_t !== '' || $__tt_t !== '';
 ?>
 <?php if ($__footer_show_social): ?>
 <link rel="stylesheet" href="/css/site-social-links.css<?php echo asset_version_query(); ?>">

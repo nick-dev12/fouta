@@ -48,10 +48,11 @@ $adresse_contact = 'Rond Point Colobane, Dakar, Sénégal';
 
 $contact_social_cfg = file_exists(__DIR__ . '/config/social.php') ? require __DIR__ . '/config/social.php' : [];
 $contact_social_cfg = is_array($contact_social_cfg) ? $contact_social_cfg : [];
-$__wa_s = trim((string) ($contact_social_cfg['whatsapp'] ?? ''));
 $__ig_s = trim((string) ($contact_social_cfg['instagram'] ?? ''));
 $__fb_s = trim((string) ($contact_social_cfg['facebook'] ?? ''));
-$contact_show_social = ($__wa_s !== '' && preg_replace('/[^0-9]/', '', $__wa_s) !== '') || $__ig_s !== '' || $__fb_s !== '';
+$__li_s = trim((string) ($contact_social_cfg['linkedin'] ?? ''));
+$__tt_s = trim((string) ($contact_social_cfg['tiktok'] ?? ''));
+$contact_show_social = $__ig_s !== '' || $__fb_s !== '' || $__li_s !== '' || $__tt_s !== '';
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';

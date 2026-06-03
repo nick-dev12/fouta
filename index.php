@@ -1360,11 +1360,16 @@ $seo_canonical = $base . '/';
         }
 
         .mp-trend-sub {
-            display: block;
             font-size: 12px;
-            color: var(--gris-fonce);
-            margin-bottom: 10px;
-            line-height: 1.3;
+            font-weight: 600;
+            color: var(--titres);
+            margin-top: 10px;
+            margin-bottom: 0;
+            line-height: 1.35;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
             min-height: 2.6em;
         }
 
@@ -2282,6 +2287,20 @@ $seo_canonical = $base . '/';
         $hero_affiches = [];
     }
 
+    if (file_exists(__DIR__ . '/models/model_produits_avis.php')) {
+        require_once __DIR__ . '/models/model_produits_avis.php';
+        if (function_exists('produits_avis_enrich_products')) {
+            $produits_tendance = produits_avis_enrich_products($produits_tendance);
+            $produits_strip = produits_avis_enrich_products($produits_strip);
+            $produits_top_panneau = produits_avis_enrich_products($produits_top_panneau);
+            $produits_new_panneau = produits_avis_enrich_products($produits_new_panneau);
+            $produits_tous = produits_avis_enrich_products($produits_tous);
+            if (!empty($spotlight_pool)) {
+                $spotlight_pool = produits_avis_enrich_products($spotlight_pool);
+            }
+        }
+    }
+
     $mp_spotlight_img = null;
     if (!empty($hero_affiches[0]['image'])) {
         $mp_spotlight_img = '/upload/marketplace_hero/' . rawurlencode((string) $hero_affiches[0]['image']);
@@ -2396,17 +2415,26 @@ $seo_canonical = $base . '/';
                                     if ($tid <= 0) {
                                         continue;
                                     }
-                                    $tsub = trim((string) ($produit['categorie_nom'] ?? ''));
+                                    $tnom = trim((string) ($produit['nom'] ?? ''));
+                                    if ($tnom === '') {
+                                        $tnom = 'Produit';
+                                    }
                                     ?>
                                     <div class="mp-trend-card">
                                         <span class="mp-trend-label">Recherché</span>
-                                        <?php if ($tsub !== ''): ?>
-                                        <span class="mp-trend-sub"><?php echo htmlspecialchars($tsub); ?></span>
-                                        <?php endif; ?>
                                         <a class="mp-trend-img-link" href="produit.php?id=<?php echo $tid; ?>">
                                             <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                                                alt="" loading="lazy" onerror="this.src='/image/produit1.jpg'">
+                                                alt="<?php echo htmlspecialchars($tnom); ?>" loading="lazy" onerror="this.src='/image/produit1.jpg'">
                                         </a>
+                                        <span class="mp-trend-sub"><?php echo htmlspecialchars($tnom); ?></span>
+                                        <?php if (!empty($produit['avis_count'])): ?>
+                                            <?php
+                                            $note = (float) ($produit['avis_moyenne'] ?? 0);
+                                            $count = (int) ($produit['avis_count'] ?? 0);
+                                            $size = 'sm';
+                                            require __DIR__ . '/includes/partials/product_rating_stars.php';
+                                            ?>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -2532,6 +2560,14 @@ $seo_canonical = $base . '/';
                                 </div>
                                 <div class="mp-strip-body">
                                     <p class="mp-strip-title"><?php echo htmlspecialchars($snom); ?></p>
+                                    <?php if (!empty($sproduit['avis_count'])): ?>
+                                        <?php
+                                        $note = (float) ($sproduit['avis_moyenne'] ?? 0);
+                                        $count = (int) ($sproduit['avis_count'] ?? 0);
+                                        $size = 'sm';
+                                        require __DIR__ . '/includes/partials/product_rating_stars.php';
+                                        ?>
+                                    <?php endif; ?>
                                     <p class="mp-strip-price"><?php echo number_format($spx, 0, ',', ' '); ?> FCFA</p>
                                 </div>
                             </a>
