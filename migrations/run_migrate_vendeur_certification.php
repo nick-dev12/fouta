@@ -14,7 +14,8 @@ if (empty($db) || !($db instanceof PDO)) {
     exit(1);
 }
 
-function vc_col_exists(PDO $db, string $table, string $col): bool {
+function vc_col_exists(PDO $db, string $table, string $col): bool
+{
     $q = $db->prepare("
         SELECT COUNT(*) FROM information_schema.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c
@@ -23,7 +24,8 @@ function vc_col_exists(PDO $db, string $table, string $col): bool {
     return (int) $q->fetchColumn() > 0;
 }
 
-function vc_table_exists(PDO $db, string $table): bool {
+function vc_table_exists(PDO $db, string $table): bool
+{
     $q = $db->prepare("
         SELECT COUNT(*) FROM information_schema.TABLES
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t
