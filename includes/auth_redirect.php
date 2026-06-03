@@ -34,6 +34,20 @@ if (!function_exists('auth_set_portal_cookie')) {
     }
 }
 
+if (!function_exists('auth_clear_portal_cookie')) {
+    function auth_clear_portal_cookie()
+    {
+        setcookie('colobane_auth_portal', '', [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'domain' => '',
+            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+}
+
 if (!function_exists('auth_redirect_after_login')) {
     /**
      * Redirection HTTP sûre après connexion (évite écran blanc / re-soumission formulaire).
