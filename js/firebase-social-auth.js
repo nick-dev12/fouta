@@ -1,7 +1,13 @@
 (function () {
     'use strict';
 
-    var CALLBACK_URL = '/auth-firebase-callback.php';
+    function getCallbackUrl() {
+        var origin = window.location.origin || '';
+        if (origin) {
+            return origin + '/auth-firebase-callback.php';
+        }
+        return '/auth-firebase-callback.php';
+    }
     var APPLE_PENDING_KEY = 'colobanes_apple_auth_pending';
     var APPLE_FLAG_KEY = 'colobanes_apple_redirect_in_progress';
 
@@ -103,13 +109,14 @@
 
         getTokenPromise()
             .then(function (idToken) {
-                return fetch(CALLBACK_URL, {
+                return fetch(getCallbackUrl(), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
                     credentials: 'same-origin',
+                    cache: 'no-store',
                     body: JSON.stringify({
                         idToken: idToken,
                         accountType: accountType,
@@ -216,9 +223,13 @@
         return /iPhone|iPad|iPod/i.test(navigator.userAgent || '') && !isColobanesNativeApp();
     }
 
-    /** Redirect Apple uniquement sur Safari iOS ; popup ailleurs (localhost, Android, desktop). */
+    /**
+     * Redirect Apple désactivé : sur iPhone Safari, le retour après Face ID envoie souvent
+     * une requête que le serveur ne traite pas en JSON (« Réponse serveur invalide »).
+     * Popup = même flux que Android / PC / Mac (validé en production).
+     */
     function shouldUseAppleRedirect() {
-        return isIosWebBrowser();
+        return false;
     }
 
     function urlHasFirebaseAuthReturn() {
@@ -393,13 +404,14 @@
     }
 
     function postAppleTokenToServer(pending, idToken) {
-        return fetch(CALLBACK_URL, {
+        return fetch(getCallbackUrl(), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
             credentials: 'same-origin',
+            cache: 'no-store',
             body: JSON.stringify({
                 idToken: idToken,
                 accountType: pending.accountType || 'auto',

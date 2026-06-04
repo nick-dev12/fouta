@@ -35,6 +35,8 @@ function firebase_auth_callback_send_json(bool $success, string $message, string
     if (!headers_sent()) {
         header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
         header('Content-Type: application/json; charset=UTF-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('X-Content-Type-Options: nosniff');
     }
     echo json_encode([
         'success' => $success,

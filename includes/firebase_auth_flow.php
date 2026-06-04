@@ -69,6 +69,8 @@ function firebase_auth_json_response($success, $message, $redirect = '')
     if (!headers_sent()) {
         header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
         header('Content-Type: application/json; charset=UTF-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('X-Content-Type-Options: nosniff');
     }
     echo json_encode([
         'success' => (bool) $success,
