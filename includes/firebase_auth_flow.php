@@ -48,12 +48,19 @@ function firebase_auth_safe_redirect($redirect, $fallback)
 
 function firebase_auth_set_user_session(array $user)
 {
+    if (file_exists(__DIR__ . '/auth_redirect.php')) {
+        require_once __DIR__ . '/auth_redirect.php';
+        session_regenerate_id(true);
+    }
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_nom'] = $user['nom'];
     $_SESSION['user_prenom'] = $user['prenom'];
     $_SESSION['user_email'] = (string) ($user['email'] ?? '');
     $_SESSION['user_telephone'] = $user['telephone'];
     $_SESSION['user_statut'] = $user['statut'];
+    if (function_exists('auth_set_portal_cookie')) {
+        auth_set_portal_cookie('client');
+    }
     if (file_exists(__DIR__ . '/panier_invite.php')) {
         require_once __DIR__ . '/panier_invite.php';
         panier_fusionner_invite_apres_connexion((int) $user['id']);
@@ -62,6 +69,10 @@ function firebase_auth_set_user_session(array $user)
 
 function firebase_auth_set_admin_session(array $admin)
 {
+    if (file_exists(__DIR__ . '/auth_redirect.php')) {
+        require_once __DIR__ . '/auth_redirect.php';
+        session_regenerate_id(true);
+    }
     $_SESSION['admin_id'] = $admin['id'];
     $_SESSION['admin_nom'] = $admin['nom'];
     $_SESSION['admin_prenom'] = $admin['prenom'];
@@ -71,6 +82,10 @@ function firebase_auth_set_admin_session(array $admin)
     $_SESSION['admin_boutique_nom'] = trim((string) ($admin['boutique_nom'] ?? ''));
     $_SESSION['admin_boutique_slug'] = trim((string) ($admin['boutique_slug'] ?? ''));
     unset($_SESSION['vendeur_collaborateur_id'], $_SESSION['vendeur_collaborateur_nom']);
+    if (function_exists('auth_set_portal_cookie')) {
+        $role = normalize_admin_role($admin['role'] ?? 'admin');
+        auth_set_portal_cookie($role === 'vendeur' ? 'vendeur' : 'admin');
+    }
 }
 
 function firebase_auth_find_admin(array $profile)
@@ -168,15 +183,22 @@ function firebase_auth_process_callback(array $payload)
         firebase_auth_json_response(false, 'Identifiant Firebase manquant.');
     }
 
-    if ($profile['email'] === '') {
-        $label = firebase_auth_provider_label($profile['provider']);
-        firebase_auth_json_response(false, $label . ' n’a pas fourni d’email utilisable. Autorisez le partage de l’email lors de la connexion.');
-    }
-
     unset($_SESSION['firebase_auth_pending'], $_SESSION['google_auth_pending']);
 
     $admin = firebase_auth_find_admin($profile);
     $user = firebase_auth_find_user($profile);
+
+    if ($profile['email'] === '' && $user && !empty($user['email'])) {
+        $profile['email'] = trim((string) $user['email']);
+    }
+    if ($profile['email'] === '' && $admin && !empty($admin['email'])) {
+        $profile['email'] = trim((string) $admin['email']);
+    }
+
+    if ($profile['email'] === '' && !$user && !$admin) {
+        $label = firebase_auth_provider_label($profile['provider']);
+        firebase_auth_json_response(false, $label . ' n’a pas fourni d’email utilisable. Autorisez le partage de l’email lors de la connexion.');
+    }
 
     if ($admin && normalize_admin_role($admin['role'] ?? '') === 'vendeur') {
         if (($admin['statut'] ?? '') !== 'actif') {

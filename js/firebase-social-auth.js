@@ -2,6 +2,8 @@
     'use strict';
 
     var CALLBACK_URL = '/auth-firebase-callback.php';
+    var APPLE_PENDING_KEY = 'colobanes_apple_auth_pending';
+    var APPLE_FLAG_KEY = 'colobanes_apple_redirect_in_progress';
 
     function isColobanesNativeApp() {
         if (window.__COLOBANES_NATIVE_APP) return true;
@@ -186,24 +188,41 @@
         });
     }
 
+    function isIosWebBrowser() {
+        return /iPhone|iPad|iPod/i.test(navigator.userAgent || '') && !isColobanesNativeApp();
+    }
+
+    function appleRedirectWasStarted() {
+        try {
+            if (localStorage.getItem(APPLE_FLAG_KEY) === '1') {
+                return true;
+            }
+        } catch (e) {
+            // ignore
+        }
+        return !!readAppleRedirectPending();
+    }
+
     function storeAppleRedirectPending(button) {
         var accountType = button.getAttribute('data-social-auth-type') || button.getAttribute('data-google-auth-type') || 'auto';
         var redirect = button.getAttribute('data-social-auth-redirect') || button.getAttribute('data-google-auth-redirect') || '';
+        var payload = JSON.stringify({
+            accountType: accountType,
+            redirect: redirect
+        });
         try {
-            sessionStorage.setItem('colobanes_apple_auth_pending', JSON.stringify({
-                accountType: accountType,
-                redirect: redirect
-            }));
+            sessionStorage.setItem(APPLE_PENDING_KEY, payload);
+            localStorage.setItem(APPLE_PENDING_KEY, payload);
+            localStorage.setItem(APPLE_FLAG_KEY, '1');
+            return true;
         } catch (e) {
-            // sessionStorage indisponible (mode privé strict) : popup en secours
             return false;
         }
-        return true;
     }
 
     function readAppleRedirectPending() {
         try {
-            var raw = sessionStorage.getItem('colobanes_apple_auth_pending');
+            var raw = sessionStorage.getItem(APPLE_PENDING_KEY) || localStorage.getItem(APPLE_PENDING_KEY);
             if (!raw) {
                 return null;
             }
@@ -215,9 +234,78 @@
 
     function clearAppleRedirectPending() {
         try {
-            sessionStorage.removeItem('colobanes_apple_auth_pending');
+            sessionStorage.removeItem(APPLE_PENDING_KEY);
+            localStorage.removeItem(APPLE_PENDING_KEY);
+            localStorage.removeItem(APPLE_FLAG_KEY);
         } catch (e) {
             // ignore
+        }
+    }
+
+    function userIsAppleProvider(user) {
+        if (!user || !user.providerData || !user.providerData.length) {
+            return false;
+        }
+        for (var i = 0; i < user.providerData.length; i++) {
+            if (user.providerData[i].providerId === 'apple.com') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Safari iOS : getRedirectResult() peut être vide alors que currentUser est déjà connecté (Face ID).
+     */
+    function resolveAppleFirebaseUser() {
+        return firebase.auth().getRedirectResult().then(function (result) {
+            if (result && result.user && userIsAppleProvider(result.user)) {
+                return result.user;
+            }
+            var current = firebase.auth().currentUser;
+            if (current && userIsAppleProvider(current)) {
+                return current;
+            }
+            return new Promise(function (resolve) {
+                var settled = false;
+                var unsub = firebase.auth().onAuthStateChanged(function (user) {
+                    if (settled) {
+                        return;
+                    }
+                    if (user && userIsAppleProvider(user)) {
+                        settled = true;
+                        unsub();
+                        resolve(user);
+                    }
+                });
+                setTimeout(function () {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    unsub();
+                    var late = firebase.auth().currentUser;
+                    resolve(late && userIsAppleProvider(late) ? late : null);
+                }, isIosWebBrowser() ? 2500 : 1200);
+            });
+        });
+    }
+
+    function showAppleCompletionUi(isError, message) {
+        var wrap = document.querySelector('.social-auth');
+        if (!wrap) {
+            return;
+        }
+        var btn = wrap.querySelector('.apple-auth-btn');
+        if (!btn) {
+            return;
+        }
+        if (isError) {
+            setMessage(btn, message, true);
+            disableSocialButtons(wrap, false);
+        } else {
+            disableSocialButtons(wrap, true);
+            setMessage(btn, message || 'Finalisation de la connexion Apple…', false);
         }
     }
 
@@ -248,52 +336,62 @@
     }
 
     /**
-     * Après signInWithRedirect Apple, finalise la connexion au retour sur la page.
+     * Après signInWithRedirect Apple, finalise la connexion au retour sur la page (Safari / Face ID).
      */
+    var appleCompletionInFlight = false;
+
     function completeAppleRedirectIfNeeded() {
+        if (!appleRedirectWasStarted() || appleCompletionInFlight) {
+            return Promise.resolve();
+        }
         if (typeof firebase === 'undefined' || !firebase.auth) {
             return Promise.resolve();
         }
 
-        var pending = readAppleRedirectPending();
-        if (!pending) {
-            return Promise.resolve();
-        }
+        appleCompletionInFlight = true;
+        showAppleCompletionUi(false, 'Finalisation de la connexion Apple…');
 
-        var wrap = document.querySelector('.social-auth');
-        if (wrap) {
-            disableSocialButtons(wrap, true);
-            var firstBtn = wrap.querySelector('.apple-auth-btn');
-            if (firstBtn) {
-                setMessage(firstBtn, 'Finalisation de la connexion Apple…', false);
-            }
-        }
+        var pending = readAppleRedirectPending() || { accountType: 'auto', redirect: '' };
 
-        return firebase.auth().getRedirectResult().then(function (result) {
-            if (!result || !result.user) {
-                clearAppleRedirectPending();
-                if (wrap) {
-                    disableSocialButtons(wrap, false);
-                }
-                return;
+        return resolveAppleFirebaseUser().then(function (user) {
+            if (!user) {
+                throw new Error(
+                    'Connexion Apple non finalisée. Réessayez ou connectez-vous avec votre email et mot de passe.'
+                );
             }
-            return result.user.getIdToken().then(function (idToken) {
+            return user.getIdToken(true).then(function (idToken) {
                 clearAppleRedirectPending();
                 return postAppleTokenToServer(pending, idToken);
             });
         }).catch(function (error) {
             clearAppleRedirectPending();
-            if (wrap) {
-                disableSocialButtons(wrap, false);
-                var btn = wrap.querySelector('.apple-auth-btn');
-                if (btn) {
-                    setMessage(btn, error && error.message ? error.message : 'Connexion Apple impossible.', true);
-                }
-            }
+            showAppleCompletionUi(
+                true,
+                error && error.message ? error.message : 'Connexion Apple impossible.'
+            );
+        }).finally(function () {
+            appleCompletionInFlight = false;
         });
     }
 
+    function scheduleAppleRedirectCompletion(attempt) {
+        if (!appleRedirectWasStarted()) {
+            return;
+        }
+        attempt = attempt || 0;
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            if (attempt < 40) {
+                setTimeout(function () {
+                    scheduleAppleRedirectCompletion(attempt + 1);
+                }, 100);
+            }
+            return;
+        }
+        completeAppleRedirectIfNeeded();
+    }
+
     window.colobanesCompleteAppleRedirect = completeAppleRedirectIfNeeded;
+    window.colobanesScheduleAppleRedirect = scheduleAppleRedirectCompletion;
 
     function signInWithApple(button) {
         if (isColobanesNativeApp()) {
@@ -349,5 +447,9 @@
         if (appleBtn) {
             signInWithApple(appleBtn);
         }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        scheduleAppleRedirectCompletion(0);
     });
 })();

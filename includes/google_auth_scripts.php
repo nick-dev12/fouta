@@ -29,7 +29,9 @@ $social_auth_v = file_exists($social_auth_js) ? (string) filemtime($social_auth_
             if (!firebase.apps.length) {
                 firebase.initializeApp(_socialAuthConfig);
             }
-            if (typeof window.colobanesCompleteAppleRedirect === 'function') {
+            if (typeof window.colobanesScheduleAppleRedirect === 'function') {
+                window.colobanesScheduleAppleRedirect(0);
+            } else if (typeof window.colobanesCompleteAppleRedirect === 'function') {
                 window.colobanesCompleteAppleRedirect();
             }
         } catch (e) {
