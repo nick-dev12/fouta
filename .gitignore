@@ -75,6 +75,9 @@ uploads/
 
 *.log
 logs/
+# Journal d'audit super admin (code PHP, pas des fichiers de log serveur)
+!super_admin/logs/
+!super_admin/logs/**
 cache/
 tmp/
 temp/

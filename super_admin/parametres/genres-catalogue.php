@@ -3,6 +3,12 @@
  * Genres produits — indépendants des rayons ; les vendeurs les cochent à la publication.
  */
 require_once __DIR__ . '/../includes/require_login.php';
+
+if (ob_get_level() === 0) {
+    ob_start();
+}
+require_once dirname(__DIR__, 2) . '/includes/flash_toast.php';
+
 require_once dirname(__DIR__, 2) . '/models/model_genres.php';
 require_once dirname(__DIR__, 2) . '/models/model_categories.php';
 require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
@@ -76,8 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $flash_err = 'Erreur lors de l’enregistrement des catégories liées.';
                         } else {
                             super_admin_log_action($sa_id, 'genre_cree', 'genres', $id, $nom);
-                            header('Location: genres-catalogue.php?ok=1', true, 303);
-                            exit;
+                            http_redirect_safe('/super_admin/parametres/genres-catalogue.php?ok=1');
                         }
                     } else {
                         $flash_err = 'Impossible d’ajouter le genre (nom déjà utilisé ou erreur).';
@@ -127,8 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $flash_err = 'Le genre a été mis à jour mais l’enregistrement des catégories liées a échoué.';
                     } else {
                         super_admin_log_action($sa_id, 'genre_modifie', 'genres', $id, $nom);
-                        header('Location: genres-catalogue.php?ok=1', true, 303);
-                        exit;
+                        http_redirect_safe('/super_admin/parametres/genres-catalogue.php?ok=1');
                     }
                 } elseif ($flash_err === '') {
                     $flash_err = 'Modification impossible (nom en doublon ou erreur).';
@@ -144,8 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     @unlink($upload_root . str_replace('\\', '/', (string) $row['image']));
                 }
                 super_admin_log_action($sa_id, 'genre_supprime', 'genres', $id, (string) ($row['nom'] ?? ''));
-                header('Location: genres-catalogue.php?ok=1', true, 303);
-                exit;
+                http_redirect_safe('/super_admin/parametres/genres-catalogue.php?ok=1');
             } else {
                 $flash_err = 'Suppression impossible : des produits sont encore associés à ce genre.';
             }
@@ -313,7 +316,7 @@ $table_ok = genres_table_exists();
                                     <td><span class="sa-cat-num"><?php echo (int) $nbp; ?></span></td>
                                     <td class="sa-cat-actions">
                                         <a href="genres-catalogue.php?edit_genre=<?php echo $gid; ?>" class="sa-cat-btn sa-cat-btn--ghost sa-cat-btn--sm">Modifier</a>
-                                        <form method="post" action="" class="sa-cat-inline-form" onsubmit="return confirm('Supprimer ce genre ?');">
+                                        <form method="post" action="genres-catalogue.php" class="sa-cat-inline-form" onsubmit="return confirm('Supprimer ce genre ?');">
                                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                                             <input type="hidden" name="g_id" value="<?php echo $gid; ?>">
                                             <button type="submit" name="delete_genre" value="1" class="sa-cat-btn sa-cat-btn--danger sa-cat-btn--sm" <?php echo $nbp > 0 ? 'disabled title="Retirez ce genre des produits d’abord"' : ''; ?>>Supprimer</button>
@@ -341,7 +344,7 @@ $table_ok = genres_table_exists();
             <div class="sa-cat-modal__body">
                 <?php if ($row_edit_g): ?>
                     <div class="sa-cat-form-block">
-                        <form class="sa-cat-form" method="post" action="" enctype="multipart/form-data">
+                        <form class="sa-cat-form" method="post" action="genres-catalogue.php" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="g_id" value="<?php echo (int) $row_edit_g['id']; ?>">
                             <p><strong>Modifier</strong> « <?php echo htmlspecialchars((string) $row_edit_g['nom'], ENT_QUOTES, 'UTF-8'); ?> »</p>
@@ -394,7 +397,7 @@ $table_ok = genres_table_exists();
                 <?php else: ?>
                     <div class="sa-cat-form-block">
                         <div class="sa-cat-form-card">
-                            <form class="sa-cat-form" method="post" action="" enctype="multipart/form-data">
+                            <form class="sa-cat-form" method="post" action="genres-catalogue.php" enctype="multipart/form-data">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                                 <p><strong>Nouveau</strong> genre</p>
                                 <div class="sa-cat-field">

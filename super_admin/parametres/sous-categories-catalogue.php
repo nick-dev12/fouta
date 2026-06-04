@@ -3,6 +3,12 @@
  * Sous-catégories plateforme — liées à un rayon (categories_generales), visibles des vendeurs.
  */
 require_once __DIR__ . '/../includes/require_login.php';
+
+if (ob_get_level() === 0) {
+    ob_start();
+}
+require_once dirname(__DIR__, 2) . '/includes/flash_toast.php';
+
 require_once dirname(__DIR__, 2) . '/models/model_categories.php';
 require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
 require_once dirname(__DIR__, 2) . '/models/model_produits_sous_categories.php';
@@ -47,8 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             plateforme_ensure_liaison_rows_for_legacy_categories();
                         }
                         super_admin_log_action($sa_id, 'sous_categorie_creee', 'categories', (int) $new_id, $nom);
-                        header('Location: sous-categories-catalogue.php?ok=1', true, 303);
-                        exit;
+                        http_redirect_safe('/super_admin/parametres/sous-categories-catalogue.php?ok=1');
                     }
                     $flash_err = 'Impossible d’enregistrer (nom déjà utilisé dans ce rayon ou erreur).';
                 }
@@ -85,8 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         plateforme_ensure_liaison_rows_for_legacy_categories();
                     }
                     super_admin_log_action($sa_id, 'sous_categorie_modifiee', 'categories', $id, $nom);
-                    header('Location: sous-categories-catalogue.php?ok=1', true, 303);
-                    exit;
+                    http_redirect_safe('/super_admin/parametres/sous-categories-catalogue.php?ok=1');
                 } elseif ($flash_err === '') {
                     $flash_err = 'Modification impossible (nom déjà utilisé dans ce rayon ou erreur).';
                 }
@@ -114,8 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         @unlink($upload_root . str_replace('\\', '/', $img));
                     }
                     super_admin_log_action($sa_id, 'sous_categorie_supprimee', 'categories', $id, (string) ($row['nom'] ?? ''));
-                    header('Location: sous-categories-catalogue.php?ok=1', true, 303);
-                    exit;
+                    http_redirect_safe('/super_admin/parametres/sous-categories-catalogue.php?ok=1');
                 }
                 $flash_err = 'Suppression impossible.';
             }
@@ -240,7 +243,7 @@ $table_ok = !empty($rayons) && categories_has_categorie_generale_id_column();
                                 <td><?php echo htmlspecialchars((string) ($sc['generale_nom'] ?? '—'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td class="sa-cat-actions">
                                     <a class="sa-cat-btn sa-cat-btn--ghost sa-cat-btn--sm" href="sous-categories-catalogue.php?edit_sc=<?php echo $scid; ?>">Modifier</a>
-                                    <form method="post" class="sa-cat-inline-form" onsubmit="return confirm('Supprimer cette sous-catégorie ?');">
+                                    <form method="post" action="sous-categories-catalogue.php" class="sa-cat-inline-form" onsubmit="return confirm('Supprimer cette sous-catégorie ?');">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="sc_id" value="<?php echo $scid; ?>">
                                         <button type="submit" name="delete_sc" value="1" class="sa-cat-btn sa-cat-btn--danger sa-cat-btn--sm">Supprimer</button>
@@ -266,7 +269,7 @@ $table_ok = !empty($rayons) && categories_has_categorie_generale_id_column();
                 <button type="button" class="sa-cat-modal__close" data-sa-cat-close-modal aria-label="Fermer"><i class="fas fa-times" aria-hidden="true"></i></button>
             </div>
             <div class="sa-cat-modal__body">
-                <form class="sa-cat-form" method="post" enctype="multipart/form-data" action="">
+                <form class="sa-cat-form" method="post" enctype="multipart/form-data" action="sous-categories-catalogue.php">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                     <?php if ($row_edit): ?>
                     <input type="hidden" name="sc_id" value="<?php echo (int) $row_edit['id']; ?>">

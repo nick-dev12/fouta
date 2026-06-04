@@ -3,6 +3,12 @@
  * Rayons du catalogue (catégories générales).
  */
 require_once __DIR__ . '/../includes/require_login.php';
+
+if (ob_get_level() === 0) {
+    ob_start();
+}
+require_once dirname(__DIR__, 2) . '/includes/flash_toast.php';
+
 require_once dirname(__DIR__, 2) . '/models/model_categories.php';
 require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
 require_once dirname(__DIR__, 2) . '/controllers/controller_super_admin.php';
@@ -41,8 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = categories_generales_insert_row($nom, $d !== '' ? $d : null, null, $so, $ap, $at, $am, $ac, $img);
                 if ($id) {
                     super_admin_log_action($sa_id, 'categorie_generale_creee', 'categories_generales', $id, $nom);
-                    header('Location: categories-catalogue.php?ok=1', true, 303);
-                    exit;
+                    http_redirect_safe('/super_admin/parametres/categories-catalogue.php?ok=1');
                 }
                 $flash_err = 'Impossible d’ajouter la catégorie générale (nom déjà utilisé ou erreur).';
             }
@@ -73,8 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 if ($flash_err === '' && categories_generales_update_row($id, $nom, $d !== '' ? $d : null, null, $so, $ap, $at, $am, $ac, $img)) {
                     super_admin_log_action($sa_id, 'categorie_generale_modifiee', 'categories_generales', $id, $nom);
-                    header('Location: categories-catalogue.php?ok=1', true, 303);
-                    exit;
+                    http_redirect_safe('/super_admin/parametres/categories-catalogue.php?ok=1');
                 }
                 if ($flash_err === '') {
                     $flash_err = 'Modification impossible (nom en doublon ou erreur).';
@@ -84,8 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = (int) ($_POST['cg_id'] ?? 0);
             if (categories_generales_delete_row($id)) {
                 super_admin_log_action($sa_id, 'categorie_generale_supprimee', 'categories_generales', $id, '');
-                header('Location: categories-catalogue.php?ok=1', true, 303);
-                exit;
+                http_redirect_safe('/super_admin/parametres/categories-catalogue.php?ok=1');
             }
             $flash_err = 'Suppression impossible : supprimez d’abord les liaisons (ex. genres) liées à ce rayon.';
         }
@@ -242,7 +245,7 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                                     </td>
                                     <td class="sa-cat-actions">
                                         <a href="categories-catalogue.php?edit_cg=<?php echo (int) $cg['id']; ?>" class="sa-cat-btn sa-cat-btn--ghost sa-cat-btn--sm">Modifier</a>
-                                        <form method="post" action="" class="sa-cat-inline-form" onsubmit="return confirm('Supprimer ce rayon ? Les liaisons catalogue doivent être retirées au préalable.');">
+                                        <form method="post" action="categories-catalogue.php" class="sa-cat-inline-form" onsubmit="return confirm('Supprimer ce rayon ? Les liaisons catalogue doivent être retirées au préalable.');">
                                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                                             <input type="hidden" name="cg_id" value="<?php echo (int) $cg['id']; ?>">
                                             <button type="submit" name="delete_cg" value="1" class="sa-cat-btn sa-cat-btn--danger sa-cat-btn--sm">Supprimer</button>
@@ -270,7 +273,7 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
             <div class="sa-cat-modal__body">
                 <?php if ($row_edit_cg): ?>
                     <div class="sa-cat-form-block">
-                        <form class="sa-cat-form" method="post" action="" enctype="multipart/form-data">
+                        <form class="sa-cat-form" method="post" action="categories-catalogue.php" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="cg_id" value="<?php echo (int) $row_edit_cg['id']; ?>">
                             <p><strong>Modifier</strong> « <?php echo htmlspecialchars((string) $row_edit_cg['nom'], ENT_QUOTES, 'UTF-8'); ?> »</p>
@@ -322,7 +325,7 @@ $table_ok = categories_generales_table_exists() && categories_has_categorie_gene
                 <?php else: ?>
                     <div class="sa-cat-form-block">
                         <div class="sa-cat-form-card">
-                            <form class="sa-cat-form" method="post" action="" enctype="multipart/form-data">
+                            <form class="sa-cat-form" method="post" action="categories-catalogue.php" enctype="multipart/form-data">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                                 <p><strong>Nouvelle</strong> catégorie générale</p>
                                 <div class="sa-cat-field">
