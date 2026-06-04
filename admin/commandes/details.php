@@ -41,7 +41,7 @@ if ($vf_ck !== null && (int) ($commande['vendeur_id'] ?? 0) !== $vf_ck) {
     exit;
 }
 
-$statut_raw = (string) ($commande['statut'] ?? '');
+$statut_raw = commande_statut_ui_normalize((string) ($commande['statut'] ?? ''));
 $statut_safe_class = htmlspecialchars($statut_raw, ENT_QUOTES, 'UTF-8');
 $statut_display = ucfirst(str_replace('_', ' ', $statut_raw));
 if ($statut_raw === 'annulee') {
@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && $commande_id > 0) {
     $statut_flash_err = 'Impossible de mettre à jour le statut. Vérifiez que la commande est dans un état compatible.';
     $commande = get_commande_by_id($commande_id);
     if ($commande) {
-        $statut_raw = (string) ($commande['statut'] ?? '');
+        $statut_raw = commande_statut_ui_normalize((string) ($commande['statut'] ?? ''));
         $statut_safe_class = htmlspecialchars($statut_raw, ENT_QUOTES, 'UTF-8');
         $statut_display = ucfirst(str_replace('_', ' ', $statut_raw));
         if ($statut_raw === 'annulee') {
@@ -241,7 +241,7 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
                     <?php endforeach; ?>
                 </div>
                 <div class="csf-action-zone">
-                    <?php if (in_array($commande['statut'], ['en_attente', 'confirmee'], true)): ?>
+                    <?php if (in_array($statut_raw, ['en_attente', 'confirmee'], true)): ?>
                     <form method="POST" action="<?php echo htmlspecialchars($detail_form_action, ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="id" value="<?php echo (int) $commande_id; ?>">
                         <button type="submit" name="prendre_en_charge" value="1" class="csf-action-btn csf-action-btn--charge">
@@ -250,7 +250,7 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
                             <i class="fas fa-chevron-right csf-action-btn__arrow" aria-hidden="true"></i>
                         </button>
                     </form>
-                    <?php elseif (in_array($commande['statut'], ['prise_en_charge', 'en_preparation'], true)): ?>
+                    <?php elseif (in_array($statut_raw, ['prise_en_charge', 'en_preparation'], true)): ?>
                     <form method="POST" action="<?php echo htmlspecialchars($detail_form_action, ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="id" value="<?php echo (int) $commande_id; ?>">
                         <button type="submit" name="expedier" value="1" class="csf-action-btn csf-action-btn--ship">
@@ -259,7 +259,7 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
                             <i class="fas fa-chevron-right csf-action-btn__arrow" aria-hidden="true"></i>
                         </button>
                     </form>
-                    <?php elseif (in_array($commande['statut'], ['livraison_en_cours', 'expediee'], true)): ?>
+                    <?php elseif (in_array($statut_raw, ['livraison_en_cours', 'expediee'], true)): ?>
                     <form method="POST" action="<?php echo htmlspecialchars($detail_form_action, ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="id" value="<?php echo (int) $commande_id; ?>">
                         <button type="submit" name="confirmer_livraison" value="1" class="csf-action-btn csf-action-btn--confirm">

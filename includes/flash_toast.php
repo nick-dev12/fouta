@@ -84,6 +84,30 @@ if (!function_exists('flash_toast_from_query')) {
     }
 }
 
+if (!function_exists('http_redirect_safe')) {
+    /**
+     * Redirection HTTP après POST (évite page blanche / re-soumission).
+     */
+    function http_redirect_safe($url, $code = 303)
+    {
+        $url = trim((string) $url);
+        if ($url === '' || strpos($url, '//') !== false) {
+            $url = '/index.php';
+        }
+        if ($url[0] !== '/') {
+            $url = '/' . $url;
+        }
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Location: ' . $url, true, (int) $code);
+        exit;
+    }
+}
+
 if (!function_exists('flash_toast_collect')) {
     function flash_toast_collect()
     {

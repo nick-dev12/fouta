@@ -8,6 +8,88 @@
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/model_admin_activite.php';
 
+/**
+ * Valeurs ENUM réelles de commandes.statut (cache).
+ *
+ * @return array<int, string>
+ */
+function commande_statut_enum_values() {
+    static $values = null;
+    if ($values !== null) {
+        return $values;
+    }
+    global $db;
+    $values = [];
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM commandes LIKE 'statut'");
+        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+        $type = (string) ($row['Type'] ?? '');
+        if (preg_match_all("/'([^']+)'/", $type, $m)) {
+            $values = $m[1];
+        }
+    } catch (PDOException $e) {
+        $values = [];
+    }
+    if (empty($values)) {
+        $values = [
+            'en_attente', 'confirmee', 'prise_en_charge', 'en_preparation',
+            'livraison_en_cours', 'expediee', 'livree', 'paye', 'annulee',
+        ];
+    }
+    return $values;
+}
+
+/**
+ * Choisit une valeur ENUM compatible en base pour un statut logique.
+ */
+function commande_statut_resolve_for_db($statut_logique) {
+    $statut_logique = (string) $statut_logique;
+    $enum = commande_statut_enum_values();
+    $candidates_map = [
+        'livraison_en_cours' => ['livraison_en_cours', 'expediee', 'en_cours_expedition'],
+        'expediee' => ['expediee', 'livraison_en_cours', 'en_cours_expedition'],
+        'prise_en_charge' => ['prise_en_charge', 'en_preparation', 'confirmee'],
+        'en_preparation' => ['en_preparation', 'prise_en_charge'],
+        'livree' => ['livree', 'paye'],
+        'paye' => ['paye', 'livree'],
+    ];
+    $candidates = $candidates_map[$statut_logique] ?? [$statut_logique];
+    foreach ($candidates as $c) {
+        if (in_array($c, $enum, true)) {
+            return $c;
+        }
+    }
+    return in_array($statut_logique, $enum, true) ? $statut_logique : $statut_logique;
+}
+
+/**
+ * Normalise un statut lu en BDD pour l’interface admin.
+ */
+function commande_statut_ui_normalize($statut) {
+    $s = (string) $statut;
+    $map = [
+        'en_cours_expedition' => 'livraison_en_cours',
+        'expediee' => 'livraison_en_cours',
+    ];
+    return $map[$s] ?? $s;
+}
+
+/**
+ * ID admin sûr pour admin_dernier_traitement_id (FK vers admin.id).
+ */
+function commande_admin_traitant_id_safe($admin_traitant_id) {
+    if (!admin_activite_column_exists('commandes', 'admin_dernier_traitement_id')) {
+        return null;
+    }
+    $admin_traitant_id = (int) $admin_traitant_id;
+    if ($admin_traitant_id <= 0) {
+        return null;
+    }
+    require_once __DIR__ . '/model_admin.php';
+    $adm = get_admin_by_id($admin_traitant_id);
+    return $adm ? $admin_traitant_id : null;
+}
+
 function _admin_cp_has_option_columns() {
     static $has = null;
     if ($has === null) {
@@ -219,17 +301,20 @@ function update_commande_statut($commande_id, $statut, $admin_traitant_id = null
     global $db;
 
     $commande = get_commande_by_id($commande_id);
-    if (!$commande) return false;
+    if (!$commande) {
+        return false;
+    }
 
+    $statut = commande_statut_resolve_for_db($statut);
     $ancien_statut = $commande['statut'] ?? '';
     $numero_commande = $commande['numero_commande'] ?? '';
 
     $set_traitement = '';
     $params_trait = ['id' => $commande_id, 'statut' => $statut];
-    if (admin_activite_column_exists('commandes', 'admin_dernier_traitement_id')
-        && $admin_traitant_id !== null && (int) $admin_traitant_id > 0) {
+    $traitant_safe = commande_admin_traitant_id_safe($admin_traitant_id);
+    if ($traitant_safe !== null) {
         $set_traitement = ', admin_dernier_traitement_id = :traitant';
-        $params_trait['traitant'] = (int) $admin_traitant_id;
+        $params_trait['traitant'] = $traitant_safe;
     }
 
     if ($statut === 'paye' && $ancien_statut !== 'paye') {
@@ -299,6 +384,8 @@ function update_commande_statut($commande_id, $statut, $admin_traitant_id = null
         ");
         return $stmt->execute($params_trait);
     } catch (PDOException $e) {
+        error_log('[update_commande_statut] commande #' . (int) $commande_id
+            . ' -> ' . $statut . ' : ' . $e->getMessage());
         return false;
     }
 }

@@ -1,6 +1,10 @@
 <?php
 session_start();
 
+if (ob_get_level() === 0) {
+    ob_start();
+}
+
 // Inclusion des modèles et contrôleurs
 require_once __DIR__ . '/models/model_produits.php';
 require_once __DIR__ . '/models/model_categories.php';
@@ -25,11 +29,10 @@ $message_type = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_to_panier') {
     $result = process_add_to_panier();
 
-    // Redirection vers le panier après ajout réussi
     if ($result['success']) {
         flash_toast_push('success', 'Produit ajouté au panier avec succès.');
-        header('Location: /panier.php');
-        exit;
+        $back = $produit_id > 0 ? ('/produit.php?id=' . $produit_id . '&added=1') : '/index.php?added=1';
+        http_redirect_safe($back);
     }
     $message = $result['message'] ?? '';
     $message_type = 'error';
@@ -1836,7 +1839,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
 
                 <!-- Options (couleur, poids, taille) : affichées pour tous les utilisateurs -->
-                <form method="POST" action="" id="add-to-panier-form" class="produit-add-form">
+                <form method="POST" action="produit.php?id=<?php echo (int) $produit_id; ?>" id="add-to-panier-form" class="produit-add-form">
                     <input type="hidden" name="action" value="add_to_panier">
                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
                     <?php if ($has_variantes): ?>
