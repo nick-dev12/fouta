@@ -4,9 +4,9 @@
  * Programmation procédurale uniquement
  */
 
+ob_start();
+
 require_once __DIR__ . '/../includes/require_admin_session.php';
-
-
 
 // Récupérer l'ID de la commande (GET ou POST — formulaires de statut)
 $commande_id = isset($_REQUEST['id']) ? (int) $_REQUEST['id'] : 0;
@@ -77,6 +77,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && $commande_id > 0) {
     }
 
     if ($statut_mis_a_jour !== null) {
+        $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Le client a été notifié.';
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        $redirect_url = '/admin/commandes/details.php?id=' . (int) $commande_id;
+        header('Location: ' . $redirect_url, true, 303);
+
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            @ini_set('zlib.output_compression', '0');
+            flush();
+        }
+
         try {
             require_once __DIR__ . '/../../services/send_commande_notification.php';
             send_commande_status_notification(
@@ -88,8 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && $commande_id > 0) {
         } catch (Throwable $e) {
             error_log('[commandes/details] notification : ' . $e->getMessage());
         }
-        $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Le client a été notifié.';
-        header('Location: details.php?id=' . $commande_id, true, 303);
+
         exit;
     }
 

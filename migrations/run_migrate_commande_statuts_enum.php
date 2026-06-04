@@ -28,7 +28,7 @@ if (!$is_cli) {
 
 function cse_out(string $line): void
 {
-    echo $line . (PHP_SAPI === 'cli' ? "\n" : "<br>\n");
+    echo $line . "\n";
 }
 
 if (!$db) {
