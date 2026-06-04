@@ -4,6 +4,8 @@
  * Programmation procédurale uniquement
  */
 
+ob_start();
+
 session_start();
 
 require_once __DIR__ . '/includes/marketplace_helpers.php';
@@ -44,21 +46,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $result = process_create_commande();
 
     if ($result['success']) {
-        // Envoi de la réponse immédiatement pour ne pas bloquer l'utilisateur
         ignore_user_abort(true);
         $nums = !empty($result['numeros_commandes']) ? $result['numeros_commandes'] : [$result['numero_commande']];
-        header('Location: /user/mes-commandes.php?success=1&numeros=' . urlencode(implode(',', $nums)));
-        echo ' ';
+        $redirect_url = '/user/mes-commandes.php?success=1&numeros=' . urlencode(implode(',', $nums));
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        header('Location: ' . $redirect_url, true, 303);
+
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         } else {
+            @ini_set('zlib.output_compression', '0');
             flush();
-            if (ob_get_level()) {
-                ob_end_flush();
-            }
         }
 
-        // Envoi notification + email en arrière-plan (une cible par boutique)
+        // Notifications + e-mails après envoi de la redirection au navigateur
         if (file_exists(__DIR__ . '/services/send_new_commande_to_admin.php')) {
             require_once __DIR__ . '/services/send_new_commande_to_admin.php';
             require_once __DIR__ . '/services/send_commande_notification.php';

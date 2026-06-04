@@ -248,5 +248,3 @@ function process_create_commande() {
     ];
 }
 
-?>
-
