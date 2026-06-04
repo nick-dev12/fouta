@@ -5,15 +5,52 @@
 
 require_once __DIR__ . '/firebase_auth_token.php';
 
+/**
+ * Garantit $db en portée globale (conn.php inclus depuis une fonction ne expose pas $db aux modèles).
+ */
+function firebase_auth_bootstrap_database()
+{
+    global $db;
+
+    if (isset($GLOBALS['db']) && $GLOBALS['db'] instanceof PDO) {
+        $db = $GLOBALS['db'];
+        return;
+    }
+
+    if (!isset($db) || !($db instanceof PDO)) {
+        require_once __DIR__ . '/../conn/conn.php';
+    }
+
+    if (isset($db) && $db instanceof PDO) {
+        $GLOBALS['db'] = $db;
+        return;
+    }
+
+    if (isset($GLOBALS['db']) && $GLOBALS['db'] instanceof PDO) {
+        $db = $GLOBALS['db'];
+    }
+}
+
 function firebase_auth_load_models()
 {
     static $loaded = false;
     if ($loaded) {
         return;
     }
+    firebase_auth_bootstrap_database();
     require_once __DIR__ . '/../models/model_users.php';
     require_once __DIR__ . '/../models/model_admin.php';
     $loaded = true;
+}
+
+function firebase_auth_ensure_database()
+{
+    firebase_auth_bootstrap_database();
+    global $db;
+    if (!isset($db) || !($db instanceof PDO)) {
+        firebase_auth_json_response(false, 'Connexion à la base de données indisponible.');
+    }
+    firebase_auth_load_models();
 }
 
 if (!function_exists('firebase_auth_redirect_safe')) {
@@ -30,9 +67,8 @@ function firebase_auth_json_response($success, $message, $redirect = '')
         ob_end_clean();
     }
     if (!headers_sent()) {
-        header('Content-Type: application/json; charset=UTF-8');
         header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
-        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Content-Type: application/json; charset=UTF-8');
     }
     echo json_encode([
         'success' => (bool) $success,
@@ -58,6 +94,11 @@ function firebase_auth_set_user_session(array $user)
 {
     if (file_exists(__DIR__ . '/auth_redirect.php')) {
         require_once __DIR__ . '/auth_redirect.php';
+        try {
+            @session_regenerate_id(true);
+        } catch (Throwable $e) {
+            error_log('[firebase_auth] session_regenerate_id client : ' . $e->getMessage());
+        }
     }
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_nom'] = $user['nom'];
@@ -82,6 +123,11 @@ function firebase_auth_set_admin_session(array $admin)
 {
     if (file_exists(__DIR__ . '/auth_redirect.php')) {
         require_once __DIR__ . '/auth_redirect.php';
+        try {
+            @session_regenerate_id(true);
+        } catch (Throwable $e) {
+            error_log('[firebase_auth] session_regenerate_id admin : ' . $e->getMessage());
+        }
     }
     $_SESSION['admin_id'] = $admin['id'];
     $_SESSION['admin_nom'] = $admin['nom'];
@@ -162,12 +208,8 @@ function firebase_auth_pending_provider_label(array $pending)
 
 function firebase_auth_process_callback(array $payload)
 {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
         firebase_auth_json_response(false, 'Méthode non autorisée.');
-    }
-
-    if (!is_array($payload)) {
-        firebase_auth_json_response(false, 'Requête invalide.');
     }
 
     $account_type_raw = isset($payload['accountType']) ? trim((string) $payload['accountType']) : 'auto';
@@ -194,6 +236,8 @@ function firebase_auth_process_callback(array $payload)
     }
 
     unset($_SESSION['firebase_auth_pending'], $_SESSION['google_auth_pending']);
+
+    firebase_auth_ensure_database();
 
     $admin = firebase_auth_find_admin($profile);
     $user = firebase_auth_find_user($profile);

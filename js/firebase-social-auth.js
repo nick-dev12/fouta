@@ -61,29 +61,21 @@
 
     function parseFirebaseAuthResponse(response) {
         return response.text().then(function (text) {
-            var body = (text || '').trim();
-            if (!response.ok && body === '') {
-                throw new Error('Erreur serveur (HTTP ' + response.status + '). Réessayez.');
-            }
-            if (body === '') {
-                throw new Error('Réponse serveur vide. Réessayez.');
+            var trimmed = (text || '').trim();
+            if (!trimmed) {
+                throw new Error('Réponse serveur vide (code ' + response.status + ').');
             }
             try {
-                return JSON.parse(body);
-            } catch (parseErr) {
-                if (body.indexOf('{') !== -1 && body.indexOf('}') !== -1) {
-                    var start = body.indexOf('{');
-                    var end = body.lastIndexOf('}');
-                    try {
-                        return JSON.parse(body.slice(start, end + 1));
-                    } catch (e2) {
-                        // ignore
-                    }
+                return JSON.parse(trimmed);
+            } catch (e) {
+                if (trimmed.indexOf('<') === 0 || trimmed.indexOf('<!') === 0) {
+                    throw new Error(
+                        'Le serveur a renvoyé une page HTML au lieu de JSON (code '
+                        + response.status
+                        + '). Vérifiez la configuration Firebase sur le VPS.'
+                    );
                 }
-                throw new Error(
-                    'Réponse serveur invalide (HTTP ' + response.status + '). '
-                    + 'Contactez le support si le problème persiste.'
-                );
+                throw new Error('Réponse serveur invalide (code ' + response.status + ').');
             }
         });
     }
@@ -127,6 +119,11 @@
                 });
             })
             .then(function (response) {
+                if (!response.ok) {
+                    return parseFirebaseAuthResponse(response).then(function (data) {
+                        throw new Error((data && data.message) ? data.message : ('Erreur serveur (' + response.status + ').'));
+                    });
+                }
                 return parseFirebaseAuthResponse(response);
             })
             .then(function (data) {
@@ -219,7 +216,41 @@
         return /iPhone|iPad|iPod/i.test(navigator.userAgent || '') && !isColobanesNativeApp();
     }
 
+    /** Redirect Apple uniquement sur Safari iOS ; popup ailleurs (localhost, Android, desktop). */
+    function shouldUseAppleRedirect() {
+        return isIosWebBrowser();
+    }
+
+    function urlHasFirebaseAuthReturn() {
+        var href = (window.location.href || '').toLowerCase();
+        var hash = (window.location.hash || '').toLowerCase();
+        var search = (window.location.search || '').toLowerCase();
+        return href.indexOf('/__/auth/handler') !== -1
+            || hash.indexOf('access_token=') !== -1
+            || hash.indexOf('id_token=') !== -1
+            || search.indexOf('code=') !== -1
+            || search.indexOf('state=') !== -1;
+    }
+
+    function isRecentApplePending(maxMs) {
+        var pending = readAppleRedirectPending();
+        if (!pending || !pending.ts) {
+            return false;
+        }
+        return (Date.now() - (pending.ts || 0)) < (maxMs || 900000);
+    }
+
     function appleRedirectWasStarted() {
+        if (!isRecentApplePending() && !urlHasFirebaseAuthReturn()) {
+            try {
+                if (localStorage.getItem(APPLE_FLAG_KEY) === '1') {
+                    clearAppleRedirectPending();
+                }
+            } catch (e) {
+                // ignore
+            }
+            return false;
+        }
         try {
             if (localStorage.getItem(APPLE_FLAG_KEY) === '1') {
                 return true;
@@ -235,7 +266,8 @@
         var redirect = button.getAttribute('data-social-auth-redirect') || button.getAttribute('data-google-auth-redirect') || '';
         var payload = JSON.stringify({
             accountType: accountType,
-            redirect: redirect
+            redirect: redirect,
+            ts: Date.now()
         });
         try {
             sessionStorage.setItem(APPLE_PENDING_KEY, payload);
@@ -281,25 +313,49 @@
         return false;
     }
 
+    function authReadyPromise(auth) {
+        if (auth && typeof auth.authStateReady === 'function') {
+            return auth.authStateReady();
+        }
+        return Promise.resolve();
+    }
+
+    function pickAppleUserFromRedirectResult(result) {
+        if (!result || !result.user) {
+            return null;
+        }
+        if (userIsAppleProvider(result.user)) {
+            return result.user;
+        }
+        if (result.credential && result.credential.providerId === 'apple.com') {
+            return result.user;
+        }
+        return result.user;
+    }
+
     /**
      * Safari iOS : getRedirectResult() peut être vide alors que currentUser est déjà connecté (Face ID).
      */
     function resolveAppleFirebaseUser() {
-        return firebase.auth().getRedirectResult().then(function (result) {
-            if (result && result.user && userIsAppleProvider(result.user)) {
-                return result.user;
+        var auth = firebase.auth();
+        return authReadyPromise(auth).then(function () {
+            return auth.getRedirectResult();
+        }).then(function (result) {
+            var fromRedirect = pickAppleUserFromRedirectResult(result);
+            if (fromRedirect) {
+                return fromRedirect;
             }
-            var current = firebase.auth().currentUser;
-            if (current && userIsAppleProvider(current)) {
+            var current = auth.currentUser;
+            if (current && (userIsAppleProvider(current) || urlHasFirebaseAuthReturn())) {
                 return current;
             }
             return new Promise(function (resolve) {
                 var settled = false;
-                var unsub = firebase.auth().onAuthStateChanged(function (user) {
-                    if (settled) {
+                var unsub = auth.onAuthStateChanged(function (user) {
+                    if (settled || !user) {
                         return;
                     }
-                    if (user && userIsAppleProvider(user)) {
+                    if (userIsAppleProvider(user) || isRecentApplePending(300000)) {
                         settled = true;
                         unsub();
                         resolve(user);
@@ -311,9 +367,9 @@
                     }
                     settled = true;
                     unsub();
-                    var late = firebase.auth().currentUser;
-                    resolve(late && userIsAppleProvider(late) ? late : null);
-                }, isIosWebBrowser() ? 2500 : 1200);
+                    var late = auth.currentUser;
+                    resolve(late || null);
+                }, isIosWebBrowser() ? 4000 : 2000);
             });
         });
     }
@@ -351,6 +407,11 @@
                 provider: 'apple'
             })
         }).then(function (response) {
+            if (!response.ok) {
+                return parseFirebaseAuthResponse(response).then(function (data) {
+                    throw new Error((data && data.message) ? data.message : ('Erreur serveur (' + response.status + ').'));
+                });
+            }
             return parseFirebaseAuthResponse(response);
         }).then(function (data) {
             if (!data || !data.success || !data.redirect) {
@@ -380,6 +441,10 @@
 
         return resolveAppleFirebaseUser().then(function (user) {
             if (!user) {
+                if (!isRecentApplePending(300000) && !urlHasFirebaseAuthReturn()) {
+                    clearAppleRedirectPending();
+                    return;
+                }
                 throw new Error(
                     'Connexion Apple non finalisée. Réessayez ou connectez-vous avec votre email et mot de passe.'
                 );
@@ -442,8 +507,8 @@
         provider.addScope('email');
         provider.addScope('name');
 
-        // Redirect : plus fiable et souvent plus rapide que la popup Apple (surtout Safari / mobile).
-        if (storeAppleRedirectPending(button)) {
+        // iPhone Safari : redirect ; desktop / localhost / Android : popup (comme Google).
+        if (shouldUseAppleRedirect() && storeAppleRedirectPending(button)) {
             var wrap = button.closest('.social-auth');
             disableSocialButtons(wrap, true);
             setMessage(button, 'Redirection vers Apple…', false);
@@ -475,6 +540,9 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
+        if (!appleRedirectWasStarted()) {
+            return;
+        }
         scheduleAppleRedirectCompletion(0);
     });
 })();

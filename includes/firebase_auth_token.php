@@ -238,13 +238,16 @@ function firebase_auth_profile_from_claims(array $claims)
     $name = isset($claims['name']) ? trim((string) $claims['name']) : '';
     $picture = isset($claims['picture']) ? trim((string) $claims['picture']) : '';
 
-    if ($name === '' && !empty($claims['firebase']['identities']['apple.com'])) {
+    $firebase = (isset($claims['firebase']) && is_array($claims['firebase'])) ? $claims['firebase'] : [];
+    $identities = (isset($firebase['identities']) && is_array($firebase['identities'])) ? $firebase['identities'] : [];
+
+    if ($name === '' && !empty($identities['apple.com'])) {
         $name = 'Utilisateur Apple';
     }
 
     $provider = '';
-    if (!empty($claims['firebase']['sign_in_provider'])) {
-        $provider = (string) $claims['firebase']['sign_in_provider'];
+    if (!empty($firebase['sign_in_provider'])) {
+        $provider = (string) $firebase['sign_in_provider'];
     }
 
     return [

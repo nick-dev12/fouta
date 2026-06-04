@@ -69,6 +69,10 @@ function users_has_column($column) {
     if (array_key_exists($column, $cache)) {
         return $cache[$column];
     }
+    if (!isset($db) || !($db instanceof PDO)) {
+        $cache[$column] = false;
+        return false;
+    }
 
     try {
         $stmt = $db->query("SHOW COLUMNS FROM users LIKE " . $db->quote($column));
