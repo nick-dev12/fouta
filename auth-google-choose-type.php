@@ -4,14 +4,18 @@
  */
 session_start();
 
+if (ob_get_level() === 0) {
+    ob_start();
+}
+
 require_once __DIR__ . '/includes/asset_version.php';
 require_once __DIR__ . '/includes/firebase_auth_flow.php';
+require_once __DIR__ . '/includes/flash_toast.php';
 
 $pending = firebase_auth_get_pending();
 
 if (!$pending || empty($pending['uid']) || empty($pending['email'])) {
-    header('Location: /choix-connexion.php');
-    exit;
+    firebase_auth_redirect_safe('/choix-connexion.php');
 }
 
 $provider_label = firebase_auth_pending_provider_label($pending);
@@ -24,8 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $_SESSION['firebase_auth_pending']['type'] = $type;
         $_SESSION['google_auth_pending']['type'] = $type;
-        header('Location: /auth-google-complete.php?type=' . urlencode($type));
-        exit;
+        firebase_auth_redirect_safe('/auth-google-complete.php?type=' . urlencode($type));
     }
 }
 
@@ -73,7 +76,7 @@ $vq = asset_version_query();
                 </div>
             <?php endif; ?>
 
-            <form method="post" action="" class="google-choose-type__form" id="googleChooseTypeForm">
+            <form method="post" action="auth-google-choose-type.php" class="google-choose-type__form" id="googleChooseTypeForm">
                 <p class="google-choose-type__prompt">Choisissez le type de compte à créer.</p>
                 <div class="choix-grid" role="group" aria-label="Types de compte">
                     <label class="choix-card choix-card--client google-choose-type__option">

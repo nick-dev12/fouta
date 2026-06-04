@@ -133,6 +133,12 @@ $produit_boutique_url = $produit_boutique_slug !== ''
     ? boutique_vitrine_entry_href($produit_boutique_slug)
     : '/produits.php';
 
+$produit_boutique_logo_url = '';
+$produit_boutique_logo_rel = trim((string) ($produit['vendeur_boutique_logo'] ?? ''));
+if ($produit_boutique_logo_rel !== '') {
+    $produit_boutique_logo_url = '/upload/' . str_replace('\\', '/', $produit_boutique_logo_rel);
+}
+
 $produit_boutique_cert_niveau = null;
 if (file_exists(__DIR__ . '/models/model_vendeur_certification.php') && !empty($produit['admin_id'])) {
     require_once __DIR__ . '/models/model_vendeur_certification.php';
@@ -404,6 +410,21 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             color: var(--texte-clair);
             font-size: 1.35rem;
             box-shadow: 0 6px 20px rgba(53, 100, 166, 0.35);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .produit-boutique-rail__icon--logo {
+            background: var(--blanc);
+            border: 1px solid rgba(53, 100, 166, 0.15);
+            box-shadow: 0 4px 14px rgba(53, 100, 166, 0.18);
+        }
+
+        .produit-boutique-rail__icon-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         .produit-boutique-rail__nom {
@@ -869,10 +890,21 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             box-sizing: border-box;
         }
 
+        .produit-checkout-row {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .produit-checkout-row .prix-total-section {
+            margin-bottom: 0;
+        }
+
         .btn-add-panier {
             width: 100%;
             padding: 14px 25px;
-            background: var(--couleur-dominante);
+            background: var(--orange);
             color: var(--texte-clair);
             border: none;
             border-radius: 25px;
@@ -884,13 +916,13 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             align-items: center;
             justify-content: center;
             gap: 10px;
-            box-shadow: var(--ombre-promo);
+            box-shadow: 0 4px 18px rgba(255, 107, 53, 0.35);
         }
 
         .btn-add-panier:hover {
-            background: var(--couleur-dominante-hover);
+            background: var(--orange-fonce);
             transform: translateY(-2px);
-            box-shadow: var(--ombre-gourmande);
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
         }
 
         .btn-add-panier:disabled {
@@ -1075,6 +1107,25 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 font-size: 24px;
                 margin-bottom: 24px;
             }
+
+            .produit-checkout-row {
+                flex-direction: row;
+                align-items: stretch;
+                gap: 14px;
+            }
+
+            .produit-checkout-row .prix-total-section {
+                flex: 1 1 auto;
+                min-width: 0;
+                margin-bottom: 0;
+            }
+
+            .produit-checkout-row .btn-add-panier {
+                flex: 0 0 auto;
+                width: auto;
+                min-width: 180px;
+                max-width: 42%;
+            }
         }
 
         /* Responsive - Mobile */
@@ -1247,23 +1298,41 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 font-size: 15px;
             }
 
-            .prix-total-section {
-                padding: 14px 16px;
-                margin-bottom: 16px;
+            .produit-checkout-row {
+                flex-direction: row;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .produit-checkout-row .prix-total-section {
+                flex: 1 1 auto;
+                min-width: 0;
+                margin-bottom: 0;
+                padding: 12px 14px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
             }
 
             .prix-total-label {
-                font-size: 12px;
+                font-size: 11px;
+                margin-bottom: 2px;
             }
 
             .prix-total-value {
-                font-size: 20px;
+                font-size: clamp(16px, 4.5vw, 20px);
+                line-height: 1.2;
             }
 
-            .btn-add-panier {
-                padding: 12px 20px;
-                font-size: 15px;
-                border-radius: 20px;
+            .produit-checkout-row .btn-add-panier {
+                flex: 0 0 auto;
+                width: auto;
+                min-width: 148px;
+                max-width: 46%;
+                padding: 12px 16px;
+                font-size: 14px;
+                border-radius: 16px;
+                align-self: stretch;
             }
 
             .produit-detail-container {
@@ -1373,12 +1442,14 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             }
 
             .prix-total-value {
-                font-size: 18px;
+                font-size: 16px;
             }
 
-            .btn-add-panier {
-                padding: 12px 16px;
-                font-size: 14px;
+            .produit-checkout-row .btn-add-panier {
+                min-width: 120px;
+                max-width: 52%;
+                padding: 11px 12px;
+                font-size: 13px;
             }
 
             .produits-similaires h2 {
@@ -1618,7 +1689,20 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         <aside class="produit-boutique-rail" aria-label="Boutique du vendeur">
             <div class="produit-boutique-rail__inner">
                 <div class="produit-boutique-rail__left">
-                    <div class="produit-boutique-rail__icon" aria-hidden="true"><i class="fas fa-store"></i></div>
+                    <div class="produit-boutique-rail__icon<?php echo $produit_boutique_logo_url !== '' ? ' produit-boutique-rail__icon--logo' : ''; ?>"
+                        aria-hidden="true">
+                        <?php if ($produit_boutique_logo_url !== ''): ?>
+                        <img src="<?php echo htmlspecialchars($produit_boutique_logo_url, ENT_QUOTES, 'UTF-8'); ?>"
+                            alt=""
+                            class="produit-boutique-rail__icon-img"
+                            width="52"
+                            height="52"
+                            loading="lazy"
+                            decoding="async">
+                        <?php else: ?>
+                        <i class="fas fa-store" aria-hidden="true"></i>
+                        <?php endif; ?>
+                    </div>
                     <div class="produit-boutique-rail__text">
                         <p class="produit-boutique-rail__eyebrow">Boutique</p>
                         <p class="produit-boutique-rail__nom"><?php echo htmlspecialchars($produit_boutique_nom); ?></p>
@@ -1977,19 +2061,18 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                     </div>
 
 
-                    <!-- Prix total calculé -->
-                    <div class="prix-total-section">
-                        <div class="prix-total-label">Prix total:</div>
-                        <div class="prix-total-value" id="prix-total">
-                            <?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA
+                    <div class="produit-checkout-row">
+                        <div class="prix-total-section">
+                            <div class="prix-total-label">Prix total:</div>
+                            <div class="prix-total-value" id="prix-total">
+                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA
+                            </div>
                         </div>
+                        <button type="submit" class="btn-add-panier" id="btn-add-panier">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                            <span class="btn-add-panier__label">Ajouter au panier</span>
+                        </button>
                     </div>
-
-
-                    <button type="submit" class="btn-add-panier" id="btn-add-panier">
-                        <i class="fa-solid fa-cart-shopping"></i>
-                        Ajouter au panier
-                    </button>
                 </form>
 
                 <!-- Description (en bas) -->

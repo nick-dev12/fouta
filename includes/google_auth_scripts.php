@@ -29,6 +29,9 @@ $social_auth_v = file_exists($social_auth_js) ? (string) filemtime($social_auth_
             if (!firebase.apps.length) {
                 firebase.initializeApp(_socialAuthConfig);
             }
+            if (typeof window.colobanesCompleteAppleRedirect === 'function') {
+                window.colobanesCompleteAppleRedirect();
+            }
         } catch (e) {
             if (!String(e.message || e).includes('already exists')) {
                 console.error('[Social Auth] Firebase init:', e);

@@ -23,6 +23,31 @@ if (!$user) {
 
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_visites.php';
+require_once __DIR__ . '/../models/model_produits.php';
+
+$mc_promo_images = [];
+$mc_promo_produits = get_produits_nouveautes(12);
+if (is_array($mc_promo_produits)) {
+    foreach ($mc_promo_produits as $mc_p) {
+        $mc_img = trim((string) ($mc_p['image_principale'] ?? ''));
+        if ($mc_img !== '') {
+            $mc_promo_images[] = $mc_img;
+        }
+        if (count($mc_promo_images) >= 10) {
+            break;
+        }
+    }
+}
+if (count($mc_promo_images) < 4) {
+    foreach (['produit1.jpg', 'produit2.jpg', 'produit3.jpg', 'produit4.jpg', 'produit5.jpg', 'produit6.jpg'] as $mc_fallback) {
+        if (!in_array($mc_fallback, $mc_promo_images, true)) {
+            $mc_promo_images[] = $mc_fallback;
+        }
+        if (count($mc_promo_images) >= 6) {
+            break;
+        }
+    }
+}
 
 $nb_commandes       = count_commandes_by_user($_SESSION['user_id']);
 $nb_panier          = count_panier_items_by_user($_SESSION['user_id']);
@@ -128,7 +153,147 @@ function mc_statut_icon($s) {
             display: flex;
             flex-direction: column;
             gap: 24px;
-            font-family: var(--font-corps);
+        }
+
+        /* Bannière courses COLObanes */
+        .mc-v2-shop-promo {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            height: 100px;
+            max-height: 100px;
+            background: linear-gradient(125deg, var(--bleu-fonce) 0%, var(--couleur-dominante) 48%, var(--bleu-clair) 100%);
+            box-shadow: var(--ombre-douce);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .mc-v2-shop-promo__veil {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(105deg, rgba(13, 13, 13, 0.72) 0%, rgba(45, 86, 144, 0.55) 42%, rgba(53, 100, 166, 0.25) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .mc-v2-shop-promo__icons {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            display: flex;
+            align-items: center;
+            opacity: 0.9;
+            mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+        }
+
+        .mc-v2-shop-promo__track {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            width: max-content;
+            animation: mc-v2-promo-scroll 38s linear infinite;
+            padding: 0 12px;
+        }
+
+        @keyframes mc-v2-promo-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .mc-v2-shop-promo__thumb {
+            flex: 0 0 auto;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            object-fit: cover;
+            opacity: 0.42;
+            filter: blur(1.5px) saturate(1.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            transform: rotate(-4deg);
+        }
+
+        .mc-v2-shop-promo__thumb:nth-child(even) {
+            transform: rotate(5deg) scale(0.95);
+            opacity: 0.35;
+        }
+
+        .mc-v2-shop-promo__content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px 14px;
+            height: 100%;
+            max-height: 100px;
+            box-sizing: border-box;
+            padding: 8px 12px;
+        }
+
+        .mc-v2-shop-promo__copy {
+            flex: 1 1 auto;
+            min-width: 0;
+            color: var(--texte-clair);
+        }
+
+        .mc-v2-shop-promo__eyebrow {
+            margin: 0 0 1px;
+            font-size: 0.5rem;
+            line-height: 1.1;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.78);
+        }
+
+        .mc-v2-shop-promo__title {
+            margin: 0;
+            font-family: var(--font-titres);
+            font-size: clamp(0.78rem, 2.2vw, 0.95rem);
+            font-weight: 700;
+            line-height: 1.2;
+            color: #fff;
+        }
+
+        .mc-v2-shop-promo__title span {
+            color: var(--orange-clair);
+        }
+
+        .mc-v2-shop-promo__cta {
+            flex: 0 1 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--orange);
+            color: #fff;
+            font-weight: 600;
+            font-size: clamp(0.6rem, 1.8vw, 0.7rem);
+            line-height: 1.2;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 0 6px 22px rgba(255, 107, 53, 0.45);
+            transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .mc-v2-shop-promo__cta:hover {
+            background: var(--orange-fonce);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(255, 107, 53, 0.5);
+            color: #fff;
+        }
+
+        .mc-v2-shop-promo__cta i {
+            font-size: 0.75rem;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .mc-v2-shop-promo__track {
+                animation: none;
+            }
         }
 
         /* ---- Hero ---- */
@@ -264,13 +429,6 @@ function mc_statut_icon($s) {
             transition: background 0.2s;
             white-space: nowrap;
         }
-
-        .mc-v2-hero__btn--shop {
-            background: #fff;
-            color: var(--couleur-dominante, #3564a6);
-        }
-
-        .mc-v2-hero__btn--shop:hover { background: rgba(255,255,255,0.9); }
 
         .mc-v2-hero__btn--ghost {
             background: rgba(255,255,255,0.12);
@@ -777,11 +935,28 @@ function mc_statut_icon($s) {
             }
 
             .mc-v2-hero__cta-grid {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 8px;
+                display: flex;
+                justify-content: stretch;
                 width: 100%;
-                align-items: stretch;
+            }
+
+            .mc-v2-shop-promo__content {
+                flex-direction: row;
+                align-items: center;
+                padding: 6px 10px;
+                gap: 6px 8px;
+            }
+
+            .mc-v2-shop-promo__cta {
+                width: auto;
+                max-width: 50%;
+                justify-content: center;
+                padding: 5px 8px;
+            }
+
+            .mc-v2-shop-promo__thumb {
+                width: 32px;
+                height: 32px;
             }
 
             .mc-v2-hero__btn,
@@ -847,6 +1022,35 @@ function mc_statut_icon($s) {
 
     <div class="mc-v2-page">
 
+        <!-- ===== Bannière courses ===== -->
+        <section class="mc-v2-shop-promo" aria-labelledby="mc-v2-shop-promo-title">
+            <div class="mc-v2-shop-promo__icons" aria-hidden="true">
+                <div class="mc-v2-shop-promo__track">
+                    <?php
+                    $mc_promo_track = array_merge($mc_promo_images, $mc_promo_images);
+                    foreach ($mc_promo_track as $mc_promo_file) :
+                        ?>
+                    <img class="mc-v2-shop-promo__thumb"
+                        src="/upload/<?php echo htmlspecialchars($mc_promo_file, ENT_QUOTES, 'UTF-8'); ?>"
+                        alt="" loading="lazy" decoding="async" width="36" height="36">
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <div class="mc-v2-shop-promo__veil" aria-hidden="true"></div>
+            <div class="mc-v2-shop-promo__content">
+                <div class="mc-v2-shop-promo__copy">
+                    <p class="mc-v2-shop-promo__eyebrow">Globale Marketplace</p>
+                    <h2 class="mc-v2-shop-promo__title" id="mc-v2-shop-promo-title">
+                        Faites vos courses sur <span>COLObanes</span>
+                    </h2>
+                </div>
+                <a href="/index.php" class="mc-v2-shop-promo__cta">
+                    <i class="fas fa-cart-shopping" aria-hidden="true"></i>
+                    Faire mes achats sur COLObanes
+                </a>
+            </div>
+        </section>
+
         <!-- ===== HERO ===== -->
         <section class="mc-v2-hero" aria-labelledby="mc-v2-title">
             <div class="mc-v2-hero__inner">
@@ -867,9 +1071,6 @@ function mc_statut_icon($s) {
                 </div>
                 <div class="mc-v2-hero__cta-grid">
                     <div class="mc-v2-hero__actions">
-                        <a href="/index.php" class="mc-v2-hero__btn mc-v2-hero__btn--shop">
-                            <i class="fas fa-store"></i> Voir la boutique
-                        </a>
                         <button type="button" id="btn-enable-notifications"
                             class="mc-v2-hero__btn mc-v2-hero__btn--ghost btn-enable-notifications"
                             data-notify-type="user">

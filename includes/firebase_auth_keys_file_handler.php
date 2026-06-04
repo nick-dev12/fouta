@@ -35,20 +35,33 @@ final class ColobanesFirebaseGoogleKeysFileHandler implements Handler
     public function handle(FetchGooglePublicKeys $action): Keys
     {
         $now = $this->clock->now();
+        $nowTs = $now->getTimestamp();
         $cached = $this->loadCacheFile();
 
-        if ($cached !== null && $cached['expires_at'] > $now->getTimestamp()) {
+        if ($cached !== null && $cached['expires_at'] > $nowTs) {
             return $this->keysFromCache($cached, $cached['expires_at']);
+        }
+
+        // Cache expiré mais encore utilisable : pas d'appel réseau pendant la connexion (cron : sync_firebase_google_keys_cache.php).
+        if ($cached !== null && !empty($cached['keys'])) {
+            $staleAge = $nowTs - (int) $cached['expires_at'];
+            if ($staleAge >= 0 && $staleAge < self::STALE_GRACE_SECONDS) {
+                $staleUntil = $nowTs + self::STALE_GRACE_SECONDS;
+                $expires = max((int) $cached['expires_at'], $staleUntil);
+
+                return $this->keysFromCache($cached, $expires);
+            }
         }
 
         try {
             $keys = $this->networkHandler->handle($action);
             $this->persistKeys($keys);
+
             return $keys;
         } catch (FetchingGooglePublicKeysFailed $e) {
             if ($cached !== null && !empty($cached['keys'])) {
-                $staleUntil = $now->getTimestamp() + self::STALE_GRACE_SECONDS;
-                $expires = max($cached['expires_at'], $staleUntil);
+                $staleUntil = $nowTs + self::STALE_GRACE_SECONDS;
+                $expires = max((int) $cached['expires_at'], $staleUntil);
 
                 return $this->keysFromCache($cached, $expires);
             }

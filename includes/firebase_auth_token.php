@@ -52,7 +52,8 @@ function firebase_auth_create_verifier($project_id, $cacert_real)
     $client = new \GuzzleHttp\Client([
         'http_errors' => false,
         'verify' => $cacert_real,
-        'timeout' => 20,
+        'timeout' => 5,
+        'connect_timeout' => 3,
     ]);
 
     $clock = \Beste\Clock\SystemClock::create();
@@ -91,6 +92,36 @@ function firebase_auth_normalize_provider($provider)
 /**
  * @param string|null $expected_provider google.com | apple.com | null (les deux)
  */
+function firebase_auth_get_server_config()
+{
+    static $config = null;
+    if ($config !== null) {
+        return $config;
+    }
+
+    $server_config_path = __DIR__ . '/../config/firebase_server.php';
+    if (!file_exists($server_config_path)) {
+        return null;
+    }
+
+    $loaded = require $server_config_path;
+    $config = is_array($loaded) ? $loaded : null;
+
+    return $config;
+}
+
+function firebase_auth_get_verifier($project_id, $cacert_real)
+{
+    static $verifiers = [];
+
+    $cache_key = $project_id . '|' . $cacert_real;
+    if (!isset($verifiers[$cache_key])) {
+        $verifiers[$cache_key] = firebase_auth_create_verifier($project_id, $cacert_real);
+    }
+
+    return $verifiers[$cache_key];
+}
+
 function firebase_auth_verify_id_token($id_token, $expected_provider = null)
 {
     $id_token = trim((string) $id_token);
@@ -98,22 +129,25 @@ function firebase_auth_verify_id_token($id_token, $expected_provider = null)
         return firebase_auth_token_error('Token d’authentification manquant.');
     }
 
+    static $autoloaded = false;
     $autoload = __DIR__ . '/../vendor/autoload.php';
     if (!file_exists($autoload)) {
         return firebase_auth_token_error('Dépendances Firebase absentes. Exécutez composer install.');
     }
-    require_once $autoload;
+    if (!$autoloaded) {
+        require_once $autoload;
+        $autoloaded = true;
+    }
 
     if (!class_exists('\Kreait\Firebase\JWT\IdTokenVerifier')) {
         return firebase_auth_token_error('Librairie Firebase PHP indisponible.');
     }
 
-    $server_config_path = __DIR__ . '/../config/firebase_server.php';
-    if (!file_exists($server_config_path)) {
+    $server_config = firebase_auth_get_server_config();
+    if ($server_config === null) {
         return firebase_auth_token_error('Configuration serveur Firebase manquante.');
     }
 
-    $server_config = require $server_config_path;
     $credentials_path = $server_config['credentials_path'] ?? '';
     if ($credentials_path === '' || !file_exists($credentials_path)) {
         return firebase_auth_token_error('Clé de service Firebase introuvable.');
@@ -125,7 +159,11 @@ function firebase_auth_verify_id_token($id_token, $expected_provider = null)
     }
 
     $cacert = $server_config['cacert_path'] ?? __DIR__ . '/../config/cacert.pem';
-    $cacert_real = firebase_auth_configure_ssl($cacert);
+    static $cacert_real_cache = null;
+    if ($cacert_real_cache === null) {
+        $cacert_real_cache = firebase_auth_configure_ssl($cacert);
+    }
+    $cacert_real = $cacert_real_cache;
     if ($cacert_real === false) {
         return firebase_auth_token_error(
             'Certificat SSL local manquant (config/cacert.pem). Téléchargez le fichier CA depuis https://curl.se/ca/cacert.pem'
@@ -133,7 +171,7 @@ function firebase_auth_verify_id_token($id_token, $expected_provider = null)
     }
 
     try {
-        $verifier = firebase_auth_create_verifier($project_id, $cacert_real);
+        $verifier = firebase_auth_get_verifier($project_id, $cacert_real);
         $leeway_seconds = 300;
         $verified_token = $verifier->verifyIdTokenWithLeeway($id_token, $leeway_seconds);
         $claims = $verified_token->payload();

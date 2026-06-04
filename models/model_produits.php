@@ -60,15 +60,20 @@ function produits_sql_vendeur_fragment() {
     if ($cached !== null) {
         return $cached;
     }
+    $logo_select = ', NULL AS vendeur_boutique_logo';
     if (!produits_has_column('admin_id')) {
         $cached = [
             'join' => '',
-            'select' => ', NULL AS vendeur_boutique_nom, NULL AS vendeur_boutique_slug',
+            'select' => ', NULL AS vendeur_boutique_nom, NULL AS vendeur_boutique_slug' . $logo_select,
         ];
     } else {
+        require_once __DIR__ . '/model_admin.php';
+        if (function_exists('admin_has_column') && admin_has_column('boutique_logo')) {
+            $logo_select = ', vend.boutique_logo AS vendeur_boutique_logo';
+        }
         $cached = [
             'join' => ' LEFT JOIN admin vend ON p.admin_id = vend.id ',
-            'select' => ', vend.boutique_nom AS vendeur_boutique_nom, vend.boutique_slug AS vendeur_boutique_slug',
+            'select' => ', vend.boutique_nom AS vendeur_boutique_nom, vend.boutique_slug AS vendeur_boutique_slug' . $logo_select,
         ];
     }
     return $cached;

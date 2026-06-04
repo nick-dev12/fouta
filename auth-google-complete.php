@@ -4,18 +4,23 @@
  */
 session_start();
 
+if (ob_get_level() === 0) {
+    ob_start();
+}
+
 require_once __DIR__ . '/includes/asset_version.php';
 require_once __DIR__ . '/includes/senegal_regions.php';
 require_once __DIR__ . '/includes/marketplace_helpers.php';
 require_once __DIR__ . '/includes/firebase_auth_flow.php';
+require_once __DIR__ . '/includes/auth_redirect.php';
+require_once __DIR__ . '/includes/flash_toast.php';
 require_once __DIR__ . '/models/model_users.php';
 require_once __DIR__ . '/models/model_admin.php';
 
 $pending = firebase_auth_get_pending();
 
 if (!$pending || empty($pending['uid']) || empty($pending['email'])) {
-    header('Location: /choix-connexion.php');
-    exit;
+    firebase_auth_redirect_safe('/choix-connexion.php');
 }
 
 $auth_provider = (isset($pending['provider']) && trim((string) $pending['provider']) === 'apple') ? 'apple' : 'google';
@@ -26,8 +31,7 @@ $type_pending = isset($pending['type']) ? trim((string) $pending['type']) : '';
 $type = ($type_get === 'vendor' || $type_pending === 'vendor') ? 'vendor' : (($type_get === 'client' || $type_pending === 'client') ? 'client' : '');
 
 if ($type !== 'client' && $type !== 'vendor') {
-    header('Location: /auth-google-choose-type.php');
-    exit;
+    firebase_auth_redirect_safe('/auth-google-choose-type.php');
 }
 
 $_SESSION['firebase_auth_pending']['type'] = $type;
@@ -45,20 +49,27 @@ function google_complete_safe_redirect($redirect)
 
 function google_complete_set_user_session(array $user)
 {
+    session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_nom'] = $user['nom'];
     $_SESSION['user_prenom'] = $user['prenom'];
     $_SESSION['user_email'] = (string) ($user['email'] ?? '');
     $_SESSION['user_telephone'] = $user['telephone'];
     $_SESSION['user_statut'] = $user['statut'];
+    auth_set_portal_cookie('client');
     if (file_exists(__DIR__ . '/includes/panier_invite.php')) {
-        require_once __DIR__ . '/includes/panier_invite.php';
-        panier_fusionner_invite_apres_connexion((int) $user['id']);
+        try {
+            require_once __DIR__ . '/includes/panier_invite.php';
+            panier_fusionner_invite_apres_connexion((int) $user['id']);
+        } catch (Throwable $e) {
+            error_log('[auth-google-complete] fusion panier : ' . $e->getMessage());
+        }
     }
 }
 
 function google_complete_set_admin_session(array $admin)
 {
+    session_regenerate_id(true);
     $_SESSION['admin_id'] = $admin['id'];
     $_SESSION['admin_nom'] = $admin['nom'];
     $_SESSION['admin_prenom'] = $admin['prenom'];
@@ -68,6 +79,8 @@ function google_complete_set_admin_session(array $admin)
     $_SESSION['admin_boutique_nom'] = trim((string) ($admin['boutique_nom'] ?? ''));
     $_SESSION['admin_boutique_slug'] = trim((string) ($admin['boutique_slug'] ?? ''));
     unset($_SESSION['vendeur_collaborateur_id'], $_SESSION['vendeur_collaborateur_nom']);
+    $role = normalize_admin_role($admin['role'] ?? 'admin');
+    auth_set_portal_cookie($role === 'vendeur' ? 'vendeur' : 'admin');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -126,8 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $admin = get_admin_by_id((int) $admin_id);
                 google_complete_set_admin_session($admin);
                 unset($_SESSION['firebase_auth_pending'], $_SESSION['google_auth_pending']);
-                header('Location: /admin/dashboard.php');
-                exit;
+                firebase_auth_redirect_safe('/admin/dashboard.php');
             }
             $errors[] = 'Erreur lors de la création de la boutique. Réessayez.';
         }
@@ -157,8 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 google_complete_set_user_session($user);
                 $redirect = google_complete_safe_redirect($pending['redirect'] ?? '/index.php');
                 unset($_SESSION['firebase_auth_pending'], $_SESSION['google_auth_pending']);
-                header('Location: ' . $redirect);
-                exit;
+                firebase_auth_redirect_safe($redirect);
             }
             $errors[] = $creation_error ?: 'Erreur lors de la création du compte. Réessayez.';
         }
@@ -209,7 +220,7 @@ $page_title = $type === 'vendor' ? 'Compléter ma boutique' : 'Compléter mon co
                         </div>
                     <?php endif; ?>
 
-                    <form method="post" action="" class="auth-inscription-form">
+                    <form method="post" action="auth-google-complete.php?type=<?php echo urlencode($type); ?>" class="auth-inscription-form">
                         <?php if ($type === 'vendor'): ?>
                             <div class="form-group">
                                 <label for="identite"><i class="fas fa-id-card"></i> Identité (nom affiché) *</label>

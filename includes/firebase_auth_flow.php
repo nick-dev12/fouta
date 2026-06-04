@@ -4,8 +4,25 @@
  */
 
 require_once __DIR__ . '/firebase_auth_token.php';
-require_once __DIR__ . '/../models/model_users.php';
-require_once __DIR__ . '/../models/model_admin.php';
+
+function firebase_auth_load_models()
+{
+    static $loaded = false;
+    if ($loaded) {
+        return;
+    }
+    require_once __DIR__ . '/../models/model_users.php';
+    require_once __DIR__ . '/../models/model_admin.php';
+    $loaded = true;
+}
+
+if (!function_exists('firebase_auth_redirect_safe')) {
+    function firebase_auth_redirect_safe($url)
+    {
+        require_once __DIR__ . '/flash_toast.php';
+        http_redirect_safe($url);
+    }
+}
 
 function firebase_auth_json_response($success, $message, $redirect = '')
 {
@@ -58,6 +75,7 @@ function firebase_auth_set_admin_session(array $admin)
 
 function firebase_auth_find_admin(array $profile)
 {
+    firebase_auth_load_models();
     $admin = get_admin_by_firebase_uid($profile['uid']);
     if (!$admin && !empty($profile['email'])) {
         $admin = get_admin_by_email($profile['email']);
@@ -71,6 +89,7 @@ function firebase_auth_find_admin(array $profile)
 
 function firebase_auth_find_user(array $profile)
 {
+    firebase_auth_load_models();
     $user = get_user_by_firebase_uid($profile['uid']);
     if (!$user && !empty($profile['email'])) {
         $user = get_user_by_email($profile['email']);
@@ -163,6 +182,7 @@ function firebase_auth_process_callback(array $payload)
         if (($admin['statut'] ?? '') !== 'actif') {
             firebase_auth_json_response(false, 'Votre compte boutique est désactivé.');
         }
+        firebase_auth_load_models();
         update_admin_last_login((int) $admin['id']);
         firebase_auth_set_admin_session($admin);
         firebase_auth_json_response(true, '', '/admin/dashboard.php');
@@ -197,4 +217,3 @@ function firebase_auth_process_callback(array $payload)
     firebase_auth_store_pending($profile, $redirect);
     firebase_auth_json_response(true, '', '/auth-google-choose-type.php');
 }
-?>
