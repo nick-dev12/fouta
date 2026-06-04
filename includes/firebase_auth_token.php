@@ -56,7 +56,9 @@ function firebase_auth_create_verifier($project_id, $cacert_real)
     ]);
 
     $clock = \Beste\Clock\SystemClock::create();
-    $key_handler = new \Kreait\Firebase\JWT\Action\FetchGooglePublicKeys\WithGuzzle($client, $clock);
+    $network_handler = new \Kreait\Firebase\JWT\Action\FetchGooglePublicKeys\WithGuzzle($client, $clock);
+    require_once __DIR__ . '/firebase_auth_keys_file_handler.php';
+    $key_handler = new ColobanesFirebaseGoogleKeysFileHandler($network_handler, $clock);
     $keys = new \Kreait\Firebase\JWT\GooglePublicKeys($key_handler, $clock);
     $handler = new \Kreait\Firebase\JWT\Action\VerifyIdToken\WithLcobucciJWT($project_id, $keys, $clock);
 
@@ -168,7 +170,18 @@ function firebase_auth_verify_id_token($id_token, $expected_provider = null)
         }
         if (stripos($msg, 'issued in the future') !== false || stripos($msg, 'expired') !== false) {
             return firebase_auth_token_error(
-                'Horloge du serveur incorrecte. Vérifiez la date/heure Windows (synchronisation automatique), puis réessayez.'
+                'Horloge du serveur incorrecte. Vérifiez la date/heure du serveur (synchronisation NTP), puis réessayez.'
+            );
+        }
+        if (stripos($msg, 'Connection refused') !== false
+            || stripos($msg, 'failed: Connection') !== false
+            || stripos($msg, 'Could not resolve host') !== false
+            || stripos($msg, 'FetchingGooglePublicKeysFailed') !== false) {
+            return firebase_auth_token_error(
+                'Vérification Google indisponible depuis le serveur (accès googleapis.com bloqué). '
+                . 'Sur votre PC : php scripts/sync_firebase_google_keys_cache.php puis uploadez '
+                . 'config/firebase_google_public_keys_cache.json sur le VPS. '
+                . 'Contactez l’hébergeur pour autoriser les connexions HTTPS sortantes vers *.googleapis.com.'
             );
         }
 
@@ -205,4 +218,3 @@ function firebase_auth_profile_from_claims(array $claims)
         'provider_key' => firebase_auth_normalize_provider($provider),
     ];
 }
-?>

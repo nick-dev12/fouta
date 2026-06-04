@@ -36,7 +36,6 @@ $seo_canonical = $base . '/';
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
@@ -2695,7 +2694,7 @@ $seo_canonical = $base . '/';
     <?php include('footer.php') ?>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js" crossorigin="anonymous"
-        referrerpolicy="no-referrer"></script>
+        referrerpolicy="no-referrer" defer></script>
     <script>
         (function () {
             function finishAos() {
@@ -2749,13 +2748,17 @@ $seo_canonical = $base . '/';
             }
         });
     </script>
-    <script src="/js/owl.carousel.min.js"></script>
-    <script src="/js/owl.carousel.js"></script>
-    <script src="/js/owl.animate.js"></script>
-    <script src="/js/owl.autoplay.js"></script>
+    <script src="/js/owl.carousel.min.js" defer></script>
+    <script src="/js/owl.carousel.js" defer></script>
+    <script src="/js/owl.animate.js" defer></script>
+    <script src="/js/owl.autoplay.js" defer></script>
 
     <script>
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.jQuery === 'undefined') {
+                return;
+            }
+            window.jQuery(function ($) {
 
             $('.slider1').owlCarousel({
                 items: 2,
@@ -2959,6 +2962,7 @@ $seo_canonical = $base . '/';
             })
 
 
+            });
         });
     </script>
 

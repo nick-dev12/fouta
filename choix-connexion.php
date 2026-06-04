@@ -6,6 +6,7 @@
 require_once __DIR__ . '/includes/session_user.php';
 require_once __DIR__ . '/includes/auth_redirect.php';
 session_start();
+require_once __DIR__ . '/includes/google_auth_coop.php';
 
 if (ob_get_level() === 0) {
     ob_start();

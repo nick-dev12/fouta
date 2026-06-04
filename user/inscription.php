@@ -5,6 +5,7 @@
  */
 
 session_start();
+require_once __DIR__ . '/../includes/google_auth_coop.php';
 
 $inscription_redirect_get = isset($_GET['redirect']) ? trim((string) $_GET['redirect']) : '';
 if ($inscription_redirect_get === '' || !preg_match('/^[a-z0-9_-]+$/i', $inscription_redirect_get)) {

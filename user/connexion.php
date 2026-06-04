@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../includes/session_user.php';
 require_once __DIR__ . '/../includes/auth_redirect.php';
 session_start();
+require_once __DIR__ . '/../includes/google_auth_coop.php';
 
 // Redirection après connexion (page demandée ou index)
 $redirect_after = isset($_POST['redirect']) ? trim($_POST['redirect']) : (isset($_GET['redirect']) ? trim($_GET['redirect']) : '');

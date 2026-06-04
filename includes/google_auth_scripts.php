@@ -6,11 +6,14 @@ require_once __DIR__ . '/asset_version.php';
 $social_auth_js = __DIR__ . '/../js/firebase-social-auth.js';
 $social_auth_v = file_exists($social_auth_js) ? (string) filemtime($social_auth_js) : get_asset_version();
 ?>
-<script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-auth-compat.js" defer></script>
 <?php require_once __DIR__ . '/firebase_init.php'; ?>
-<script>
-    if (window.FIREBASE_CONFIG && typeof firebase !== 'undefined') {
+<script defer>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!window.FIREBASE_CONFIG || typeof firebase === 'undefined') {
+            return;
+        }
         try {
             var _socialAuthConfig = {
                 apiKey: window.FIREBASE_CONFIG.apiKey,
@@ -31,6 +34,8 @@ $social_auth_v = file_exists($social_auth_js) ? (string) filemtime($social_auth_
                 console.error('[Social Auth] Firebase init:', e);
             }
         }
-    }
+    });
 </script>
-<script src="/js/firebase-social-auth.js?v=<?php echo htmlspecialchars($social_auth_v, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script
+    src="/js/firebase-social-auth.js?v=<?php echo htmlspecialchars($social_auth_v, ENT_QUOTES, 'UTF-8'); ?>"
+    defer></script>

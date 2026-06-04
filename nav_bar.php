@@ -226,8 +226,8 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
     boutique_echo_theme_style_override();
 }
 ?>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://code.jquery.com">
 <style>
     /* Nav style Planète Gâteau - fond dégradé, barre recherche, Mon compte, panier */
     .nav-planete-gateau {
@@ -1148,6 +1148,7 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         };
 
         (function () {
+            var win = window;
             var switcher = document.getElementById('navLangSwitcher');
             var trigger = document.getElementById('navLangTrigger');
             var panel = document.getElementById('navLangPanel');
@@ -1282,7 +1283,15 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
                 } else {
                     setCookie('googtrans', '/fr/' + lang);
                 }
-                window.location.reload();
+                function reloadPage() {
+                    window.location.reload();
+                }
+                if (lang !== 'fr' && win.ColobanesPerf && typeof win.ColobanesPerf.loadGtranslate === 'function') {
+                    win.ColobanesPerf.loadGtranslate(reloadPage);
+                    win.setTimeout(reloadPage, 1200);
+                    return;
+                }
+                reloadPage();
             }
 
             var initial = currentLangFromCookie();
@@ -1335,7 +1344,6 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             });
         })();
     </script>
-    <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
 </nav>
 
 <!-- Overlay et sidebar menu latéral (apparaît au clic sur MENU) -->
@@ -1586,3 +1594,4 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         });
     });
 </script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>

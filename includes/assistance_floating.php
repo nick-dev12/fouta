@@ -25,4 +25,4 @@ require_once __DIR__ . '/asset_version.php';
     ENT_QUOTES,
     'UTF-8'
 ); ?>">
-<script src="<?php echo htmlspecialchars($jotform_embed, ENT_QUOTES, 'UTF-8'); ?>" defer></script>
+<?php /* Script Jotform chargé en différé via includes/perf_lazy_assets.php (footer) */ ?>

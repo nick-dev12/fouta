@@ -3,6 +3,7 @@
  * Inscription vendeur — création boutique (sans session admin requise).
  */
 session_start();
+require_once __DIR__ . '/../includes/google_auth_coop.php';
 
 require_once __DIR__ . '/../controllers/controller_admin.php';
 
