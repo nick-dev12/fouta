@@ -59,6 +59,35 @@
         });
     }
 
+    function parseFirebaseAuthResponse(response) {
+        return response.text().then(function (text) {
+            var body = (text || '').trim();
+            if (!response.ok && body === '') {
+                throw new Error('Erreur serveur (HTTP ' + response.status + '). Réessayez.');
+            }
+            if (body === '') {
+                throw new Error('Réponse serveur vide. Réessayez.');
+            }
+            try {
+                return JSON.parse(body);
+            } catch (parseErr) {
+                if (body.indexOf('{') !== -1 && body.indexOf('}') !== -1) {
+                    var start = body.indexOf('{');
+                    var end = body.lastIndexOf('}');
+                    try {
+                        return JSON.parse(body.slice(start, end + 1));
+                    } catch (e2) {
+                        // ignore
+                    }
+                }
+                throw new Error(
+                    'Réponse serveur invalide (HTTP ' + response.status + '). '
+                    + 'Contactez le support si le problème persiste.'
+                );
+            }
+        });
+    }
+
     function sendTokenToServer(button, provider, getTokenPromise) {
         if (typeof firebase === 'undefined' || !firebase.auth) {
             if ((provider === 'google' && hasNativeGoogleSignIn())
@@ -98,9 +127,7 @@
                 });
             })
             .then(function (response) {
-                return response.json().catch(function () {
-                    throw new Error('Réponse serveur invalide.');
-                });
+                return parseFirebaseAuthResponse(response);
             })
             .then(function (data) {
                 if (!data || !data.success || !data.redirect) {
@@ -324,9 +351,7 @@
                 provider: 'apple'
             })
         }).then(function (response) {
-            return response.json().catch(function () {
-                throw new Error('Réponse serveur invalide.');
-            });
+            return parseFirebaseAuthResponse(response);
         }).then(function (data) {
             if (!data || !data.success || !data.redirect) {
                 throw new Error((data && data.message) ? data.message : 'Connexion refusée.');

@@ -2,12 +2,23 @@
 /**
  * Endpoint AJAX : connexion/inscription Google ou Apple via Firebase Auth.
  */
+if (ob_get_level() === 0) {
+    ob_start();
+}
+
 require_once __DIR__ . '/includes/session_user.php';
 session_start();
-header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
-header('Content-Type: application/json; charset=UTF-8');
 
 require_once __DIR__ . '/includes/firebase_auth_flow.php';
 
-$payload = json_decode(file_get_contents('php://input'), true);
-firebase_auth_process_callback(is_array($payload) ? $payload : []);
+try {
+    $raw = file_get_contents('php://input');
+    $payload = json_decode($raw !== false ? $raw : '', true);
+    firebase_auth_process_callback(is_array($payload) ? $payload : []);
+} catch (Throwable $e) {
+    error_log('[auth-firebase-callback] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+    firebase_auth_json_response(
+        false,
+        'Erreur serveur lors de la connexion. Réessayez dans un instant.'
+    );
+}

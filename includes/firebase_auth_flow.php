@@ -26,11 +26,19 @@ if (!function_exists('firebase_auth_redirect_safe')) {
 
 function firebase_auth_json_response($success, $message, $redirect = '')
 {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=UTF-8');
+        header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+    }
     echo json_encode([
         'success' => (bool) $success,
         'message' => (string) $message,
         'redirect' => (string) $redirect,
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -50,7 +58,6 @@ function firebase_auth_set_user_session(array $user)
 {
     if (file_exists(__DIR__ . '/auth_redirect.php')) {
         require_once __DIR__ . '/auth_redirect.php';
-        session_regenerate_id(true);
     }
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_nom'] = $user['nom'];
@@ -62,8 +69,12 @@ function firebase_auth_set_user_session(array $user)
         auth_set_portal_cookie('client');
     }
     if (file_exists(__DIR__ . '/panier_invite.php')) {
-        require_once __DIR__ . '/panier_invite.php';
-        panier_fusionner_invite_apres_connexion((int) $user['id']);
+        try {
+            require_once __DIR__ . '/panier_invite.php';
+            panier_fusionner_invite_apres_connexion((int) $user['id']);
+        } catch (Throwable $e) {
+            error_log('[firebase_auth] fusion panier : ' . $e->getMessage());
+        }
     }
 }
 
@@ -71,7 +82,6 @@ function firebase_auth_set_admin_session(array $admin)
 {
     if (file_exists(__DIR__ . '/auth_redirect.php')) {
         require_once __DIR__ . '/auth_redirect.php';
-        session_regenerate_id(true);
     }
     $_SESSION['admin_id'] = $admin['id'];
     $_SESSION['admin_nom'] = $admin['nom'];
