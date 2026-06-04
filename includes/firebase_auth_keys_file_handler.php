@@ -20,10 +20,16 @@ final class ColobanesFirebaseGoogleKeysFileHandler implements Handler
     /** Utiliser le cache disque même expiré si le réseau est coupé (rotation Google ~ quelques jours). */
     private const STALE_GRACE_SECONDS = 604800;
 
-    public function __construct(
-        private readonly Handler $networkHandler,
-        private readonly ClockInterface $clock,
-    ) {
+    /** @var Handler */
+    private $networkHandler;
+
+    /** @var ClockInterface */
+    private $clock;
+
+    public function __construct(Handler $networkHandler, ClockInterface $clock)
+    {
+        $this->networkHandler = $networkHandler;
+        $this->clock = $clock;
     }
 
     public function handle(FetchGooglePublicKeys $action): Keys
