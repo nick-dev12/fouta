@@ -59,7 +59,21 @@ function commande_statut_resolve_for_db($statut_logique) {
             return $c;
         }
     }
-    return in_array($statut_logique, $enum, true) ? $statut_logique : $statut_logique;
+    if (in_array($statut_logique, $enum, true)) {
+        return $statut_logique;
+    }
+    return null;
+}
+
+/**
+ * Dernière erreur SQL lors d'un update_commande_statut (diagnostic admin).
+ */
+function commande_statut_update_last_error() {
+    return (string) ($GLOBALS['_commande_statut_update_error'] ?? '');
+}
+
+function commande_statut_update_set_last_error($message) {
+    $GLOBALS['_commande_statut_update_error'] = (string) $message;
 }
 
 /**
@@ -300,17 +314,31 @@ function get_produits_by_commande($commande_id) {
 function update_commande_statut($commande_id, $statut, $admin_traitant_id = null) {
     global $db;
 
+    commande_statut_update_set_last_error('');
+
     $commande = get_commande_by_id($commande_id);
     if (!$commande) {
+        commande_statut_update_set_last_error('Commande introuvable.');
         return false;
     }
 
     $statut = commande_statut_resolve_for_db($statut);
+    if ($statut === null || $statut === '') {
+        commande_statut_update_set_last_error(
+            'Statut non supporté par la base (ENUM commandes.statut). Exécutez migrations/run_migrate_commande_statuts_enum.php sur le serveur.'
+        );
+        return false;
+    }
+
     $ancien_statut = $commande['statut'] ?? '';
     $numero_commande = $commande['numero_commande'] ?? '';
 
     $set_traitement = '';
-    $params_trait = ['id' => $commande_id, 'statut' => $statut];
+    $params_trait = [
+        'id' => $commande_id,
+        'statut_new' => $statut,
+        'statut_liv' => $statut,
+    ];
     $traitant_safe = commande_admin_traitant_id_safe($admin_traitant_id);
     if ($traitant_safe !== null) {
         $set_traitement = ', admin_dernier_traitement_id = :traitant';
@@ -358,8 +386,8 @@ function update_commande_statut($commande_id, $statut, $admin_traitant_id = null
 
             $stmt = $db->prepare("
                 UPDATE commandes
-                SET statut = :statut,
-                    date_livraison = CASE WHEN :statut IN ('livree', 'paye') THEN NOW() ELSE date_livraison END
+                SET statut = :statut_new,
+                    date_livraison = CASE WHEN :statut_liv IN ('livree', 'paye') THEN NOW() ELSE date_livraison END
                     $set_traitement
                 WHERE id = :id
             ");
@@ -369,6 +397,7 @@ function update_commande_statut($commande_id, $statut, $admin_traitant_id = null
             return true;
         } catch (PDOException $e) {
             $db->rollBack();
+            commande_statut_update_set_last_error($e->getMessage());
             error_log('[update_commande_statut paye] ' . $e->getMessage());
             return false;
         }
@@ -377,13 +406,18 @@ function update_commande_statut($commande_id, $statut, $admin_traitant_id = null
     try {
         $stmt = $db->prepare("
             UPDATE commandes
-            SET statut = :statut,
-                date_livraison = CASE WHEN :statut IN ('livree', 'paye') THEN NOW() ELSE date_livraison END
+            SET statut = :statut_new,
+                date_livraison = CASE WHEN :statut_liv IN ('livree', 'paye') THEN NOW() ELSE date_livraison END
                 $set_traitement
             WHERE id = :id
         ");
-        return $stmt->execute($params_trait);
+        $ok = $stmt->execute($params_trait);
+        if (!$ok) {
+            commande_statut_update_set_last_error('Échec de la requête UPDATE.');
+        }
+        return $ok;
     } catch (PDOException $e) {
+        commande_statut_update_set_last_error($e->getMessage());
         error_log('[update_commande_statut] commande #' . (int) $commande_id
             . ' -> ' . $statut . ' : ' . $e->getMessage());
         return false;

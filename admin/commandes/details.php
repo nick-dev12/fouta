@@ -94,6 +94,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && $commande_id > 0) {
     }
 
     $statut_flash_err = 'Impossible de mettre à jour le statut. Vérifiez que la commande est dans un état compatible.';
+    $err_sql = function_exists('commande_statut_update_last_error') ? commande_statut_update_last_error() : '';
+    if ($err_sql !== '') {
+        $statut_flash_err .= ' Détail : ' . $err_sql;
+    }
     $commande = get_commande_by_id($commande_id);
     if ($commande) {
         $statut_raw = commande_statut_ui_normalize((string) ($commande['statut'] ?? ''));
