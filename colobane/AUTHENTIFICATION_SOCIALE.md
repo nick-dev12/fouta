@@ -40,10 +40,18 @@ cd colobane/android
 - Debug SHA-1 : `F6:64:49:32:B4:05:0F:54:E3:0F:CB:B4:E6:60:0C:41:80:10:A3:D8`
 - Release SHA-1 : `40:D6:A0:F3:E1:00:7E:70:BE:8C:04:F9:C1:2B:F8:5F:14:6A:DC:DA`
 
-### Web Client ID
+### Identifiants OAuth (source unique : `config/firebase_config.php` → section `auth`)
 
-Déjà dans `lib/config/firebase_auth_config.dart` :
-`983006440407-goai5vsnrtaur5fpk8vq8m6gdnv1eh90.apps.googleusercontent.com`
+| Clé | Valeur |
+|-----|--------|
+| Web Client ID | `983006440407-goai5vsnrtaur5fpk8vq8m6gdnv1eh90.apps.googleusercontent.com` |
+| iOS Client ID | `983006440407-0lj1ljivl26pt6emhu4tlvgl2p047rgp.apps.googleusercontent.com` |
+
+Synchroniser l’app Flutter après toute modification :
+
+```bash
+php scripts/sync_colobane_auth_config.php
+```
 
 ### App Links (assetlinks.json)
 
@@ -53,30 +61,34 @@ Ajoutez aussi le **SHA-256 Play App Signing** dans `.well-known/assetlinks.json`
 
 ## Apple Sign-In
 
-### iOS — OK (natif)
+### iOS — natif (app iPhone / iPad)
 
 - Capability **Sign in with Apple** : `ios/Runner/Runner.entitlements`
 - Bundle ID : `com.colobanes.app`
+- **Firebase Console** → Authentication → Apple : clé `.p8`, Key ID, Team ID (`XA8994VJC6`)
+- Si Google **et** Apple échouent dans l’app iOS : republiez une build avec `AppDelegate.swift` (retour URL Google) et `clientId` iOS dans `social_auth_service.dart`
 
 ### Android — flux web obligatoire
 
 Sur Android, Apple exige `webAuthenticationOptions` (Services ID + URL de retour HTTPS).
 
-**Configuration code** (`lib/config/firebase_auth_config.dart`) :
+**Configuration code** (générée depuis `config/firebase_config.php`) :
 
-- `kAppleServicesClientId` : identifiant de service Apple (Firebase → Authentication → Apple)
-- `kAppleAndroidRedirectUri` : `https://colobanes.com/auth/apple-callback`
+- `kAppleServicesClientId` : `com.colobanes.web` (identique Firebase → Authentication → Apple)
+- `kAppleAndroidRedirectUri` : `https://gestion-scolaire-6945a.firebaseapp.com/__/auth/handler` (**même URL que le site web**)
 
-**Apple Developer** (Services ID) :
+**Apple Developer** (Services ID `com.colobanes.web`) :
 
-1. Identifiers → **Services IDs** → créer ou éditer le Services ID
-2. Activer **Sign In with Apple**
-3. **Return URL** : `https://colobanes.com/auth/apple-callback`
-4. Même URL dans Firebase → Authentication → Apple
+1. Identifiers → **Services IDs** → `com.colobanes.web` (COLObanes Web)
+2. Activer **Sign In with Apple** → Configure
+3. **Primary App ID** : `com.colobanes.app`
+4. **Domains** : `colobanes.com` (et `www.colobanes.com` si utilisé)
+5. **Return URL** : `https://gestion-scolaire-6945a.firebaseapp.com/__/auth/handler`
+6. Firebase → Authentication → Apple : même Services ID + Team ID `XA8994VJC6` + clé `.p8`
 
-**Serveur** : page `auth/apple-callback.php` (rewrite `.htaccess` → `/auth/apple-callback`)
+> **Important** : n’utilisez pas `https://colobanes.com/auth/apple-callback` pour Apple — le web Firebase utilise l’URL `firebaseapp.com/__/auth/handler`. L’app Android doit utiliser **la même** Return URL.
 
-**AndroidManifest** : intent-filter pour `https://colobanes.com/auth/apple-callback`
+Erreur **`invalid_client`** = Services ID ou Return URL différents entre l’app, Firebase et Apple Developer.
 
 ---
 

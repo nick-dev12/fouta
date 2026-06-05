@@ -13,4 +13,14 @@ return [
     'appId' => '1:000000000000:web:xxxxxxxx',
     'measurementId' => 'G-XXXXXXXX',
     'vapidKey' => 'VOTRE_CLE_VAPID_PUBLIQUE',
+
+    'auth' => [
+        'webClientId' => 'VOTRE_WEB_CLIENT_ID.apps.googleusercontent.com',
+        'iosClientId' => 'VOTRE_IOS_CLIENT_ID.apps.googleusercontent.com',
+        'appleServicesId' => 'com.votre.app.web',
+        'appleOAuthRedirectUri' => 'https://votre-projet.firebaseapp.com/__/auth/handler',
+        'appleTeamId' => 'VOTRE_TEAM_ID',
+        'iosBundleId' => 'com.votre.app',
+        'androidPackage' => 'com.votre.app',
+    ],
 ];

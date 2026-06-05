@@ -48,16 +48,8 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="colobanes.com"/>
             </intent-filter>
-            <!-- Apple Sign-In Android : retour OAuth vers /auth/apple-callback -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data
-                    android:scheme="https"
-                    android:host="colobanes.com"
-                    android:path="/auth/apple-callback"/>
-            </intent-filter>
+            <!-- Apple Sign-In Android : retour OAuth géré par sign_in_with_apple (Custom Tab),
+                 redirectUri = gestion-scolaire-6945a.firebaseapp.com/__/auth/handler (voir firebase_config.php) -->
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

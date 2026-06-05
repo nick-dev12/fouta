@@ -10,12 +10,15 @@ import '../config/firebase_auth_config.dart';
 
 /// Connexion Google / Apple native (hors WebView) → token Firebase pour le site PHP.
 class SocialAuthService {
-  static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-    serverClientId: kFirebaseWebClientId.contains('REMPLACEZ')
-        ? null
-        : kFirebaseWebClientId,
-  );
+  static GoogleSignIn get _googleSignIn => GoogleSignIn(
+        scopes: ['email', 'profile'],
+        clientId: Platform.isIOS && !kFirebaseIosClientId.contains('REMPLACEZ')
+            ? kFirebaseIosClientId
+            : null,
+        serverClientId: kFirebaseWebClientId.contains('REMPLACEZ')
+            ? null
+            : kFirebaseWebClientId,
+      );
 
   static String _friendlyGoogleError(Object e) {
     final raw = e.toString();
@@ -31,6 +34,12 @@ class SocialAuthService {
     if (raw.contains('ApiException: 12500') ||
         raw.contains('SIGN_IN_CANCELLED')) {
       return 'Connexion Google annulée.';
+    }
+    if (Platform.isIOS &&
+        (raw.contains('handleURL') ||
+            raw.contains('url') && raw.contains('scheme'))) {
+      return 'Connexion Google impossible sur iOS. Mettez à jour l’application '
+          '(retour OAuth Google) puis réessayez.';
     }
     if (e is PlatformException) {
       return e.message ?? e.code;
@@ -202,7 +211,17 @@ class SocialAuthService {
         'error': 'Firebase Auth : ${e.message ?? e.code}',
       };
     } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      final raw = e.toString();
+      if (raw.contains('invalid_client')) {
+        return {
+          'success': false,
+          'error':
+              'Apple invalid_client : vérifiez le Services ID ($kAppleServicesClientId) '
+              'et l’URL de retour ($kAppleAndroidRedirectUri) dans Apple Developer '
+              '(identique à Firebase → Authentication → Apple).',
+        };
+      }
+      return {'success': false, 'error': raw};
     }
   }
 
