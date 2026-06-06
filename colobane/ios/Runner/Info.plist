@@ -80,7 +80,7 @@
 			<false/>
 		</dict>
 		<key>UIStatusBarHidden</key>
-		<false/>
+		<true/>
 		<key>FirebaseAppDelegateProxyEnabled</key>
 		<false/>
 		<!-- Notifications push (APNs / FCM) -->
@@ -88,5 +88,7 @@
 		<array>
 			<string>remote-notification</string>
 		</array>
+		<key>UIViewControllerBasedStatusBarAppearance</key>
+		<false/>
 	</dict>
 </plist>

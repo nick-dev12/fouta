@@ -69,6 +69,9 @@ dependencies:
   # Deep links : Android App Links + iOS Universal Links
   app_links: ^6.3.2
 
+  # Écran de lancement natif (preserve / remove au démarrage Flutter)
+  flutter_native_splash: ^2.3.10
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -83,9 +86,6 @@ dev_dependencies:
   # Génération automatique des icônes d'application
   flutter_launcher_icons: ^0.13.1
   
-  # Génération automatique de l'écran de lancement
-  flutter_native_splash: ^2.3.10
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -138,9 +138,19 @@ flutter_launcher_icons:
   remove_alpha_ios: true
 
 # Configuration pour l'écran de lancement (splash screen)
+# Regénérer : dart run flutter_native_splash:create
 flutter_native_splash:
-  color: "#F8FAFC"
-  image: "assets/images/app_icon.png"
+  color: "#FFFFFF"
+  # Source : image/logo pour les app colobane.png
+  image: assets/images/colobane_splash_logo.png
   android: true
   ios: true
-  web: true
+  web: false
+  fullscreen: true
+  android_gravity: center
+  ios_content_mode: scaleAspectFit
+  android_12:
+    color: "#FFFFFF"
+    image: assets/images/colobane_splash_logo.png
+    icon_background_color: "#FFFFFF"
+    android_gravity: center

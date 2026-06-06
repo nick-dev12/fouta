@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, ValueListenable;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:convert';
@@ -23,6 +24,37 @@ const Color kBleuPrincipalFonce = Color(0xFF2D5690);
 const Color kOrangePromo = Color(0xFFFF6B35);
 /// Durée max de l'écran de chargement initial
 const Duration kInitialLoaderMaxDuration = Duration(seconds: 5);
+/// Logo splash + chargement initial (identique au splash natif iOS/Android)
+const String kSplashLogoAsset = 'assets/images/colobane_splash_logo.png';
+
+Future<void>? _firebaseBootstrapFuture;
+
+/// Initialise Firebase sans bloquer l'affichage du splash natif.
+Future<void> ensureFirebaseInitialized() {
+  _firebaseBootstrapFuture ??= _bootstrapFirebase();
+  return _firebaseBootstrapFuture!;
+}
+
+Future<void> _bootstrapFirebase() async {
+  print('🔥 Initialisation de Firebase...');
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.web);
+    } else {
+      try {
+        await Firebase.initializeApp();
+      } catch (initErr) {
+        print('⚠️ Firebase init native, repli options web: $initErr');
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
+    }
+    print('✅ Firebase initialisé avec succès');
+  } catch (e) {
+    print('❌ ERREUR lors de l\'initialisation Firebase: $e');
+  }
+}
 /// Bleu marine proche du logo « banes »
 const Color kBleuLogoMarine = Color(0xFF1A3A5C);
 
@@ -52,37 +84,14 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   print('🔥 Démarrage de l\'application...');
 
-  try {
-    // Initialiser Firebase
-    print('🔥 Initialisation de Firebase...');
-    if (kIsWeb) {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.web);
-    } else {
-      try {
-        await Firebase.initializeApp();
-      } catch (initErr) {
-        print('⚠️ Firebase init native, repli options web: $initErr');
-        await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-      }
-    }
-    print('✅ Firebase initialisé avec succès');
-  } catch (e) {
-    print('❌ ERREUR lors de l\'initialisation Firebase: $e');
-  }
-
-  try {
-    // Configurer le handler pour les notifications en arrière-plan
-    print('🔥 Configuration du handler en arrière-plan...');
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    print('✅ Handler en arrière-plan configuré');
-  } catch (e) {
-    print('❌ ERREUR lors de la configuration du handler: $e');
-  }
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  ensureFirebaseInitialized();
 
   runApp(const ColobanesApp());
 }
@@ -96,6 +105,7 @@ class ColobanesApp extends StatelessWidget {
       title: 'COLObanes',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(
           seedColor: kBleuPrincipal,
           primary: kBleuPrincipal,
@@ -307,6 +317,7 @@ class _WebViewScreenState extends State<WebViewScreen>
   Future<void> _initializeFCM() async {
     print('🔥 Début de l\'initialisation FCM...');
     try {
+      await ensureFirebaseInitialized();
       // Définir le callback pour la navigation depuis les notifications
       print('🔥 Configuration du callback de navigation...');
       FCMService.setNotificationTapCallback((url) {
@@ -850,14 +861,22 @@ class _WebViewScreenState extends State<WebViewScreen>
         }
       },
       child: Scaffold(
+        backgroundColor: Colors.white,
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            // RepaintBoundary isole la WebView : les repaints des overlays
-            // (loader, barre de progression) ne se propagent plus à la WebView.
-            RepaintBoundary(
-              child: SafeArea(
-                child: InAppWebView(
+            // WebView masquée pendant le chargement initial (évite flash blanc sous le logo).
+            ValueListenableBuilder<bool>(
+              valueListenable: _isInitialLoadNotifier,
+              builder: (context, isInitialLoad, child) {
+                return Opacity(
+                  opacity: isInitialLoad ? 0 : 1,
+                  child: child,
+                );
+              },
+              child: RepaintBoundary(
+                child: SafeArea(
+                  child: InAppWebView(
                   initialUrlRequest: URLRequest(
                     url: WebUri(_currentUrl ?? kMarketplaceBaseUrl),
                   ),
@@ -962,10 +981,11 @@ class _WebViewScreenState extends State<WebViewScreen>
                     return NavigationActionPolicy.ALLOW;
                   },
                 ),
+                ),
               ),
             ),
 
-            // Loader initial — écoute uniquement le notifier, ne rebuilde PAS la WebView
+            // Loader initial — logo + anneau (identique au splash natif)
             ValueListenableBuilder<bool>(
               valueListenable: _isInitialLoadNotifier,
               builder: (context, isInitialLoad, _) {
@@ -1000,7 +1020,7 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 }
 
-// Écran de chargement initial — logo marketplace + indicateur fluide (sans %)
+// Écran de chargement initial — même logo que le splash natif + anneau de progression
 class _MarketplaceLoader extends StatefulWidget {
   const _MarketplaceLoader();
 
@@ -1008,123 +1028,96 @@ class _MarketplaceLoader extends StatefulWidget {
   State<_MarketplaceLoader> createState() => _MarketplaceLoaderState();
 }
 
-class _MarketplaceLoaderState extends State<_MarketplaceLoader>
-    with TickerProviderStateMixin {
-  late final AnimationController _entryController;
-  late final AnimationController _pulseController;
-  late final Animation<double> _fadeAnimation;
-  late final Animation<double> _entryScaleAnimation;
-  late final Animation<double> _pulseScaleAnimation;
+class _MarketplaceLoaderState extends State<_MarketplaceLoader> {
+  static bool _nativeSplashRemoved = false;
+  bool _showLoadingRing = false;
 
   @override
   void initState() {
     super.initState();
-    _entryController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..forward();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _entryController,
-      curve: Curves.easeOut,
-    );
-    _entryScaleAnimation = Tween<double>(begin: 0.90, end: 1.0).animate(
-      CurvedAnimation(parent: _entryController, curve: Curves.easeOutCubic),
-    );
-    _pulseScaleAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _entryController.dispose();
-    _pulseController.dispose();
-    super.dispose();
+    // 1) Splash natif = logo seul sur fond blanc
+    // 2) Puis Flutter reprend : même logo + anneau de chargement
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_nativeSplashRemoved) {
+        _nativeSplashRemoved = true;
+        FlutterNativeSplash.remove();
+      }
+      if (mounted) {
+        setState(() => _showLoadingRing = true);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final ringSize = (size.width * 0.70).clamp(230.0, 310.0);
-    final logoWidth = ringSize * 0.66;
+    final ringSize = (size.width * 0.78).clamp(260.0, 340.0);
+    final logoWidth = ringSize * 0.68;
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFFFFFFF), Color(0xFFEDF2FA)],
-        ),
-      ),
-      child: SafeArea(
+    return ColoredBox(
+      color: const Color(0xFFFFFFFF),
+      child: SizedBox.expand(
         child: Center(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ScaleTransition(
-                  scale: _entryScaleAnimation,
-                  child: SizedBox(
-                    width: ringSize,
-                    height: ringSize,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Anneau de chargement indéterminé qui tourne autour du logo
-                        SizedBox(
-                          width: ringSize,
-                          height: ringSize,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 4.5,
-                            strokeCap: StrokeCap.round,
-                            backgroundColor:
-                                kBleuPrincipal.withValues(alpha: 0.12),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              kOrangePromo,
-                            ),
-                          ),
-                        ),
-                        // Logo PNG centré avec une douce pulsation
-                        ScaleTransition(
-                          scale: _pulseScaleAnimation,
-                          child: Image.asset(
-                            'assets/images/logo_market.png',
-                            width: logoWidth,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.storefront_rounded,
-                                size: 72,
-                                color: kBleuPrincipal,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 34),
-                Text(
-                  'Chargement du marché…',
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.3,
-                    color: kBleuPrincipal.withValues(alpha: 0.62),
-                  ),
-                ),
-              ],
-            ),
+          child: _MarketplaceLoaderContent(
+            ringSize: ringSize,
+            logoWidth: logoWidth,
+            showLoadingRing: _showLoadingRing,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MarketplaceLoaderContent extends StatelessWidget {
+  const _MarketplaceLoaderContent({
+    required this.ringSize,
+    required this.logoWidth,
+    required this.showLoadingRing,
+  });
+
+  final double ringSize;
+  final double logoWidth;
+  final bool showLoadingRing;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: ringSize,
+      height: ringSize,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AnimatedOpacity(
+            opacity: showLoadingRing ? 1 : 0,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOut,
+            child: SizedBox(
+              width: ringSize,
+              height: ringSize,
+              child: const CircularProgressIndicator(
+                strokeWidth: 4.5,
+                strokeCap: StrokeCap.round,
+                backgroundColor: Color(0x1A3564A6),
+                valueColor: AlwaysStoppedAnimation<Color>(kOrangePromo),
+              ),
+            ),
+          ),
+          Image.asset(
+            kSplashLogoAsset,
+            width: logoWidth,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (context, error, stackTrace) {
+              return Image.asset(
+                'assets/images/logo_market.png',
+                width: logoWidth,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+              );
+            },
+          ),
+        ],
       ),
     );
   }
