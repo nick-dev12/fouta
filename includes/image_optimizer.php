@@ -132,7 +132,53 @@ function image_optimizer_save_webp($img, $dest_path, $quality = IMAGE_OPTIMIZER_
  *
  * @return array{success:bool, relative_path?:string, filename?:string, message?:string, bytes_before?:int, bytes_after?:int}
  */
-function image_optimizer_process_tmp($tmp_path, $dest_dir, $relative_subdir, $name_prefix) {
+/**
+ * Résout un chemin BDD vers le fichier réel (ex. foo.png → foo.webp si converti).
+ */
+function image_optimizer_resolve_relative_path($relative_path) {
+    $relative_path = trim(str_replace('\\', '/', (string) $relative_path), '/');
+    if ($relative_path === '') {
+        return '';
+    }
+    $upload_root = dirname(__DIR__) . '/upload/';
+    if (is_file($upload_root . $relative_path)) {
+        return $relative_path;
+    }
+    $dir = dirname($relative_path);
+    $stem = pathinfo($relative_path, PATHINFO_FILENAME);
+    if ($stem === '') {
+        return $relative_path;
+    }
+    $webp_rel = ($dir === '.' || $dir === '') ? $stem . '.webp' : $dir . '/' . $stem . '.webp';
+    if (is_file($upload_root . $webp_rel)) {
+        return $webp_rel;
+    }
+    return $relative_path;
+}
+
+/**
+ * Si un .webp existe pour le même nom de base, retourne le chemin .webp.
+ */
+function image_optimizer_normalize_db_path($relative_path) {
+    $resolved = image_optimizer_resolve_relative_path($relative_path);
+    $ext = strtolower(pathinfo($resolved, PATHINFO_EXTENSION));
+    if ($ext === 'webp') {
+        return $resolved;
+    }
+    $upload_root = dirname(__DIR__) . '/upload/';
+    $dir = dirname($resolved);
+    $stem = pathinfo($resolved, PATHINFO_FILENAME);
+    if ($stem === '') {
+        return $resolved;
+    }
+    $webp_rel = ($dir === '.' || $dir === '') ? $stem . '.webp' : $dir . '/' . $stem . '.webp';
+    if (is_file($upload_root . $webp_rel)) {
+        return $webp_rel;
+    }
+    return $resolved;
+}
+
+function image_optimizer_process_tmp($tmp_path, $dest_dir, $relative_subdir, $name_prefix, $fixed_stem = null) {
     if (!is_uploaded_file($tmp_path) && !is_file($tmp_path)) {
         return ['success' => false, 'message' => 'Fichier source introuvable.'];
     }
@@ -154,7 +200,12 @@ function image_optimizer_process_tmp($tmp_path, $dest_dir, $relative_subdir, $na
         return ['success' => false, 'message' => 'Impossible de créer le dossier d\'upload.'];
     }
 
-    $base_name = $name_prefix . bin2hex(random_bytes(8));
+    if (is_string($fixed_stem) && $fixed_stem !== '') {
+        $safe_stem = preg_replace('/[^a-zA-Z0-9._-]/', '_', $fixed_stem);
+        $base_name = ($safe_stem !== '') ? $safe_stem : ($name_prefix . bin2hex(random_bytes(8)));
+    } else {
+        $base_name = $name_prefix . bin2hex(random_bytes(8));
+    }
     $filename = $base_name . '.webp';
     $dest_path = rtrim($dest_dir, '/\\') . DIRECTORY_SEPARATOR . $filename;
 
@@ -291,15 +342,20 @@ function upload_image_url($relative_path, $variant = 'md') {
         return '/image/produit1.jpg';
     }
 
+    $relative_path = image_optimizer_resolve_relative_path($relative_path);
+    $upload_root = dirname(__DIR__) . '/upload/';
+
     $variant = strtolower(trim((string) $variant));
     if ($variant === '' || $variant === 'original') {
+        if (is_file($upload_root . $relative_path)) {
+            return '/upload/' . $relative_path;
+        }
         return '/upload/' . $relative_path;
     }
     if (!in_array($variant, ['md', 'sm'], true)) {
         $variant = 'md';
     }
 
-    $upload_root = dirname(__DIR__) . '/upload/';
     $variant_rel = image_optimizer_variant_relative_path($relative_path, $variant);
     if ($variant_rel !== '' && is_file($upload_root . $variant_rel)) {
         return '/upload/' . $variant_rel;
@@ -320,11 +376,7 @@ function image_optimizer_variant_relative_path($relative_path, $variant) {
     }
     $dir = dirname($relative_path);
     $base = pathinfo($relative_path, PATHINFO_FILENAME);
-    $ext = pathinfo($relative_path, PATHINFO_EXTENSION);
-    if ($ext === '') {
-        $ext = 'webp';
-    }
-    $variant_name = $base . '_' . $variant . '.' . $ext;
+    $variant_name = $base . '_' . $variant . '.webp';
     if ($dir === '.' || $dir === '') {
         return $variant_name;
     }

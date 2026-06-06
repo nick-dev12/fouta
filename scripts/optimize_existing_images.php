@@ -1,6 +1,7 @@
 <?php
 /**
  * Recompression batch des images déjà présentes dans upload/ (produits, catégories…).
+ * Conserve le nom de base (foo.png → foo.webp) et met à jour la BDD.
  *
  * Usage CLI : php scripts/optimize_existing_images.php
  * Usage CLI (dossier ciblé) : php scripts/optimize_existing_images.php produits
@@ -19,6 +20,17 @@ if ($upload_root === false || !is_dir($upload_root)) {
     exit(1);
 }
 
+$db = null;
+$conn = __DIR__ . '/../conn/conn.php';
+if (is_file($conn)) {
+    require_once $conn;
+    if (isset($db) && $db instanceof PDO) {
+        require_once __DIR__ . '/../includes/image_optimizer_db.php';
+    }
+}
+
+$mapping_log = __DIR__ . '/optimize_image_mapping.jsonl';
+
 $scan_dir = $target_subdir !== '' ? $upload_root . DIRECTORY_SEPARATOR . $target_subdir : $upload_root;
 if (!is_dir($scan_dir)) {
     fwrite(STDERR, "Dossier cible introuvable : {$scan_dir}\n");
@@ -26,7 +38,7 @@ if (!is_dir($scan_dir)) {
 }
 
 $skip_suffixes = ['_md', '_sm'];
-$allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+$allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
 $processed = 0;
 $skipped = 0;
 $failed = 0;
@@ -58,28 +70,43 @@ foreach ($iterator as $file_info) {
     $rel_dir = dirname($rel);
     $rel_subdir = ($rel_dir === '.' ? '' : $rel_dir);
 
-    if ($ext === 'webp' && is_file($dir_abs . DIRECTORY_SEPARATOR . $base . '_md.webp')) {
+    $webp_abs = $dir_abs . DIRECTORY_SEPARATOR . $base . '.webp';
+    if (is_file($webp_abs)) {
         $skipped++;
         continue;
     }
 
-    $prefix = 'img_';
-
     $bytes_before = (int) filesize($abs);
-    $result = image_optimizer_process_tmp($abs, $dir_abs, $rel_subdir, $prefix);
+    $result = image_optimizer_process_tmp($abs, $dir_abs, $rel_subdir, 'img_', $base);
     if (empty($result['success'])) {
         $failed++;
         fwrite(STDERR, "Échec [{$rel}] : " . ($result['message'] ?? 'erreur') . "\n");
         continue;
     }
 
-    if ($abs !== $upload_root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string) $result['relative_path'])) {
+    $new_rel = (string) ($result['relative_path'] ?? '');
+    $expected_rel = image_db_webp_equivalent_path($rel);
+
+    if ($new_rel !== '' && $new_rel !== $rel) {
+        $log_line = json_encode(['old' => $rel, 'new' => $new_rel], JSON_UNESCAPED_UNICODE) . "\n";
+        file_put_contents($mapping_log, $log_line, FILE_APPEND | LOCK_EX);
+        if ($db instanceof PDO && function_exists('image_db_apply_path_mapping')) {
+            // Même nom de base : ancien.jpg → ancien.webp (pas de img_ aléatoire)
+            image_db_apply_path_mapping($db, $rel, $expected_rel !== '' ? $expected_rel : $new_rel);
+        }
+    }
+
+    if ($abs !== $upload_root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $new_rel)) {
         @unlink($abs);
     }
 
     $processed++;
     $saved_bytes += max(0, $bytes_before - (int) ($result['bytes_after'] ?? $bytes_before));
-    echo "OK {$rel} → " . ($result['relative_path'] ?? '') . "\n";
+    echo "OK {$rel} → {$new_rel}\n";
 }
 
 echo "\nTerminé : {$processed} optimisée(s), {$skipped} ignorée(s), {$failed} échec(s), " . round($saved_bytes / 1024, 1) . " Ko économisés.\n";
+if ($processed > 0) {
+    echo "Journal : {$mapping_log}\n";
+    echo "Si besoin : php scripts/sync_image_paths_database.php\n";
+}
