@@ -74,21 +74,53 @@ Sur Android, Apple exige `webAuthenticationOptions` (Services ID + URL de retour
 
 **Configuration code** (générée depuis `config/firebase_config.php`) :
 
-- `kAppleServicesClientId` : `com.colobanes.web` (identique Firebase → Authentication → Apple)
-- `kAppleAndroidRedirectUri` : `https://gestion-scolaire-6945a.firebaseapp.com/__/auth/handler` (**même URL que le site web**)
+- `kAppleServicesClientId` : `com.colobanes.web`
+- `kAppleAndroidRedirectUri` : `https://colobanes.com/auth/apple-callback` (**app Android uniquement**)
+- `kAppleWebOAuthRedirectUri` : `https://gestion-scolaire-6945a.firebaseapp.com/__/auth/handler` (**site web uniquement**)
 
-**Apple Developer** (Services ID `com.colobanes.web`) :
+**Apple Developer** (Services ID `com.colobanes.web`) — **2 Return URLs** obligatoires :
 
-1. Identifiers → **Services IDs** → `com.colobanes.web` (COLObanes Web)
-2. Activer **Sign In with Apple** → Configure
-3. **Primary App ID** : `com.colobanes.app`
-4. **Domains** : `colobanes.com` (et `www.colobanes.com` si utilisé)
-5. **Return URL** : `https://gestion-scolaire-6945a.firebaseapp.com/__/auth/handler`
-6. Firebase → Authentication → Apple : même Services ID + Team ID `XA8994VJC6` + clé `.p8`
+| Usage | Return URL |
+|-------|------------|
+| Site web (Firebase JS) | `https://gestion-scolaire-6945a.firebaseapp.com/__/auth/handler` |
+| App Android | `https://colobanes.com/auth/apple-callback` |
 
-> **Important** : n’utilisez pas `https://colobanes.com/auth/apple-callback` pour Apple — le web Firebase utilise l’URL `firebaseapp.com/__/auth/handler`. L’app Android doit utiliser **la même** Return URL.
+1. Identifiers → **Services IDs** → `com.colobanes.web`
+2. **Domains** : `colobanes.com`
+3. Ajoutez **les deux** Return URLs ci-dessus
+4. Firebase → Authentication → Apple : Services ID + Team ID `XA8994VJC6` + clé `.p8`
 
-Erreur **`invalid_client`** = Services ID ou Return URL différents entre l’app, Firebase et Apple Developer.
+> **Ne pas** utiliser l’URL Firebase handler sur Android : erreur « absence d’état initial » (SessionStorage du navigateur Custom Tab).
+
+Erreur **`invalid_client`** = Return URL absente dans Apple Developer.
+
+### Android — bloqué sur « Retour connexion Apple… »
+
+Apple envoie un **POST** (`form_post`) vers `auth/apple-callback.php`. Cette page doit **rediriger vers l’app** via :
+
+`intent://callback?code=…#Intent;package=com.colobanes.app;scheme=signinwithapple;end`
+
+Prérequis côté app :
+
+- `auth/apple-callback.php` déployé sur le VPS (redirection intent)
+- Activité `SignInWithAppleCallback` dans `AndroidManifest.xml`
+- **Nouvelle build** Android obligatoire après ajout de l’activité
+
+### Android — `invalid_request` / `Invalid web redirect url`
+
+L’app envoie `https://colobanes.com/auth/apple-callback`. Apple refuse si :
+
+1. Cette URL n’est **pas** dans les Return URLs du Services ID `com.colobanes.web`
+2. Le domaine `colobanes.com` n’est **pas vérifié** (fichier manquant sur le serveur)
+
+**Vérification domaine** (obligatoire) :
+
+1. Apple Developer → Services ID → domaine `colobanes.com` → **Verify** → télécharger le fichier
+2. Déployer sur le VPS : `.well-known/apple-developer-domain-association.txt`
+3. Tester : `https://colobanes.com/.well-known/apple-developer-domain-association.txt` → doit répondre **200** (pas 404)
+4. Ajouter Return URL : `https://colobanes.com/auth/apple-callback`
+
+Voir aussi : `.well-known/README-apple-domain-verification.md`
 
 ---
 

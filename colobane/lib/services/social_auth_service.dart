@@ -11,14 +11,14 @@ import '../config/firebase_auth_config.dart';
 /// Connexion Google / Apple native (hors WebView) → token Firebase pour le site PHP.
 class SocialAuthService {
   static GoogleSignIn get _googleSignIn => GoogleSignIn(
-        scopes: ['email', 'profile'],
-        clientId: Platform.isIOS && !kFirebaseIosClientId.contains('REMPLACEZ')
-            ? kFirebaseIosClientId
-            : null,
-        serverClientId: kFirebaseWebClientId.contains('REMPLACEZ')
-            ? null
-            : kFirebaseWebClientId,
-      );
+    scopes: ['email', 'profile'],
+    clientId: Platform.isIOS && !kFirebaseIosClientId.contains('REMPLACEZ')
+        ? kFirebaseIosClientId
+        : null,
+    serverClientId: kFirebaseWebClientId.contains('REMPLACEZ')
+        ? null
+        : kFirebaseWebClientId,
+  );
 
   static String _friendlyGoogleError(Object e) {
     final raw = e.toString();
@@ -84,8 +84,8 @@ class SocialAuthService {
         idToken: idToken,
       );
 
-      final UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithCredential(credential);
       final User? user = userCredential.user;
 
       if (user == null) {
@@ -170,14 +170,14 @@ class SocialAuthService {
         };
       }
 
-      final OAuthCredential oauthCredential =
-          OAuthProvider('apple.com').credential(
-        idToken: identityToken,
-        accessToken: appleCredential.authorizationCode,
-      );
+      final OAuthCredential oauthCredential = OAuthProvider('apple.com')
+          .credential(
+            idToken: identityToken,
+            accessToken: appleCredential.authorizationCode,
+          );
 
-      final UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithCredential(oauthCredential);
       final User? user = userCredential.user;
 
       if (user == null) {
@@ -193,18 +193,14 @@ class SocialAuthService {
         'success': true,
         'idToken': firebaseIdToken,
         'email': user.email ?? appleCredential.email ?? '',
-        'displayName': user.displayName ??
-            _appleDisplayName(appleCredential) ??
-            '',
+        'displayName':
+            user.displayName ?? _appleDisplayName(appleCredential) ?? '',
       };
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
         return {'success': false, 'error': 'Connexion Apple annulée.'};
       }
-      return {
-        'success': false,
-        'error': 'Apple : ${e.message}',
-      };
+      return {'success': false, 'error': 'Apple : ${e.message}'};
     } on FirebaseAuthException catch (e) {
       return {
         'success': false,

@@ -60,7 +60,7 @@ $required = [
     'webClientId',
     'iosClientId',
     'appleServicesId',
-    'appleOAuthRedirectUri',
+    'appleAndroidRedirectUri',
 ];
 foreach ($required as $key) {
     if (empty($auth[$key]) || !is_string($auth[$key])) {
@@ -79,8 +79,13 @@ $lines = [
     "const String kFirebaseWebClientId =\n    '" . $auth['webClientId'] . "';",
     "const String kFirebaseIosClientId =\n    '" . $auth['iosClientId'] . "';",
     "const String kAppleServicesClientId = '" . $auth['appleServicesId'] . "';",
-    "const String kAppleAndroidRedirectUri =\n    '" . $auth['appleOAuthRedirectUri'] . "';",
+    "const String kAppleAndroidRedirectUri =\n    '" . $auth['appleAndroidRedirectUri'] . "';",
 ];
+
+if (!empty($auth['appleOAuthRedirectUri'])) {
+    $lines[] = "/// Site web uniquement (Firebase JS) — ne pas utiliser sur Android.";
+    $lines[] = "const String kAppleWebOAuthRedirectUri =\n    '" . $auth['appleOAuthRedirectUri'] . "';";
+}
 
 if (!empty($cfg['authDomain'])) {
     $lines[] = "const String kFirebaseAuthDomain = '" . $cfg['authDomain'] . "';";
