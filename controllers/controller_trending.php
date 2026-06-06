@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../includes/upload_image_limits.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../models/model_trending.php';
 require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
 
@@ -93,30 +94,16 @@ function upload_trending_image($file) {
         mkdir($upload_dir, 0755, true);
     }
     
-    // Vérifier le type de fichier
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $file_type = mime_content_type($file['tmp_name']);
-    
-    if (!in_array($file_type, $allowed_types)) {
-        return ['success' => false, 'filename' => null, 'message' => 'Type de fichier non autorisé. Formats acceptés: JPEG, JPG, PNG, GIF, WEBP'];
+    $result = upload_optimize_image_file($file, $upload_dir, 'trending', 'trending_');
+    if (!empty($result['success']) && !empty($result['filename'])) {
+        return ['success' => true, 'filename' => (string) $result['filename'], 'message' => 'Image optimisée et enregistrée'];
     }
-    
-    $max_size = UPLOAD_MAX_IMAGE_BYTES;
-    if ((int) ($file['size'] ?? 0) > $max_size) {
-        return ['success' => false, 'filename' => null, 'message' => 'Le fichier est trop volumineux. Taille maximale : 20 Mo'];
-    }
-    
-    // Générer un nom de fichier unique
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = 'trending_' . time() . '_' . uniqid() . '.' . $extension;
-    $file_path = $upload_dir . $filename;
-    
-    // Déplacer le fichier
-    if (move_uploaded_file($file['tmp_name'], $file_path)) {
-        return ['success' => true, 'filename' => $filename, 'message' => 'Image uploadée avec succès'];
-    } else {
-        return ['success' => false, 'filename' => null, 'message' => 'Erreur lors de l\'upload du fichier'];
-    }
+
+    return [
+        'success' => false,
+        'filename' => null,
+        'message' => (string) ($result['message'] ?? 'Erreur lors de l\'upload du fichier'),
+    ];
 }
 
 ?>

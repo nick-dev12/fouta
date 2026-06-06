@@ -24,6 +24,7 @@ $stock_catalogue_vendeur_seul = ($__stock_role === 'vendeur' && function_exists(
 
 require_once __DIR__ . '/../../models/model_categories.php';
 require_once __DIR__ . '/../../models/model_produits.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 
 // ---- Modal nouvelle catégorie ----
 $cat_modal_error       = '';
@@ -958,7 +959,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                         onclick="window.location='../produits/modifier.php?id=<?php echo (int)$produit['id']; ?>'">
 
                         <div class="stk-card__img-wrap">
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom'] ?? ''); ?>"
                                 class="stk-card__img"
                                 onerror="this.src='/image/produit1.jpg'">

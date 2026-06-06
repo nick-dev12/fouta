@@ -5,6 +5,7 @@ session_start();
 require_once __DIR__ . '/models/model_produits.php';
 require_once __DIR__ . '/includes/produit_boutique_line.php';
 require_once __DIR__ . '/includes/catalogue_shuffle.php';
+require_once __DIR__ . '/includes/image_optimizer.php';
 
 // Récupérer les produits (recherche + filtres ou tous)
 $produits_tous = [];
@@ -306,7 +307,7 @@ $seo_canonical = $base . '/produits.php';
                                         <?php if ($has_promotion): ?>
                                         <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                                         <?php endif; ?>
-                                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                             alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                             loading="lazy"
                                             onerror="this.src='/image/produit1.jpg'">
@@ -404,7 +405,7 @@ $seo_canonical = $base . '/produits.php';
                 const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
                 article.innerHTML = `
                     <a href="produit.php?id=${produit.id}" class="mp-card-link">
-                        <div class="mp-card-img">${badgeHTML}<img src="/upload/${escapeHtml(produit.image_principale)}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
+                        <div class="mp-card-img">${badgeHTML}<img src="${escapeHtml(produit.image_url || ('/upload/' + (produit.image_principale || 'produit1.jpg')))}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
                         <div class="mp-card-body"><p class="mp-card-title">${escapeHtml(produit.nom)}</p><div class="mp-card-price-row">${prixHTML}</div></div>
                     </a>
                     <div class="mp-card-cart"><form method="POST" action="/add-to-panier.php">

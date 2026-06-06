@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../includes/upload_image_limits.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 
 /**
@@ -123,14 +124,16 @@ function upload_commande_personnalisee_image($file) {
         return ['success' => false, 'message' => 'Impossible de préparer le dossier d\'upload de l\'image.', 'path' => null];
     }
 
-    $filename = 'commande_perso_' . date('Ymd_His') . '_' . bin2hex(random_bytes(8)) . '.' . $validation['extension'];
-    $target_path = $upload_dir . $filename;
-
-    if (!move_uploaded_file($file['tmp_name'], $target_path)) {
-        return ['success' => false, 'message' => 'Impossible d\'enregistrer l\'image de référence.', 'path' => null];
+    $result = upload_optimize_image_file($file, $upload_dir, 'commandes-personnalisees', 'commande_perso_');
+    if (empty($result['success']) || empty($result['relative_path'])) {
+        return [
+            'success' => false,
+            'message' => (string) ($result['message'] ?? 'Impossible d\'enregistrer l\'image de référence.'),
+            'path' => null,
+        ];
     }
 
-    return ['success' => true, 'message' => '', 'path' => 'commandes-personnalisees/' . $filename];
+    return ['success' => true, 'message' => '', 'path' => (string) $result['relative_path']];
 }
 
 /**

@@ -24,6 +24,7 @@ require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_factures.php';
 require_once __DIR__ . '/../../includes/format_commande_options.php';
 require_once __DIR__ . '/../../includes/commande_suivi_ui.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $commande = get_commande_by_id($commande_id);
 $produits = get_produits_by_commande($commande_id);
 $produits = is_array($produits) ? $produits : [];
@@ -343,7 +344,7 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
                 <div class="cpd-row">
                     <div class="cpd-row__num" aria-hidden="true"><?php echo $idx + 1; ?></div>
                     <div class="cpd-row__img-wrap">
-                        <img src="/upload/<?php echo htmlspecialchars($img_src ?? ''); ?>"
+                        <img src="<?php echo htmlspecialchars(upload_image_url($img_src ?? '', 'sm')); ?>"
                             alt="<?php echo htmlspecialchars($nom_affichage ?? ''); ?>"
                             class="cpd-row__img"
                             onerror="this.src='/image/produit1.jpg'">

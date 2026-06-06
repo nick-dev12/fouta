@@ -12,6 +12,7 @@ require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_admin.php';
 require_once __DIR__ . '/../includes/marketplace_helpers.php';
 require_once __DIR__ . '/../includes/catalogue_shuffle.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 $boutique_admin_id = null;
 if (!empty($_GET['boutique'])) {
@@ -81,6 +82,7 @@ foreach ($produits as $produit) {
         'poids' => $produit['poids'] ?? '',
         'categorie_nom' => $produit['categorie_nom'] ?? '',
         'image_principale' => $produit['image_principale'] ?? 'produit1.jpg',
+        'image_url' => upload_image_url($produit['image_principale'] ?? '', 'md'),
         'boutique_nom' => $boutique_nom,
         'boutique_slug' => $boutique_slug,
         'boutique_href' => $boutique_href,

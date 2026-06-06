@@ -6,6 +6,9 @@
 if (empty($produit) || !is_array($produit)) {
     return;
 }
+if (!function_exists('upload_image_url')) {
+    require_once __DIR__ . '/../image_optimizer.php';
+}
 $return_url = isset($return_url) ? (string) $return_url : (string) ($_SERVER['REQUEST_URI'] ?? '/index.php');
 $pid = (int) ($produit['id'] ?? 0);
 if ($pid <= 0) {
@@ -18,7 +21,7 @@ $nom_short = function_exists('mb_strlen') && mb_strlen($nom) > 38 ? mb_substr($n
     <a href="produit.php?id=<?php echo $pid; ?>" class="mp-top-card-link">
         <div class="mp-top-card-img-wrap">
             <div class="mp-top-card-img">
-                <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                     alt="<?php echo htmlspecialchars($nom); ?>"
                     loading="lazy"
                     onerror="this.src='/image/produit1.jpg'">

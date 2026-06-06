@@ -14,6 +14,7 @@ require_once __DIR__ . '/models/model_visites.php';
 require_once __DIR__ . '/models/model_variantes.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
 require_once __DIR__ . '/includes/flash_toast.php';
+require_once __DIR__ . '/includes/image_optimizer.php';
 
 // Récupérer l'ID du produit depuis l'URL ou POST
 $produit_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -1746,7 +1747,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 }
                 ?>
                 <div class="produit-gallery-main">
-                    <img src="/upload/<?php echo htmlspecialchars($galerie_images[0] ?? $produit['image_principale']); ?>"
+                    <img src="<?php echo htmlspecialchars(upload_image_url($galerie_images[0] ?? $produit['image_principale'] ?? '', 'original')); ?>"
                         alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-image-main"
                         id="produit-image-main" onerror="this.src='/image/produit1.jpg'">
                 </div>
@@ -1759,8 +1760,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                             <?php foreach ($galerie_images as $idx => $img_path): ?>
                                 <button type="button" class="gallery-thumb <?php echo $idx === 0 ? 'active' : ''; ?>"
                                     data-index="<?php echo $idx; ?>"
-                                    data-src="/upload/<?php echo htmlspecialchars($img_path); ?>">
-                                    <img src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                                    data-src="<?php echo htmlspecialchars(upload_image_url($img_path, 'original')); ?>">
+                                    <img src="<?php echo htmlspecialchars(upload_image_url($img_path, 'sm')); ?>"
                                         alt="Vue <?php echo $idx + 1; ?>" onerror="this.src='/image/produit1.jpg'">
                                 </button>
                             <?php endforeach; ?>

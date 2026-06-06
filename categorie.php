@@ -5,6 +5,7 @@ session_start();
 require_once __DIR__ . '/models/model_categories.php';
 require_once __DIR__ . '/models/model_produits.php';
 require_once __DIR__ . '/includes/produit_boutique_line.php';
+require_once __DIR__ . '/includes/image_optimizer.php';
 
 // Rayon plateforme (categories_generales) ou catégorie feuille
 $generale_id = isset($_GET['generale']) ? (int) $_GET['generale'] : 0;
@@ -230,7 +231,7 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
                                 <?php echo $is_active_sub ? ' aria-current="page"' : ''; ?>>
                                 <span class="mp-pop-cat-icon<?php echo $has_sc_img ? ' mp-pop-cat-icon--photo' : ''; ?>" aria-hidden="true">
                                     <?php if ($has_sc_img): ?>
-                                        <img src="<?php echo htmlspecialchars($sc_img, ENT_QUOTES, 'UTF-8'); ?>"
+                                        <img src="<?php echo htmlspecialchars(upload_image_url_from_src($sc_img, 'sm'), ENT_QUOTES, 'UTF-8'); ?>"
                                             alt=""
                                             loading="lazy"
                                             decoding="async">

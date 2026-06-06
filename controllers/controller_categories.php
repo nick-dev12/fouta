@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../includes/upload_image_limits.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../models/model_categories.php';
 if (file_exists(__DIR__ . '/../includes/admin_route_access.php')) {
     require_once __DIR__ . '/../includes/admin_route_access.php';
@@ -27,31 +28,12 @@ function upload_categorie_image($file) {
         mkdir($upload_dir, 0777, true);
     }
     
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = UPLOAD_MAX_IMAGE_BYTES;
-    
     $file_info = $file['image'];
-    
-    // Vérifier le type
-    if (!in_array($file_info['type'], $allowed_types)) {
-        return false;
+    $result = upload_optimize_image_file($file_info, $upload_dir, 'categories', 'categorie_');
+    if (!empty($result['success']) && !empty($result['relative_path'])) {
+        return (string) $result['relative_path'];
     }
-    
-    // Vérifier la taille
-    if ($file_info['size'] > $max_size) {
-        return false;
-    }
-    
-    // Générer un nom unique
-    $extension = pathinfo($file_info['name'], PATHINFO_EXTENSION);
-    $filename = uniqid('categorie_', true) . '.' . $extension;
-    $filepath = $upload_dir . $filename;
-    
-    // Déplacer le fichier
-    if (move_uploaded_file($file_info['tmp_name'], $filepath)) {
-        return 'categories/' . $filename;
-    }
-    
+
     return false;
 }
 
@@ -70,23 +52,10 @@ function upload_genre_image($file) {
         mkdir($upload_dir, 0777, true);
     }
 
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = UPLOAD_MAX_IMAGE_BYTES;
-
     $file_info = $file['image'];
-    if (!in_array($file_info['type'], $allowed_types, true)) {
-        return false;
-    }
-    if ($file_info['size'] > $max_size) {
-        return false;
-    }
-
-    $extension = pathinfo($file_info['name'], PATHINFO_EXTENSION);
-    $filename = uniqid('genre_', true) . '.' . $extension;
-    $filepath = $upload_dir . $filename;
-
-    if (move_uploaded_file($file_info['tmp_name'], $filepath)) {
-        return 'genres/' . $filename;
+    $result = upload_optimize_image_file($file_info, $upload_dir, 'genres', 'genre_');
+    if (!empty($result['success']) && !empty($result['relative_path'])) {
+        return (string) $result['relative_path'];
     }
 
     return false;

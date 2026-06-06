@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../includes/barcode_fpl.php';
 require_once __DIR__ . '/../includes/upload_image_limits.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 /**
  * Génère et sauvegarde le QR code d'un produit (pointant vers stock-info.php)
@@ -61,29 +62,12 @@ function upload_produit_image($file, $field_name = 'image') {
         mkdir($upload_dir, 0777, true);
     }
     
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    
     $file_info = $file[$field_name];
-    
-    // Vérifier le type
-    if (!in_array($file_info['type'], $allowed_types)) {
-        return false;
+    $result = upload_optimize_image_file($file_info, $upload_dir, 'produits', 'produit_');
+    if (!empty($result['success']) && !empty($result['relative_path'])) {
+        return (string) $result['relative_path'];
     }
 
-    if ((int) ($file_info['size'] ?? 0) > UPLOAD_MAX_IMAGE_BYTES) {
-        return false;
-    }
-    
-    // Générer un nom unique
-    $extension = pathinfo($file_info['name'], PATHINFO_EXTENSION);
-    $filename = uniqid('produit_', true) . '.' . $extension;
-    $filepath = $upload_dir . $filename;
-    
-    // Déplacer le fichier
-    if (move_uploaded_file($file_info['tmp_name'], $filepath)) {
-        return 'produits/' . $filename;
-    }
-    
     return false;
 }
 

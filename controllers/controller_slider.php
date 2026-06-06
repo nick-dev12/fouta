@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../includes/upload_image_limits.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../models/model_slider.php';
 
 /**
@@ -26,34 +27,21 @@ function upload_slider_image($file_input_name, $current_image = null) {
         mkdir($upload_dir, 0755, true);
     }
     
-    // Vérifier le type de fichier
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
-    $file_type = $file['type'];
-    
-    if (!in_array($file_type, $allowed_types)) {
-        $_SESSION['upload_error'] = 'Type de fichier non autorisé. Formats acceptés: JPEG, JPG, PNG, GIF, WEBP, AVIF';
-        return false;
-    }
-    
-    if ((int) ($file['size'] ?? 0) > UPLOAD_MAX_IMAGE_BYTES) {
-        $_SESSION['upload_error'] = 'Le fichier est trop volumineux. Taille maximale : 20 Mo';
-        return false;
-    }
-    
-    // Générer un nom unique
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $new_filename = 'slider_' . time() . '_' . uniqid() . '.' . $extension;
-    $target_path = $upload_dir . $new_filename;
-    
-    // Déplacer le fichier
-    if (move_uploaded_file($file['tmp_name'], $target_path)) {
-        // Supprimer l'ancienne image si elle existe
-        if ($current_image && file_exists($upload_dir . $current_image)) {
-            unlink($upload_dir . $current_image);
+    $result = upload_optimize_image_file($file, $upload_dir, 'slider', 'slider_');
+    if (!empty($result['success']) && !empty($result['filename'])) {
+        if ($current_image) {
+            image_optimizer_delete_with_variants('slider/' . $current_image);
+            if (file_exists($upload_dir . $current_image)) {
+                @unlink($upload_dir . $current_image);
+            }
         }
-        return $new_filename;
+        return (string) $result['filename'];
     }
-    
+
+    if (empty($result['success'])) {
+        $_SESSION['upload_error'] = (string) ($result['message'] ?? 'Échec de l\'upload de l\'image du slider.');
+    }
+
     return false;
 }
 

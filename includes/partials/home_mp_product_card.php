@@ -7,6 +7,9 @@
 if (empty($produit) || !is_array($produit)) {
     return;
 }
+if (!function_exists('upload_image_url')) {
+    require_once __DIR__ . '/../image_optimizer.php';
+}
 $return_url = isset($return_url) ? (string) $return_url : (string) ($_SERVER['REQUEST_URI'] ?? '/index.php');
 $card_prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
     ? $produit['prix_promotion']
@@ -24,7 +27,7 @@ if ($pid <= 0) {
             <?php if ($show_nouveau_badge): ?>
             <span class="mp-card-badge mp-card-badge--nouveau">Nouveau</span>
             <?php endif; ?>
-            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                 alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                 loading="lazy"
                 onerror="this.src='/image/produit1.jpg'">

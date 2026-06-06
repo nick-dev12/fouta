@@ -2152,6 +2152,8 @@ $seo_canonical = $base . '/';
     <?php endif; ?>
 
     <?php
+    require_once __DIR__ . '/includes/image_optimizer.php';
+
     $return_url_mp = (string) ($_SERVER['REQUEST_URI'] ?? '/index.php');
 
     $slides = [];
@@ -2302,9 +2304,9 @@ $seo_canonical = $base . '/';
 
     $mp_spotlight_img = null;
     if (!empty($hero_affiches[0]['image'])) {
-        $mp_spotlight_img = '/upload/marketplace_hero/' . rawurlencode((string) $hero_affiches[0]['image']);
+        $mp_spotlight_img = upload_image_url('marketplace_hero/' . (string) $hero_affiches[0]['image'], 'md');
     } elseif (!empty($slides[0]['image'])) {
-        $mp_spotlight_img = '/upload/slider/' . htmlspecialchars((string) $slides[0]['image'], ENT_QUOTES, 'UTF-8');
+        $mp_spotlight_img = upload_image_url('slider/' . (string) $slides[0]['image'], 'md');
     }
     ?>
 
@@ -2316,7 +2318,7 @@ $seo_canonical = $base . '/';
                     <div class="slider-area owl-carousel">
                         <?php foreach ($hero_affiches as $ha): ?>
                             <div class="slider-item">
-                                <img src="/upload/marketplace_hero/<?php echo htmlspecialchars((string) ($ha['image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                <img src="<?php echo htmlspecialchars(upload_image_url('marketplace_hero/' . (string) ($ha['image'] ?? ''), 'original'), ENT_QUOTES, 'UTF-8'); ?>"
                                     alt="<?php echo htmlspecialchars((string) ($ha['alt_text'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                     onerror="this.src='/image/produit1.jpg'">
                             </div>
@@ -2361,7 +2363,7 @@ $seo_canonical = $base . '/';
                             title="<?php echo htmlspecialchars($plabel, ENT_QUOTES, 'UTF-8'); ?>">
                             <span class="mp-pop-cat-icon<?php echo $has_pop_img ? ' mp-pop-cat-icon--photo' : ''; ?>" aria-hidden="true">
                                 <?php if ($has_pop_img): ?>
-                                    <img src="<?php echo htmlspecialchars($pop_img, ENT_QUOTES, 'UTF-8'); ?>"
+                                    <img src="<?php echo htmlspecialchars(upload_image_url_from_src($pop_img, 'sm'), ENT_QUOTES, 'UTF-8'); ?>"
                                         alt=""
                                         loading="lazy"
                                         decoding="async">
@@ -2422,7 +2424,7 @@ $seo_canonical = $base . '/';
                                     <div class="mp-trend-card">
                                         <span class="mp-trend-label">Recherché</span>
                                         <a class="mp-trend-img-link" href="produit.php?id=<?php echo $tid; ?>">
-                                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                                                 alt="<?php echo htmlspecialchars($tnom); ?>" loading="lazy" onerror="this.src='/image/produit1.jpg'">
                                         </a>
                                         <span class="mp-trend-sub"><?php echo htmlspecialchars($tnom); ?></span>
@@ -2460,7 +2462,7 @@ $seo_canonical = $base . '/';
                                             }
                                             ?>
                                         <a class="mp-sp-tile" role="listitem" href="produit.php?id=<?php echo $spid; ?>">
-                                            <img src="/upload/<?php echo htmlspecialchars($sp['image_principale'] ?? 'produit1.jpg'); ?>"
+                                            <img src="<?php echo htmlspecialchars(upload_image_url($sp['image_principale'] ?? '', 'sm')); ?>"
                                                 alt="<?php echo htmlspecialchars($sp['nom'] ?? 'Produit'); ?>"
                                                 loading="<?php echo (int) $sidx === 0 ? 'eager' : 'lazy'; ?>"
                                                 onerror="this.src='/image/produit1.jpg'">
@@ -2554,7 +2556,7 @@ $seo_canonical = $base . '/';
                             ?>
                             <a class="mp-strip-card" href="produit.php?id=<?php echo $sid; ?>">
                                 <div class="mp-strip-card-img">
-                                    <img src="/upload/<?php echo htmlspecialchars($sproduit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                    <img src="<?php echo htmlspecialchars(upload_image_url($sproduit['image_principale'] ?? '', 'sm')); ?>"
                                         alt="<?php echo htmlspecialchars($snom); ?>" loading="lazy" onerror="this.src='/image/produit1.jpg'">
                                 </div>
                                 <div class="mp-strip-body">
@@ -2591,10 +2593,9 @@ $seo_canonical = $base . '/';
                                     <?php
                                     $logo_path = '/image/produit1.jpg';
                                     if (!empty($logo['image'])) {
-                                        $upload_path = '/upload/' . htmlspecialchars($logo['image']);
                                         $file_path = __DIR__ . '/upload/' . $logo['image'];
                                         if (file_exists($file_path)) {
-                                            $logo_path = $upload_path;
+                                            $logo_path = upload_image_url((string) $logo['image'], 'sm');
                                         }
                                     }
                                     ?>

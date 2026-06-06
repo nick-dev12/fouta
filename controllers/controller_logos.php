@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../includes/upload_image_limits.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../models/model_logos.php';
 require_once __DIR__ . '/../includes/admin_param_boutique_scope.php';
 require_once __DIR__ . '/../includes/db_schema_helpers.php';
@@ -38,16 +39,10 @@ function upload_logo_image($file, $field = 'image') {
     if (!file_exists($upload_dir)) {
         mkdir($upload_dir, 0755, true);
     }
-    $allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = UPLOAD_MAX_IMAGE_BYTES;
     $info = $file[$field];
-    if (!in_array($info['type'], $allowed) || $info['size'] > $max_size) {
-        return false;
-    }
-    $ext = strtolower(pathinfo($info['name'], PATHINFO_EXTENSION)) ?: 'png';
-    $filename = uniqid('logo_', true) . '.' . $ext;
-    if (move_uploaded_file($info['tmp_name'], $upload_dir . $filename)) {
-        return 'logos/' . $filename;
+    $result = upload_optimize_image_file($info, $upload_dir, 'logos', 'logo_');
+    if (!empty($result['success']) && !empty($result['relative_path'])) {
+        return (string) $result['relative_path'];
     }
     return false;
 }
