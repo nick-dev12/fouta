@@ -229,12 +229,12 @@ $table_ok = !empty($rayons) && categories_has_categorie_generale_id_column();
                                 if ($scid <= 0) {
                                     continue;
                                 }
-                                $im = (string) ($sc['image'] ?? '');
+                                $__sc_img = function_exists('categorie_image_public_path') ? categorie_image_public_path($sc) : null;
                                 ?>
                             <tr>
                                 <td class="sa-cat-table__visuel" style="width:72px;">
-                                    <?php if ($im !== ''): ?>
-                                    <img src="/upload/<?php echo htmlspecialchars($im, ENT_QUOTES, 'UTF-8'); ?>" alt="" style="max-width:56px;max-height:56px;object-fit:cover;border-radius:6px;" onerror="this.style.display='none'">
+                                    <?php if (is_string($__sc_img) && $__sc_img !== ''): ?>
+                                    <img src="<?php echo htmlspecialchars($__sc_img, ENT_QUOTES, 'UTF-8'); ?>" alt="" style="max-width:56px;max-height:56px;object-fit:cover;border-radius:6px;" loading="lazy" decoding="async">
                                     <?php else: ?>
                                     <span class="sa-cat-table__fa-placeholder" aria-hidden="true"><i class="fas fa-image"></i></span>
                                     <?php endif; ?>

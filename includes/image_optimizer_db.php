@@ -69,6 +69,7 @@ function image_db_apply_path_mapping($db, $old_rel, $new_rel) {
     image_db_replace_column_exact($db, 'produits', 'image_principale', $old_rel, $new_rel);
     image_db_replace_in_produits_images_json($db, $old_rel, $new_rel);
     image_db_replace_column_exact($db, 'categories', 'image', $old_rel, $new_rel);
+    image_db_replace_column_exact($db, 'categories_generales', 'image', $old_rel, $new_rel);
     image_db_replace_column_exact($db, 'genres', 'image', $old_rel, $new_rel);
     image_db_replace_column_exact($db, 'produit_variantes', 'image', $old_rel, $new_rel);
     image_db_replace_column_exact($db, 'logos', 'image', $old_rel, $new_rel);
@@ -139,6 +140,7 @@ function image_db_sync_all_image_paths($db) {
     $total += image_db_sync_table_column($db, 'produits', 'image_principale', $details);
     $total += image_db_sync_produits_images_json($db, $details);
     $total += image_db_sync_table_column($db, 'categories', 'image', $details);
+    $total += image_db_sync_table_column($db, 'categories_generales', 'image', $details);
     $total += image_db_sync_table_column($db, 'genres', 'image', $details);
     $total += image_db_sync_table_column($db, 'produit_variantes', 'image', $details);
     $total += image_db_sync_table_column($db, 'logos', 'image', $details);

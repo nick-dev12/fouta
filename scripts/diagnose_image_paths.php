@@ -1,43 +1,82 @@
 <?php
-if (PHP_SAPI !== 'cli') exit(1);
+/**
+ * Diagnostic des chemins d'images en BDD vs fichiers sur disque.
+ *
+ * Usage : php scripts/diagnose_image_paths.php
+ *         php scripts/diagnose_image_paths.php --missing
+ */
+if (PHP_SAPI !== 'cli') {
+    exit(1);
+}
+
 require __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
+require_once __DIR__ . '/../includes/image_optimizer_db.php';
+
 $root = dirname(__DIR__) . '/upload/';
 
-$stmt = $db->query("SELECT id, image_principale FROM produits WHERE image_principale IS NOT NULL AND image_principale != ''");
-$ok = $missing = $webp_db = 0;
-while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $p = trim((string) $r['image_principale']);
-    if (str_ends_with(strtolower($p), '.webp')) $webp_db++;
-    if (is_file($root . str_replace('/', DIRECTORY_SEPARATOR, $p))) $ok++;
-    else $missing++;
-}
-echo "produits.image_principale : ok={$ok} missing={$missing} webp_en_bdd={$webp_db}\n";
+/**
+ * @return array{ok:int, missing:int, webp_db:int}
+ */
+function diagnose_image_column($db, $root, $table, $column, $where_extra = '') {
+    if (!function_exists('image_db_table_has_column') || !image_db_table_has_column($db, $table, $column)) {
+        echo "{$table}.{$column} : (colonne absente)\n";
+        return ['ok' => 0, 'missing' => 0, 'webp_db' => 0];
+    }
 
-$stmt = $db->query("SELECT id, image FROM categories WHERE image IS NOT NULL AND image != ''");
-$ok = $missing = $webp_db = 0;
-while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $p = trim((string) $r['image']);
-    if (str_ends_with(strtolower($p), '.webp')) $webp_db++;
-    if (is_file($root . str_replace('/', DIRECTORY_SEPARATOR, $p))) $ok++;
-    else $missing++;
-}
-echo "categories.image : ok={$ok} missing={$missing} webp_en_bdd={$webp_db}\n";
-
-if (in_array('--missing', $argv, true)) {
-    echo "\n--- categories manquantes ---\n";
-    $stmt = $db->query("SELECT id, image FROM categories WHERE image IS NOT NULL AND image != ''");
+    $sql = "SELECT id, `{$column}` AS img FROM `{$table}` WHERE `{$column}` IS NOT NULL AND `{$column}` != ''";
+    if ($where_extra !== '') {
+        $sql .= ' ' . $where_extra;
+    }
+    $stmt = $db->query($sql);
+    $ok = $missing = $webp_db = 0;
     while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $p = trim((string) $r['image']);
-        if (!is_file($root . str_replace('/', DIRECTORY_SEPARATOR, $p))) {
-            echo $r['id'] . ' ' . $p . "\n";
+        $p = trim(str_replace('\\', '/', (string) ($r['img'] ?? '')));
+        if (str_ends_with(strtolower($p), '.webp')) {
+            $webp_db++;
+        }
+        $resolved = function_exists('image_optimizer_resolve_relative_path')
+            ? image_optimizer_resolve_relative_path($p)
+            : $p;
+        if (is_file($root . str_replace('/', DIRECTORY_SEPARATOR, $resolved))) {
+            $ok++;
+        } else {
+            $missing++;
         }
     }
-    echo "\n--- produits manquants ---\n";
-    $stmt = $db->query("SELECT id, image_principale FROM produits WHERE image_principale IS NOT NULL");
-    while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $p = trim((string) $r['image_principale']);
-        if (!is_file($root . str_replace('/', DIRECTORY_SEPARATOR, $p))) {
-            echo $r['id'] . ' ' . $p . "\n";
+    echo "{$table}.{$column} : ok={$ok} missing={$missing} webp_en_bdd={$webp_db}\n";
+    return ['ok' => $ok, 'missing' => $missing, 'webp_db' => $webp_db];
+}
+
+diagnose_image_column($db, $root, 'produits', 'image_principale');
+diagnose_image_column($db, $root, 'categories', 'image');
+diagnose_image_column($db, $root, 'categories_generales', 'image');
+
+if (in_array('--missing', $argv, true)) {
+    $tables = [
+        ['produits', 'image_principale', ''],
+        ['categories', 'image', ''],
+        ['categories_generales', 'image', ''],
+    ];
+    foreach ($tables as $t) {
+        [$table, $column, $where] = $t;
+        if (!function_exists('image_db_table_has_column') || !image_db_table_has_column($db, $table, $column)) {
+            continue;
+        }
+        echo "\n--- {$table}.{$column} manquants ---\n";
+        $sql = "SELECT id, `{$column}` AS img FROM `{$table}` WHERE `{$column}` IS NOT NULL AND `{$column}` != ''";
+        if ($where !== '') {
+            $sql .= ' ' . $where;
+        }
+        $stmt = $db->query($sql);
+        while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $p = trim(str_replace('\\', '/', (string) ($r['img'] ?? '')));
+            $resolved = function_exists('image_optimizer_resolve_relative_path')
+                ? image_optimizer_resolve_relative_path($p)
+                : $p;
+            if (!is_file($root . str_replace('/', DIRECTORY_SEPARATOR, $resolved))) {
+                echo $r['id'] . ' ' . $p . "\n";
+            }
         }
     }
 }

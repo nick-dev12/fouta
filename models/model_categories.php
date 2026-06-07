@@ -980,6 +980,15 @@ function categorie_image_public_path($categorie_row) {
         return null;
     }
     $im = ltrim(str_replace('\\', '/', $im), '/');
+    if (!function_exists('image_optimizer_resolve_relative_path')) {
+        $opt = dirname(__DIR__) . '/includes/image_optimizer.php';
+        if (is_file($opt)) {
+            require_once $opt;
+        }
+    }
+    if (function_exists('image_optimizer_resolve_relative_path')) {
+        $im = image_optimizer_resolve_relative_path($im);
+    }
     $root = dirname(__DIR__);
     $file_path = $root . DIRECTORY_SEPARATOR . 'upload' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $im);
     if (!is_file($file_path)) {

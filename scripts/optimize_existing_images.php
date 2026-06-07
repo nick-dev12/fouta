@@ -3,8 +3,13 @@
  * Recompression batch des images déjà présentes dans upload/ (produits, catégories…).
  * Conserve le nom de base (foo.png → foo.webp) et met à jour la BDD.
  *
- * Usage CLI : php scripts/optimize_existing_images.php
- * Usage CLI (dossier ciblé) : php scripts/optimize_existing_images.php produits
+ * Usage CLI :
+ *   php scripts/optimize_existing_images.php produits
+ *   php scripts/optimize_existing_images.php categories
+ *
+ * Dossier « categories » : upload/categories/
+ *   - rayons catalogue → table categories_generales.image
+ *   - sous-catégories plateforme → table categories.image
  */
 if (PHP_SAPI !== 'cli') {
     fwrite(STDERR, "Ce script doit être exécuté en ligne de commande.\n");
@@ -35,6 +40,10 @@ $scan_dir = $target_subdir !== '' ? $upload_root . DIRECTORY_SEPARATOR . $target
 if (!is_dir($scan_dir)) {
     fwrite(STDERR, "Dossier cible introuvable : {$scan_dir}\n");
     exit(1);
+}
+
+if ($target_subdir === 'categories') {
+    echo "Cible : upload/categories/ → BDD categories.image + categories_generales.image\n";
 }
 
 $skip_suffixes = ['_md', '_sm'];
@@ -86,13 +95,13 @@ foreach ($iterator as $file_info) {
 
     $new_rel = (string) ($result['relative_path'] ?? '');
     $expected_rel = image_db_webp_equivalent_path($rel);
+    $db_rel = ($expected_rel !== '') ? $expected_rel : $new_rel;
 
-    if ($new_rel !== '' && $new_rel !== $rel) {
-        $log_line = json_encode(['old' => $rel, 'new' => $new_rel], JSON_UNESCAPED_UNICODE) . "\n";
+    if ($rel !== '' && $db_rel !== '' && $rel !== $db_rel) {
+        $log_line = json_encode(['old' => $rel, 'new' => $db_rel], JSON_UNESCAPED_UNICODE) . "\n";
         file_put_contents($mapping_log, $log_line, FILE_APPEND | LOCK_EX);
         if ($db instanceof PDO && function_exists('image_db_apply_path_mapping')) {
-            // Même nom de base : ancien.jpg → ancien.webp (pas de img_ aléatoire)
-            image_db_apply_path_mapping($db, $rel, $expected_rel !== '' ? $expected_rel : $new_rel);
+            image_db_apply_path_mapping($db, $rel, $db_rel);
         }
     }
 
@@ -102,10 +111,20 @@ foreach ($iterator as $file_info) {
 
     $processed++;
     $saved_bytes += max(0, $bytes_before - (int) ($result['bytes_after'] ?? $bytes_before));
-    echo "OK {$rel} → {$new_rel}\n";
+    echo "OK {$rel} → {$db_rel}\n";
 }
 
 echo "\nTerminé : {$processed} optimisée(s), {$skipped} ignorée(s), {$failed} échec(s), " . round($saved_bytes / 1024, 1) . " Ko économisés.\n";
+
+if ($target_subdir === 'categories' && $db instanceof PDO && function_exists('image_db_sync_table_column')) {
+    $sync_details = [];
+    $n_sc = image_db_sync_table_column($db, 'categories', 'image', $sync_details);
+    $n_cg = image_db_sync_table_column($db, 'categories_generales', 'image', $sync_details);
+    if ($n_sc > 0 || $n_cg > 0) {
+        echo "Sync chemins BDD : {$n_sc} sous-catégorie(s), {$n_cg} rayon(s).\n";
+    }
+}
+
 if ($processed > 0) {
     echo "Journal : {$mapping_log}\n";
     echo "Si besoin : php scripts/sync_image_paths_database.php\n";
