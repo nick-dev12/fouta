@@ -9,9 +9,23 @@ if (PHP_SAPI !== 'cli') {
     exit(1);
 }
 
-require __DIR__ . '/../conn/conn.php';
+$conn = __DIR__ . '/../conn/conn.php';
+if (!is_file($conn)) {
+    fwrite(STDERR, "conn/conn.php introuvable.\n");
+    exit(1);
+}
+require $conn;
 require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../includes/image_optimizer_db.php';
+
+if (!isset($db) || !($db instanceof PDO)) {
+    fwrite(STDERR, "Connexion PDO indisponible — vérifiez conn/conn.php (base jomas_colobane1 en production).\n");
+    exit(1);
+}
+
+$db_name = function_exists('image_db_current_database') ? image_db_current_database($db) : '';
+echo 'Base connectée : ' . ($db_name !== '' ? $db_name : '(inconnue)') . "\n";
+echo 'Dossier upload : ' . realpath(dirname(__DIR__) . '/upload') . "\n\n";
 
 $root = dirname(__DIR__) . '/upload/';
 

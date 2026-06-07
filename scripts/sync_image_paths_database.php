@@ -22,6 +22,11 @@ if (!isset($db) || !($db instanceof PDO)) {
     exit(1);
 }
 
+$db_name = function_exists('image_db_current_database') ? image_db_current_database($db) : '';
+if ($db_name !== '') {
+    echo "Base connectée : {$db_name}\n";
+}
+
 $result = image_db_sync_all_image_paths($db);
 
 echo "Synchronisation terminée : " . (int) $result['updated'] . " enregistrement(s) mis à jour.\n";

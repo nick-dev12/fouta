@@ -223,14 +223,41 @@ function image_db_sync_produits_images_json($db, &$details) {
 }
 
 /**
+ * Nom de la base courante (pour diagnostic CLI).
+ *
+ * @param PDO $db
+ */
+function image_db_current_database($db) {
+    try {
+        $name = $db->query('SELECT DATABASE()')->fetchColumn();
+        return is_string($name) ? $name : '';
+    } catch (PDOException $e) {
+        return '';
+    }
+}
+
+/**
  * @param PDO $db
  */
 function image_db_table_exists($db, $table) {
-    try {
-        $stmt = $db->query("SHOW TABLES LIKE " . $db->quote($table));
-        return $stmt && $stmt->fetchColumn() !== false;
-    } catch (PDOException $e) {
+    $table = trim(str_replace('`', '', (string) $table));
+    if ($table === '') {
         return false;
+    }
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t
+        ");
+        $stmt->execute(['t' => $table]);
+        return ((int) $stmt->fetchColumn()) > 0;
+    } catch (PDOException $e) {
+        try {
+            $stmt = $db->query('SHOW TABLES LIKE ' . $db->quote($table));
+            return $stmt && $stmt->fetchColumn() !== false;
+        } catch (PDOException $e2) {
+            return false;
+        }
     }
 }
 
@@ -238,14 +265,31 @@ function image_db_table_exists($db, $table) {
  * @param PDO $db
  */
 function image_db_table_has_column($db, $table, $column) {
+    $table = trim(str_replace('`', '', (string) $table));
+    $column = trim(str_replace('`', '', (string) $column));
+    if ($table === '' || $column === '') {
+        return false;
+    }
     if (!image_db_table_exists($db, $table)) {
         return false;
     }
     try {
-        $stmt = $db->prepare('SHOW COLUMNS FROM `' . str_replace('`', '', $table) . '` LIKE :col');
-        $stmt->execute(['col' => $column]);
-        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = :t
+              AND COLUMN_NAME = :c
+        ");
+        $stmt->execute(['t' => $table, 'c' => $column]);
+        return ((int) $stmt->fetchColumn()) > 0;
     } catch (PDOException $e) {
-        return false;
+        try {
+            $stmt = $db->query(
+                'SHOW COLUMNS FROM `' . str_replace('`', '', $table) . '` LIKE ' . $db->quote($column)
+            );
+            return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e2) {
+            return false;
+        }
     }
 }
