@@ -191,7 +191,8 @@ function get_all_commandes($statut = null, $vendeur_id = null) {
             SELECT c.*,
                    COALESCE(u.nom, c.client_nom) as user_nom,
                    COALESCE(u.prenom, c.client_prenom) as user_prenom,
-                   COALESCE(u.email, c.client_email) as user_email
+                   COALESCE(u.email, c.client_email) as user_email,
+                   COALESCE(u.telephone, c.client_telephone, c.telephone_livraison) as user_telephone
             FROM commandes c
             LEFT JOIN users u ON c.user_id = u.id
             WHERE 1=1

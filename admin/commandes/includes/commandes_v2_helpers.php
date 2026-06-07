@@ -3,18 +3,12 @@
  * Helpers affichage commandes v2 (cartes, badges)
  */
 
+require_once __DIR__ . '/../../../includes/commande_card_helpers.php';
+
 if (!function_exists('cmd_v2_statut_label')) {
     function cmd_v2_statut_label($statut)
     {
-        $map = [
-            'en_attente' => 'En attente',
-            'prise_en_charge' => 'Pris en charge',
-            'livraison_en_cours' => 'En livraison',
-            'livree' => 'Livrée',
-            'paye' => 'Payée',
-            'annulee' => 'Annulée',
-        ];
-        return $map[$statut] ?? ucfirst(str_replace('_', ' ', (string) $statut));
+        return commande_card_label($statut);
     }
 }
 
@@ -49,68 +43,15 @@ if (!function_exists('cmd_v2_client_initial')) {
 if (!function_exists('cmd_v2_render_card')) {
     function cmd_v2_render_card(array $commande, array $options = [])
     {
-        $show_date = !empty($options['show_date']);
-        $show_delivery = !empty($options['show_delivery']);
+        $card_context = 'vendor';
+        $card_title = commande_card_client_nom($commande);
+        $card_phone = commande_card_telephone($commande, 'vendor');
+        $cmd_id = (int) ($commande['id'] ?? 0);
+        $card_track_url = $cmd_id > 0 ? 'details.php?id=' . $cmd_id : '';
+        $card_detail_url = $card_track_url;
+        $card_show_urgent = ($commande['statut'] ?? '') === 'en_attente';
 
-        $client_nom = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''));
-        if ($client_nom === '') {
-            $client_nom = 'Client inconnu';
-        }
-
-        $statut = $commande['statut'] ?? 'en_attente';
-        $avatar = cmd_v2_client_initial($client_nom);
-        $adresse = htmlspecialchars((string) ($commande['adresse_livraison'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $id = (int) ($commande['id'] ?? 0);
-        ?>
-        <article class="cmd-v2-card">
-            <div class="cmd-v2-card__top">
-                <span class="cmd-v2-card__num">
-                    <i class="fas fa-hashtag"></i>
-                    <?php echo htmlspecialchars((string) ($commande['numero_commande'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
-                </span>
-                <span class="cmd-badge <?php echo cmd_v2_statut_class($statut); ?>">
-                    <?php echo htmlspecialchars(cmd_v2_statut_label($statut), ENT_QUOTES, 'UTF-8'); ?>
-                </span>
-            </div>
-            <div class="cmd-v2-card__body">
-                <div class="cmd-v2-client">
-                    <div class="cmd-v2-client__avatar"><?php echo htmlspecialchars($avatar, ENT_QUOTES, 'UTF-8'); ?></div>
-                    <div class="cmd-v2-client__info">
-                        <div class="cmd-v2-client__name"><?php echo htmlspecialchars($client_nom, ENT_QUOTES, 'UTF-8'); ?></div>
-                        <?php if ($show_date && !empty($commande['date_commande'])): ?>
-                        <div class="cmd-v2-client__date">
-                            <i class="fas fa-calendar"></i>
-                            <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?>
-                        </div>
-                        <?php endif; ?>
-                        <?php if ($show_delivery && !empty($commande['date_livraison'])): ?>
-                        <div class="cmd-v2-client__date">
-                            <i class="fas fa-truck"></i>
-                            Livrée le <?php echo date('d/m/Y', strtotime($commande['date_livraison'])); ?>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <div class="cmd-v2-amount-row">
-                    <span class="cmd-v2-amount-label">Montant</span>
-                    <strong class="cmd-v2-amount-value">
-                        <?php echo number_format((float) ($commande['montant_total'] ?? 0), 0, ',', ' '); ?>
-                        <small>FCFA</small>
-                    </strong>
-                </div>
-                <?php if ($adresse !== ''): ?>
-                <div class="cmd-v2-addr">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span><?php echo $adresse; ?></span>
-                </div>
-                <?php endif; ?>
-            </div>
-            <a href="details.php?id=<?php echo $id; ?>" class="cmd-v2-card__cta">
-                <span><i class="fas fa-eye"></i>&nbsp; Voir la commande</span>
-                <i class="fas fa-arrow-right"></i>
-            </a>
-        </article>
-        <?php
+        require __DIR__ . '/../../../includes/partials/commande_card_uc.php';
     }
 }
 

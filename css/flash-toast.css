@@ -1,5 +1,5 @@
 /**
- * Flash Toast — notifications élégantes coin supérieur droit
+ * Flash Toast — notifications élégantes, responsive (mobile → TV)
  */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
@@ -7,153 +7,225 @@
 /* ── Conteneur ─────────────────────────────────────────── */
 .flash-toast-host {
     position: fixed;
-    top: max(20px, env(safe-area-inset-top, 0px));
-    right: max(16px, env(safe-area-inset-right, 0px));
+    top: max(12px, env(safe-area-inset-top, 0px));
+    right: max(10px, env(safe-area-inset-right, 0px));
+    left: max(10px, env(safe-area-inset-left, 0px));
     z-index: 12050;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 12px;
-    width: min(calc(100vw - 32px), 390px);
+    align-items: stretch;
+    gap: 10px;
+    width: auto;
+    max-width: min(calc(100vw - 20px), 340px);
+    margin-left: auto;
     pointer-events: none;
+    font-family: 'Poppins', var(--font-corps, sans-serif);
 }
 
-/* ── Toast de base ─────────────────────────────────────── */
+/* ── Toast ─────────────────────────────────────────────── */
 .flash-toast {
+    --ft-accent: #3564a6;
+    --ft-accent-soft: rgba(53, 100, 166, 0.14);
+    --ft-accent-glow: rgba(53, 100, 166, 0.22);
+    --ft-title: #3564a6;
+    --ft-progress: #3564a6;
+
     pointer-events: auto;
     position: relative;
     width: 100%;
-    display: flex;
-    align-items: flex-start;
-    gap: 0;
-    border-radius: 18px;
-    background: #fff;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(255, 255, 255, 0.9);
     box-shadow:
-        0 4px 6px rgba(0, 0, 0, 0.04),
-        0 12px 30px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(0, 0, 0, 0.05);
+        0 2px 8px rgba(15, 23, 42, 0.06),
+        0 14px 36px rgba(15, 23, 42, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
     overflow: hidden;
-    transform: translateX(calc(100% + 30px));
+    transform: translateY(-18px) scale(0.96);
     opacity: 0;
     transition:
-        transform 0.38s cubic-bezier(0.21, 1.02, 0.36, 1),
-        opacity 0.30s ease;
-    font-family: 'Poppins', sans-serif;
+        transform 0.42s cubic-bezier(0.21, 1.02, 0.36, 1),
+        opacity 0.32s ease;
 }
 
 .flash-toast.is-visible {
-    transform: translateX(0);
+    transform: translateY(0) scale(1);
     opacity: 1;
 }
 
 .flash-toast.is-leaving {
-    transform: translateX(calc(100% + 30px));
+    transform: translateY(-12px) scale(0.98);
     opacity: 0;
 }
 
-/* ── Bande colorée gauche ──────────────────────────────── */
-.flash-toast__stripe {
-    width: 5px;
-    flex-shrink: 0;
-    align-self: stretch;
-    border-radius: 0;
+.flash-toast--success {
+    --ft-accent: #16a34a;
+    --ft-accent-soft: rgba(34, 197, 94, 0.14);
+    --ft-accent-glow: rgba(34, 197, 94, 0.28);
+    --ft-title: #15803d;
+    --ft-progress: #22c55e;
 }
 
-.flash-toast--success .flash-toast__stripe { background: linear-gradient(180deg, #22c55e, #16a34a); }
-.flash-toast--error   .flash-toast__stripe { background: linear-gradient(180deg, #ef4444, #b91c1c); }
-.flash-toast--info    .flash-toast__stripe { background: linear-gradient(180deg, #3564a6, #1e3f7a); }
-.flash-toast--warning .flash-toast__stripe { background: linear-gradient(180deg, #f97316, #c2410c); }
+.flash-toast--error {
+    --ft-accent: #dc2626;
+    --ft-accent-soft: rgba(239, 68, 68, 0.12);
+    --ft-accent-glow: rgba(239, 68, 68, 0.24);
+    --ft-title: #b91c1c;
+    --ft-progress: #ef4444;
+}
 
-/* ── Contenu interne ───────────────────────────────────── */
+.flash-toast--info {
+    --ft-accent: #3564a6;
+    --ft-accent-soft: rgba(53, 100, 166, 0.14);
+    --ft-accent-glow: rgba(53, 100, 166, 0.22);
+    --ft-title: #2d5690;
+    --ft-progress: #3564a6;
+}
+
+.flash-toast--warning {
+    --ft-accent: #ea580c;
+    --ft-accent-soft: rgba(249, 115, 22, 0.14);
+    --ft-accent-glow: rgba(249, 115, 22, 0.24);
+    --ft-title: #c2410c;
+    --ft-progress: #f97316;
+}
+
+.flash-toast__glow {
+    position: absolute;
+    top: -40%;
+    left: -10%;
+    width: 55%;
+    height: 120%;
+    background: radial-gradient(circle, var(--ft-accent-glow) 0%, transparent 68%);
+    pointer-events: none;
+    opacity: 0.75;
+}
+
 .flash-toast__inner {
-    flex: 1;
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: flex-start;
-    gap: 13px;
-    padding: 15px 13px 15px 16px;
-    min-width: 0;
+    gap: 12px;
+    padding: 14px 12px 16px 14px;
 }
 
-/* ── Icône ────────────────────────────────────────────── */
+/* ── Icône démonstrative ───────────────────────────────── */
+.flash-toast__icon-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+}
+
+.flash-toast__icon-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--ft-accent-soft);
+    animation: flash-toast-ring 2.4s ease-out infinite;
+}
+
+.flash-toast.is-visible .flash-toast__icon-ring {
+    animation: flash-toast-pop 0.55s cubic-bezier(0.21, 1.02, 0.36, 1), flash-toast-ring 2.4s ease-out 0.55s infinite;
+}
+
 .flash-toast__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    font-size: 1.05rem;
+    background: linear-gradient(145deg, #fff 0%, var(--ft-accent-soft) 100%);
+    color: var(--ft-accent);
+    font-size: 1.15rem;
+    box-shadow:
+        0 4px 14px var(--ft-accent-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-.flash-toast--success .flash-toast__icon { background: rgba(34, 197, 94, 0.12);  color: #15803d; }
-.flash-toast--error   .flash-toast__icon { background: rgba(239, 68, 68, 0.11);  color: #b91c1c; }
-.flash-toast--info    .flash-toast__icon { background: rgba(53, 100, 166, 0.12); color: #3564a6; }
-.flash-toast--warning .flash-toast__icon { background: rgba(249, 115, 22, 0.12); color: #c2410c; }
+.flash-toast.is-visible .flash-toast__icon i {
+    animation: flash-toast-icon-pop 0.5s cubic-bezier(0.21, 1.02, 0.36, 1) 0.08s both;
+}
 
-/* ── Texte ────────────────────────────────────────────── */
+/* ── Texte ─────────────────────────────────────────────── */
 .flash-toast__body {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 6px;
     padding-top: 2px;
+    padding-right: 4px;
 }
 
 .flash-toast__title {
-    font-size: 0.76rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
     margin: 0;
-    line-height: 1.2;
+    line-height: 1;
 }
 
-.flash-toast--success .flash-toast__title { color: #15803d; }
-.flash-toast--error   .flash-toast__title { color: #b91c1c; }
-.flash-toast--info    .flash-toast__title { color: #3564a6; }
-.flash-toast--warning .flash-toast__title { color: #c2410c; }
+.flash-toast__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ft-title);
+    background: var(--ft-accent-soft);
+    border: 1px solid color-mix(in srgb, var(--ft-accent) 18%, transparent);
+}
 
 .flash-toast__message {
     margin: 0;
-    font-size: 0.845rem;
-    line-height: 1.5;
-    color: #374151;
-    word-break: break-word;
+    font-size: 0.82rem;
+    line-height: 1.55;
     font-weight: 500;
+    color: #1f2937;
+    word-break: break-word;
+    letter-spacing: 0.01em;
 }
 
-/* ── Bouton fermer ────────────────────────────────────── */
+/* ── Fermer ────────────────────────────────────────────── */
 .flash-toast__close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
     border: none;
-    background: transparent;
+    background: rgba(15, 23, 42, 0.04);
     color: #9ca3af;
     cursor: pointer;
-    padding: 4px 6px;
-    font-size: 0.85rem;
-    line-height: 1;
-    flex-shrink: 0;
-    align-self: flex-start;
-    margin-top: 11px;
-    margin-right: 10px;
-    border-radius: 6px;
-    transition: background 0.15s ease, color 0.15s ease;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
 }
 
 .flash-toast__close:hover {
-    background: rgba(0, 0, 0, 0.06);
+    background: rgba(15, 23, 42, 0.08);
     color: #374151;
+    transform: scale(1.05);
 }
 
-/* ── Barre de progression ────────────────────────────── */
+/* ── Progression ───────────────────────────────────────── */
 .flash-toast__progress {
     position: absolute;
-    left: 5px;
+    left: 0;
+    right: 0;
     bottom: 0;
     height: 3px;
-    border-radius: 0 0 2px 0;
-    width: 100%;
+    background: rgba(15, 23, 42, 0.05);
     overflow: hidden;
 }
 
@@ -162,46 +234,200 @@
     display: block;
     height: 100%;
     width: 100%;
-    border-radius: inherit;
-    animation: flash-toast-progress 5s linear forwards;
+    background: linear-gradient(90deg, var(--ft-progress), color-mix(in srgb, var(--ft-progress) 70%, white));
+    animation: flash-toast-progress 5.4s linear forwards;
 }
-
-.flash-toast--success .flash-toast__progress::after { background: #22c55e; }
-.flash-toast--error   .flash-toast__progress::after { background: #ef4444; }
-.flash-toast--info    .flash-toast__progress::after { background: #3564a6; }
-.flash-toast--warning .flash-toast__progress::after { background: #f97316; }
 
 @keyframes flash-toast-progress {
     from { transform: scaleX(1); transform-origin: left; }
     to   { transform: scaleX(0); transform-origin: left; }
 }
 
-/* ── Responsive mobile ───────────────────────────────── */
-@media (max-width: 600px) {
+@keyframes flash-toast-pop {
+    0%   { transform: scale(0.6); opacity: 0; }
+    70%  { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes flash-toast-icon-pop {
+    0%   { transform: scale(0.4) rotate(-12deg); opacity: 0; }
+    65%  { transform: scale(1.12) rotate(4deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+@keyframes flash-toast-ring {
+    0%, 100% { transform: scale(1); opacity: 0.55; }
+    50%      { transform: scale(1.06); opacity: 0.9; }
+}
+
+/* ── Tablette ──────────────────────────────────────────── */
+@media (min-width: 768px) {
     .flash-toast-host {
-        top: max(14px, env(safe-area-inset-top, 0px));
-        right: max(10px, env(safe-area-inset-right, 0px));
-        left: max(10px, env(safe-area-inset-left, 0px));
-        width: auto;
+        top: max(18px, env(safe-area-inset-top, 0px));
+        right: max(20px, env(safe-area-inset-right, 0px));
+        left: auto;
+        max-width: min(calc(100vw - 40px), 400px);
+        gap: 12px;
     }
 
     .flash-toast {
-        border-radius: 14px;
+        border-radius: 18px;
     }
 
     .flash-toast__inner {
-        padding: 13px 11px 13px 14px;
-        gap: 11px;
+        gap: 14px;
+        padding: 16px 14px 18px 16px;
+    }
+
+    .flash-toast__icon-wrap {
+        width: 48px;
+        height: 48px;
     }
 
     .flash-toast__icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        font-size: 0.95rem;
+        font-size: 1.22rem;
     }
 
-    .flash-toast__title  { font-size: 0.72rem; }
-    .flash-toast__message { font-size: 0.80rem; }
-    .flash-toast__close { margin-top: 9px; margin-right: 8px; }
+    .flash-toast__badge {
+        font-size: 0.66rem;
+        padding: 5px 11px;
+    }
+
+    .flash-toast__message {
+        font-size: 0.88rem;
+        line-height: 1.52;
+    }
+
+    .flash-toast__close {
+        width: 30px;
+        height: 30px;
+        top: 10px;
+        right: 10px;
+    }
+}
+
+/* ── Ordinateur ────────────────────────────────────────── */
+@media (min-width: 1024px) {
+    .flash-toast-host {
+        top: max(24px, env(safe-area-inset-top, 0px));
+        right: max(28px, env(safe-area-inset-right, 0px));
+        max-width: min(calc(100vw - 56px), 480px);
+        gap: 14px;
+    }
+
+    .flash-toast {
+        border-radius: 20px;
+        box-shadow:
+            0 4px 12px rgba(15, 23, 42, 0.07),
+            0 20px 48px rgba(15, 23, 42, 0.14),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .flash-toast__inner {
+        gap: 18px;
+        padding: 20px 18px 22px 20px;
+    }
+
+    .flash-toast__icon-wrap {
+        width: 56px;
+        height: 56px;
+    }
+
+    .flash-toast__icon {
+        font-size: 1.45rem;
+    }
+
+    .flash-toast__badge {
+        font-size: 0.72rem;
+        padding: 6px 13px;
+        letter-spacing: 0.09em;
+    }
+
+    .flash-toast__message {
+        font-size: 0.98rem;
+        line-height: 1.58;
+        font-weight: 500;
+    }
+
+    .flash-toast__body {
+        gap: 8px;
+        padding-top: 4px;
+    }
+
+    .flash-toast__close {
+        width: 34px;
+        height: 34px;
+        font-size: 0.85rem;
+        border-radius: 10px;
+    }
+
+    .flash-toast__progress {
+        height: 4px;
+    }
+}
+
+/* ── Grands écrans / TV ────────────────────────────────── */
+@media (min-width: 1440px) {
+    .flash-toast-host {
+        top: max(32px, env(safe-area-inset-top, 0px));
+        right: max(40px, env(safe-area-inset-right, 0px));
+        max-width: min(calc(100vw - 80px), 560px);
+        gap: 16px;
+    }
+
+    .flash-toast {
+        border-radius: 22px;
+    }
+
+    .flash-toast__inner {
+        gap: 22px;
+        padding: 26px 22px 28px 26px;
+    }
+
+    .flash-toast__icon-wrap {
+        width: 68px;
+        height: 68px;
+    }
+
+    .flash-toast__icon-ring {
+        inset: -6px;
+        border-width: 3px;
+    }
+
+    .flash-toast__icon {
+        font-size: 1.75rem;
+    }
+
+    .flash-toast__badge {
+        font-size: 0.8rem;
+        padding: 7px 16px;
+    }
+
+    .flash-toast__message {
+        font-size: 1.12rem;
+        line-height: 1.62;
+        font-weight: 500;
+    }
+
+    .flash-toast__close {
+        width: 40px;
+        height: 40px;
+        font-size: 0.95rem;
+        top: 14px;
+        right: 14px;
+    }
+
+    .flash-toast__progress {
+        height: 5px;
+    }
+}
+
+@media (min-width: 1920px) {
+    .flash-toast-host {
+        max-width: 620px;
+    }
+
+    .flash-toast__message {
+        font-size: 1.18rem;
+    }
 }

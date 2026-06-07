@@ -1,228 +1,61 @@
 /**
- * Badges certification vendeur — ruban récompense (Standard / VIP / Premium)
+ * Badges certification vendeur — images officielles (Standard / VIP / Premium)
  */
 
-.cert-ribbon {
-    --ribbon-main: #b8b8b8;
-    --ribbon-dark: #8a8a8a;
-    --ribbon-light: #ececec;
-    --ribbon-seal-a: #f4f4f4;
-    --ribbon-seal-b: #9ca3af;
-    --ribbon-text: #374151;
-    --ribbon-text-sub: #6b7280;
-    --ribbon-accent: rgba(255, 255, 255, 0.55);
-
-    position: relative;
+.cert-badge-wrap {
     display: inline-flex;
-    flex-direction: column;
     align-items: center;
-    width: 58px;
+    justify-content: center;
     flex-shrink: 0;
-    filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.18));
     vertical-align: middle;
+    line-height: 0;
 }
 
-.cert-ribbon--standard {
-    --ribbon-main: #c4c4c4;
-    --ribbon-dark: #8f8f8f;
-    --ribbon-light: #ebebeb;
-    --ribbon-seal-a: #fafafa;
-    --ribbon-seal-b: #9ca3af;
-    --ribbon-text: #374151;
-    --ribbon-text-sub: #6b7280;
+.cert-badge-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 14px rgba(0, 0, 0, 0.16));
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
-.cert-ribbon--vip {
-    --ribbon-main: #60a5fa;
-    --ribbon-dark: #1d4ed8;
-    --ribbon-light: #bfdbfe;
-    --ribbon-seal-a: #dbeafe;
-    --ribbon-seal-b: #3564a6;
-    --ribbon-text: #1e3a8a;
-    --ribbon-text-sub: #2563eb;
-}
-
-.cert-ribbon--premium {
-    --ribbon-main: #f0c14b;
-    --ribbon-dark: #b45309;
-    --ribbon-light: #fde68a;
-    --ribbon-seal-a: #fffbeb;
-    --ribbon-seal-b: #d97706;
-    --ribbon-text: #78350f;
-    --ribbon-text-sub: #92400e;
-}
-
-.cert-ribbon__seal {
-    position: relative;
-    z-index: 2;
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(circle at 35% 30%, var(--ribbon-seal-a) 0%, var(--ribbon-seal-b) 100%);
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.22),
-        inset 0 2px 4px rgba(255, 255, 255, 0.45),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.12);
-}
-
-.cert-ribbon__seal::before {
-    content: '';
-    position: absolute;
-    inset: -5px;
-    border-radius: 50%;
-    background: repeating-conic-gradient(
-        from -4deg,
-        var(--ribbon-dark) 0deg 7deg,
-        transparent 7deg 14deg
-    );
-    opacity: 0.35;
-    z-index: -1;
-}
-
-.cert-ribbon__seal::after {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border-radius: 50%;
-    border: 1px dashed var(--ribbon-accent);
-    opacity: 0.7;
-    pointer-events: none;
-}
-
-.cert-ribbon__seal-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    padding: 2px 4px;
-    text-align: center;
-    line-height: 1.05;
-}
-
-.cert-ribbon__title {
-    font-family: var(--font-titres, 'Poppins', sans-serif);
-    font-size: 0.46rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ribbon-text);
-}
-
-.cert-ribbon__sub {
-    font-family: var(--font-titres, 'Poppins', sans-serif);
-    font-size: 0.34rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ribbon-text-sub);
-    opacity: 0.9;
-}
-
-.cert-ribbon__body {
-    width: 38px;
-    height: 48px;
-    margin-top: -16px;
-    background: linear-gradient(
-        180deg,
-        var(--ribbon-light) 0%,
-        var(--ribbon-main) 42%,
-        var(--ribbon-dark) 100%
-    );
-    clip-path: polygon(0 0, 100% 0, 100% 82%, 50% 100%, 0 82%);
-    border-left: 1px solid rgba(255, 255, 255, 0.35);
-    border-right: 1px solid rgba(0, 0, 0, 0.08);
-    position: relative;
-    z-index: 1;
-}
-
-.cert-ribbon__body::before,
-.cert-ribbon__body::after {
-    content: '';
-    position: absolute;
-    top: 8px;
-    bottom: 14px;
-    width: 1px;
-    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.45), transparent);
-    opacity: 0.65;
-}
-
-.cert-ribbon__body::before { left: 5px; }
-.cert-ribbon__body::after { right: 5px; }
-
-.cert-ribbon__foot {
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 3;
-    font-size: 0.55rem;
-    color: rgba(255, 255, 255, 0.92);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-    line-height: 1;
-}
-
-/* Tailles */
-.cert-ribbon--xs {
+.cert-badge-wrap--xs,
+.cert-badge-img--xs {
     width: 44px;
 }
 
-.cert-ribbon--xs .cert-ribbon__seal { width: 36px; height: 36px; }
-.cert-ribbon--xs .cert-ribbon__body { width: 30px; height: 38px; margin-top: -13px; }
-.cert-ribbon--xs .cert-ribbon__title { font-size: 0.38rem; }
-.cert-ribbon--xs .cert-ribbon__sub { font-size: 0.28rem; }
-.cert-ribbon--xs .cert-ribbon__foot { font-size: 0.45rem; bottom: 1px; }
-
-.cert-ribbon--sm {
-    width: 50px;
+.cert-badge-wrap--sm,
+.cert-badge-img--sm {
+    width: 52px;
 }
 
-.cert-ribbon--sm .cert-ribbon__seal { width: 40px; height: 40px; }
-.cert-ribbon--sm .cert-ribbon__body { width: 34px; height: 42px; margin-top: -14px; }
-.cert-ribbon--sm .cert-ribbon__title { font-size: 0.42rem; }
-.cert-ribbon--sm .cert-ribbon__sub { font-size: 0.3rem; }
+.cert-badge-wrap--md,
+.cert-badge-img--md {
+    width: 72px;
+}
 
-.cert-ribbon--md {
+.cert-badge-wrap--lg,
+.cert-badge-img--lg {
+    width: 88px;
+}
+
+.cert-badge-wrap--tier,
+.cert-badge-img--tier {
     width: 64px;
-}
-
-.cert-ribbon--md .cert-ribbon__seal { width: 52px; height: 52px; }
-.cert-ribbon--md .cert-ribbon__body { width: 42px; height: 54px; margin-top: -18px; }
-.cert-ribbon--md .cert-ribbon__title { font-size: 0.52rem; }
-.cert-ribbon--md .cert-ribbon__sub { font-size: 0.38rem; }
-.cert-ribbon--md .cert-ribbon__foot { font-size: 0.62rem; }
-
-.cert-ribbon--lg {
-    width: 78px;
-}
-
-.cert-ribbon--lg .cert-ribbon__seal { width: 62px; height: 62px; }
-.cert-ribbon--lg .cert-ribbon__body { width: 50px; height: 66px; margin-top: -22px; }
-.cert-ribbon--lg .cert-ribbon__title { font-size: 0.58rem; }
-.cert-ribbon--lg .cert-ribbon__sub { font-size: 0.42rem; }
-.cert-ribbon--lg .cert-ribbon__foot { font-size: 0.72rem; bottom: 4px; }
-
-.cert-ribbon--tier {
-    width: 56px;
     margin: 0 auto 8px;
 }
 
-.cert-ribbon--rail {
+.cert-badge-wrap--rail,
+.cert-badge-img--rail {
     width: 48px;
 }
-
-.cert-ribbon--rail .cert-ribbon__seal { width: 38px; height: 38px; }
-.cert-ribbon--rail .cert-ribbon__body { width: 32px; height: 40px; margin-top: -13px; }
-.cert-ribbon--rail .cert-ribbon__title { font-size: 0.36rem; }
-.cert-ribbon--rail .cert-ribbon__sub { display: none; }
-.cert-ribbon--rail .cert-ribbon__foot { font-size: 0.48rem; }
 
 .cert-tier__ribbon-wrap {
     display: flex;
     justify-content: center;
+    align-items: center;
     min-height: 72px;
     margin-bottom: 4px;
 }
@@ -232,6 +65,10 @@
     margin-left: auto;
 }
 
+.vendeur-hero-cert .cert-badge-wrap--sm {
+    width: 56px;
+}
+
 @media (max-width: 480px) {
     .produit-boutique-rail__left {
         flex-wrap: wrap;
@@ -239,5 +76,10 @@
 
     .produit-boutique-rail__cert {
         margin-left: 0;
+    }
+
+    .cert-badge-wrap--tier,
+    .cert-badge-img--tier {
+        width: 56px;
     }
 }

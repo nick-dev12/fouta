@@ -1,0 +1,375 @@
+/**
+ * Cartes commande — design partagé client / vendeur (mes-commandes.php).
+ */
+
+.uc-v2-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.uc-v2-card {
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid rgba(53, 100, 166, 0.09);
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+
+.uc-v2-card:hover {
+    box-shadow: 0 6px 24px rgba(53, 100, 166, 0.12);
+}
+
+.uc-v2-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid rgba(53, 100, 166, 0.06);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.uc-v2-card__ref {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+
+.uc-v2-card__ref-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    width: 100%;
+}
+
+.uc-v2-card__boutique {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: var(--titres);
+    font-family: var(--font-titres);
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.uc-v2-card__meta-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--gris-moyen, #737373);
+}
+
+.uc-v2-card__ref-num {
+    font-weight: 700;
+    color: var(--couleur-dominante, #3564a6);
+    font-family: var(--font-titres);
+}
+
+.uc-v2-card__sep {
+    opacity: 0.45;
+    font-weight: 700;
+}
+
+.uc-v2-card__date {
+    font-size: inherit;
+    color: inherit;
+    display: inline;
+}
+
+.uc-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 50px;
+    white-space: nowrap;
+}
+
+.ub--wait     { background: rgba(255, 193, 7, 0.14); color: #9a6800; }
+.ub--confirm  { background: rgba(255, 107, 53, 0.14); color: #c04a10; }
+.ub--delivery { background: rgba(53, 100, 166, 0.12); color: var(--bleu-fonce, #2d5690); }
+.ub--done     { background: rgba(34, 197, 94, 0.12); color: #15803d; }
+.ub--cancel   { background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
+
+.uc-v2-card__body {
+    padding: 16px 20px 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.uc-v2-card__meta-bar {
+    padding: 0 20px 14px;
+    border-bottom: 1px solid rgba(53, 100, 166, 0.06);
+}
+
+.uc-v2-card__info {
+    flex: 1;
+    min-width: 180px;
+}
+
+.uc-v2-card__amount {
+    font-size: 1.45rem;
+    font-weight: 900;
+    color: var(--titres);
+    font-family: var(--font-titres);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+}
+
+.uc-v2-card__amount small {
+    font-size: 0.48em;
+    font-weight: 600;
+    color: var(--gris-moyen, #737373);
+    margin-left: 3px;
+}
+
+.uc-v2-card__addr {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--gris-moyen, #737373);
+    margin-top: 6px;
+}
+
+.uc-v2-card__addr i {
+    color: var(--couleur-dominante, #3564a6);
+    font-size: 0.72rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.uc-v2-card__tel {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--gris-moyen, #737373);
+    margin-top: 4px;
+    text-decoration: none;
+}
+
+.uc-v2-card__tel i {
+    color: var(--couleur-dominante, #3564a6);
+    font-size: 0.72rem;
+}
+
+.uc-v2-card__tel:hover {
+    color: var(--couleur-dominante);
+}
+
+.uc-v2-timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: 0;
+    flex: 1;
+}
+
+.uc-tl-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    position: relative;
+}
+
+.uc-tl-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: calc(50% + 14px);
+    right: calc(-50% + 14px);
+    height: 2px;
+    background: rgba(53, 100, 166, 0.12);
+    z-index: 0;
+}
+
+.uc-tl-step--done:not(:last-child)::after {
+    background: rgba(34, 197, 94, 0.4);
+}
+
+.uc-tl-step--current:not(:last-child)::after {
+    background: rgba(53, 100, 166, 0.2);
+}
+
+.uc-tl-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.uc-tl-step--done .uc-tl-dot {
+    background: rgba(34, 197, 94, 0.15);
+    color: #16a34a;
+}
+
+.uc-tl-step--current .uc-tl-dot {
+    background: var(--couleur-dominante, #3564a6);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(53, 100, 166, 0.35);
+    animation: pulse-tl 2s ease-in-out infinite;
+}
+
+.uc-tl-step--pending .uc-tl-dot {
+    background: rgba(0, 0, 0, 0.05);
+    color: #ccc;
+}
+
+@keyframes pulse-tl {
+    0%, 100% { box-shadow: 0 3px 10px rgba(53, 100, 166, 0.35); }
+    50% { box-shadow: 0 3px 18px rgba(53, 100, 166, 0.55); }
+}
+
+.uc-tl-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.uc-tl-step--done .uc-tl-label {
+    color: #16a34a;
+}
+
+.uc-tl-step--current .uc-tl-label {
+    color: var(--couleur-dominante, #3564a6);
+    font-weight: 700;
+}
+
+.uc-tl-step--pending .uc-tl-label {
+    color: var(--gris-clair, #a3a3a3);
+}
+
+.uc-v2-card__footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: rgba(53, 100, 166, 0.025);
+    border-top: 1px solid rgba(53, 100, 166, 0.06);
+    flex-wrap: wrap;
+}
+
+.uc-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 9px;
+    font-size: 0.79rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--font-corps);
+    transition: all 0.18s;
+}
+
+.uc-card-btn--track {
+    background: rgba(53, 100, 166, 0.1);
+    color: var(--couleur-dominante, #3564a6);
+}
+
+.uc-card-btn--track:hover {
+    background: rgba(53, 100, 166, 0.18);
+}
+
+.uc-card-btn--confirm {
+    background: rgba(34, 197, 94, 0.12);
+    color: #15803d;
+}
+
+.uc-card-btn--confirm:hover {
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.uc-card-btn--detail {
+    background: rgba(53, 100, 166, 0.07);
+    color: var(--gris-fonce, #4a4a4a);
+}
+
+.uc-card-btn--detail:hover {
+    background: rgba(53, 100, 166, 0.13);
+}
+
+.uc-v2-card__footer--vendor {
+    padding: 14px 20px 16px;
+}
+
+.uc-card-btn--vendor-detail {
+    flex: 1;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 11px 22px;
+    border-radius: 12px;
+    background: var(--orange, #ff6b35);
+    color: #fff;
+    font-size: 0.84rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--orange, #ff6b35) 38%, transparent);
+    transition: background 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.uc-card-btn--vendor-detail:hover {
+    background: var(--orange-fonce, #e85a2a);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--orange, #ff6b35) 45%, transparent);
+}
+
+.uc-card-btn--vendor-detail:active {
+    transform: translateY(0);
+}
+
+.uc-card-btn--vendor-detail i {
+    font-size: 0.78rem;
+    transition: transform 0.18s ease;
+}
+
+.uc-card-btn--vendor-detail:hover i {
+    transform: translateX(4px);
+}
+
+.uc-urgence {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ef4444;
+    display: inline-block;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+@media (max-width: 600px) {
+    .uc-v2-card__top { padding: 12px 14px 10px; }
+    .uc-v2-card__boutique { font-size: 0.84rem; }
+    .uc-v2-card__meta-line { font-size: 0.68rem; gap: 5px; }
+    .uc-v2-card__body { flex-direction: column; gap: 14px; padding: 12px 14px 8px; }
+    .uc-v2-card__meta-bar { padding: 0 14px 12px; }
+    .uc-v2-card__amount { font-size: 1.25rem; }
+    .uc-v2-timeline { display: none; }
+}

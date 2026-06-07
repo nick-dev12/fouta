@@ -12,6 +12,7 @@ require_once __DIR__ . '/../includes/require_access.php';
 require_once __DIR__ . '/../../includes/admin_permissions.php';
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
 require_once __DIR__ . '/../../models/model_zones_livraison.php';
+require_once __DIR__ . '/includes/commandes_v2_helpers.php';
 
 $vf_cmd = admin_vendeur_filter_id();
 $toutes_commandes = get_all_commandes(null, $vf_cmd);
@@ -92,6 +93,7 @@ function statut_class_cmd($s) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-commandes-index.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-card-uc.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== REDESIGN COMMANDES v2 ===== */
 
@@ -437,11 +439,12 @@ function statut_class_cmd($s) {
             gap: 8px;
         }
 
-        /* ---- Cartes commandes ---- */
+        /* ---- Liste cartes commandes (design client uc-v2) ---- */
         .cmd-v2-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-            gap: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-width: 900px;
         }
 
         .cmd-v2-card {
@@ -825,7 +828,7 @@ function statut_class_cmd($s) {
         }
 
         @media (max-width: 640px) {
-            .cmd-v2-grid { grid-template-columns: 1fr; }
+            .cmd-v2-grid { max-width: 100%; }
             .cmd-v2-tabs { gap: 3px; }
             .cmd-v2-tab { padding: 7px 11px; font-size: 0.76rem; }
         }
@@ -993,59 +996,8 @@ function statut_class_cmd($s) {
                     <p>Il n'y a aucune commande dans cette cat&eacute;gorie pour le moment.</p>
                 </div>
             <?php else: ?>
-                <?php foreach ($commandes_affichees as $commande):
-                    $client_nom = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''));
-                    if ($client_nom === '') $client_nom = 'Client inconnu';
-                    $avatar_letter = '?';
-                    $trim_n = trim($client_nom);
-                    if ($trim_n !== '') {
-                        $avatar_letter = function_exists('mb_strtoupper')
-                            ? mb_strtoupper(mb_substr($trim_n, 0, 1, 'UTF-8'), 'UTF-8')
-                            : strtoupper(substr($trim_n, 0, 1));
-                    }
-                    $statut   = $commande['statut'] ?? 'en_attente';
-                    $is_urgent = $statut === 'en_attente';
-                    $adresse = htmlspecialchars($commande['adresse_livraison'] ?? '');
-                ?>
-                    <article class="cmd-v2-card">
-                        <div class="cmd-v2-card__top">
-                            <span class="cmd-v2-card__num">
-                                <i class="fas fa-hashtag"></i>
-                                <?php echo htmlspecialchars($commande['numero_commande']); ?>
-                                <?php if ($is_urgent): ?>
-                                    <span class="cmd-v2-urgence-dot" title="En attente d'action"></span>
-                                <?php endif; ?>
-                            </span>
-                            <span class="cmd-badge <?php echo statut_class_cmd($statut); ?>">
-                                <?php echo statut_label_cmd($statut); ?>
-                            </span>
-                        </div>
-                        <div class="cmd-v2-card__body">
-                            <div class="cmd-v2-client">
-                                <div class="cmd-v2-client__avatar"><?php echo $avatar_letter; ?></div>
-                                <div class="cmd-v2-client__info">
-                                    <div class="cmd-v2-client__name"><?php echo htmlspecialchars($client_nom); ?></div>
-                                </div>
-                            </div>
-                            <div class="cmd-v2-amount-row">
-                                <span class="cmd-v2-amount-label">Montant</span>
-                                <strong class="cmd-v2-amount-value">
-                                    <?php echo number_format((float) $commande['montant_total'], 0, ',', ' '); ?>
-                                    <small>FCFA</small>
-                                </strong>
-                            </div>
-                            <?php if (!empty($adresse)): ?>
-                                <div class="cmd-v2-addr">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span><?php echo $adresse; ?></span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="cmd-v2-card__cta">
-                            <span><i class="fas fa-eye"></i>&nbsp; Voir la commande</span>
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </article>
+                <?php foreach ($commandes_affichees as $commande): ?>
+                    <?php cmd_v2_render_card($commande); ?>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>

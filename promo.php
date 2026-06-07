@@ -55,6 +55,7 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
 </head>
 

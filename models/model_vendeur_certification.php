@@ -69,6 +69,25 @@ function vendeur_certification_niveau_label($niveau) {
     return $n[$niveau]['label'] ?? ucfirst((string) $niveau);
 }
 
+/**
+ * Chemin public de l'image badge certification.
+ */
+function vendeur_certification_badge_image_src($niveau) {
+    $map = [
+        'standard' => '/image/badge standar.png',
+        'vip' => '/image/badge vip.png',
+        'premium' => '/image/badge premium.png',
+    ];
+    $niveau = (string) $niveau;
+    if (!isset($map[$niveau])) {
+        return '';
+    }
+    $parts = explode('/', $map[$niveau]);
+    $file = array_pop($parts);
+    $parts[] = rawurlencode($file);
+    return implode('/', $parts);
+}
+
 function vendeur_certification_get_niveau_actif($admin_id) {
     global $db;
     $admin_id = (int) $admin_id;

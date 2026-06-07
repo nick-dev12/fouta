@@ -50,6 +50,13 @@ if ($has_filters) {
     $produits = get_all_produits_paginated($offset, $limit, $boutique_admin_id, $shuffle_seed);
 }
 
+if (!empty($produits) && file_exists(__DIR__ . '/../models/model_produits_avis.php')) {
+    require_once __DIR__ . '/../models/model_produits_avis.php';
+    if (function_exists('produits_avis_enrich_products')) {
+        $produits = produits_avis_enrich_products($produits);
+    }
+}
+
 // Formater les produits pour le JSON
 $produits_formatted = [];
 foreach ($produits as $produit) {
@@ -86,6 +93,8 @@ foreach ($produits as $produit) {
         'boutique_nom' => $boutique_nom,
         'boutique_slug' => $boutique_slug,
         'boutique_href' => $boutique_href,
+        'avis_moyenne' => (float) ($produit['avis_moyenne'] ?? 0),
+        'avis_count' => (int) ($produit['avis_count'] ?? 0),
     ];
 }
 

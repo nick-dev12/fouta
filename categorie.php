@@ -157,6 +157,7 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $categorie_nom . ', c
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <style>
         @keyframes catCardFadeIn {

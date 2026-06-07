@@ -54,6 +54,9 @@ $seo_title = 'Catalogue produits — ' . SITE_BRAND_NAME . ' | Marketplace Sén�
 $seo_description = 'Parcourez le catalogue ' . SITE_BRAND_NAME . ' : produits de centaines de boutiques au Sénégal. Mode, maison, high-tech, alimentaire, artisanat. Achat en ligne, multi-vendeurs.';
 $seo_keywords = site_brand_seo_keywords_default() . ', catalogue produits, catalogue en ligne Sénégal';
 $seo_canonical = $base . '/produits.php';
+
+$return_url_list = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/produits.php';
+$card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
 ?>
 
 <!DOCTYPE html>
@@ -293,49 +296,12 @@ $seo_canonical = $base . '/produits.php';
                             <p style="font-size: 16px;">Aucun produit publié pour le moment.</p>
                         </div>
                     <?php else: ?>
-                        <?php foreach ($produits_tous as $produit): ?>
-                            <?php
-                            $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                                ? $produit['prix_promotion']
-                                : $produit['prix'];
-                            $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                            $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                            ?>
-                            <article class="mp-card" data-produit-id="<?php echo (int)$produit['id']; ?>">
-                                <a href="produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
-                                    <div class="mp-card-img">
-                                        <?php if ($has_promotion): ?>
-                                        <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
-                                        <?php endif; ?>
-                                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
-                                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                            loading="lazy"
-                                            onerror="this.src='/image/produit1.jpg'">
-                                    </div>
-                                    <div class="mp-card-body">
-                                        <p class="mp-card-title"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                                        <div class="mp-card-price-row">
-                                            <?php if ($has_promotion): ?>
-                                                <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
-                                                <span class="mp-card-price-old"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
-                                            <?php else: ?>
-                                                <span class="mp-card-price"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </a>
-                                <div class="mp-card-cart">
-                                    <form method="POST" action="/add-to-panier.php">
-                                        <input type="hidden" name="produit_id" value="<?php echo (int)$produit['id']; ?>">
-                                        <input type="hidden" name="quantite" value="1">
-                                        <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produits.php'); ?>">
-                                        <button type="submit" class="mp-card-btn">
-                                            <i class="fa-solid fa-cart-shopping"></i> Ajouter
-                                        </button>
-                                    </form>
-                                </div>
-                            </article>
-                        <?php endforeach; ?>
+                        <?php
+                        foreach ($produits_tous as $produit) {
+                            $return_url = $return_url_list;
+                            require $card_partial;
+                        }
+                        ?>
                     <?php endif; ?>
                 </div>
 
@@ -393,27 +359,42 @@ $seo_canonical = $base . '/produits.php';
                 return d.innerHTML;
             }
 
+            function buildStarsHTML(produit) {
+                const count = parseInt(produit.avis_count, 10) || 0;
+                const note = parseFloat(produit.avis_moyenne) || 0;
+                if (count <= 0 && note <= 0) return '';
+                const pct = Math.max(0, Math.min(100, (note / 5) * 100));
+                const noteStr = note.toFixed(1).replace('.', ',');
+                const label = noteStr + ' sur 5' + (count > 0 ? ' (' + count + ' avis)' : '');
+                const countHTML = count > 0 ? `<span class="pr-stars__count">${noteStr}</span>` : '';
+                const stars = '<i class="fa-solid fa-star"></i>'.repeat(5);
+                return `<span class="pr-stars pr-stars--readonly pr-stars--sm" style="--pr-rating: ${pct};" role="img" aria-label="${escapeHtml(label)}">` +
+                    `<span class="pr-stars__track" aria-hidden="true">` +
+                    `<span class="pr-stars__empty">${stars}</span>` +
+                    `<span class="pr-stars__fill">${stars}</span>` +
+                    `</span>${countHTML}</span>`;
+            }
+
             function buildCard(produit) {
                 const article = document.createElement('article');
                 article.className = 'mp-card mp-card--loading-anim';
                 article.setAttribute('data-produit-id', produit.id);
-                let badgeHTML = produit.has_promotion && produit.pourcentage_promo
-                    ? `<span class="mp-card-badge mp-card-badge--nouveau">-${produit.pourcentage_promo}%</span>` : '';
+                const starsHTML = buildStarsHTML(produit);
                 let prixHTML = produit.has_promotion
-                    ? `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span><span class="mp-card-price-old">${formatNumber(produit.prix)} FCFA</span>`
+                    ? `<span class="mp-card-price-old">${formatNumber(produit.prix)} FCFA</span><span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`
                     : `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`;
                 const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
                 article.innerHTML = `
                     <a href="produit.php?id=${produit.id}" class="mp-card-link">
-                        <div class="mp-card-img">${badgeHTML}<img src="${escapeHtml(produit.image_url || ('/upload/' + (produit.image_principale || 'produit1.jpg')))}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
-                        <div class="mp-card-body"><p class="mp-card-title">${escapeHtml(produit.nom)}</p><div class="mp-card-price-row">${prixHTML}</div></div>
+                        <div class="mp-card-img"><img src="${escapeHtml(produit.image_url || ('/upload/' + (produit.image_principale || 'produit1.jpg')))}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
+                        <div class="mp-card-body"><h3 class="mp-card-title">${escapeHtml(produit.nom)}</h3>${starsHTML}<div class="mp-card-price-row">${prixHTML}</div></div>
                     </a>
-                    <div class="mp-card-cart"><form method="POST" action="/add-to-panier.php">
+                    <form method="POST" action="/add-to-panier.php" class="mp-card-cart">
                         <input type="hidden" name="produit_id" value="${produit.id}">
                         <input type="hidden" name="quantite" value="1">
                         <input type="hidden" name="return_url" value="${returnUrl}">
-                        <button type="submit" class="mp-card-btn"><i class="fa-solid fa-cart-shopping"></i> Ajouter</button>
-                    </form></div>`;
+                        <button type="submit" class="mp-card-btn"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Ajouter</button>
+                    </form>`;
                 return article;
             }
 

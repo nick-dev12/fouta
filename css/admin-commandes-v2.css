@@ -1,4 +1,6 @@
-/** Commandes admin v2 Ã¢â‚¬â€ shared styles */
+/** Commandes admin v2 — shared styles */
+
+@import url('commande-card-uc.css');
 
 /* ===== REDESIGN COMMANDES v2 ===== */
 
@@ -349,11 +351,12 @@
     gap: 8px;
 }
 
-/* ---- Cartes commandes ---- */
+/* ---- Liste cartes commandes (design client uc-v2) ---- */
 .cmd-v2-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-    gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 900px;
 }
 
 .cmd-v2-card {
@@ -670,7 +673,7 @@
 }
 
 @media (max-width: 640px) {
-    .cmd-v2-grid { grid-template-columns: 1fr; }
+    .cmd-v2-grid { max-width: 100%; }
     .cmd-v2-tabs { gap: 3px; }
     .cmd-v2-tab { padding: 7px 11px; font-size: 0.76rem; }
 }
