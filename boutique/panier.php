@@ -609,7 +609,7 @@ if (file_exists(__DIR__ . '/../controllers/controller_commerce_users.php')) {
                             : $item['nom'];
                         ?>
                         <div class="panier-item" data-item-id="<?php echo $item['panier_id']; ?>">
-                            <img src="/upload/<?php echo htmlspecialchars($item_img); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url((string) $item_img, 'sm')); ?>"
                                 alt="<?php echo htmlspecialchars($item_nom); ?>" class="panier-item-image"
                                 onerror="this.src='/image/produit1.jpg'">
 

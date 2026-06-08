@@ -7,6 +7,7 @@ require_once __DIR__ . '/controllers/controller_panier.php';
 require_once __DIR__ . '/includes/panier_invite.php';
 require_once __DIR__ . '/includes/marketplace_helpers.php';
 require_once __DIR__ . '/includes/flash_toast.php';
+require_once __DIR__ . '/includes/image_optimizer.php';
 
 // Traitement des actions du panier
 $message = '';
@@ -620,7 +621,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                         ?>
                         <div class="panier-item" data-item-id="<?php echo $item['panier_id']; ?>">
                             <div class="panier-item-img">
-                                <img src="/upload/<?php echo htmlspecialchars((string) $item_img, ENT_QUOTES, 'UTF-8'); ?>"
+                                <img src="<?php echo htmlspecialchars(upload_image_url((string) $item_img, 'sm'), ENT_QUOTES, 'UTF-8'); ?>"
                                     alt="<?php echo htmlspecialchars((string) $item_nom, ENT_QUOTES, 'UTF-8'); ?>" class="panier-item-image"
                                     onerror="this.src='/image/produit1.jpg'">
                             </div>

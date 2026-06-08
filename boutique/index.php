@@ -431,7 +431,7 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                 loading="lazy" onerror="this.src='/image/produit1.jpg'">
                         </div>
@@ -617,7 +617,7 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                 loading="lazy" onerror="this.src='/image/produit1.jpg'">
                         </div>
@@ -779,7 +779,7 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                 loading="lazy" onerror="this.src='/image/produit1.jpg'">
                         </div>

@@ -213,7 +213,7 @@ $seo_description = mb_substr($desc_cat, 0, 160);
                         <article class="mp-card">
                             <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                                     <div class="mp-card-img">
-                                    <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                                    <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                         alt="<?php echo htmlspecialchars($produit['nom']); ?>"
                                         loading="lazy" onerror="this.src='/image/produit1.jpg'">
                                 </div>

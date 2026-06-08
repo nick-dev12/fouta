@@ -4,6 +4,7 @@
  */
 require_once __DIR__ . '/../includes/boutique_context.php';
 require_once __DIR__ . '/../includes/marketplace_helpers.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 boutique_bootstrap_or_404();
 
