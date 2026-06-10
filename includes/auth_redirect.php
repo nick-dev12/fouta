@@ -111,3 +111,74 @@ if (!function_exists('admin_redirect_to_login')) {
         exit;
     }
 }
+
+if (!function_exists('auth_session_is_vendeur')) {
+    /**
+     * Session vendeur titulaire ou collaborateur boutique.
+     */
+    function auth_session_is_vendeur()
+    {
+        if (empty($_SESSION['admin_id']) || (int) $_SESSION['admin_id'] <= 0) {
+            return false;
+        }
+
+        if (!empty($_SESSION['vendeur_collaborateur_id'])) {
+            return true;
+        }
+
+        if (!function_exists('normalize_admin_role')) {
+            $model_admin = __DIR__ . '/../models/model_admin.php';
+            if (is_file($model_admin)) {
+                require_once $model_admin;
+            }
+        }
+
+        if (!function_exists('normalize_admin_role')) {
+            return (string) ($_SESSION['admin_role'] ?? '') === 'vendeur';
+        }
+
+        return normalize_admin_role($_SESSION['admin_role'] ?? '') === 'vendeur';
+    }
+}
+
+if (!function_exists('auth_vendeur_dashboard_url')) {
+    function auth_vendeur_dashboard_url()
+    {
+        return '/admin/dashboard.php';
+    }
+}
+
+if (!function_exists('auth_redirect_vendeur_to_dashboard')) {
+    /**
+     * Redirige un vendeur connecté vers son tableau de bord.
+     */
+    function auth_redirect_vendeur_to_dashboard()
+    {
+        if (!auth_session_is_vendeur()) {
+            return;
+        }
+
+        auth_redirect_after_login(auth_vendeur_dashboard_url());
+    }
+}
+
+if (!function_exists('auth_login_redirect_url_for_admin')) {
+    /**
+     * URL de redirection après connexion admin (vendeur → tableau de bord).
+     *
+     * @param string|null $fallback
+     */
+    function auth_login_redirect_url_for_admin($fallback = null)
+    {
+        if (auth_session_is_vendeur()) {
+            return auth_vendeur_dashboard_url();
+        }
+
+        $fallback = trim((string) ($fallback ?? '/admin/dashboard.php'));
+        if ($fallback === '' || strpos($fallback, '//') !== false) {
+            $fallback = '/admin/dashboard.php';
+        }
+
+        return $fallback[0] === '/' ? $fallback : '/' . $fallback;
+    }
+}

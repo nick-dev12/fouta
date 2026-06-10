@@ -6,7 +6,9 @@
 
     var LOG = '[FCM]';
     var FCM_SW_PATH = window.FCM_SW_PATH || '/firebase-messaging-sw.js';
+    var FCM_ICON_PATH = '/image/logo_market.jpeg';
     var FCM_STORAGE_KEY = 'colobanes_fcm_enabled';
+    var FCM_RESET_KEY = 'colobanes_fcm_force_reset';
     var PERMISSION_TIMEOUT_MS = 12000;
     var TOKEN_TIMEOUT_MS = 20000;
     var NATIVE_APP_MOBILE_MAX_WIDTH = 1024;
@@ -117,6 +119,94 @@
         try {
             localStorage.removeItem(FCM_STORAGE_KEY);
         } catch (e) { /* ignore */ }
+    }
+
+    function shouldForceFcmReset() {
+        try {
+            return localStorage.getItem(FCM_RESET_KEY) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function clearForceFcmReset() {
+        try {
+            localStorage.removeItem(FCM_RESET_KEY);
+        } catch (e) { /* ignore */ }
+    }
+
+    function requestForceFcmReset() {
+        try {
+            localStorage.setItem(FCM_RESET_KEY, '1');
+        } catch (e) { /* ignore */ }
+    }
+
+    function resolveNotificationLink(path) {
+        var value = path || '/';
+        if (value.indexOf('http://') === 0 || value.indexOf('https://') === 0) {
+            return value;
+        }
+        return window.location.origin + (value.charAt(0) === '/' ? value : '/' + value);
+    }
+
+    /**
+     * Affiche une notification système.
+     * Sur Windows/Chrome, new Notification() en premier plan n'affiche souvent PAS la bulle.
+     * registration.showNotification() (Service Worker) est plus fiable.
+     */
+    function showBrowserNotification(title, body, tag, link) {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+            warn('Permission notifications non accordée');
+            return Promise.resolve(false);
+        }
+
+        var icon = resolveNotificationLink(FCM_ICON_PATH);
+        var options = {
+            body: body,
+            icon: icon,
+            badge: icon,
+            tag: tag || ('colobanes-' + Date.now()),
+            renotify: true,
+            requireInteraction: false,
+            silent: false,
+            data: { link: link || '' }
+        };
+
+        function showViaNotificationApi() {
+            try {
+                var n = new Notification(title, options);
+                n.onclick = function () {
+                    window.focus();
+                    if (link) {
+                        window.location.href = link;
+                    }
+                    n.close();
+                };
+                log('Notification affichée via Notification API');
+                return true;
+            } catch (err) {
+                warn('Notification API échouée', err);
+                return false;
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            return navigator.serviceWorker.ready
+                .then(function (registration) {
+                    log('Affichage notification via Service Worker…');
+                    return registration.showNotification(title, options);
+                })
+                .then(function () {
+                    log('Bulle système affichée via Service Worker ✓');
+                    return true;
+                })
+                .catch(function (err) {
+                    warn('Service Worker showNotification échoué, repli API', err);
+                    return showViaNotificationApi();
+                });
+        }
+
+        return Promise.resolve(showViaNotificationApi());
     }
 
     function getNotifyType(btn) {
@@ -394,17 +484,19 @@
     function getFcmToken(type, registration, retryFresh) {
         var vapidKey = getVapidKey();
         var messaging = firebase.messaging();
+        var forceReset = shouldForceFcmReset() || !!retryFresh;
 
-        log('Récupération du token FCM…');
+        log('Récupération du token FCM…', forceReset ? '(réinitialisation)' : '');
 
-        /* Nettoyer l'IDB Firebase à la première tentative (migration projet) */
-        var cleanStep = retryFresh ? Promise.resolve() : clearFirebaseIndexedDB();
+        var cleanStep = Promise.resolve();
+        if (forceReset) {
+            cleanStep = clearFirebaseIndexedDB().then(function () {
+                return clearOldPushSubscription(registration);
+            });
+        }
 
         return cleanStep
             .then(function () { return waitForSwFirebaseReady(registration); })
-            .then(function () {
-                return clearOldPushSubscription(registration);
-            })
             .then(function () {
                 log('Étape getToken — SW actif:', !!(registration && registration.active));
                 if (registration && registration.active && registration.active.scriptURL) {
@@ -427,6 +519,7 @@
                     return false;
                 }
                 log('Token FCM obtenu:', token.substring(0, 24) + '…');
+                clearForceFcmReset();
                 return saveToken(token, type);
             })
             .catch(function (err) {
@@ -463,6 +556,8 @@
             updateButtonState(btn, 'idle');
             return Promise.resolve(false);
         }
+
+        window.FirebaseNotifications.setupForegroundHandler();
 
         return registerFcmServiceWorker(false)
             .then(function (registration) {
@@ -594,9 +689,6 @@
                 return;
             }
 
-            if (isMarkedEnabled() && btn.classList.contains('notifications-enabled')) {
-                return;
-            }
             if (isMarkedEnabled()) {
                 updateButtonState(btn, 'enabled');
                 window.FirebaseNotifications.setupForegroundHandler();
@@ -644,9 +736,13 @@
                     || (payload.data && payload.data.title) || 'COLObanes';
                 var body = (payload.notification && payload.notification.body)
                     || (payload.data && payload.data.body) || '';
-                if (Notification.permission === 'granted') {
-                    new Notification(title, { body: body, icon: '/image/produit1.jpg' });
-                }
+                var tag = (payload.data && payload.data.tag) ? payload.data.tag : ('colobanes-' + Date.now());
+                var link = (payload.data && payload.data.link) ? resolveNotificationLink(payload.data.link) : '';
+                showBrowserNotification(title, body, tag, link).then(function (ok) {
+                    if (!ok) {
+                        warn('Impossible d\'afficher la bulle — vérifiez Paramètres Windows → Notifications → Chrome');
+                    }
+                });
             });
         },
 
@@ -668,6 +764,20 @@
             window.FirebaseNotifications.bindButton(document.getElementById('btn-enable-notifications'));
             window.FirebaseNotifications.bindHelpPanel();
             window.FirebaseNotifications.syncButton(document.getElementById('btn-enable-notifications'));
+
+            if (typeof Notification !== 'undefined'
+                && Notification.permission === 'granted'
+                && isMarkedEnabled()) {
+                window.FirebaseNotifications.setupForegroundHandler();
+            }
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', function (event) {
+                    if (event.data && event.data.type === 'FCM_SW_LOG') {
+                        log('SW:', event.data.message, event.data.payload || '');
+                    }
+                });
+            }
         }
     };
 

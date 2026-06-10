@@ -10,7 +10,7 @@ require_once __DIR__ . '/../conn/conn.php';
 /**
  * Indique si une colonne existe sur la table produits (cache SHOW COLUMNS)
  */
-function produits_has_column($name) {
+function produits_has_column(string $name): bool {
     static $cols = null;
     global $db;
     if ($cols === null) {
@@ -33,12 +33,12 @@ function produits_has_column($name) {
 /**
  * Statuts produit visibles et commandables côté client (catalogue + fiche produit).
  */
-function produit_statuts_catalogue_client()
+function produit_statuts_catalogue_client(): array
 {
     return ['actif', 'rupture_stock'];
 }
 
-function produit_est_visible_client($statut)
+function produit_est_visible_client(string $statut): bool
 {
     return in_array((string) $statut, produit_statuts_catalogue_client(), true);
 }
@@ -46,7 +46,7 @@ function produit_est_visible_client($statut)
 /**
  * Fragment SQL pour filtrer les produits publiés côté client.
  */
-function produit_sql_statut_catalogue($alias = 'p')
+function produit_sql_statut_catalogue(string $alias = 'p'): string
 {
     return $alias . ".statut IN ('actif', 'rupture_stock')";
 }
@@ -55,7 +55,7 @@ function produit_sql_statut_catalogue($alias = 'p')
  * Fragment SQL : jointure admin (boutique) pour enrichir les listes produits marketplace
  * @return array{join: string, select: string}
  */
-function produits_sql_vendeur_fragment() {
+function produits_sql_vendeur_fragment(): array {
     static $cached = null;
     if ($cached !== null) {
         return $cached;
@@ -80,9 +80,31 @@ function produits_sql_vendeur_fragment() {
 }
 
 /**
+ * Code pays marketplace actif (null = pas de filtre)
+ */
+function produits_country_filter_code_or_null(int|string|null $boutique_admin_id = null): ?string
+{
+    if ($boutique_admin_id !== null && $boutique_admin_id !== '') {
+        return null;
+    }
+    if (!produits_has_column('admin_id')) {
+        return null;
+    }
+    require_once __DIR__ . '/../includes/marketplace_country_filter.php';
+    if (!marketplace_country_filter_applies()) {
+        return null;
+    }
+    require_once __DIR__ . '/../models/model_admin.php';
+    if (!admin_has_boutique_country_column()) {
+        return null;
+    }
+    return marketplace_get_selected_country_code();
+}
+
+/**
  * Code région marketplace actif (null = pas de filtre)
  */
-function produits_region_filter_code_or_null($boutique_admin_id = null)
+function produits_region_filter_code_or_null(int|string|null $boutique_admin_id = null): ?string
 {
     if ($boutique_admin_id !== null && $boutique_admin_id !== '') {
         return null;
@@ -91,7 +113,12 @@ function produits_region_filter_code_or_null($boutique_admin_id = null)
         return null;
     }
     require_once __DIR__ . '/../includes/marketplace_region_filter.php';
+    require_once __DIR__ . '/../includes/marketplace_country_filter.php';
     if (!marketplace_region_filter_applies()) {
+        return null;
+    }
+    $country = marketplace_get_selected_country_code();
+    if ($country === null || !marketplace_country_supports_regions($country)) {
         return null;
     }
     require_once __DIR__ . '/../models/model_admin.php';
@@ -102,22 +129,45 @@ function produits_region_filter_code_or_null($boutique_admin_id = null)
 }
 
 /**
- * Clause SQL filtre région avec alias table produits
- * @return array{sql: string, code: string|null}
+ * Fragment SQL filtre pays + région sur vendeurs actifs.
+ * @return array{sql: string, country: string|null, region: string|null}
  */
-function produits_region_sql_with_alias($boutique_admin_id = null, $alias = 'p')
+function produits_geo_sql_with_alias(int|string|null $boutique_admin_id = null, string $alias = 'p'): array
 {
-    $code = produits_region_filter_code_or_null($boutique_admin_id);
-    if ($code === null) {
-        return ['sql' => '', 'code' => null];
+    $country = produits_country_filter_code_or_null($boutique_admin_id);
+    $region = produits_region_filter_code_or_null($boutique_admin_id);
+    if ($country === null && $region === null) {
+        return ['sql' => '', 'country' => null, 'region' => null];
     }
     $a = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $alias);
     if ($a === '') {
         $a = 'p';
     }
+    $conds = ["a.role = 'vendeur'", "a.statut = 'actif'"];
+    if ($country !== null) {
+        $conds[] = "COALESCE(NULLIF(TRIM(a.boutique_country), ''), 'SN') = :mp_marketplace_country";
+    }
+    if ($region !== null) {
+        $conds[] = 'a.boutique_region = :mp_marketplace_region';
+    }
     return [
-        'sql' => " AND {$a}.admin_id IN (SELECT a.id FROM admin a WHERE a.role = 'vendeur' AND a.statut = 'actif' AND a.boutique_region = :mp_marketplace_region)",
-        'code' => $code,
+        'sql' => ' AND ' . $a . '.admin_id IN (SELECT a.id FROM admin a WHERE ' . implode(' AND ', $conds) . ')',
+        'country' => $country,
+        'region' => $region,
+    ];
+}
+
+/**
+ * Clause SQL filtre région avec alias table produits
+ * @return array{sql: string, code: string|null}
+ */
+function produits_region_sql_with_alias(int|string|null $boutique_admin_id = null, string $alias = 'p'): array
+{
+    $geo = produits_geo_sql_with_alias($boutique_admin_id, $alias);
+    return [
+        'sql' => $geo['sql'],
+        'code' => $geo['region'],
+        'country' => $geo['country'],
     ];
 }
 
@@ -125,39 +175,69 @@ function produits_region_sql_with_alias($boutique_admin_id = null, $alias = 'p')
  * Clause SQL filtre région sans alias (requêtes COUNT sur produits seule)
  * @return array{sql: string, code: string|null}
  */
-function produits_region_sql_plain($boutique_admin_id = null)
+function produits_region_sql_plain(int|string|null $boutique_admin_id = null): array
 {
-    $code = produits_region_filter_code_or_null($boutique_admin_id);
-    if ($code === null) {
-        return ['sql' => '', 'code' => null];
+    $geo = produits_geo_sql_with_alias($boutique_admin_id, 'p');
+    if ($geo['sql'] === '') {
+        return ['sql' => '', 'code' => null, 'country' => null];
     }
     return [
-        'sql' => " AND admin_id IN (SELECT a.id FROM admin a WHERE a.role = 'vendeur' AND a.statut = 'actif' AND a.boutique_region = :mp_marketplace_region)",
-        'code' => $code,
+        'sql' => str_replace('p.admin_id', 'admin_id', $geo['sql']),
+        'code' => $geo['region'],
+        'country' => $geo['country'],
     ];
 }
 
 /**
  * Ajoute le filtre région à une clause WHERE avec paramètres positionnels (?)
  */
-function produits_append_region_positional(&$where, &$exec_params, $boutique_admin_id = null)
+function produits_append_region_positional(string &$where, array &$exec_params, int|string|null $boutique_admin_id = null): void
 {
-    $code = produits_region_filter_code_or_null($boutique_admin_id);
-    if ($code === null) {
+    $country = produits_country_filter_code_or_null($boutique_admin_id);
+    $region = produits_region_filter_code_or_null($boutique_admin_id);
+    if ($country === null && $region === null) {
         return;
     }
-    $where .= " AND p.admin_id IN (SELECT a.id FROM admin a WHERE a.role = 'vendeur' AND a.statut = 'actif' AND a.boutique_region = ?)";
-    $exec_params[] = $code;
+    $conds = ["a.role = 'vendeur'", "a.statut = 'actif'"];
+    if ($country !== null) {
+        $conds[] = "COALESCE(NULLIF(TRIM(a.boutique_country), ''), 'SN') = ?";
+        $exec_params[] = $country;
+    }
+    if ($region !== null) {
+        $conds[] = 'a.boutique_region = ?';
+        $exec_params[] = $region;
+    }
+    $where .= ' AND p.admin_id IN (SELECT a.id FROM admin a WHERE ' . implode(' AND ', $conds) . ')';
 }
 
 /**
  * Lie le paramètre région sur un PDOStatement si actif
  */
-function produits_bind_region_stmt(PDOStatement $stmt, $boutique_admin_id = null)
+function produits_bind_region_stmt(PDOStatement $stmt, int|string|null $boutique_admin_id = null): void
 {
-    $code = produits_region_filter_code_or_null($boutique_admin_id);
-    if ($code !== null) {
-        $stmt->bindValue(':mp_marketplace_region', $code, PDO::PARAM_STR);
+    $country = produits_country_filter_code_or_null($boutique_admin_id);
+    $region = produits_region_filter_code_or_null($boutique_admin_id);
+    if ($country !== null) {
+        $stmt->bindValue(':mp_marketplace_country', $country, PDO::PARAM_STR);
+    }
+    if ($region !== null) {
+        $stmt->bindValue(':mp_marketplace_region', $region, PDO::PARAM_STR);
+    }
+}
+
+/**
+ * Fusionne pays/région dans un tableau de paramètres nommés PDO.
+ */
+function produits_merge_geo_filter_params(array &$params, array $rf): void
+{
+    if (!is_array($rf)) {
+        return;
+    }
+    if (!empty($rf['country'])) {
+        $params['mp_marketplace_country'] = $rf['country'];
+    }
+    if (!empty($rf['code'])) {
+        $params['mp_marketplace_region'] = $rf['code'];
     }
 }
 
@@ -167,7 +247,7 @@ function produits_bind_region_stmt(PDOStatement $stmt, $boutique_admin_id = null
  *
  * @return array{join: string, categorie_nom_sql: string}
  */
-function produits_sql_rayon_categorie_nom_fragment() {
+function produits_sql_rayon_categorie_nom_fragment(): array {
     static $cached = null;
     if ($cached !== null) {
         return $cached;
@@ -200,7 +280,7 @@ function produits_sql_rayon_categorie_nom_fragment() {
 /**
  * Préfixe identifiant : 3 premières lettres du nom boutique (A-Z).
  */
-function produit_identifiant_prefix_from_boutique_nom($boutique_nom)
+function produit_identifiant_prefix_from_boutique_nom(string $boutique_nom): string
 {
     $nom = trim((string) $boutique_nom);
     if ($nom === '') {
@@ -226,7 +306,7 @@ function produit_identifiant_prefix_from_boutique_nom($boutique_nom)
 /**
  * Format valide : 3 lettres + 6 chiffres (ex. SHO482913, FPL000042).
  */
-function produit_identifiant_interne_is_valid_format($code)
+function produit_identifiant_interne_is_valid_format(string $code): bool
 {
     $code = strtoupper(trim((string) $code));
     return (bool) preg_match('/^[A-Z]{3}\d{6}$/', $code);
@@ -235,7 +315,7 @@ function produit_identifiant_interne_is_valid_format($code)
 /**
  * Vérifie si un identifiant interne existe déjà.
  */
-function produit_identifiant_interne_exists($code)
+function produit_identifiant_interne_exists(string $code): bool
 {
     global $db;
     if (!$db || !produits_has_column('identifiant_interne')) {
@@ -258,7 +338,7 @@ function produit_identifiant_interne_exists($code)
  * Génère un identifiant interne : 3 lettres boutique + 6 chiffres aléatoires.
  * @param int|null $admin_id ID vendeur pour le préfixe boutique, null = FPL (legacy)
  */
-function generate_next_identifiant_interne_produit($admin_id = null)
+function generate_next_identifiant_interne_produit(?int $admin_id = null): ?string
 {
     global $db;
     if (!$db || !produits_has_column('identifiant_interne')) {
@@ -294,7 +374,7 @@ function generate_next_identifiant_interne_produit($admin_id = null)
  * @param int|null $boutique_admin_id Limiter au vendeur (marketplace)
  * @return array|false Tableau des produits ou False en cas d'erreur
  */
-function get_all_produits($statut = null, $boutique_admin_id = null)
+function get_all_produits(?string $statut = null, int|string|null $boutique_admin_id = null): array|false
 {
     global $db;
 
@@ -318,9 +398,7 @@ function get_all_produits($statut = null, $boutique_admin_id = null)
         }
         $rf = produits_region_sql_with_alias($boutique_admin_id);
         $sql .= $rf['sql'];
-        if ($rf['code'] !== null) {
-            $params['mp_marketplace_region'] = $rf['code'];
-        }
+        produits_merge_geo_filter_params($params, $rf);
         $sql .= ' ORDER BY p.date_creation DESC';
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
@@ -338,7 +416,7 @@ function get_all_produits($statut = null, $boutique_admin_id = null)
  * @param int $categorie_id L'ID de la catégorie
  * @return array|false Tableau des produits ou False en cas d'erreur
  */
-function get_produits_by_categorie($categorie_id, $boutique_admin_id = null)
+function get_produits_by_categorie(int $categorie_id, int|string|null $boutique_admin_id = null): array
 {
     global $db;
 
@@ -386,7 +464,7 @@ function get_produits_by_categorie($categorie_id, $boutique_admin_id = null)
  * @param int|null $filter_sous_categorie_id Si > 0 : produits ayant cette sous-catégorie (categorie_id ou pivot produits_sous_categories)
  * @return array
  */
-function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = null, $filter_genre_id = null, $filter_sous_categorie_id = null) {
+function get_produits_by_categorie_generale(int $generale_id, int|string|null $boutique_admin_id = null, ?int $filter_genre_id = null, ?int $filter_sous_categorie_id = null): array {
     global $db;
     $generale_id = (int) $generale_id;
     if ($generale_id <= 0) {
@@ -481,7 +559,7 @@ function get_produits_by_categorie_generale($generale_id, $boutique_admin_id = n
  * @param int|null $boutique_admin_id ID vendeur pour restreindre à sa boutique, ou null pour tous les vendeurs
  * @return array<int, array> Lignes de la table categories_generales avec la clé nb_produits_actifs
  */
-function get_categories_generales_avec_produits_actifs($boutique_admin_id = null) {
+function get_categories_generales_avec_produits_actifs(int|string|null $boutique_admin_id = null): array {
     global $db;
     require_once __DIR__ . '/model_categories.php';
     if (!function_exists('categories_generales_table_exists') || !categories_generales_table_exists()) {
@@ -520,7 +598,7 @@ function get_categories_generales_avec_produits_actifs($boutique_admin_id = null
  * @param int $limit Nombre max (défaut 8)
  * @return array
  */
-function get_produits_similaires_rayon_generale($exclude_produit_id, $generale_id, $limit = 8) {
+function get_produits_similaires_rayon_generale(int $exclude_produit_id, int $generale_id, int $limit = 8): array {
     global $db;
     $exclude_produit_id = (int) $exclude_produit_id;
     $generale_id = (int) $generale_id;
@@ -586,7 +664,7 @@ function get_produits_similaires_rayon_generale($exclude_produit_id, $generale_i
  * @param int $id L'ID du produit
  * @return array|false Les données du produit ou False si non trouvé
  */
-function get_produit_by_id($id)
+function get_produit_by_id(int $id): array|false
 {
     global $db;
 
@@ -612,7 +690,7 @@ function get_produit_by_id($id)
  * @param bool $only_actif Si true, uniquement les produits actifs ou en promo (exclut inactif)
  * @return array|false
  */
-function get_produit_by_identifiant_interne($code, $only_actif = false)
+function get_produit_by_identifiant_interne(string $code, bool $only_actif = false): array|false
 {
     global $db;
 
@@ -648,7 +726,7 @@ function get_produit_by_identifiant_interne($code, $only_actif = false)
  * Extrait les 5 derniers chiffres de la partie numérique du code (style caisse : saisie rapide)
  * Ex. FPL000151 → "00151", FPL100001 → "00001"
  */
-function produit_identifiant_derniers_5_chiffres($identifiant_interne)
+function produit_identifiant_derniers_5_chiffres(string $identifiant_interne): string
 {
     $d = preg_replace('/\D/', '', (string) $identifiant_interne);
     if (strlen($d) < 5) {
@@ -662,7 +740,7 @@ function produit_identifiant_derniers_5_chiffres($identifiant_interne)
  * Expression SQL MySQL : les 5 derniers chiffres du numéro (après retrait du préfixe FPL)
  * @param string $table_prefix Préfixe de table/colonne, ex. 'p' → p.identifiant_interne ; '' → identifiant_interne
  */
-function produits_sql_identifiant_suffix_5_expr($table_prefix = 'p')
+function produits_sql_identifiant_suffix_5_expr(string $table_prefix = 'p'): string
 {
     $col = $table_prefix === '' ? 'identifiant_interne' : $table_prefix . '.identifiant_interne';
 
@@ -672,7 +750,7 @@ function produits_sql_identifiant_suffix_5_expr($table_prefix = 'p')
 /**
  * Liste des produits dont le code se termine par ces 5 chiffres (recherche rapide)
  */
-function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $limit = 20, $only_actif = true, $boutique_admin_id = null)
+function get_produits_by_identifiant_suffix_5_chiffres(string $suffix5, int $offset = 0, int $limit = 20, bool $only_actif = true, int|string|null $boutique_admin_id = null): array
 {
     global $db;
 
@@ -726,7 +804,7 @@ function get_produits_by_identifiant_suffix_5_chiffres($suffix5, $offset = 0, $l
 /**
  * Compte les produits correspondant aux 5 derniers chiffres
  */
-function count_produits_by_identifiant_suffix_5_chiffres($suffix5, $only_actif = true, $boutique_admin_id = null)
+function count_produits_by_identifiant_suffix_5_chiffres(string $suffix5, bool $only_actif = true, int|string|null $boutique_admin_id = null): int
 {
     global $db;
 
@@ -752,9 +830,7 @@ function count_produits_by_identifiant_suffix_5_chiffres($suffix5, $only_actif =
     }
     $rf = produits_region_sql_plain($boutique_admin_id);
     $sql .= $rf['sql'];
-    if ($rf['code'] !== null) {
-        $params['mp_marketplace_region'] = $rf['code'];
-    }
+    produits_merge_geo_filter_params($params, $rf);
 
     try {
         $stmt = $db->prepare($sql);
@@ -770,7 +846,7 @@ function count_produits_by_identifiant_suffix_5_chiffres($suffix5, $only_actif =
  * Attribue un identifiant FPLxxxxxx si absent (produits anciens)
  * @return string|null Le code attribué ou existant
  */
-function ensure_produit_identifiant_interne($produit_id)
+function ensure_produit_identifiant_interne(int $produit_id): ?string
 {
     global $db;
 
@@ -824,7 +900,7 @@ function ensure_produit_identifiant_interne($produit_id)
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits
  */
-function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id = null, $shuffle_seed = null)
+function get_all_produits_paginated(int $offset = 0, int $limit = 20, int|string|null $boutique_admin_id = null, int|string|null $shuffle_seed = null): array
 {
     global $db;
 
@@ -874,7 +950,7 @@ function get_all_produits_paginated($offset = 0, $limit = 20, $boutique_admin_id
  * @param int $limit Nombre max de résultats
  * @return array Tableau des produits trouvés
  */
-function search_produits($recherche, $offset = 0, $limit = 20, $boutique_admin_id = null)
+function search_produits(string $recherche, int $offset = 0, int $limit = 20, int|string|null $boutique_admin_id = null): array
 {
     global $db;
 
@@ -941,7 +1017,7 @@ function search_produits($recherche, $offset = 0, $limit = 20, $boutique_admin_i
  * @param string $recherche Terme de recherche
  * @return int Nombre de produits
  */
-function count_search_produits($recherche, $boutique_admin_id = null)
+function count_search_produits(string $recherche, int|string|null $boutique_admin_id = null): int
 {
     global $db;
 
@@ -978,9 +1054,7 @@ function count_search_produits($recherche, $boutique_admin_id = null)
         }
         $rf = produits_region_sql_plain($boutique_admin_id);
         $where .= $rf['sql'];
-        if ($rf['code'] !== null) {
-            $params['mp_marketplace_region'] = $rf['code'];
-        }
+        produits_merge_geo_filter_params($params, $rf);
         $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
@@ -1000,7 +1074,7 @@ function count_search_produits($recherche, $boutique_admin_id = null)
  * @param int $limit Nombre max de résultats
  * @return array Tableau des produits trouvés
  */
-function search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $tri = 'date', $offset = 0, $limit = 50, $boutique_admin_id = null)
+function search_produits_with_filters(string $recherche = '', float|int|string|null $prix_min = null, float|int|string|null $prix_max = null, int|string|null $categorie_id = null, string $tri = 'date', int $offset = 0, int $limit = 50, int|string|null $boutique_admin_id = null): array
 {
     global $db;
 
@@ -1015,7 +1089,7 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
         $rf = produits_region_sql_with_alias($boutique_admin_id);
         if ($rf['sql'] !== '') {
             $conditions[] = ltrim($rf['sql'], ' AND ');
-            $params['mp_marketplace_region'] = $rf['code'];
+            produits_merge_geo_filter_params($params, $rf);
         }
 
         if (!empty(trim($recherche))) {
@@ -1104,7 +1178,7 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
 /**
  * Compte les produits avec les mêmes filtres que search_produits_with_filters
  */
-function count_search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $boutique_admin_id = null)
+function count_search_produits_with_filters(string $recherche = '', float|int|string|null $prix_min = null, float|int|string|null $prix_max = null, int|string|null $categorie_id = null, int|string|null $boutique_admin_id = null): int
 {
     global $db;
 
@@ -1119,7 +1193,7 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
         $rf = produits_region_sql_plain($boutique_admin_id);
         if ($rf['sql'] !== '') {
             $conditions[] = ltrim($rf['sql'], ' AND ');
-            $params['mp_marketplace_region'] = $rf['code'];
+            produits_merge_geo_filter_params($params, $rf);
         }
 
         if (!empty(trim($recherche))) {
@@ -1180,7 +1254,7 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
  * Compte le nombre total de produits actifs
  * @return int Nombre total de produits actifs
  */
-function count_all_produits_actifs($boutique_admin_id = null)
+function count_all_produits_actifs(int|string|null $boutique_admin_id = null): int
 {
     global $db;
 
@@ -1193,9 +1267,7 @@ function count_all_produits_actifs($boutique_admin_id = null)
         }
         $rf = produits_region_sql_plain($boutique_admin_id);
         $where .= $rf['sql'];
-        if ($rf['code'] !== null) {
-            $params['mp_marketplace_region'] = $rf['code'];
-        }
+        produits_merge_geo_filter_params($params, $rf);
         $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
@@ -1210,7 +1282,7 @@ function count_all_produits_actifs($boutique_admin_id = null)
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits en promo
  */
-function get_produits_en_promo($offset = 0, $limit = 50, $boutique_admin_id = null)
+function get_produits_en_promo(int $offset = 0, int $limit = 50, int|string|null $boutique_admin_id = null): array
 {
     global $db;
 
@@ -1251,7 +1323,7 @@ function get_produits_en_promo($offset = 0, $limit = 50, $boutique_admin_id = nu
  * Compte les produits en promotion
  * @return int Nombre de produits en promo
  */
-function count_produits_en_promo($boutique_admin_id = null)
+function count_produits_en_promo(int|string|null $boutique_admin_id = null): int
 {
     global $db;
 
@@ -1267,9 +1339,7 @@ function count_produits_en_promo($boutique_admin_id = null)
         }
         $rf = produits_region_sql_plain($boutique_admin_id);
         $where .= $rf['sql'];
-        if ($rf['code'] !== null) {
-            $params['mp_marketplace_region'] = $rf['code'];
-        }
+        produits_merge_geo_filter_params($params, $rf);
         $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
@@ -1283,7 +1353,7 @@ function count_produits_en_promo($boutique_admin_id = null)
  * @param int $limit Nombre maximum de produits à retourner (par défaut 4)
  * @return array Tableau des produits les plus récents
  */
-function get_produits_nouveautes($limit = 4, $boutique_admin_id = null)
+function get_produits_nouveautes(int $limit = 4, int|string|null $boutique_admin_id = null): array
 {
     global $db;
 
@@ -1324,7 +1394,7 @@ function get_produits_nouveautes($limit = 4, $boutique_admin_id = null)
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits les plus récents
  */
-function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_admin_id = null, $shuffle_seed = null)
+function get_produits_nouveautes_paginated(int $offset = 0, int $limit = 20, int|string|null $boutique_admin_id = null, int|string|null $shuffle_seed = null): array
 {
     global $db;
 
@@ -1369,7 +1439,7 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20, $boutique_a
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits vedettes mélangés aléatoirement
  */
-function get_produits_vedettes($limit = 20, $boutique_admin_id = null)
+function get_produits_vedettes(int $limit = 20, int|string|null $boutique_admin_id = null): array
 {
     global $db;
 
@@ -1449,7 +1519,7 @@ function get_produits_vedettes($limit = 20, $boutique_admin_id = null)
  * @param array $data Les données du produit
  * @return int|false L'ID du produit créé ou False en cas d'erreur
  */
-function create_produit($data)
+function create_produit(array $data): int|false
 {
     global $db;
 
@@ -1531,7 +1601,7 @@ function create_produit($data)
         }
 
         if ($result) {
-            return $db->lastInsertId();
+            return (int) $db->lastInsertId();
         }
 
         return false;
@@ -1546,7 +1616,7 @@ function create_produit($data)
  * @param array $data Les nouvelles données du produit
  * @return bool True en cas de succès, False sinon
  */
-function update_produit($id, $data)
+function update_produit(int $id, array $data): bool
 {
     global $db;
 
@@ -1611,7 +1681,7 @@ function update_produit($id, $data)
  * @param int $id L'ID du produit
  * @return bool True en cas de succès, False sinon
  */
-function delete_produit($id)
+function delete_produit(int $id): bool
 {
     global $db;
 
@@ -1639,7 +1709,7 @@ function delete_produit($id)
  * @param string $statut Le nouveau statut
  * @return bool True en cas de succès, False sinon
  */
-function update_produit_statut($id, $statut)
+function update_produit_statut(int $id, string $statut): bool
 {
     global $db;
 
@@ -1656,7 +1726,7 @@ function update_produit_statut($id, $statut)
  * @param string|null $raw Valeur brute (JSON [{"v":"500g","s":300}] ou "500g, 1kg")
  * @return array [["v"=>"500g","s"=>0], ["v"=>"1kg","s"=>300]]
  */
-function parse_options_with_surcharge($raw)
+function parse_options_with_surcharge(?string $raw): array
 {
     if (empty(trim($raw ?? '')))
         return [];
@@ -1694,7 +1764,7 @@ function parse_options_with_surcharge($raw)
  * @param string $value Valeur sélectionnée (ex: "1kg")
  * @return float Surcoût en FCFA
  */
-function get_surcharge_for_option($options, $value)
+function get_surcharge_for_option(array $options, string $value): float
 {
     if (empty($value))
         return 0;
@@ -1712,7 +1782,7 @@ function get_surcharge_for_option($options, $value)
  * @param int $quantite Quantité à soustraire
  * @return int|false Nouvelle quantité ou False en cas d'erreur
  */
-function decrement_produit_stock($produit_id, $quantite)
+function decrement_produit_stock(int $produit_id, int $quantite): int|false
 {
     global $db;
 
@@ -1734,7 +1804,7 @@ function decrement_produit_stock($produit_id, $quantite)
  * @param int $limit Nombre max de résultats
  * @return array Produits avec stock > 0
  */
-function search_produits_en_stock_commande_manuelle($recherche = '', $limit = 30)
+function search_produits_en_stock_commande_manuelle(string $recherche = '', int $limit = 30): array
 {
     global $db;
 
@@ -1771,7 +1841,7 @@ function search_produits_en_stock_commande_manuelle($recherche = '', $limit = 30
  * @deprecated Table stock_articles supprimée. Retourne toujours [].
  * Le stock est géré uniquement par produits.stock.
  */
-function get_produits_by_stock_article($stock_article_id)
+function get_produits_by_stock_article(int $stock_article_id): array
 {
     return [];
 }
@@ -1783,7 +1853,7 @@ function get_produits_by_stock_article($stock_article_id)
  * @param int $max_rows Nombre max de produits « candidats » (avant mélange côté accueil)
  * @return array
  */
-function get_produits_plus_vendus_marketplace($max_rows = 60)
+function get_produits_plus_vendus_marketplace(int $max_rows = 60): array
 {
     global $db;
     $max_rows = max(10, (int) $max_rows);
@@ -1825,7 +1895,7 @@ function get_produits_plus_vendus_marketplace($max_rows = 60)
  * @param int $pool    Taille du pool le plus récent
  * @return array
  */
-function get_produits_nouveautes_aleatoires_panneau($retour = 4, $pool = 50)
+function get_produits_nouveautes_aleatoires_panneau(int $retour = 4, int $pool = 50): array
 {
     $retour = max(1, (int) $retour);
     $pool = max($retour, (int) $pool);
@@ -1844,7 +1914,7 @@ function get_produits_nouveautes_aleatoires_panneau($retour = 4, $pool = 50)
 /**
  * Colonnes modération plateforme (blocage produit) disponibles.
  */
-function produit_moderation_plateforme_active()
+function produit_moderation_plateforme_active(): bool
 {
     return produits_has_column('bloque_motif') && produits_has_column('bloque_champs');
 }
@@ -1852,7 +1922,7 @@ function produit_moderation_plateforme_active()
 /**
  * Libellé statut produit (admin / vendeur).
  */
-function produit_statut_label($statut)
+function produit_statut_label(string $statut): string
 {
     $map = [
         'actif' => 'Actif',
@@ -1868,7 +1938,7 @@ function produit_statut_label($statut)
  *
  * @return array<string, string>
  */
-function produit_bloque_champs_labels($champs_csv)
+function produit_bloque_champs_labels(string $champs_csv): array
 {
     $out = [];
     foreach (array_filter(array_map('trim', explode(',', (string) $champs_csv))) as $c) {
@@ -1886,7 +1956,7 @@ function produit_bloque_champs_labels($champs_csv)
  *
  * @return array
  */
-function super_admin_get_produits_boutique($admin_id)
+function super_admin_get_produits_boutique(int $admin_id): array
 {
     global $db;
     $admin_id = (int) $admin_id;
@@ -1918,7 +1988,7 @@ function super_admin_get_produits_boutique($admin_id)
  *
  * @param array<int, string> $champs 'nom' et/ou 'image'
  */
-function super_admin_bloquer_produit($produit_id, $motif, array $champs)
+function super_admin_bloquer_produit(int $produit_id, string $motif, array $champs): bool
 {
     global $db;
     if (!produit_moderation_plateforme_active()) {
@@ -1963,7 +2033,7 @@ function super_admin_bloquer_produit($produit_id, $motif, array $champs)
 /**
  * Débloque manuellement un produit (Super Admin).
  */
-function super_admin_debloquer_produit($produit_id)
+function super_admin_debloquer_produit(int $produit_id): bool
 {
     global $db;
     if (!produit_moderation_plateforme_active()) {
@@ -1999,7 +2069,7 @@ function super_admin_debloquer_produit($produit_id)
 /**
  * Après modification vendeur : débloque si nom/image en cause ont été changés.
  */
-function produit_tenter_debloquer_apres_modification($produit_id)
+function produit_tenter_debloquer_apres_modification(int $produit_id): bool
 {
     global $db;
     if (!produit_moderation_plateforme_active()) {

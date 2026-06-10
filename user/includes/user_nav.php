@@ -7,9 +7,16 @@
 $current_page = basename($_SERVER['PHP_SELF']);
 
 $user_nav_commandes_actives = 0;
+$user_nav_annonces_non_lues = 0;
 if (isset($_SESSION['user_id'])) {
     require_once __DIR__ . '/../../models/model_commandes.php';
     $user_nav_commandes_actives = count_commandes_actives_by_user((int) $_SESSION['user_id']);
+    if (file_exists(__DIR__ . '/../../models/model_annonces.php')) {
+        require_once __DIR__ . '/../../models/model_annonces.php';
+        if (function_exists('annonces_table_exists') && annonces_table_exists()) {
+            $user_nav_annonces_non_lues = annonce_count_unread_client((int) $_SESSION['user_id']);
+        }
+    }
 }
 
 $user_nav_items = [
@@ -56,6 +63,15 @@ $user_nav_items = [
         'fa' => 'fa-check-circle',
         'class_base' => 'menu-item menu-item--delivered',
         'label' => 'Produits livrés',
+        'dock' => 'more',
+    ],
+    [
+        'key' => 'announcements',
+        'href' => 'annonces.php',
+        'match' => ['annonces.php'],
+        'fa' => 'fa-bullhorn',
+        'class_base' => 'menu-item menu-item--announcements',
+        'label' => 'Annonces',
         'dock' => 'more',
     ],
     [
@@ -179,7 +195,10 @@ $dock_more_has_active_child = user_nav_more_has_active_child($user_nav_items, $c
                     user_nav_link_classes(
                         $nav_item,
                         $current_page,
-                        (($nav_item['key'] ?? '') === 'orders' && $user_nav_commandes_actives > 0) ? 'menu-item--has-badge' : ''
+                        (
+                            (($nav_item['key'] ?? '') === 'orders' && $user_nav_commandes_actives > 0) ||
+                            (($nav_item['key'] ?? '') === 'announcements' && $user_nav_annonces_non_lues > 0)
+                        ) ? 'menu-item--has-badge' : ''
                     ),
                     ENT_QUOTES,
                     'UTF-8'
@@ -196,6 +215,8 @@ $dock_more_has_active_child = user_nav_more_has_active_child($user_nav_items, $c
                 ); ?></span>
                 <?php if (($nav_item['key'] ?? '') === 'orders' && $user_nav_commandes_actives > 0): ?>
                 <span class="menu-item__badge" title="<?php echo (int) $user_nav_commandes_actives; ?> commande<?php echo $user_nav_commandes_actives > 1 ? 's' : ''; ?> en cours" aria-label="<?php echo (int) $user_nav_commandes_actives; ?> commande<?php echo $user_nav_commandes_actives > 1 ? 's' : ''; ?> en cours"><?php echo (int) $user_nav_commandes_actives; ?></span>
+                <?php elseif (($nav_item['key'] ?? '') === 'announcements' && $user_nav_annonces_non_lues > 0): ?>
+                <span class="menu-item__badge" title="<?php echo (int) $user_nav_annonces_non_lues; ?> annonce<?php echo $user_nav_annonces_non_lues > 1 ? 's' : ''; ?> non lue<?php echo $user_nav_annonces_non_lues > 1 ? 's' : ''; ?>" aria-label="<?php echo (int) $user_nav_annonces_non_lues; ?> annonce<?php echo $user_nav_annonces_non_lues > 1 ? 's' : ''; ?> non lue<?php echo $user_nav_annonces_non_lues > 1 ? 's' : ''; ?>"><?php echo (int) $user_nav_annonces_non_lues; ?></span>
                 <?php endif; ?>
             </a>
             <?php endforeach; ?>
@@ -283,6 +304,9 @@ $dock_more_has_active_child = user_nav_more_has_active_child($user_nav_items, $c
                         ENT_QUOTES,
                         'UTF-8'
                     ); ?></span>
+                    <?php if (($nav_item['key'] ?? '') === 'announcements' && $user_nav_annonces_non_lues > 0): ?>
+                    <span class="menu-item__badge" aria-label="<?php echo (int) $user_nav_annonces_non_lues; ?> annonce<?php echo $user_nav_annonces_non_lues > 1 ? 's' : ''; ?> non lue<?php echo $user_nav_annonces_non_lues > 1 ? 's' : ''; ?>"><?php echo (int) $user_nav_annonces_non_lues; ?></span>
+                    <?php endif; ?>
                 </a>
                     <?php else: ?>
                 <div class="user-dock-menu-divider" role="presentation"></div>

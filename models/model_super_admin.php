@@ -97,6 +97,98 @@ function get_super_admin_by_id($id) {
 }
 
 /**
+ * Liste tous les comptes super administrateur
+ * @return array
+ */
+function super_admin_list_all() {
+    global $db;
+    try {
+        $stmt = $db->query("
+            SELECT id, nom, prenom, email, date_creation, derniere_connexion, statut
+            FROM super_admin
+            ORDER BY date_creation DESC
+        ");
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ? $rows : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Nombre de comptes super admin actifs
+ */
+function super_admin_count_actifs() {
+    global $db;
+    try {
+        $stmt = $db->query("SELECT COUNT(*) FROM super_admin WHERE statut = 'actif'");
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Met à jour nom, prénom et e-mail d'un super admin
+ */
+function super_admin_update_profile($id, $nom, $prenom, $email) {
+    global $db;
+    $id = (int) $id;
+    if ($id <= 0) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare("
+            UPDATE super_admin
+            SET nom = :nom, prenom = :prenom, email = :email
+            WHERE id = :id
+        ");
+        return $stmt->execute([
+            'id' => $id,
+            'nom' => $nom,
+            'prenom' => $prenom,
+            'email' => $email,
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Met à jour le mot de passe hashé
+ */
+function super_admin_update_password($id, $password_hash) {
+    global $db;
+    $id = (int) $id;
+    if ($id <= 0 || $password_hash === '') {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare("UPDATE super_admin SET password = :pw WHERE id = :id");
+        return $stmt->execute(['id' => $id, 'pw' => $password_hash]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Active ou désactive un compte super admin
+ */
+function super_admin_set_statut($id, $statut) {
+    global $db;
+    $id = (int) $id;
+    if ($id <= 0 || !in_array($statut, ['actif', 'inactif'], true)) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare("UPDATE super_admin SET statut = :s WHERE id = :id");
+        return $stmt->execute(['s' => $statut, 'id' => $id]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Met à jour la dernière connexion
  */
 function super_admin_update_last_login($id) {

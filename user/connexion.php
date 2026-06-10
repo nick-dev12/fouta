@@ -16,9 +16,9 @@ if ($redirect_after && $redirect_after[0] !== '/') {
 }
 $redirect_url = (!empty($redirect_after) && strpos($redirect_after, '//') === false) ? $redirect_after : '/index.php';
 
-// Si l'admin est déjà connecté, rediriger vers l'espace admin
-if (isset($_SESSION['admin_id'])) {
-    header('Location: /admin/dashboard.php');
+// Vendeur déjà connecté → tableau de bord boutique
+if (auth_session_is_vendeur()) {
+    header('Location: ' . auth_vendeur_dashboard_url());
     exit;
 }
 
@@ -54,8 +54,7 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
     $login_role = normalize_admin_role($result['admin']['role'] ?? 'admin');
     auth_set_portal_cookie($login_role === 'vendeur' ? 'vendeur' : 'admin');
 
-    // Redirection vers l'espace admin. Si l'admin utilise "retour", connexion.php le redirigera à nouveau.
-    header('Location: /admin/dashboard.php');
+    header('Location: ' . auth_login_redirect_url_for_admin());
     exit;
 }
 

@@ -15,6 +15,14 @@ require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
 
+$__role_dash_ann = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
+if ($__role_dash_ann === 'vendeur' && file_exists(__DIR__ . '/../models/model_annonces.php')) {
+    require_once __DIR__ . '/../models/model_annonces.php';
+    if (function_exists('annonces_table_exists') && annonces_table_exists()) {
+        annonce_mark_all_read_vendeur((int) ($_SESSION['admin_id'] ?? 0));
+    }
+}
+
 $success_message = '';
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];

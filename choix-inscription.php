@@ -4,6 +4,9 @@
  */
 session_start();
 
+require_once __DIR__ . '/includes/auth_redirect.php';
+auth_redirect_vendeur_to_dashboard();
+
 $redirect = isset($_GET['redirect']) ? trim((string) $_GET['redirect']) : '';
 $safe_redirect = preg_match('/^[a-z0-9_-]+$/i', $redirect) ? $redirect : '';
 $q = $safe_redirect !== '' ? ('?' . http_build_query(['redirect' => $safe_redirect])) : '';

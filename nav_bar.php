@@ -12,22 +12,55 @@ $u_panier = $GLOBALS['nav_panier'] ?? '/panier.php';
 $u_nouveautes = $GLOBALS['nav_nouveautes'] ?? '/nouveautes.php';
 $u_promo = $GLOBALS['nav_promo'] ?? '/promo.php';
 $u_contact = $GLOBALS['nav_contact'] ?? '/contact.php';
-$nav_show_region_filter = !(defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0);
+$nav_show_country_filter = !(defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0);
+$nav_show_region_filter = $nav_show_country_filter;
+$nav_needs_country_welcome = false;
+$nav_suggested_country = 'SN';
 $nav_region_selected = '';
 $nav_region_selected_label = 'Région';
-$nav_region_redirect = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/index.php';
-if ($nav_region_redirect === '' || strpos($nav_region_redirect, '/') !== 0 || strpos($nav_region_redirect, '//') === 0) {
-    $nav_region_redirect = '/index.php';
+$nav_country_selected = '';
+$nav_country_selected_label = 'Pays';
+$nav_country_flag_url = '';
+$nav_country_flag_url_alt = '';
+$nav_geo_redirect = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/index.php';
+if ($nav_geo_redirect === '' || strpos($nav_geo_redirect, '/') !== 0 || strpos($nav_geo_redirect, '//') === 0) {
+    $nav_geo_redirect = '/index.php';
+}
+if ($nav_show_country_filter) {
+    require_once __DIR__ . '/includes/marketplace_country_filter.php';
+    require_once __DIR__ . '/includes/marketplace_countries.php';
+    require_once __DIR__ . '/includes/geo_regions.php';
+    $nav_needs_country_welcome = marketplace_needs_country_welcome();
+    if ($nav_needs_country_welcome) {
+        require_once __DIR__ . '/includes/ip_geo_resolver.php';
+        $nav_suggested_country = ip_geo_detect_country_code();
+        if (!marketplace_country_is_valid($nav_suggested_country)) {
+            $nav_suggested_country = marketplace_country_default_code();
+        }
+    } else {
+        marketplace_bootstrap_country_from_ip();
+        $nav_country_selected = marketplace_get_selected_country_code() ?? '';
+        $nav_country_label_full = marketplace_get_selected_country_label();
+        if ($nav_country_label_full !== '') {
+            $nav_country_selected_label = $nav_country_selected;
+            $nav_country_flag_url = marketplace_country_flag_url($nav_country_selected, 40);
+            $nav_country_flag_url_alt = marketplace_country_flag_url_alt($nav_country_selected, 40);
+        }
+        $nav_show_region_filter = marketplace_country_supports_regions($nav_country_selected);
+    }
 }
 if ($nav_show_region_filter) {
     require_once __DIR__ . '/includes/marketplace_region_filter.php';
-    require_once __DIR__ . '/includes/senegal_regions.php';
     $nav_region_selected = marketplace_get_selected_region_code() ?? '';
     $lbl = marketplace_get_selected_region_label();
     if ($lbl !== '') {
         $nav_region_selected_label = $lbl;
     }
 }
+$nav_region_redirect = $nav_geo_redirect;
+$nav_regions_for_country = ($nav_country_selected !== '')
+    ? geo_regions_for_country($nav_country_selected)
+    : [];
 if (!function_exists('nav_categorie_href')) {
     require_once __DIR__ . '/includes/marketplace_helpers.php';
 }
@@ -153,6 +186,28 @@ if (isset($_SESSION['commercant_id'])) {
 
 if ($nav_compte_logged) {
     $nav_compte_btn_class .= ' nav-compte-btn--logged';
+}
+
+$nav_annonces_count = 0;
+$nav_annonces_href = '';
+$nav_annonces_show = false;
+$nav_annonces_model = __DIR__ . '/models/model_annonces.php';
+if (file_exists($nav_annonces_model)) {
+    require_once $nav_annonces_model;
+    if (function_exists('annonces_table_exists') && annonces_table_exists()) {
+        if (isset($_SESSION['user_id'])) {
+            $nav_annonces_count = annonce_count_unread_client((int) $_SESSION['user_id']);
+            $nav_annonces_href = '/user/annonces.php';
+            $nav_annonces_show = true;
+        } elseif (isset($_SESSION['admin_id'])) {
+            $__nav_admin_role = (string) ($_SESSION['admin_role'] ?? '');
+            if ($__nav_admin_role === 'vendeur') {
+                $nav_annonces_count = annonce_count_unread_vendeur((int) $_SESSION['admin_id']);
+                $nav_annonces_href = '/admin/annonces.php';
+                $nav_annonces_show = true;
+            }
+        }
+    }
 }
 
 if (!function_exists('nav_compte_pick_initial')) {
@@ -301,8 +356,23 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         display: none;
     }
 
+    .nav-top-row .nav-country-wrap--top {
+        order: 3;
+        display: none;
+    }
+
     .nav-top-row .nav-compte-btn {
         order: 4;
+    }
+
+    @media (min-width: 993px) {
+        .nav-top-row .nav-region-wrap--top {
+            display: flex;
+        }
+
+        .nav-top-row .nav-country-wrap--top {
+            display: flex;
+        }
     }
 
     /* Barre de recherche avec filtres */
@@ -706,19 +776,140 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         box-shadow: var(--ombre-promo);
     }
 
+    .nav-annonces-link {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        color: var(--texte-fonce);
+        background: transparent;
+        text-decoration: none;
+        flex-shrink: 0;
+        transition: color 0.3s;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-annonces-link:hover {
+        color: var(--couleur-dominante);
+        background: transparent;
+    }
+
+    .nav-annonces-link i {
+        font-size: 26px;
+    }
+
+    .nav-annonces-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--orange, #FF6B35);
+        color: #fff;
+        border-radius: 50%;
+        min-width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 800;
+        border: 2px solid var(--blanc);
+        padding: 0 4px;
+        line-height: 1;
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
+    }
+
+    .nav-annonces-link--tablet-slot {
+        display: none;
+    }
+
+    @media (min-width: 993px) {
+        .nav-annonces-link--desktop {
+            order: 3;
+        }
+    }
+
     @media (max-width: 992px) {
         .nav-planete-gateau {
+            flex-wrap: wrap;
             padding: 10px 20px;
             gap: 12px;
         }
 
+        .nav-top-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            width: 100%;
+            order: 1;
+            flex-shrink: 0;
+        }
+
+        .nav-top-row .logo {
+            flex-shrink: 0;
+            margin-right: auto;
+            order: 1;
+        }
+
         .nav-planete-gateau .logo img {
-            height: 55px;
+            height: 48px;
+            max-width: 120px;
+            transform: none;
+            margin-left: 0;
+            object-position: left center;
         }
 
         .nav-planete-gateau .logo img.nav-logo--branding {
-            height: 50px;
-            max-width: 140px;
+            height: 44px;
+            max-width: 110px;
+            transform: none;
+            margin-left: 0;
+        }
+
+        .nav-top-row .nav-region-wrap--top {
+            flex-shrink: 0;
+            order: 2;
+        }
+
+        .nav-top-row .nav-country-wrap--top {
+            flex-shrink: 0;
+            order: 3;
+        }
+
+        .nav-annonces-link--tablet-slot {
+            display: flex;
+            flex: 0 0 auto;
+            width: 48px;
+            height: 48px;
+            margin: 0;
+            order: 4;
+        }
+
+        .nav-annonces-link--tablet-slot i {
+            font-size: 26px;
+        }
+
+        .nav-top-row .nav-panier-link {
+            order: 5;
+        }
+
+        .nav-top-row .nav-compte-btn {
+            order: 6;
+        }
+
+        .nav-annonces-link--desktop {
+            display: none !important;
+        }
+
+        .nav-search-wrapper {
+            order: 2;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            flex-direction: row;
         }
 
         .nav-search-wrapper {
@@ -767,7 +958,15 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         }
 
         .nav-top-row .nav-region-wrap--top {
-            display: block;
+            display: flex;
+        }
+
+        .nav-top-row .nav-country-wrap--top {
+            display: flex;
+        }
+
+        .nav-top-row .nav-compte-btn {
+            display: none !important;
         }
 
         .section1-right .nav-region-wrap:not(.nav-region-wrap--top) {
@@ -786,24 +985,49 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             display: flex;
             flex-direction: row;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 8px;
             width: 100%;
             order: 1;
             flex-shrink: 0;
         }
 
-        .nav-planete-gateau .logo {
+        .nav-top-row .logo {
             flex-shrink: 0;
+            margin-right: auto;
+            order: 1;
         }
 
         .nav-planete-gateau .logo img {
-            height: 45px;
-            max-width: 120px;
+            height: 42px;
+            max-width: 110px;
+            transform: none;
+            margin-left: 0;
         }
 
         .nav-planete-gateau .logo img.nav-logo--branding {
-            height: 36px;
-            max-width: 110px;
+            height: 38px;
+            max-width: 100px;
+            transform: none;
+            margin-left: 0;
+        }
+
+        .nav-top-row .nav-region-wrap--top {
+            order: 2;
+        }
+
+        .nav-top-row .nav-country-wrap--top {
+            order: 3;
+        }
+
+        .nav-annonces-link--tablet-slot {
+            order: 4;
+            width: 42px;
+            height: 42px;
+        }
+
+        .nav-annonces-link--tablet-slot i {
+            font-size: 22px;
         }
 
         .nav-panier-link {
@@ -950,6 +1174,15 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             font-size: 20px;
         }
 
+        .nav-annonces-link--tablet-slot {
+            width: 38px;
+            height: 38px;
+        }
+
+        .nav-annonces-link--tablet-slot i {
+            font-size: 20px;
+        }
+
         .nav-search-btn {
             padding: 8px 12px;
         }
@@ -1034,7 +1267,7 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
                 <form method="post" action="/set-region.php" class="nav-region-form">
                     <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_region_redirect, ENT_QUOTES, 'UTF-8'); ?>">
                     <button type="submit" name="region" value="all" class="nav-region-item<?php echo $nav_region_selected === '' ? ' is-active' : ''; ?>">Toutes les régions</button>
-                    <?php foreach (senegal_regions_list() as $code => $label): ?>
+                    <?php foreach ($nav_regions_for_country as $code => $label): ?>
                         <button type="submit" name="region" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
                             class="nav-region-item<?php echo $nav_region_selected === $code ? ' is-active' : ''; ?>">
                             <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
@@ -1044,6 +1277,66 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             </div>
         </div>
         <?php endif; ?>
+        <?php if ($nav_show_country_filter): ?>
+        <div class="nav-country-wrap nav-country-wrap--top" id="navCountryWrapTop">
+            <button type="button" class="nav-btn-country nav-btn-country--top" id="navCountryToggleTop"
+                aria-expanded="false" aria-haspopup="listbox" aria-controls="navCountryMenuTop"
+                title="Choisir un pays">
+                <?php if ($nav_country_flag_url !== ''): ?>
+                <span class="nav-btn-country__flag" aria-hidden="true">
+                    <img class="nav-btn-country__flag-img mp-country-flag-img"
+                        src="<?php echo htmlspecialchars($nav_country_flag_url, ENT_QUOTES, 'UTF-8'); ?>"
+                        data-fallback="<?php echo htmlspecialchars($nav_country_flag_url_alt, ENT_QUOTES, 'UTF-8'); ?>"
+                        alt=""
+                        width="20"
+                        height="14"
+                        loading="eager"
+                        decoding="async"
+                        referrerpolicy="no-referrer">
+                </span>
+                <?php endif; ?>
+                <span class="nav-btn-country__label"><?php echo htmlspecialchars($nav_country_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                <i class="fa-solid fa-chevron-down nav-btn-country__chev" aria-hidden="true"></i>
+            </button>
+            <div class="nav-country-menu nav-country-menu--top" id="navCountryMenuTop" role="listbox" hidden>
+                <form method="post" action="/set-country.php" class="nav-country-form">
+                    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_geo_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+                    <?php foreach (marketplace_countries_nav_list() as $code => $meta): ?>
+                        <button type="submit" name="country" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
+                            class="nav-country-item<?php echo $nav_country_selected === $code ? ' is-active' : ''; ?>">
+                            <span class="nav-country-item__flag" aria-hidden="true">
+                                <img class="nav-country-item__flag-img mp-country-flag-img"
+                                    src="<?php echo htmlspecialchars(marketplace_country_flag_url($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-fallback="<?php echo htmlspecialchars(marketplace_country_flag_url_alt($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
+                                    alt=""
+                                    width="24"
+                                    height="18"
+                                    loading="lazy"
+                                    decoding="async"
+                                    referrerpolicy="no-referrer">
+                            </span>
+                            <span class="nav-country-item__label"><?php echo htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                        </button>
+                    <?php endforeach; ?>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php if ($nav_annonces_show): ?>
+        <a href="<?php echo htmlspecialchars($nav_annonces_href, ENT_QUOTES, 'UTF-8'); ?>"
+            class="nav-annonces-link nav-annonces-link--tablet-slot"
+            title="<?php echo (int) $nav_annonces_count > 0
+                ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
+                : 'Annonces'; ?>"
+            aria-label="<?php echo (int) $nav_annonces_count > 0
+                ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
+                : 'Annonces'; ?>">
+            <i class="fa-solid fa-bell" aria-hidden="true"></i>
+            <?php if ($nav_annonces_count > 0): ?>
+                <span class="nav-annonces-badge"><?php echo $nav_annonces_count > 99 ? '99+' : (int) $nav_annonces_count; ?></span>
+            <?php endif; ?>
+        </a>
+        <?php endif; ?>
         <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
             class="nav-panier-link"
             title="<?php echo $panier_count > 0 ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Voir mon panier'; ?>">
@@ -1052,6 +1345,21 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
                 <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
             <?php endif; ?>
         </a>
+        <?php if ($nav_annonces_show): ?>
+        <a href="<?php echo htmlspecialchars($nav_annonces_href, ENT_QUOTES, 'UTF-8'); ?>"
+            class="nav-annonces-link nav-annonces-link--desktop"
+            title="<?php echo (int) $nav_annonces_count > 0
+                ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
+                : 'Annonces'; ?>"
+            aria-label="<?php echo (int) $nav_annonces_count > 0
+                ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
+                : 'Annonces'; ?>">
+            <i class="fa-solid fa-bell" aria-hidden="true"></i>
+            <?php if ($nav_annonces_count > 0): ?>
+                <span class="nav-annonces-badge"><?php echo $nav_annonces_count > 99 ? '99+' : (int) $nav_annonces_count; ?></span>
+            <?php endif; ?>
+        </a>
+        <?php endif; ?>
         <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo htmlspecialchars($nav_compte_btn_class, ENT_QUOTES, 'UTF-8'); ?>">
             <span class="nav-compte-avatar" aria-hidden="true">
                 <?php if ($nav_compte_logged && $nav_compte_avatar_letter !== ''): ?>
@@ -1479,7 +1787,7 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
                 <form method="post" action="/set-region.php" class="nav-region-form">
                     <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_region_redirect, ENT_QUOTES, 'UTF-8'); ?>">
                     <button type="submit" name="region" value="all" class="nav-region-item<?php echo $nav_region_selected === '' ? ' is-active' : ''; ?>">Toutes les régions</button>
-                    <?php foreach (senegal_regions_list() as $code => $label): ?>
+                    <?php foreach ($nav_regions_for_country as $code => $label): ?>
                         <button type="submit" name="region" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
                             class="nav-region-item<?php echo $nav_region_selected === $code ? ' is-active' : ''; ?>">
                             <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
@@ -1491,6 +1799,186 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         <?php endif; ?>
     </div>
 </section>
+
+<?php if ($nav_needs_country_welcome): ?>
+<div class="mp-country-welcome" id="mpCountryWelcome" role="dialog" aria-modal="true" aria-labelledby="mpCountryWelcomeTitle">
+    <div class="mp-country-welcome__backdrop" aria-hidden="true">
+        <div class="mp-country-welcome__glow mp-country-welcome__glow--blue"></div>
+        <div class="mp-country-welcome__glow mp-country-welcome__glow--orange"></div>
+    </div>
+    <div class="mp-country-welcome__panel">
+        <h2 class="mp-country-welcome__title" id="mpCountryWelcomeTitle">Bienvenue sur <?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?></h2>
+        <p class="mp-country-welcome__text">Choisissez votre pays pour afficher les produits disponibles près de chez vous.</p>
+        <form method="post" action="/set-country.php" class="mp-country-welcome__form">
+            <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_geo_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+            <div class="mp-country-welcome__grid">
+                <?php foreach (marketplace_countries_nav_list() as $code => $meta): ?>
+                <?php $flag_src = marketplace_country_flag_url($code, 80); ?>
+                <button type="submit" name="country" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
+                    class="mp-country-welcome__choice<?php echo $nav_suggested_country === $code ? ' is-suggested' : ''; ?>">
+                    <span class="mp-country-welcome__flag-wrap" aria-hidden="true">
+                        <img class="mp-country-welcome__flag mp-country-flag-img"
+                            src="<?php echo htmlspecialchars($flag_src, ENT_QUOTES, 'UTF-8'); ?>"
+                            data-fallback="<?php echo htmlspecialchars(marketplace_country_flag_url_alt($code, 80), ENT_QUOTES, 'UTF-8'); ?>"
+                            alt=""
+                            width="40"
+                            height="28"
+                            loading="eager"
+                            decoding="async"
+                            referrerpolicy="no-referrer">
+                    </span>
+                    <span class="mp-country-welcome__name"><?php echo htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    <?php if ($nav_suggested_country === $code): ?>
+                    <span class="mp-country-welcome__hint">Suggéré</span>
+                    <?php endif; ?>
+                </button>
+                <?php endforeach; ?>
+            </div>
+        </form>
+    </div>
+</div>
+<style>
+    .mp-country-welcome {
+        position: fixed;
+        inset: 0;
+        z-index: 20000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        overflow: hidden;
+    }
+    .mp-country-welcome__backdrop {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background:
+            linear-gradient(145deg, rgba(53, 100, 166, 0.18) 0%, rgba(13, 13, 13, 0.72) 45%, rgba(255, 107, 53, 0.14) 100%);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+    .mp-country-welcome__glow {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(48px);
+        pointer-events: none;
+        opacity: 0.45;
+    }
+    .mp-country-welcome__glow--blue {
+        width: 280px;
+        height: 280px;
+        top: -60px;
+        left: -40px;
+        background: rgba(53, 100, 166, 0.55);
+    }
+    .mp-country-welcome__glow--orange {
+        width: 240px;
+        height: 240px;
+        right: -30px;
+        bottom: -50px;
+        background: rgba(255, 107, 53, 0.45);
+    }
+    .mp-country-welcome__panel {
+        position: relative;
+        z-index: 2;
+        width: min(100%, 480px);
+        padding: 28px 24px;
+        border-radius: 18px;
+        background: #fff;
+        border: 1px solid rgba(53, 100, 166, 0.12);
+        box-shadow:
+            0 20px 60px rgba(53, 100, 166, 0.28),
+            0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+        text-align: center;
+    }
+    .mp-country-welcome__title {
+        margin: 0 0 10px;
+        font-size: 1.35rem;
+        color: var(--titres, #0d0d0d);
+    }
+    .mp-country-welcome__text {
+        margin: 0 0 22px;
+        color: var(--gris-moyen, #737373);
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .mp-country-welcome__grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .mp-country-welcome__choice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 14px 16px;
+        border: 1.5px solid rgba(53, 100, 166, 0.2);
+        border-radius: 12px;
+        background: #fff;
+        cursor: pointer;
+        font-family: inherit;
+        text-align: left;
+        transition: border-color 0.18s, background 0.18s, transform 0.15s, box-shadow 0.18s;
+    }
+    .mp-country-welcome__choice:hover,
+    .mp-country-welcome__choice.is-suggested {
+        border-color: var(--couleur-dominante, #3564a6);
+        background: rgba(53, 100, 166, 0.06);
+        box-shadow: 0 4px 16px rgba(53, 100, 166, 0.12);
+    }
+    .mp-country-welcome__choice:active {
+        transform: scale(0.99);
+    }
+    .mp-country-welcome__flag-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 28px;
+        flex-shrink: 0;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: #f0f0f0;
+    }
+    .mp-country-welcome__flag {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+    .mp-country-welcome__name {
+        flex: 1;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--texte-fonce, #0d0d0d);
+    }
+    .mp-country-welcome__hint {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--couleur-dominante, #3564a6);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+</style>
+<script>
+    document.documentElement.classList.add('mp-country-welcome-open');
+    document.body.style.overflow = 'hidden';
+    document.querySelectorAll('.mp-country-flag-img[data-fallback]').forEach(function (img) {
+        img.addEventListener('error', function onFlagError() {
+            var fb = img.getAttribute('data-fallback');
+            if (!fb || img.dataset.fallbackUsed === '1') {
+                return;
+            }
+            img.dataset.fallbackUsed = '1';
+            img.src = fb;
+        }, { once: true });
+    });
+</script>
+<?php endif; ?>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -1555,7 +2043,8 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         function closeAllRegionMenus() {
             [
                 ['navRegionWrap', 'navRegionToggle', 'navRegionMenu'],
-                ['navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop']
+                ['navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop'],
+                ['navCountryWrapTop', 'navCountryToggleTop', 'navCountryMenuTop']
             ].forEach(function (ids) {
                 var wrap = document.getElementById(ids[0]);
                 var toggle = document.getElementById(ids[1]);
@@ -1585,12 +2074,28 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
 
         initRegionDropdown('navRegionWrap', 'navRegionToggle', 'navRegionMenu');
         initRegionDropdown('navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop');
+        initRegionDropdown('navCountryWrapTop', 'navCountryToggleTop', 'navCountryMenuTop');
 
         document.addEventListener('click', function (e) {
-            var inRegion = e.target.closest('#navRegionWrap, #navRegionWrapTop');
+            var inRegion = e.target.closest('#navRegionWrap, #navRegionWrapTop, #navCountryWrapTop');
             if (!inRegion) {
                 closeAllRegionMenus();
             }
+        });
+
+        document.querySelectorAll('.mp-country-flag-img[data-fallback]').forEach(function (img) {
+            if (img.dataset.fallbackBound === '1') {
+                return;
+            }
+            img.dataset.fallbackBound = '1';
+            img.addEventListener('error', function onFlagError() {
+                var fb = img.getAttribute('data-fallback');
+                if (!fb || img.dataset.fallbackUsed === '1') {
+                    return;
+                }
+                img.dataset.fallbackUsed = '1';
+                img.src = fb;
+            }, { once: true });
         });
     });
 </script>

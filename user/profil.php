@@ -558,14 +558,6 @@ if (!empty($error_message)) {
                 </p>
                 <h1 class="prf-page-header__title">Mon profil</h1>
             </div>
-            <div class="prf-page-header__actions">
-                <a href="mon-compte.php" class="prf-btn prf-btn--outline">
-                    <i class="fas fa-arrow-left"></i> Tableau de bord
-                </a>
-                <a href="mes-commandes.php" class="prf-btn prf-btn--primary">
-                    <i class="fas fa-shopping-bag"></i> Commandes
-                </a>
-            </div>
         </header>
 
         <!-- Fil d'Ariane -->

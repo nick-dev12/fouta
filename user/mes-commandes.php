@@ -875,17 +875,6 @@ function cmd_timeline_steps($statut) {
                 <p class="uc-v2-header__eyebrow"><i class="fas fa-route"></i> Suivi en temps r&eacute;el</p>
                 <h1 class="uc-v2-header__title">Mes commandes</h1>
             </div>
-            <div class="uc-v2-header__actions">
-                <a href="mon-compte.php" class="uc-btn uc-btn--outline">
-                    <i class="fas fa-arrow-left"></i> Mon compte
-                </a>
-                <a href="commande-categorie.php" class="uc-btn uc-btn--outline">
-                    <i class="fas fa-layer-group"></i> Par cat&eacute;gorie
-                </a>
-                <a href="/index.php" class="uc-btn uc-btn--primary">
-                    <i class="fas fa-store"></i> Boutique
-                </a>
-            </div>
         </header>
 
         <!-- ===== HERO ===== -->

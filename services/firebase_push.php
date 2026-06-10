@@ -17,6 +17,118 @@ function _firebase_get_config() {
 }
 
 /**
+ * URL publique du site pour les liens web push (icône, clic notification)
+ */
+function firebase_public_site_url() {
+    static $url = null;
+    if ($url !== null) {
+        return $url;
+    }
+
+    $config = _firebase_get_config();
+    if (!empty($config['public_site_url'])) {
+        $url = rtrim((string) $config['public_site_url'], '/');
+        return $url;
+    }
+
+    $site_path = __DIR__ . '/../includes/site_url.php';
+    if (file_exists($site_path)) {
+        require_once $site_path;
+        $base = rtrim(get_site_base_url(), '/');
+        if ($base !== '' && $base !== 'http://localhost') {
+            $url = $base;
+            return $url;
+        }
+    }
+
+    $url = 'http://localhost:5000';
+    return $url;
+}
+
+/**
+ * Convertit un chemin relatif en URL absolue
+ */
+function firebase_absolute_url($path) {
+    $path = trim((string) $path);
+    if ($path === '') {
+        return firebase_public_site_url() . '/';
+    }
+    if (preg_match('#^https?://#i', $path)) {
+        return $path;
+    }
+    $base = firebase_public_site_url();
+    return $base . (strpos($path, '/') === 0 ? $path : '/' . $path);
+}
+
+/**
+ * Prépare les données push (liens absolus, titre/corps dans data pour le web)
+ */
+function firebase_prepare_push_data($title, $body, $data = []) {
+    $payload = is_array($data) ? $data : [];
+    if (!empty($payload['link'])) {
+        $payload['link'] = firebase_absolute_url($payload['link']);
+    }
+    $payload['title'] = (string) $title;
+    $payload['body'] = (string) $body;
+
+    foreach ($payload as $k => $v) {
+        $payload[$k] = (string) $v;
+    }
+
+    return $payload;
+}
+
+/**
+ * Configuration webpush FCM (sans clé notification globale — meilleur support navigateur)
+ */
+function _firebase_build_webpush_config($title, $body, $dataPayload) {
+    $link = $dataPayload['link'] ?? firebase_public_site_url() . '/';
+    $icon = firebase_absolute_url('/image/logo_market.jpeg');
+
+    return [
+        'headers' => [
+            'Urgency' => 'high',
+        ],
+        'notification' => [
+            'title' => (string) $title,
+            'body' => (string) $body,
+            'icon' => $icon,
+        ],
+        'fcm_options' => [
+            'link' => (string) $link,
+        ],
+    ];
+}
+
+/**
+ * Supprime les tokens invalides signalés par FCM
+ */
+function _firebase_purge_invalid_tokens($tokens, $errors) {
+    if (empty($errors) || empty($tokens)) {
+        return;
+    }
+
+    $purge = false;
+    foreach ($errors as $err) {
+        $msg = strtolower((string) $err);
+        if (strpos($msg, 'unregistered') !== false
+            || strpos($msg, 'not found') !== false
+            || strpos($msg, 'invalid registration') !== false) {
+            $purge = true;
+            break;
+        }
+    }
+    if (!$purge) {
+        return;
+    }
+
+    require_once __DIR__ . '/../models/model_fcm.php';
+    foreach ($tokens as $token) {
+        delete_fcm_token_by_value((string) $token);
+    }
+}
+
+/**
  * Configure les certificats SSL pour corriger l'erreur cURL 60 (Windows/WAMP)
  */
 function _firebase_configure_ssl() {
@@ -60,31 +172,31 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
         }
         $messaging = $factory->createMessaging();
 
-        $notification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
-        $dataPayload = array_merge($data, ['title' => $title, 'body' => $body]);
-        foreach ($dataPayload as $k => $v) {
-            $dataPayload[$k] = (string) $v;
-        }
+        $dataPayload = firebase_prepare_push_data($title, $body, $data);
+        $webPush = _firebase_build_webpush_config($title, $body, $dataPayload);
 
         $success = 0;
         $errors = [];
+        $failed_tokens = [];
+
+        $notification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
 
         foreach ($tokens as $token) {
             try {
                 $message = \Kreait\Firebase\Messaging\CloudMessage::withTarget('token', $token)
                     ->withNotification($notification)
-                    ->withData($dataPayload);
-                $link = $data['link'] ?? '/';
-                if (!empty($link)) {
-                    $message = $message->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray([
-                        'fcm_options' => ['link' => (string) $link]
-                    ]));
-                }
+                    ->withData($dataPayload)
+                    ->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray($webPush));
                 $messaging->send($message);
                 $success++;
             } catch (\Throwable $e) {
                 $errors[] = $e->getMessage();
+                $failed_tokens[] = $token;
             }
+        }
+
+        if (!empty($failed_tokens)) {
+            _firebase_purge_invalid_tokens($failed_tokens, $errors);
         }
 
         return [
@@ -94,7 +206,6 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
         ];
     } catch (\Throwable $e) {
         $msg = $e->getMessage();
-        // Erreurs de dépendances (PSR Cache, etc.) : basculer vers l'implémentation native
         if (stripos($msg, 'CacheItemPoolInterface') !== false
             || stripos($msg, 'Interface') !== false && stripos($msg, 'not found') !== false
             || stripos($msg, 'Class') !== false && stripos($msg, 'not found') !== false) {
@@ -172,21 +283,23 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
         return ['success' => 0, 'failed' => count($tokens), 'errors' => ['Impossible d\'obtenir le token d\'accès']];
     }
     $url = "https://fcm.googleapis.com/v1/projects/{$project_id}/messages:send";
+    $dataPayload = firebase_prepare_push_data($title, $body, $data);
+    $webPush = _firebase_build_webpush_config($title, $body, $dataPayload);
+
     $success = 0;
     $errors = [];
+    $failed_tokens = [];
+
     foreach ($tokens as $token) {
-        $dataPayload = [];
-        foreach (array_merge($data, ['title' => $title, 'body' => $body]) as $k => $v) {
-            $dataPayload[$k] = (string) $v;
-        }
         $message = [
             'message' => [
                 'token' => $token,
-                'notification' => ['title' => $title, 'body' => $body],
+                'notification' => [
+                    'title' => (string) $title,
+                    'body' => (string) $body,
+                ],
                 'data' => $dataPayload,
-                'webpush' => [
-                    'fcm_options' => ['link' => isset($data['link']) ? (string) $data['link'] : '/']
-                ]
+                'webpush' => $webPush,
             ]
         ];
         $opts = [
@@ -204,11 +317,18 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
                 $success++;
             } else {
                 $errors[] = $response['error']['message'] ?? 'Erreur inconnue';
+                $failed_tokens[] = $token;
             }
         } else {
             $errors[] = 'Échec de la requête HTTP';
+            $failed_tokens[] = $token;
         }
     }
+
+    if (!empty($failed_tokens)) {
+        _firebase_purge_invalid_tokens($failed_tokens, $errors);
+    }
+
     return [
         'success' => $success,
         'failed' => count($tokens) - $success,

@@ -10,8 +10,10 @@ $is_utilisateurs = strpos($current_dir, '/utilisateurs') !== false;
 $is_logs = strpos($current_dir, '/logs') !== false;
 $is_parametres = strpos($current_dir, '/parametres') !== false;
 $is_certifications = strpos($current_dir, '/certifications') !== false;
+$is_comptes_sa = strpos($current_dir, '/comptes') !== false;
+$is_annonces_sa = strpos($current_dir, '/annonces') !== false;
 
-$base_path = ($is_boutiques || $is_utilisateurs || $is_logs || $is_parametres || $is_certifications) ? '../' : '';
+$base_path = ($is_boutiques || $is_utilisateurs || $is_logs || $is_parametres || $is_certifications || $is_comptes_sa || $is_annonces_sa) ? '../' : '';
 
 $sa_cert_pending_count = 0;
 if (file_exists(dirname(__DIR__, 2) . '/models/model_vendeur_certification.php')) {
@@ -56,7 +58,7 @@ if (file_exists(dirname(__DIR__, 2) . '/models/model_vendeur_certification.php')
         </div>
         <nav class="sidebar-menu" aria-label="Navigation super administrateur">
             <a href="<?php echo htmlspecialchars($base_path . 'dashboard.php'); ?>"
-                class="menu-item <?php echo $current_page === 'dashboard.php' && !$is_boutiques && !$is_utilisateurs && !$is_logs && !$is_parametres && !$is_certifications ? 'active' : ''; ?>">
+                class="menu-item <?php echo $current_page === 'dashboard.php' && !$is_boutiques && !$is_utilisateurs && !$is_logs && !$is_parametres && !$is_certifications && !$is_comptes_sa && !$is_annonces_sa ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-chart-line"></i></span>
                 <span class="menu-item__text">Tableau de bord</span>
             </a>
@@ -87,6 +89,21 @@ if (file_exists(dirname(__DIR__, 2) . '/models/model_vendeur_certification.php')
                 class="menu-item <?php echo $is_parametres ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
                 <span class="menu-item__text">Paramètres</span>
+            </a>
+            <a href="<?php echo htmlspecialchars($base_path . 'annonces/index.php'); ?>"
+                class="menu-item <?php echo $is_annonces_sa ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-bullhorn"></i></span>
+                <span class="menu-item__text">Annonces</span>
+            </a>
+            <a href="<?php echo htmlspecialchars($base_path . 'comptes/index.php'); ?>"
+                class="menu-item <?php echo $is_comptes_sa ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-user-shield"></i></span>
+                <span class="menu-item__text">Comptes super admin</span>
+            </a>
+            <a href="<?php echo htmlspecialchars($base_path . 'compte.php'); ?>"
+                class="menu-item <?php echo $current_page === 'compte.php' ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-id-card"></i></span>
+                <span class="menu-item__text">Mon compte</span>
             </a>
             <a href="<?php echo htmlspecialchars($base_path . 'logout.php'); ?>" class="menu-item menu-item--logout">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-sign-out-alt"></i></span>

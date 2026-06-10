@@ -335,6 +335,29 @@ function admin_boutique_slug_exists($slug)
 }
 
 /**
+ * Indique si la colonne boutique_country existe sur admin
+ */
+function admin_has_boutique_country_column()
+{
+    static $exists = null;
+    global $db;
+    if ($exists !== null) {
+        return $exists;
+    }
+    $exists = false;
+    if (!$db) {
+        return false;
+    }
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM admin LIKE 'boutique_country'");
+        $exists = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $exists = false;
+    }
+    return $exists;
+}
+
+/**
  * Indique si la colonne boutique_region existe sur admin
  */
 function admin_has_boutique_region_column()
@@ -366,9 +389,10 @@ function admin_has_boutique_region_column()
  * @param string $boutique_nom Nom commercial
  * @param string $boutique_slug Slug URL unique
  * @param string|null $boutique_region Code région Sénégal
+ * @param string|null $boutique_country Code pays ISO (détecté à l'inscription)
  * @return bool|int id ou false
  */
-function create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region = null)
+function create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region = null, $boutique_country = null)
 {
     global $db;
 
@@ -380,6 +404,16 @@ function create_vendeur_boutique($identite, $email, $telephone, $password_hash, 
     $boutique_region = $boutique_region !== null && trim((string) $boutique_region) !== ''
         ? trim((string) $boutique_region)
         : null;
+    $boutique_country = strtoupper(trim((string) ($boutique_country ?? 'SN')));
+    if ($boutique_country === '') {
+        $boutique_country = 'SN';
+    }
+    if (!function_exists('marketplace_country_is_valid')) {
+        require_once __DIR__ . '/../includes/marketplace_countries.php';
+    }
+    if (!marketplace_country_is_valid($boutique_country)) {
+        $boutique_country = 'SN';
+    }
 
     try {
         $cols = 'nom, prenom, email, password, date_creation, statut, role, boutique_slug, boutique_nom, telephone';
@@ -392,6 +426,11 @@ function create_vendeur_boutique($identite, $email, $telephone, $password_hash, 
             'boutique_nom' => $boutique_nom,
             'telephone' => $telephone,
         ];
+        if (admin_has_boutique_country_column()) {
+            $cols .= ', boutique_country';
+            $vals .= ', :boutique_country';
+            $params['boutique_country'] = $boutique_country;
+        }
         if (admin_has_boutique_region_column()) {
             $cols .= ', boutique_region';
             $vals .= ', :boutique_region';
@@ -411,10 +450,10 @@ function create_vendeur_boutique($identite, $email, $telephone, $password_hash, 
 /**
  * Crée un vendeur depuis Google, puis le lie à Firebase.
  */
-function create_google_vendeur_boutique($identite, $email, $telephone, $boutique_nom, $boutique_slug, $boutique_region, $firebase_uid, $auth_provider = 'google')
+function create_google_vendeur_boutique($identite, $email, $telephone, $boutique_nom, $boutique_slug, $boutique_region, $firebase_uid, $auth_provider = 'google', $boutique_country = null)
 {
     $password_hash = password_hash(bin2hex(random_bytes(24)), PASSWORD_BCRYPT);
-    $admin_id = create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region);
+    $admin_id = create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region, $boutique_country);
     if ($admin_id) {
         update_admin_google_identity($admin_id, $firebase_uid, $auth_provider);
     }
@@ -567,6 +606,17 @@ function update_admin_boutique_branding($id, array $data)
                 ? trim((string) $data['boutique_adresse'])
                 : null,
         ];
+        if (admin_has_boutique_country_column()) {
+            $sets[] = 'boutique_country = :boutique_country';
+            $country = $data['boutique_country'] ?? null;
+            $country = $country !== null ? strtoupper(trim((string) $country)) : '';
+            if (!function_exists('marketplace_country_is_valid')) {
+                require_once __DIR__ . '/../includes/marketplace_countries.php';
+            }
+            $params['boutique_country'] = ($country !== '' && marketplace_country_is_valid($country))
+                ? $country
+                : 'SN';
+        }
         if (admin_has_boutique_region_column()) {
             $sets[] = 'boutique_region = :boutique_region';
             $region = $data['boutique_region'] ?? null;

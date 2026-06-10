@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($type === 'vendor') {
         $identite = isset($_POST['identite']) ? trim((string) $_POST['identite']) : '';
         $boutique_nom = isset($_POST['boutique_nom']) ? trim((string) $_POST['boutique_nom']) : '';
+        $boutique_country = isset($_POST['boutique_country']) ? strtoupper(trim((string) $_POST['boutique_country'])) : '';
         $boutique_region = isset($_POST['boutique_region']) ? trim((string) $_POST['boutique_region']) : '';
 
         if (mb_strlen($identite) < 2) {
@@ -102,7 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (mb_strlen($boutique_nom) < 2) {
             $errors[] = 'Le nom de la boutique est obligatoire.';
         }
-        if ($boutique_region === '' || !senegal_region_is_valid($boutique_region)) {
+        require_once __DIR__ . '/includes/marketplace_countries.php';
+        require_once __DIR__ . '/includes/geo_regions.php';
+        if ($boutique_country === '' || !marketplace_country_is_valid($boutique_country)) {
+            $errors[] = 'Veuillez sélectionner le pays de votre boutique.';
+        }
+        if ($boutique_country !== '' && ($boutique_region === '' || !geo_region_is_valid($boutique_country, $boutique_region))) {
             $errors[] = 'Veuillez sélectionner la région de votre boutique.';
         }
         if (admin_telephone_exists($telephone_digits)) {
@@ -131,9 +137,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $telephone_digits,
                 $boutique_nom,
                 $slug,
-                $boutique_region,
+                $boutique_region !== '' ? $boutique_region : null,
                 $pending['uid'],
-                $auth_provider
+                $auth_provider,
+                $boutique_country
             );
             if ($admin_id) {
                 $admin = get_admin_by_id((int) $admin_id);
@@ -240,11 +247,35 @@ $page_title = $type === 'vendor' ? 'Compléter ma boutique' : 'Compléter mon co
                                 </div>
                             </div>
 
+                            <?php
+                            require_once __DIR__ . '/includes/marketplace_countries.php';
+                            require_once __DIR__ . '/includes/geo_regions.php';
+                            require_once __DIR__ . '/includes/ip_geo_resolver.php';
+                            $gg_sel_country = isset($_POST['boutique_country'])
+                                ? strtoupper((string) $_POST['boutique_country'])
+                                : ip_geo_detect_country_code();
+                            if (!marketplace_country_is_valid($gg_sel_country)) {
+                                $gg_sel_country = marketplace_country_default_code();
+                            }
+                            $gg_sel_region = isset($_POST['boutique_region']) ? (string) $_POST['boutique_region'] : '';
+                            ?>
+                            <script type="application/json" id="geoRegionsData"><?php echo geo_regions_json_for_js(); ?></script>
+                            <div class="form-group">
+                                <label for="boutique_country"><i class="fas fa-globe-africa"></i> Pays de la boutique *</label>
+                                <div class="input-wrapper">
+                                    <select id="boutique_country" name="boutique_country" required class="auth-select">
+                                        <?php echo marketplace_countries_options_html($gg_sel_country, false); ?>
+                                    </select>
+                                    <i class="fas fa-flag" aria-hidden="true"></i>
+                                </div>
+                            </div>
                             <div class="form-group">
                                 <label for="boutique_region"><i class="fas fa-map-marker-alt"></i> Région de la boutique *</label>
                                 <div class="input-wrapper">
-                                    <select id="boutique_region" name="boutique_region" required class="auth-select">
-                                        <?php echo senegal_regions_options_html($_POST['boutique_region'] ?? '', true, 'Sélectionnez une région'); ?>
+                                    <select id="boutique_region" name="boutique_region" required class="auth-select"
+                                        data-selected="<?php echo htmlspecialchars($gg_sel_region, ENT_QUOTES, 'UTF-8'); ?>"
+                                        data-empty-label="Sélectionnez une région">
+                                        <?php echo geo_regions_options_html($gg_sel_country, $gg_sel_region, true, 'Sélectionnez une région'); ?>
                                     </select>
                                     <i class="fas fa-location-dot" aria-hidden="true"></i>
                                 </div>
@@ -288,6 +319,7 @@ $page_title = $type === 'vendor' ? 'Compléter ma boutique' : 'Compléter mon co
     </div>
 
     <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+    <script src="/js/geo-country-region.js" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (typeof window.initAuthIntlTel === 'function') {

@@ -88,15 +88,35 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                             </div>
                         </div>
 
+                        <?php
+                        require_once __DIR__ . '/../includes/marketplace_countries.php';
+                        require_once __DIR__ . '/../includes/geo_regions.php';
+                        require_once __DIR__ . '/../includes/ip_geo_resolver.php';
+                        $sel_country = isset($_POST['boutique_country'])
+                            ? strtoupper((string) $_POST['boutique_country'])
+                            : ip_geo_detect_country_code();
+                        if (!marketplace_country_is_valid($sel_country)) {
+                            $sel_country = marketplace_country_default_code();
+                        }
+                        $sel_region = isset($_POST['boutique_region']) ? (string) $_POST['boutique_region'] : '';
+                        ?>
+                        <script type="application/json" id="geoRegionsData"><?php echo geo_regions_json_for_js(); ?></script>
+                        <div class="form-group">
+                            <label for="boutique_country"><i class="fas fa-globe-africa"></i> Pays de la boutique *</label>
+                            <div class="input-wrapper">
+                                <select id="boutique_country" name="boutique_country" required class="auth-select">
+                                    <?php echo marketplace_countries_options_html($sel_country, false); ?>
+                                </select>
+                                <i class="fas fa-flag" aria-hidden="true"></i>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label for="boutique_region"><i class="fas fa-map-marker-alt"></i> Région de la boutique *</label>
                             <div class="input-wrapper">
-                                <select id="boutique_region" name="boutique_region" required class="auth-select">
-                                    <?php
-                                    require_once __DIR__ . '/../includes/senegal_regions.php';
-                                    $sel_region = isset($_POST['boutique_region']) ? (string) $_POST['boutique_region'] : '';
-                                    echo senegal_regions_options_html($sel_region, true, 'Sélectionnez une région');
-                                    ?>
+                                <select id="boutique_region" name="boutique_region" required class="auth-select"
+                                    data-selected="<?php echo htmlspecialchars($sel_region, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-empty-label="Sélectionnez une région">
+                                    <?php echo geo_regions_options_html($sel_country, $sel_region, true, 'Sélectionnez une région'); ?>
                                 </select>
                                 <i class="fas fa-location-dot" aria-hidden="true"></i>
                             </div>
@@ -188,6 +208,7 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
         })();
     </script>
     <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
+    <script src="/js/geo-country-region.js" defer></script>
     <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 </html>

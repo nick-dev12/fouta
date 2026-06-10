@@ -19,8 +19,8 @@ if ($redirect_after && $redirect_after[0] !== '/') {
 }
 $redirect_url = (!empty($redirect_after) && strpos($redirect_after, '//') === false) ? $redirect_after : '/index.php';
 
-if (isset($_SESSION['admin_id'])) {
-    auth_redirect_after_login('/admin/dashboard.php');
+if (auth_session_is_vendeur()) {
+    auth_redirect_after_login(auth_vendeur_dashboard_url());
 }
 
 if (auth_user_is_logged_in()) {
@@ -56,7 +56,7 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
     $login_role = normalize_admin_role($result['admin']['role'] ?? 'admin');
     auth_set_portal_cookie($login_role === 'vendeur' ? 'vendeur' : 'admin');
 
-    auth_redirect_after_login('/admin/dashboard.php');
+    auth_redirect_after_login(auth_login_redirect_url_for_admin());
 }
 
 if (isset($result['success']) && $result['success'] && $result['type'] === 'user' && $result['user']) {

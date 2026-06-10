@@ -435,14 +435,6 @@ $nb_annulees = count(array_filter($toutes_commandes, fn($c) => $c['statut'] === 
                 </p>
                 <h1 class="pl-v2-header__title">Produits livr&eacute;s</h1>
             </div>
-            <div class="pl-v2-header__actions">
-                <a href="mes-commandes.php" class="pl-btn pl-btn--outline">
-                    <i class="fas fa-arrow-left"></i> Mes commandes
-                </a>
-                <a href="/produits.php" class="pl-btn pl-btn--primary">
-                    <i class="fas fa-store"></i> Boutique
-                </a>
-            </div>
         </header>
 
         <!-- Fil d'Ariane -->

@@ -642,19 +642,6 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
                     </a>
                 </article>
 
-                <?php if ($__param_role === 'vendeur'): ?>
-                    <article class="prm-module-card" style="--mod-accent:#737373;">
-                        <div class="prm-module-card__icon-wrap" style="background:rgba(115,115,115,0.12);color:#737373;"><i class="fas fa-certificate"></i></div>
-                        <div class="prm-module-card__title">Certification</div>
-                        <div class="prm-module-card__desc">
-                            Demandez votre badge Standard, VIP ou Premium pour rassurer vos clients sur la marketplace.
-                        </div>
-                        <a href="parametres/certification.php" class="prm-module-card__link">
-                            <i class="fas fa-arrow-right"></i> Demander une certification
-                        </a>
-                    </article>
-                <?php endif; ?>
-
                 <?php if ($__param_role !== 'vendeur'): ?>
                     <article class="prm-module-card prm-module-card--video">
                         <div class="prm-module-card__icon-wrap"><i class="fas fa-video"></i></div>

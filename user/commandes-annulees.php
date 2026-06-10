@@ -489,14 +489,6 @@ $nb_livrees = count(array_filter($toutes_commandes, fn($c) => in_array($c['statu
                 </p>
                 <h1 class="ca-v2-header__title">Commandes annul&eacute;es</h1>
             </div>
-            <div class="ca-v2-header__actions">
-                <a href="mes-commandes.php" class="ca-btn ca-btn--outline">
-                    <i class="fas fa-arrow-left"></i> Mes commandes
-                </a>
-                <a href="/produits.php" class="ca-btn ca-btn--primary">
-                    <i class="fas fa-store"></i> Boutique
-                </a>
-            </div>
         </header>
 
         <!-- Fil d'Ariane -->

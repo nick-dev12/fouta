@@ -51,10 +51,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['boutique_branding_sav
         } else {
             $c1 = $raw_c1 !== '' ? boutique_normalize_hex_color($raw_c1) : '';
             $c2 = $raw_c2 !== '' ? boutique_normalize_hex_color($raw_c2) : '';
-            $adresse         = isset($_POST['boutique_adresse']) ? trim((string)$_POST['boutique_adresse']) : '';
-            $boutique_region = isset($_POST['boutique_region']) ? trim((string)$_POST['boutique_region']) : '';
+            require_once __DIR__ . '/../includes/marketplace_countries.php';
+            require_once __DIR__ . '/../includes/geo_regions.php';
+            $adresse          = isset($_POST['boutique_adresse']) ? trim((string)$_POST['boutique_adresse']) : '';
+            $boutique_country = isset($_POST['boutique_country']) ? strtoupper(trim((string)$_POST['boutique_country'])) : '';
+            $boutique_region  = isset($_POST['boutique_region']) ? trim((string)$_POST['boutique_region']) : '';
 
-            if (admin_has_boutique_region_column() && ($boutique_region === '' || !senegal_region_is_valid($boutique_region))) {
+            if (admin_has_boutique_country_column() && ($boutique_country === '' || !marketplace_country_is_valid($boutique_country))) {
+                $error_message = 'Veuillez sélectionner un pays valide pour votre boutique.';
+            } elseif (admin_has_boutique_region_column() && ($boutique_region === '' || !geo_region_is_valid($boutique_country !== '' ? $boutique_country : 'SN', $boutique_region))) {
                 $error_message = 'Veuillez sélectionner une région valide pour votre boutique.';
             }
 
@@ -102,6 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['boutique_branding_sav
                     'boutique_couleur_accent'     => $c2 !== '' ? $c2 : null,
                     'boutique_adresse'            => $adresse !== '' ? $adresse : null,
                 ];
+                if (admin_has_boutique_country_column()) {
+                    $branding_data['boutique_country'] = $boutique_country;
+                }
                 if (admin_has_boutique_region_column()) {
                     $branding_data['boutique_region'] = $boutique_region;
                 }
@@ -134,6 +142,12 @@ if ($clogo !== '') {
 $c1_val        = htmlspecialchars(boutique_normalize_hex_color($admin['boutique_couleur_principale'] ?? '') ?: '#3564a6', ENT_QUOTES, 'UTF-8');
 $c2_val        = htmlspecialchars(boutique_normalize_hex_color($admin['boutique_couleur_accent'] ?? '') ?: '#ff6b35', ENT_QUOTES, 'UTF-8');
 $adresse_val   = htmlspecialchars((string)($admin['boutique_adresse'] ?? ''), ENT_QUOTES, 'UTF-8');
+require_once __DIR__ . '/../includes/marketplace_countries.php';
+require_once __DIR__ . '/../includes/geo_regions.php';
+$country_val   = strtoupper(trim((string)($admin['boutique_country'] ?? 'SN')));
+if (!marketplace_country_is_valid($country_val)) {
+    $country_val = marketplace_country_default_code();
+}
 $region_val    = htmlspecialchars((string)($admin['boutique_region'] ?? ''), ENT_QUOTES, 'UTF-8');
 $logo_url_attr = $logo_url !== '' ? htmlspecialchars($logo_url, ENT_QUOTES, 'UTF-8') : '';
 
@@ -1370,24 +1384,33 @@ $admin_initial = $admin_prenom !== '' ? mb_strtoupper(mb_substr($admin_prenom, 0
                 </div>
             </section>
 
-            <!-- RÉGION -->
+            <!-- PAYS & RÉGION -->
             <section class="pbv-card pbv-grid--wide" aria-labelledby="pbv-region-title">
                 <div class="pbv-card__head">
                     <div class="pbv-card__head-icon pbv-card__head-icon--map"><i class="fas fa-map-location-dot"></i></div>
                     <div class="pbv-card__head-text">
-                        <h3 id="pbv-region-title">R&eacute;gion de la boutique</h3>
-                        <p>Zone g&eacute;ographique affich&eacute;e sur votre vitrine</p>
+                        <h3 id="pbv-region-title">Pays et r&eacute;gion de la boutique</h3>
+                        <p>Zone g&eacute;ographique de votre vitrine (produits visibles pour les clients de ce pays)</p>
                     </div>
                 </div>
                 <div class="pbv-card__body">
+                    <script type="application/json" id="geoRegionsData"><?php echo geo_regions_json_for_js(); ?></script>
                     <div class="pbv-form-group">
-                        <label class="pbv-form-label" for="boutique_region">S&eacute;lectionner une r&eacute;gion <span style="color:var(--orange,#FF6B35)">*</span></label>
-                        <select id="boutique_region" class="pbv-select" name="boutique_region" required>
-                            <?php echo senegal_regions_options_html($region_val, true, 'Sélectionnez une région'); ?>
+                        <label class="pbv-form-label" for="boutique_country">Pays <span style="color:var(--orange,#FF6B35)">*</span></label>
+                        <select id="boutique_country" class="pbv-select" name="boutique_country" required>
+                            <?php echo marketplace_countries_options_html($country_val, false); ?>
+                        </select>
+                    </div>
+                    <div class="pbv-form-group">
+                        <label class="pbv-form-label" for="boutique_region">R&eacute;gion <span style="color:var(--orange,#FF6B35)">*</span></label>
+                        <select id="boutique_region" class="pbv-select" name="boutique_region" required
+                            data-selected="<?php echo $region_val; ?>"
+                            data-empty-label="Sélectionnez une région">
+                            <?php echo geo_regions_options_html($country_val, $region_val, true, 'Sélectionnez une région'); ?>
                         </select>
                     </div>
                     <button type="submit" class="pbv-section-save pbv-section-save--gold">
-                        <i class="fas fa-floppy-disk"></i> Enregistrer la r&eacute;gion
+                        <i class="fas fa-floppy-disk"></i> Enregistrer le pays et la r&eacute;gion
                     </button>
                 </div>
             </section>
@@ -1558,6 +1581,7 @@ $admin_initial = $admin_prenom !== '' ? mb_strtoupper(mb_substr($admin_prenom, 0
 })();
 </script>
 
+<script src="/js/geo-country-region.js" defer></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

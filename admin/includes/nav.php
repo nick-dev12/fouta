@@ -25,8 +25,16 @@ $is_zones_livraison = strpos($current_dir, '/zones-livraison') !== false;
 $is_comptes = strpos($current_dir, '/comptes') !== false;
 $is_commercial_hub = strpos($current_dir, '/commercial') !== false;
 $is_comptabilite_hub = strpos($current_dir, '/comptabilite') !== false;
+$is_certification = $is_parametres && in_array($current_page, ['certification.php', 'certification-demande.php', 'certification-suivi.php'], true);
 $admin_role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
 $is_vendeur_menu = ($admin_role === 'vendeur');
+$nav_parametres_active = (
+    $current_page == 'parametres.php' ||
+    $current_page == 'parametres-boutique-vendeur.php' ||
+    ($is_parametres && !($is_vendeur_menu && $is_certification)) ||
+    $is_zones_livraison ||
+    $is_comptes
+);
 
 /** Titre marque dans la sidebar : nom commercial de la boutique si vendeur, sinon plateforme. */
 $admin_sidebar_brand_title = 'COLObanes';
@@ -57,10 +65,17 @@ if ($is_vendeur_menu && !empty($_SESSION['admin_id'])) {
 
 $__vendeur_cert_niveau_hero = null;
 $__vendeur_cert_notif = null;
+$nav_annonces_non_lues = 0;
 if ($is_vendeur_menu && !empty($_SESSION['admin_id']) && file_exists(dirname(__DIR__, 2) . '/models/model_vendeur_certification.php')) {
     require_once dirname(__DIR__, 2) . '/models/model_vendeur_certification.php';
     $__vendeur_cert_niveau_hero = vendeur_certification_get_niveau_actif((int) $_SESSION['admin_id']);
     $__vendeur_cert_notif = vendeur_certification_get_notif_vendeur_pending((int) $_SESSION['admin_id']);
+}
+if ($is_vendeur_menu && !empty($_SESSION['admin_id']) && file_exists(dirname(__DIR__, 2) . '/models/model_annonces.php')) {
+    require_once dirname(__DIR__, 2) . '/models/model_annonces.php';
+    if (function_exists('annonces_table_exists') && annonces_table_exists()) {
+        $nav_annonces_non_lues = annonce_count_unread_vendeur((int) $_SESSION['admin_id']);
+    }
 }
 
 if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres || $is_commandes || $is_caisse || $is_devis || $is_users || $is_contacts || $is_zones_livraison || $is_comptes || $is_commercial_hub || $is_comptabilite_hub) {
@@ -183,14 +198,23 @@ if ($is_vendeur_menu) {
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-store"></i></span>
                 <span class="menu-item__text">Clients</span>
             </a>
+            <?php if ($is_vendeur_menu): ?>
+            <a href="<?php echo $base_path; ?>parametres/certification.php"
+                class="menu-item<?php echo $is_certification ? ' active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-certificate"></i></span>
+                <span class="menu-item__text">Certification</span>
+            </a>
+            <a href="<?php echo $base_path; ?>annonces.php"
+                class="menu-item menu-item--has-badge<?php echo ($current_page === 'annonces.php') ? ' active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-bullhorn"></i></span>
+                <span class="menu-item__text">Annonces</span>
+                <?php if ($nav_annonces_non_lues > 0): ?>
+                <span class="menu-item__badge" title="<?php echo (int) $nav_annonces_non_lues; ?> annonce<?php echo $nav_annonces_non_lues > 1 ? 's' : ''; ?> non lue<?php echo $nav_annonces_non_lues > 1 ? 's' : ''; ?>" aria-label="<?php echo (int) $nav_annonces_non_lues; ?> annonce<?php echo $nav_annonces_non_lues > 1 ? 's' : ''; ?> non lue<?php echo $nav_annonces_non_lues > 1 ? 's' : ''; ?>"><?php echo (int) $nav_annonces_non_lues; ?></span>
+                <?php endif; ?>
+            </a>
+            <?php endif; ?>
             <a href="<?php echo $base_path; ?>parametres.php"
-                class="menu-item <?php echo (
-                    $current_page == 'parametres.php' ||
-                    $current_page == 'parametres-boutique-vendeur.php' ||
-                    strpos($current_dir, '/parametres') !== false ||
-                    $is_zones_livraison ||
-                    $is_comptes
-                ) ? 'active' : ''; ?>">
+                class="menu-item <?php echo $nav_parametres_active ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cog"></i></span>
                 <span class="menu-item__text">Paramètres</span>
             </a>
@@ -301,9 +325,11 @@ if ($is_vendeur_menu) {
                     true
                 )
             );
+            $vd_cert_dock_act = $is_certification;
+            $vd_annonces_dock_act = ($current_page === 'annonces.php');
             $vd_param_sheet_active = (
                 $current_page === 'parametres.php' ||
-                (strpos($current_dir, '/parametres') !== false && $current_page !== 'parametres-boutique-vendeur.php') ||
+                ($is_parametres && !$is_certification && $current_page !== 'parametres-boutique-vendeur.php') ||
                 $is_zones_livraison ||
                 $is_comptes
             );
@@ -315,6 +341,8 @@ if ($is_vendeur_menu) {
             $vdock_menu_hint_sheet = (
                 $vd_appearance_dock_act ||
                 $vd_caisse_dock_act ||
+                $vd_cert_dock_act ||
+                $vd_annonces_dock_act ||
                 $vd_param_sheet_active
             );
         }
@@ -383,6 +411,19 @@ if ($is_vendeur_menu) {
                     class="menu-item menu-item--dock-sheet-row<?php echo $vd_caisse_dock_act ? ' active' : ''; ?>">
                     <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
                     <span class="menu-item__text">Caisse</span>
+                </a>
+                <a href="<?php echo $base_path; ?>parametres/certification.php"
+                    class="menu-item menu-item--dock-sheet-row<?php echo $vd_cert_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-certificate"></i></span>
+                    <span class="menu-item__text">Certification</span>
+                </a>
+                <a href="<?php echo $base_path; ?>annonces.php"
+                    class="menu-item menu-item--dock-sheet-row<?php echo $vd_annonces_dock_act ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-bullhorn"></i></span>
+                    <span class="menu-item__text">Annonces</span>
+                    <?php if ($nav_annonces_non_lues > 0): ?>
+                    <span class="menu-item__badge" aria-label="<?php echo (int) $nav_annonces_non_lues; ?> annonce<?php echo $nav_annonces_non_lues > 1 ? 's' : ''; ?> non lue<?php echo $nav_annonces_non_lues > 1 ? 's' : ''; ?>"><?php echo (int) $nav_annonces_non_lues; ?></span>
+                    <?php endif; ?>
                 </a>
                 <a href="<?php echo $base_path; ?>parametres.php"
                     class="menu-item menu-item--dock-sheet-row<?php echo $vd_param_sheet_active ? ' active' : ''; ?>">
@@ -708,7 +749,9 @@ if ($is_vendeur_menu) {
         /* Couleurs icônes du panel */
         .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(1) .menu-item__icon { background: rgba(53,100,166,0.12) !important; color: #3564a6 !important; }
         .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(2) .menu-item__icon { background: rgba(249,115,22,0.12) !important; color: #f97316 !important; }
-        .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(3) .menu-item__icon { background: rgba(16,185,129,0.12) !important; color: #10b981 !important; }
+        .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(3) .menu-item__icon { background: rgba(115,115,115,0.12) !important; color: #737373 !important; }
+        .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(4) .menu-item__icon { background: rgba(234,179,8,0.14) !important; color: #a16207 !important; }
+        .admin-vendeur-dock-menu-panel-nav .menu-item:nth-child(5) .menu-item__icon { background: rgba(16,185,129,0.12) !important; color: #10b981 !important; }
         .admin-vendeur-dock-menu-panel-nav .menu-item.menu-item--dock-sheet-logout .menu-item__icon {
             background: rgba(239,68,68,0.1) !important;
             color: #b91c1c !important;

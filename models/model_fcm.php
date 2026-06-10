@@ -113,6 +113,26 @@ function delete_fcm_tokens_by_admin($admin_id) {
  * @param int $user_id ID de l'utilisateur
  * @return bool True en cas de succès
  */
+/**
+ * Supprime un token FCM invalide (ex. « Device unregistered »)
+ * @param string $token
+ * @return bool
+ */
+function delete_fcm_token_by_value($token) {
+    global $db;
+
+    if ($token === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare('DELETE FROM fcm_tokens WHERE token = :token');
+        return $stmt->execute(['token' => $token]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
 function delete_fcm_tokens_by_user($user_id) {
     global $db;
     
@@ -158,4 +178,86 @@ function user_has_fcm_tokens($user_id) {
 function admin_has_fcm_tokens($admin_id) {
     $tokens = get_fcm_tokens_by_admin((int) $admin_id);
     return !empty($tokens);
+}
+
+/**
+ * Tokens FCM de tous les clients (comptes users actifs)
+ * @return array
+ */
+function get_all_fcm_tokens_clients() {
+    global $db;
+
+    try {
+        $stmt = $db->query("
+            SELECT DISTINCT ft.token
+            FROM fcm_tokens ft
+            INNER JOIN users u ON u.id = ft.user_id AND u.statut = 'actif'
+            WHERE ft.type = 'user'
+              AND ft.user_id IS NOT NULL
+              AND ft.token IS NOT NULL
+              AND ft.token != ''
+        ");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Tokens FCM de tous les vendeurs (admin role vendeur actif)
+ * @return array
+ */
+function get_all_fcm_tokens_vendeurs() {
+    global $db;
+
+    try {
+        $stmt = $db->query("
+            SELECT DISTINCT ft.token
+            FROM fcm_tokens ft
+            INNER JOIN admin a ON a.id = ft.admin_id AND a.role = 'vendeur' AND a.statut = 'actif'
+            WHERE ft.type = 'admin'
+              AND ft.admin_id IS NOT NULL
+              AND ft.token IS NOT NULL
+              AND ft.token != ''
+        ");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Nombre de clients avec token FCM actif
+ */
+function count_fcm_clients_cibles() {
+    global $db;
+    try {
+        $stmt = $db->query("
+            SELECT COUNT(DISTINCT ft.user_id)
+            FROM fcm_tokens ft
+            INNER JOIN users u ON u.id = ft.user_id AND u.statut = 'actif'
+            WHERE ft.type = 'user' AND ft.user_id IS NOT NULL
+        ");
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Nombre de vendeurs avec token FCM actif
+ */
+function count_fcm_vendeurs_cibles() {
+    global $db;
+    try {
+        $stmt = $db->query("
+            SELECT COUNT(DISTINCT ft.admin_id)
+            FROM fcm_tokens ft
+            INNER JOIN admin a ON a.id = ft.admin_id AND a.role = 'vendeur' AND a.statut = 'actif'
+            WHERE ft.type = 'admin' AND ft.admin_id IS NOT NULL
+        ");
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
 }

@@ -25,6 +25,13 @@ require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_visites.php';
 require_once __DIR__ . '/../models/model_produits.php';
 
+if (file_exists(__DIR__ . '/../models/model_annonces.php')) {
+    require_once __DIR__ . '/../models/model_annonces.php';
+    if (function_exists('annonces_table_exists') && annonces_table_exists()) {
+        annonce_mark_all_read_client((int) $_SESSION['user_id']);
+    }
+}
+
 $mc_promo_images = [];
 $mc_promo_produits = get_produits_nouveautes(12);
 if (is_array($mc_promo_produits)) {
