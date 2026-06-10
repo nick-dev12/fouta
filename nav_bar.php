@@ -284,953 +284,960 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="dns-prefetch" href="https://code.jquery.com">
 <style>
-    /* Nav style Planète Gâteau - fond dégradé, barre recherche, Mon compte, panier */
-    .nav-planete-gateau {
+/* Nav style Planète Gâteau - fond dégradé, barre recherche, Mon compte, panier */
+.nav-planete-gateau {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 12px 30px;
+    background: var(--blanc);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    position: sticky;
+    top: 0;
+    z-index: 11000;
+    overflow: visible;
+    isolation: isolate;
+}
+
+.section1 {
+    position: relative;
+    z-index: 50;
+}
+
+.nav-planete-gateau .logo {
+    flex-shrink: 0;
+}
+
+.nav-planete-gateau .logo img {
+    height: 70px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
+
+    transform: scale(2);
+    margin-left: 20px;
+}
+
+/* Logo vendeur (branding personnalisé) — dimensions propres, bords arrondis */
+.nav-planete-gateau .logo img.nav-logo--branding {
+    height: 58px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
+    transform: none;
+    margin-left: 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    background: rgba(255, 255, 255, 0.12);
+    padding: 2px;
+}
+
+.nav-top-row {
+    display: contents;
+}
+
+.nav-top-row .logo {
+    order: 1;
+}
+
+.nav-search-wrapper {
+    order: 2;
+}
+
+.nav-top-row .nav-panier-link {
+    order: 3;
+}
+
+.nav-top-row .nav-region-wrap--top {
+    order: 3;
+    display: none;
+}
+
+.nav-top-row .nav-country-wrap--top {
+    order: 3;
+    display: none;
+}
+
+.nav-top-row .nav-compte-btn {
+    order: 4;
+}
+
+@media (min-width: 993px) {
+    .nav-top-row .nav-region-wrap--top {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 12px 30px;
-        background: var(--blanc);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-        position: sticky;
-        top: 0;
-        z-index: 11000;
-        overflow: visible;
-        isolation: isolate;
     }
 
-    .section1 {
-        position: relative;
-        z-index: 50;
+    .nav-top-row .nav-country-wrap--top {
+        display: flex;
+    }
+}
+
+/* Barre de recherche avec filtres */
+.nav-search-wrapper {
+    display: flex;
+    flex: 1;
+    max-width: 500px;
+    margin: 0 20px;
+    position: relative;
+    z-index: 1;
+    overflow: visible;
+}
+
+.nav-search-form {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: var(--ombre-douce);
+}
+
+.nav-language-switcher {
+    margin-left: 8px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+}
+
+.nav-language-switcher.is-open {
+    z-index: 11005;
+}
+
+.nav-lang-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    min-width: 88px;
+    height: 38px;
+    padding: 0 10px 0 8px;
+    border: 1px solid rgba(53, 100, 166, 0.14);
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, var(--blanc-neige, #f5f5f5) 100%);
+    color: var(--couleur-dominante);
+    cursor: pointer;
+    font-family: var(--font-corps);
+    box-shadow:
+        0 2px 10px rgba(53, 100, 166, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-lang-trigger:hover {
+    border-color: rgba(53, 100, 166, 0.35);
+    box-shadow:
+        0 4px 16px rgba(53, 100, 166, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.nav-lang-trigger:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 3px var(--focus-ring, rgba(53, 100, 166, 0.15)),
+        0 2px 10px rgba(53, 100, 166, 0.08);
+}
+
+.nav-language-switcher.is-open .nav-lang-trigger {
+    border-color: var(--couleur-dominante);
+    box-shadow:
+        0 4px 18px rgba(53, 100, 166, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.nav-language-switcher .gtranslate_wrapper {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.nav-lang-flag {
+    display: block;
+    width: 22px;
+    height: 16px;
+    border-radius: 3px;
+    background-image: url('https://flagcdn.com/w40/fr.png');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.nav-lang-code {
+    font: 700 12px/1 var(--font-corps);
+    color: var(--texte-fonce);
+    letter-spacing: 0.04em;
+    min-width: 22px;
+    text-transform: uppercase;
+}
+
+.nav-lang-chevron {
+    color: var(--gris-moyen);
+    font-size: 10px;
+    margin-left: auto;
+    pointer-events: none;
+    transition: transform 0.22s ease, color 0.2s ease;
+}
+
+.nav-language-switcher.is-open .nav-lang-chevron {
+    transform: rotate(180deg);
+    color: var(--couleur-dominante);
+}
+
+.nav-lang-select--hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.nav-lang-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 196px;
+    padding: 6px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(53, 100, 166, 0.12);
+    box-shadow:
+        0 12px 40px rgba(15, 23, 42, 0.14),
+        0 2px 8px rgba(53, 100, 166, 0.08);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: navLangPanelIn 0.2s ease;
+    z-index: 11010;
+}
+
+.nav-lang-panel[hidden] {
+    display: none !important;
+}
+
+@keyframes navLangPanelIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
     }
 
-    .nav-planete-gateau .logo {
-        flex-shrink: 0;
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
+}
 
-    .nav-planete-gateau .logo img {
-        height: 70px;
-        width: auto;
-        max-width: 160px;
-        object-fit: contain;
+.nav-lang-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--font-corps);
+    text-align: left;
+    color: var(--texte-fonce);
+    transition: background 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
 
-        transform: scale(2);
-        margin-left: 20px;
+.nav-lang-option:hover {
+    background: rgba(53, 100, 166, 0.08);
+}
+
+.nav-lang-option:focus-visible {
+    outline: none;
+    background: rgba(53, 100, 166, 0.1);
+    box-shadow: inset 0 0 0 2px var(--couleur-dominante);
+}
+
+.nav-lang-option.is-active {
+    background: rgba(53, 100, 166, 0.1);
+}
+
+.nav-lang-option-flag {
+    flex-shrink: 0;
+    width: 24px;
+    height: 18px;
+    border-radius: 3px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.nav-lang-option-label {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.25;
+}
+
+.nav-lang-option-check {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--couleur-dominante);
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.nav-lang-option.is-active .nav-lang-option-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.nav-search-btn {
+    padding: 12px 20px;
+    background: var(--couleur-dominante);
+    border: none;
+    color: var(--texte-clair);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+}
+
+.nav-search-btn:hover {
+    background: var(--couleur-dominante-hover);
+}
+
+.nav-search-btn i {
+    font-size: 18px;
+}
+
+.nav-search-input {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid var(--border-input);
+    border-left: none;
+    background: var(--blanc);
+    font-size: 15px;
+    outline: none;
+    border-radius: 0 25px 25px 0;
+}
+
+.nav-search-input::placeholder {
+    color: var(--gris-clair);
+}
+
+.nav-search-input:focus {
+    border-color: var(--couleur-dominante);
+}
+
+/* Bouton Mon compte / Se connecter */
+.nav-compte-btn {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px 7px 7px;
+    background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce, #2d5690) 100%);
+    color: var(--texte-clair);
+    text-decoration: none;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 16px rgba(53, 100, 166, 0.22);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    position: relative;
+    min-width: 0;
+    max-width: 190px;
+}
+
+.nav-compte-btn:hover {
+    color: var(--texte-clair);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(53, 100, 166, 0.28);
+}
+
+.nav-compte-avatar {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.nav-compte-avatar i {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.nav-compte-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+    flex: 1;
+}
+
+.nav-compte-title {
+    font-size: 13px;
+    font-weight: 700;
+    display: block;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-compte-subtitle {
+    font-size: 11px;
+    opacity: 0.92;
+    font-weight: 500;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-compte-btn--logged .nav-compte-avatar {
+    background: #fff;
+    color: var(--couleur-dominante);
+    border-color: rgba(255, 255, 255, 0.85);
+}
+
+.nav-compte-btn--boutique {
+    background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--orange, #ff6b35) 120%);
+}
+
+/* Panier */
+.nav-panier-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    color: var(--texte-fonce);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.nav-panier-link:hover {
+    color: var(--couleur-dominante);
+}
+
+.nav-panier-link i {
+    font-size: 26px;
+}
+
+.nav-panier-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--orange);
+    color: var(--texte-clair);
+    border-radius: 50%;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid var(--blanc);
+    padding: 0 4px;
+    box-shadow: var(--ombre-promo);
+}
+
+.nav-annonces-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    color: var(--texte-fonce);
+    background: transparent;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: color 0.3s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-annonces-link:hover {
+    color: var(--couleur-dominante);
+    background: transparent;
+}
+
+.nav-annonces-link i {
+    font-size: 26px;
+}
+
+.nav-annonces-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--orange, #FF6B35);
+    color: #fff;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 800;
+    border: 2px solid var(--blanc);
+    padding: 0 4px;
+    line-height: 1;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
+}
+
+.nav-annonces-link--tablet-slot {
+    display: none;
+}
+
+@media (min-width: 993px) {
+    .nav-annonces-link--desktop {
+        order: 3;
     }
+}
 
-    /* Logo vendeur (branding personnalisé) — dimensions propres, bords arrondis */
-    .nav-planete-gateau .logo img.nav-logo--branding {
-        height: 58px;
-        width: auto;
-        max-width: 160px;
-        object-fit: contain;
-        transform: none;
-        margin-left: 0;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-        background: rgba(255, 255, 255, 0.12);
-        padding: 2px;
+@media (max-width: 992px) {
+    .nav-planete-gateau {
+        flex-wrap: wrap;
+        padding: 10px 20px;
+        gap: 12px;
     }
 
     .nav-top-row {
-        display: contents;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        width: 100%;
+        order: 1;
+        flex-shrink: 0;
     }
 
     .nav-top-row .logo {
+        flex-shrink: 0;
+        margin-right: auto;
         order: 1;
+    }
+
+    .nav-planete-gateau .logo img {
+        height: 50px;
+        max-width: 120px;
+        transform: none;
+        object-position: left center;
+        transform: scale(2);
+        margin-left: 10px;
+    }
+
+    .nav-planete-gateau .logo img.nav-logo--branding {
+        height: 44px;
+        max-width: 110px;
+        transform: none;
+        margin-left: 0;
+    }
+
+    .nav-top-row .nav-region-wrap--top {
+        flex-shrink: 0;
+        order: 2;
+    }
+
+    .nav-top-row .nav-country-wrap--top {
+        flex-shrink: 0;
+        order: 3;
+    }
+
+    .nav-annonces-link--tablet-slot {
+        display: flex;
+        flex: 0 0 auto;
+        width: 48px;
+        height: 48px;
+        margin: 0;
+        order: 4;
+    }
+
+    .nav-annonces-link--tablet-slot i {
+        font-size: 26px;
+    }
+
+    .nav-top-row .nav-panier-link {
+        order: 5;
+    }
+
+    .nav-top-row .nav-compte-btn {
+        order: 6;
+    }
+
+    .nav-annonces-link--desktop {
+        display: none !important;
     }
 
     .nav-search-wrapper {
         order: 2;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        flex-direction: row;
+    }
+
+    .nav-search-wrapper {
+        min-width: 0;
+    }
+
+    .nav-lang-trigger {
+        min-width: 84px;
+        height: 35px;
+        padding: 0 8px 0 7px;
+    }
+
+    .nav-search-input {
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+
+    .nav-compte-btn {
+        max-width: 132px;
+        padding: 5px 9px 5px 5px;
+        gap: 7px;
+    }
+
+    .nav-compte-avatar {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        font-size: 12px;
+    }
+
+    .nav-compte-avatar i {
+        font-size: 12px;
+    }
+
+    .nav-compte-title {
+        font-size: 10px;
+    }
+
+    .nav-compte-subtitle {
+        font-size: 9px;
+        font-weight: 600;
     }
 
     .nav-top-row .nav-panier-link {
-        order: 3;
+        display: none !important;
     }
 
     .nav-top-row .nav-region-wrap--top {
-        order: 3;
-        display: none;
+        display: flex;
+    }
+
+    .nav-top-row .nav-country-wrap--top {
+        display: flex;
+    }
+
+    .nav-top-row .nav-compte-btn {
+        display: none !important;
+    }
+
+    .section1-right .nav-region-wrap:not(.nav-region-wrap--top) {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-planete-gateau {
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .nav-top-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        width: 100%;
+        order: 1;
+        flex-shrink: 0;
+    }
+
+    .nav-top-row .logo {
+        flex-shrink: 0;
+        margin-right: auto;
+        order: 1;
+    }
+
+    .nav-planete-gateau .logo img {
+        height: 50px;
+        max-width: 120px;
+        transform: none;
+        object-position: left center;
+        transform: scale(2);
+        margin-left: 10px;
+    }
+
+    .nav-planete-gateau .logo img.nav-logo--branding {
+        height: 38px;
+        max-width: 100px;
+        transform: none;
+        margin-left: 0;
+    }
+
+    .nav-top-row .nav-region-wrap--top {
+        order: 2;
     }
 
     .nav-top-row .nav-country-wrap--top {
         order: 3;
-        display: none;
-    }
-
-    .nav-top-row .nav-compte-btn {
-        order: 4;
-    }
-
-    @media (min-width: 993px) {
-        .nav-top-row .nav-region-wrap--top {
-            display: flex;
-        }
-
-        .nav-top-row .nav-country-wrap--top {
-            display: flex;
-        }
-    }
-
-    /* Barre de recherche avec filtres */
-    .nav-search-wrapper {
-        display: flex;
-        flex: 1;
-        max-width: 500px;
-        margin: 0 20px;
-        position: relative;
-        z-index: 1;
-        overflow: visible;
-    }
-
-    .nav-search-form {
-        display: flex;
-        align-items: stretch;
-        flex: 1;
-        border-radius: 25px;
-        overflow: hidden;
-        box-shadow: var(--ombre-douce);
-    }
-
-    .nav-language-switcher {
-        margin-left: 8px;
-        flex-shrink: 0;
-        position: relative;
-        z-index: 2;
-        overflow: visible;
-    }
-
-    .nav-language-switcher.is-open {
-        z-index: 11005;
-    }
-
-    .nav-lang-trigger {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 7px;
-        min-width: 88px;
-        height: 38px;
-        padding: 0 10px 0 8px;
-        border: 1px solid rgba(53, 100, 166, 0.14);
-        border-radius: 12px;
-        background: linear-gradient(180deg, #ffffff 0%, var(--blanc-neige, #f5f5f5) 100%);
-        color: var(--couleur-dominante);
-        cursor: pointer;
-        font-family: var(--font-corps);
-        box-shadow:
-            0 2px 10px rgba(53, 100, 166, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-        transition:
-            border-color 0.2s ease,
-            box-shadow 0.2s ease,
-            transform 0.15s ease;
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    .nav-lang-trigger:hover {
-        border-color: rgba(53, 100, 166, 0.35);
-        box-shadow:
-            0 4px 16px rgba(53, 100, 166, 0.12),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    }
-
-    .nav-lang-trigger:focus-visible {
-        outline: none;
-        box-shadow:
-            0 0 0 3px var(--focus-ring, rgba(53, 100, 166, 0.15)),
-            0 2px 10px rgba(53, 100, 166, 0.08);
-    }
-
-    .nav-language-switcher.is-open .nav-lang-trigger {
-        border-color: var(--couleur-dominante);
-        box-shadow:
-            0 4px 18px rgba(53, 100, 166, 0.14),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    }
-
-    .nav-language-switcher .gtranslate_wrapper {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
-    }
-
-    .nav-lang-flag {
-        display: block;
-        width: 22px;
-        height: 16px;
-        border-radius: 3px;
-        background-image: url('https://flagcdn.com/w40/fr.png');
-        background-size: cover;
-        background-position: center;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
-        flex-shrink: 0;
-        border: 1px solid rgba(0, 0, 0, 0.06);
-    }
-
-    .nav-lang-code {
-        font: 700 12px/1 var(--font-corps);
-        color: var(--texte-fonce);
-        letter-spacing: 0.04em;
-        min-width: 22px;
-        text-transform: uppercase;
-    }
-
-    .nav-lang-chevron {
-        color: var(--gris-moyen);
-        font-size: 10px;
-        margin-left: auto;
-        pointer-events: none;
-        transition: transform 0.22s ease, color 0.2s ease;
-    }
-
-    .nav-language-switcher.is-open .nav-lang-chevron {
-        transform: rotate(180deg);
-        color: var(--couleur-dominante);
-    }
-
-    .nav-lang-select--hidden {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
-        pointer-events: none;
-        opacity: 0;
-    }
-
-    .nav-lang-panel {
-        position: absolute;
-        top: calc(100% + 8px);
-        right: 0;
-        min-width: 196px;
-        padding: 6px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.98);
-        border: 1px solid rgba(53, 100, 166, 0.12);
-        box-shadow:
-            0 12px 40px rgba(15, 23, 42, 0.14),
-            0 2px 8px rgba(53, 100, 166, 0.08);
-        backdrop-filter: blur(16px) saturate(1.2);
-        -webkit-backdrop-filter: blur(16px) saturate(1.2);
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        animation: navLangPanelIn 0.2s ease;
-        z-index: 11010;
-    }
-
-    .nav-lang-panel[hidden] {
-        display: none !important;
-    }
-
-    @keyframes navLangPanelIn {
-        from {
-            opacity: 0;
-            transform: translateY(-6px) scale(0.98);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
-
-    .nav-lang-option {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        padding: 10px 12px;
-        border: none;
-        border-radius: 10px;
-        background: transparent;
-        cursor: pointer;
-        font-family: var(--font-corps);
-        text-align: left;
-        color: var(--texte-fonce);
-        transition: background 0.18s ease;
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    .nav-lang-option:hover {
-        background: rgba(53, 100, 166, 0.08);
-    }
-
-    .nav-lang-option:focus-visible {
-        outline: none;
-        background: rgba(53, 100, 166, 0.1);
-        box-shadow: inset 0 0 0 2px var(--couleur-dominante);
-    }
-
-    .nav-lang-option.is-active {
-        background: rgba(53, 100, 166, 0.1);
-    }
-
-    .nav-lang-option-flag {
-        flex-shrink: 0;
-        width: 24px;
-        height: 18px;
-        border-radius: 3px;
-        background-size: cover;
-        background-position: center;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
-        border: 1px solid rgba(0, 0, 0, 0.06);
-    }
-
-    .nav-lang-option-label {
-        flex: 1;
-        font-size: 14px;
-        font-weight: 500;
-        line-height: 1.25;
-    }
-
-    .nav-lang-option-check {
-        flex-shrink: 0;
-        font-size: 12px;
-        color: var(--couleur-dominante);
-        opacity: 0;
-        transform: scale(0.85);
-        transition: opacity 0.15s ease, transform 0.15s ease;
-    }
-
-    .nav-lang-option.is-active .nav-lang-option-check {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    .nav-search-btn {
-        padding: 12px 20px;
-        background: var(--couleur-dominante);
-        border: none;
-        color: var(--texte-clair);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.3s;
-    }
-
-    .nav-search-btn:hover {
-        background: var(--couleur-dominante-hover);
-    }
-
-    .nav-search-btn i {
-        font-size: 18px;
-    }
-
-    .nav-search-input {
-        flex: 1;
-        padding: 12px 20px;
-        border: 2px solid var(--border-input);
-        border-left: none;
-        background: var(--blanc);
-        font-size: 15px;
-        outline: none;
-        border-radius: 0 25px 25px 0;
-    }
-
-    .nav-search-input::placeholder {
-        color: var(--gris-clair);
-    }
-
-    .nav-search-input:focus {
-        border-color: var(--couleur-dominante);
-    }
-
-    /* Bouton Mon compte / Se connecter */
-    .nav-compte-btn {
-        display: inline-flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 10px;
-        padding: 7px 14px 7px 7px;
-        background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce, #2d5690) 100%);
-        color: var(--texte-clair);
-        text-decoration: none;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        box-shadow: 0 4px 16px rgba(53, 100, 166, 0.22);
-        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-        position: relative;
-        min-width: 0;
-        max-width: 190px;
-    }
-
-    .nav-compte-btn:hover {
-        color: var(--texte-clair);
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(53, 100, 166, 0.28);
-    }
-
-    .nav-compte-avatar {
-        width: 36px;
-        height: 36px;
-        min-width: 36px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: rgba(255, 255, 255, 0.18);
-        border: 1.5px solid rgba(255, 255, 255, 0.35);
-        color: #fff;
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 1;
-        flex-shrink: 0;
-    }
-
-    .nav-compte-avatar i {
-        font-size: 15px;
-        line-height: 1;
-    }
-
-    .nav-compte-text {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        min-width: 0;
-        flex: 1;
-    }
-
-    .nav-compte-title {
-        font-size: 13px;
-        font-weight: 700;
-        display: block;
-        line-height: 1.15;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .nav-compte-subtitle {
-        font-size: 11px;
-        opacity: 0.92;
-        font-weight: 500;
-        line-height: 1.15;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .nav-compte-btn--logged .nav-compte-avatar {
-        background: #fff;
-        color: var(--couleur-dominante);
-        border-color: rgba(255, 255, 255, 0.85);
-    }
-
-    .nav-compte-btn--boutique {
-        background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--orange, #ff6b35) 120%);
-    }
-
-    /* Panier */
-    .nav-panier-link {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 48px;
-        height: 48px;
-        color: var(--texte-fonce);
-        text-decoration: none;
-        transition: color 0.3s;
-    }
-
-    .nav-panier-link:hover {
-        color: var(--couleur-dominante);
-    }
-
-    .nav-panier-link i {
-        font-size: 26px;
-    }
-
-    .nav-panier-badge {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        background: var(--orange);
-        color: var(--texte-clair);
-        border-radius: 50%;
-        min-width: 22px;
-        height: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 700;
-        border: 2px solid var(--blanc);
-        padding: 0 4px;
-        box-shadow: var(--ombre-promo);
-    }
-
-    .nav-annonces-link {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 48px;
-        height: 48px;
-        color: var(--texte-fonce);
-        background: transparent;
-        text-decoration: none;
-        flex-shrink: 0;
-        transition: color 0.3s;
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    .nav-annonces-link:hover {
-        color: var(--couleur-dominante);
-        background: transparent;
-    }
-
-    .nav-annonces-link i {
-        font-size: 26px;
-    }
-
-    .nav-annonces-badge {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        background: var(--orange, #FF6B35);
-        color: #fff;
-        border-radius: 50%;
-        min-width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: 800;
-        border: 2px solid var(--blanc);
-        padding: 0 4px;
-        line-height: 1;
-        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
     }
 
     .nav-annonces-link--tablet-slot {
+        order: 4;
+        width: 42px;
+        height: 42px;
+    }
+
+    .nav-annonces-link--tablet-slot i {
+        font-size: 22px;
+    }
+
+    .nav-panier-link {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+    }
+
+    .nav-panier-link i {
+        font-size: 22px;
+    }
+
+    .nav-panier-badge {
+        min-width: 18px;
+        height: 18px;
+        font-size: 10px;
+    }
+
+    .nav-compte-btn {
+        max-width: 108px;
+        padding: 4px 7px 4px 4px;
+        gap: 5px;
+    }
+
+    .nav-compte-avatar {
+        width: 26px;
+        height: 26px;
+        min-width: 26px;
+        font-size: 11px;
+    }
+
+    .nav-compte-avatar i {
+        font-size: 11px;
+    }
+
+    .nav-compte-title {
+        font-size: 9px;
+    }
+
+    .nav-compte-subtitle {
+        font-size: 8px;
+        font-weight: 600;
+    }
+
+    /* Invité : une seule ligne « Se connecter » */
+    .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-title {
         display: none;
     }
 
-    @media (min-width: 993px) {
-        .nav-annonces-link--desktop {
-            order: 3;
-        }
+    .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-text {
+        flex-direction: row;
+        align-items: center;
     }
 
-    @media (max-width: 992px) {
-        .nav-planete-gateau {
-            flex-wrap: wrap;
-            padding: 10px 20px;
-            gap: 12px;
-        }
-
-        .nav-top-row {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 8px;
-            width: 100%;
-            order: 1;
-            flex-shrink: 0;
-        }
-
-        .nav-top-row .logo {
-            flex-shrink: 0;
-            margin-right: auto;
-            order: 1;
-        }
-
-        .nav-planete-gateau .logo img {
-            height: 48px;
-            max-width: 120px;
-            transform: none;
-            margin-left: 0;
-            object-position: left center;
-        }
-
-        .nav-planete-gateau .logo img.nav-logo--branding {
-            height: 44px;
-            max-width: 110px;
-            transform: none;
-            margin-left: 0;
-        }
-
-        .nav-top-row .nav-region-wrap--top {
-            flex-shrink: 0;
-            order: 2;
-        }
-
-        .nav-top-row .nav-country-wrap--top {
-            flex-shrink: 0;
-            order: 3;
-        }
-
-        .nav-annonces-link--tablet-slot {
-            display: flex;
-            flex: 0 0 auto;
-            width: 48px;
-            height: 48px;
-            margin: 0;
-            order: 4;
-        }
-
-        .nav-annonces-link--tablet-slot i {
-            font-size: 26px;
-        }
-
-        .nav-top-row .nav-panier-link {
-            order: 5;
-        }
-
-        .nav-top-row .nav-compte-btn {
-            order: 6;
-        }
-
-        .nav-annonces-link--desktop {
-            display: none !important;
-        }
-
-        .nav-search-wrapper {
-            order: 2;
-            width: 100%;
-            max-width: 100%;
-            margin: 0;
-            flex-direction: row;
-        }
-
-        .nav-search-wrapper {
-            min-width: 0;
-        }
-
-        .nav-lang-trigger {
-            min-width: 84px;
-            height: 35px;
-            padding: 0 8px 0 7px;
-        }
-
-        .nav-search-input {
-            font-size: 14px;
-            padding: 10px 16px;
-        }
-
-        .nav-compte-btn {
-            max-width: 132px;
-            padding: 5px 9px 5px 5px;
-            gap: 7px;
-        }
-
-        .nav-compte-avatar {
-            width: 28px;
-            height: 28px;
-            min-width: 28px;
-            font-size: 12px;
-        }
-
-        .nav-compte-avatar i {
-            font-size: 12px;
-        }
-
-        .nav-compte-title {
-            font-size: 10px;
-        }
-
-        .nav-compte-subtitle {
-            font-size: 9px;
-            font-weight: 600;
-        }
-
-        .nav-top-row .nav-panier-link {
-            display: none !important;
-        }
-
-        .nav-top-row .nav-region-wrap--top {
-            display: flex;
-        }
-
-        .nav-top-row .nav-country-wrap--top {
-            display: flex;
-        }
-
-        .nav-top-row .nav-compte-btn {
-            display: none !important;
-        }
-
-        .section1-right .nav-region-wrap:not(.nav-region-wrap--top) {
-            display: none !important;
-        }
+    .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-subtitle {
+        font-size: 9px;
     }
 
-    @media (max-width: 768px) {
-        .nav-planete-gateau {
-            flex-wrap: wrap;
-            padding: 10px 12px;
-            gap: 10px;
-        }
-
-        .nav-top-row {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 8px;
-            width: 100%;
-            order: 1;
-            flex-shrink: 0;
-        }
-
-        .nav-top-row .logo {
-            flex-shrink: 0;
-            margin-right: auto;
-            order: 1;
-        }
-
-        .nav-planete-gateau .logo img {
-            height: 42px;
-            max-width: 110px;
-            transform: none;
-            margin-left: 0;
-        }
-
-        .nav-planete-gateau .logo img.nav-logo--branding {
-            height: 38px;
-            max-width: 100px;
-            transform: none;
-            margin-left: 0;
-        }
-
-        .nav-top-row .nav-region-wrap--top {
-            order: 2;
-        }
-
-        .nav-top-row .nav-country-wrap--top {
-            order: 3;
-        }
-
-        .nav-annonces-link--tablet-slot {
-            order: 4;
-            width: 42px;
-            height: 42px;
-        }
-
-        .nav-annonces-link--tablet-slot i {
-            font-size: 22px;
-        }
-
-        .nav-panier-link {
-            width: 42px;
-            height: 42px;
-            flex-shrink: 0;
-        }
-
-        .nav-panier-link i {
-            font-size: 22px;
-        }
-
-        .nav-panier-badge {
-            min-width: 18px;
-            height: 18px;
-            font-size: 10px;
-        }
-
-        .nav-compte-btn {
-            max-width: 108px;
-            padding: 4px 7px 4px 4px;
-            gap: 5px;
-        }
-
-        .nav-compte-avatar {
-            width: 26px;
-            height: 26px;
-            min-width: 26px;
-            font-size: 11px;
-        }
-
-        .nav-compte-avatar i {
-            font-size: 11px;
-        }
-
-        .nav-compte-title {
-            font-size: 9px;
-        }
-
-        .nav-compte-subtitle {
-            font-size: 8px;
-            font-weight: 600;
-        }
-
-        /* Invité : une seule ligne « Se connecter » */
-        .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-title {
-            display: none;
-        }
-
-        .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-text {
-            flex-direction: row;
-            align-items: center;
-        }
-
-        .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-subtitle {
-            font-size: 9px;
-        }
-
-        .nav-search-wrapper {
-            order: 2;
-            width: 100%;
-            max-width: 100%;
-            margin: 0;
-            flex-direction: row;
-        }
-
-        .nav-search-form {
-            flex: 1;
-        }
-
-        .nav-search-btn {
-            padding: 10px 14px;
-        }
-
-        .nav-search-input {
-            padding: 10px 14px;
-            font-size: 14px;
-        }
-
-        .nav-language-switcher {
-            min-width: 0;
-        }
-
-        .nav-lang-trigger {
-            min-width: 80px;
-            height: 34px;
-            padding: 0 7px 0 6px;
-            gap: 5px;
-        }
+    .nav-search-wrapper {
+        order: 2;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        flex-direction: row;
     }
 
-    @media (max-width: 480px) {
-        .nav-planete-gateau {
-            padding: 8px 10px;
-            gap: 8px;
-        }
-
-        .nav-planete-gateau .logo img {
-            height: 40px;
-            max-width: 100px;
-            object-fit: contain;
-        }
-
-        .nav-planete-gateau .logo img.nav-logo--branding {
-            height: 34px;
-            max-width: 90px;
-        }
-
-        .nav-compte-btn {
-            max-width: 96px;
-            padding: 4px 6px 4px 4px;
-            gap: 4px;
-        }
-
-        .nav-compte-avatar {
-            width: 24px;
-            height: 24px;
-            min-width: 24px;
-            font-size: 10px;
-        }
-
-        .nav-compte-avatar i {
-            font-size: 10px;
-        }
-
-        .nav-compte-title {
-            font-size: 8px;
-        }
-
-        .nav-compte-subtitle {
-            font-size: 8px;
-        }
-
-        .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-subtitle {
-            font-size: 8px;
-        }
-
-        .nav-panier-link {
-            width: 38px;
-            height: 38px;
-        }
-
-        .nav-panier-link i {
-            font-size: 20px;
-        }
-
-        .nav-annonces-link--tablet-slot {
-            width: 38px;
-            height: 38px;
-        }
-
-        .nav-annonces-link--tablet-slot i {
-            font-size: 20px;
-        }
-
-        .nav-search-btn {
-            padding: 8px 12px;
-        }
-
-        .nav-search-input {
-            padding: 8px 12px;
-            font-size: 13px;
-        }
-
-        .nav-language-switcher {
-            min-width: 0;
-        }
-
-        .nav-lang-trigger {
-            min-width: 76px;
-            height: 34px;
-            padding: 0 7px 0 6px;
-            gap: 5px;
-        }
-
-        .nav-lang-flag {
-            width: 20px;
-            height: 15px;
-        }
-
-        .nav-lang-code {
-            font-size: 11px;
-            min-width: 20px;
-        }
-
-        .nav-lang-chevron {
-            font-size: 9px;
-        }
-
-        .nav-lang-panel {
-            min-width: 180px;
-            right: 0;
-            left: auto;
-        }
-
-        .nav-lang-option {
-            padding: 9px 10px;
-        }
-
-        .nav-lang-option-label {
-            font-size: 13px;
-        }
+    .nav-search-form {
+        flex: 1;
     }
+
+    .nav-search-btn {
+        padding: 10px 14px;
+    }
+
+    .nav-search-input {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    .nav-language-switcher {
+        min-width: 0;
+    }
+
+    .nav-lang-trigger {
+        min-width: 80px;
+        height: 34px;
+        padding: 0 7px 0 6px;
+        gap: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-planete-gateau {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .nav-planete-gateau .logo img {
+        height: 50px;
+        max-width: 120px;
+        transform: none;
+        object-position: left center;
+        transform: scale(2);
+        margin-left: 10px;
+    }
+
+    .nav-planete-gateau .logo img.nav-logo--branding {
+        height: 34px;
+        max-width: 90px;
+    }
+
+    .nav-compte-btn {
+        max-width: 96px;
+        padding: 4px 6px 4px 4px;
+        gap: 4px;
+    }
+
+    .nav-compte-avatar {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        font-size: 10px;
+    }
+
+    .nav-compte-avatar i {
+        font-size: 10px;
+    }
+
+    .nav-compte-title {
+        font-size: 8px;
+    }
+
+    .nav-compte-subtitle {
+        font-size: 8px;
+    }
+
+    .nav-compte-btn:not(.nav-compte-btn--logged) .nav-compte-subtitle {
+        font-size: 8px;
+    }
+
+    .nav-panier-link {
+        width: 38px;
+        height: 38px;
+    }
+
+    .nav-panier-link i {
+        font-size: 20px;
+    }
+
+    .nav-annonces-link--tablet-slot {
+        width: 38px;
+        height: 38px;
+    }
+
+    .nav-annonces-link--tablet-slot i {
+        font-size: 20px;
+    }
+
+    .nav-search-btn {
+        padding: 8px 12px;
+    }
+
+    .nav-search-input {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .nav-language-switcher {
+        min-width: 0;
+    }
+
+    .nav-lang-trigger {
+        min-width: 76px;
+        height: 34px;
+        padding: 0 7px 0 6px;
+        gap: 5px;
+    }
+
+    .nav-lang-flag {
+        width: 20px;
+        height: 15px;
+    }
+
+    .nav-lang-code {
+        font-size: 11px;
+        min-width: 20px;
+    }
+
+    .nav-lang-chevron {
+        font-size: 9px;
+    }
+
+    .nav-lang-panel {
+        min-width: 180px;
+        right: 0;
+        left: auto;
+    }
+
+    .nav-lang-option {
+        padding: 9px 10px;
+    }
+
+    .nav-lang-option-label {
+        font-size: 13px;
+    }
+}
 </style>
 
 <div class="info">
@@ -1252,7 +1259,7 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             ?>
             <img src="<?php echo htmlspecialchars($__nav_logo_src, ENT_QUOTES, 'UTF-8'); ?>"
                 alt="<?php echo htmlspecialchars($__nav_logo_alt, ENT_QUOTES, 'UTF-8'); ?>"
-                <?php if ($__nav_logo_is_branding): ?>class="nav-logo--branding"<?php endif; ?>>
+                <?php if ($__nav_logo_is_branding): ?>class="nav-logo--branding" <?php endif; ?>>
         </a>
         <?php if ($nav_show_region_filter): ?>
         <div class="nav-region-wrap nav-region-wrap--top" id="navRegionWrapTop">
@@ -1260,18 +1267,23 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
                 aria-expanded="false" aria-haspopup="listbox" aria-controls="navRegionMenuTop"
                 title="Choisir une région">
                 <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
-                <span class="nav-btn-region__label"><?php echo htmlspecialchars($nav_region_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span
+                    class="nav-btn-region__label"><?php echo htmlspecialchars($nav_region_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
                 <i class="fa-solid fa-chevron-down nav-btn-region__chev" aria-hidden="true"></i>
             </button>
             <div class="nav-region-menu nav-region-menu--top" id="navRegionMenuTop" role="listbox" hidden>
                 <form method="post" action="/set-region.php" class="nav-region-form">
-                    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_region_redirect, ENT_QUOTES, 'UTF-8'); ?>">
-                    <button type="submit" name="region" value="all" class="nav-region-item<?php echo $nav_region_selected === '' ? ' is-active' : ''; ?>">Toutes les régions</button>
+                    <input type="hidden" name="redirect"
+                        value="<?php echo htmlspecialchars($nav_region_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+                    <button type="submit" name="region" value="all"
+                        class="nav-region-item<?php echo $nav_region_selected === '' ? ' is-active' : ''; ?>">Toutes les
+                        régions</button>
                     <?php foreach ($nav_regions_for_country as $code => $label): ?>
-                        <button type="submit" name="region" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
-                            class="nav-region-item<?php echo $nav_region_selected === $code ? ' is-active' : ''; ?>">
-                            <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
-                        </button>
+                    <button type="submit" name="region"
+                        value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
+                        class="nav-region-item<?php echo $nav_region_selected === $code ? ' is-active' : ''; ?>">
+                        <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
+                    </button>
                     <?php endforeach; ?>
                 </form>
             </div>
@@ -1280,43 +1292,37 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         <?php if ($nav_show_country_filter): ?>
         <div class="nav-country-wrap nav-country-wrap--top" id="navCountryWrapTop">
             <button type="button" class="nav-btn-country nav-btn-country--top" id="navCountryToggleTop"
-                aria-expanded="false" aria-haspopup="listbox" aria-controls="navCountryMenuTop"
-                title="Choisir un pays">
+                aria-expanded="false" aria-haspopup="listbox" aria-controls="navCountryMenuTop" title="Choisir un pays">
                 <?php if ($nav_country_flag_url !== ''): ?>
                 <span class="nav-btn-country__flag" aria-hidden="true">
                     <img class="nav-btn-country__flag-img mp-country-flag-img"
                         src="<?php echo htmlspecialchars($nav_country_flag_url, ENT_QUOTES, 'UTF-8'); ?>"
                         data-fallback="<?php echo htmlspecialchars($nav_country_flag_url_alt, ENT_QUOTES, 'UTF-8'); ?>"
-                        alt=""
-                        width="20"
-                        height="14"
-                        loading="eager"
-                        decoding="async"
-                        referrerpolicy="no-referrer">
+                        alt="" width="20" height="14" loading="eager" decoding="async" referrerpolicy="no-referrer">
                 </span>
                 <?php endif; ?>
-                <span class="nav-btn-country__label"><?php echo htmlspecialchars($nav_country_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span
+                    class="nav-btn-country__label"><?php echo htmlspecialchars($nav_country_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
                 <i class="fa-solid fa-chevron-down nav-btn-country__chev" aria-hidden="true"></i>
             </button>
             <div class="nav-country-menu nav-country-menu--top" id="navCountryMenuTop" role="listbox" hidden>
                 <form method="post" action="/set-country.php" class="nav-country-form">
-                    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_geo_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="redirect"
+                        value="<?php echo htmlspecialchars($nav_geo_redirect, ENT_QUOTES, 'UTF-8'); ?>">
                     <?php foreach (marketplace_countries_nav_list() as $code => $meta): ?>
-                        <button type="submit" name="country" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
-                            class="nav-country-item<?php echo $nav_country_selected === $code ? ' is-active' : ''; ?>">
-                            <span class="nav-country-item__flag" aria-hidden="true">
-                                <img class="nav-country-item__flag-img mp-country-flag-img"
-                                    src="<?php echo htmlspecialchars(marketplace_country_flag_url($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-fallback="<?php echo htmlspecialchars(marketplace_country_flag_url_alt($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
-                                    alt=""
-                                    width="24"
-                                    height="18"
-                                    loading="lazy"
-                                    decoding="async"
-                                    referrerpolicy="no-referrer">
-                            </span>
-                            <span class="nav-country-item__label"><?php echo htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8'); ?></span>
-                        </button>
+                    <button type="submit" name="country"
+                        value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
+                        class="nav-country-item<?php echo $nav_country_selected === $code ? ' is-active' : ''; ?>">
+                        <span class="nav-country-item__flag" aria-hidden="true">
+                            <img class="nav-country-item__flag-img mp-country-flag-img"
+                                src="<?php echo htmlspecialchars(marketplace_country_flag_url($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-fallback="<?php echo htmlspecialchars(marketplace_country_flag_url_alt($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="" width="24" height="18" loading="lazy" decoding="async"
+                                referrerpolicy="no-referrer">
+                        </span>
+                        <span
+                            class="nav-country-item__label"><?php echo htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    </button>
                     <?php endforeach; ?>
                 </form>
             </div>
@@ -1324,48 +1330,46 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         <?php endif; ?>
         <?php if ($nav_annonces_show): ?>
         <a href="<?php echo htmlspecialchars($nav_annonces_href, ENT_QUOTES, 'UTF-8'); ?>"
-            class="nav-annonces-link nav-annonces-link--tablet-slot"
-            title="<?php echo (int) $nav_annonces_count > 0
-                ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
-                : 'Annonces'; ?>"
-            aria-label="<?php echo (int) $nav_annonces_count > 0
-                ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
-                : 'Annonces'; ?>">
+            class="nav-annonces-link nav-annonces-link--tablet-slot" title="<?php echo (int) $nav_annonces_count > 0
+                    ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
+                    : 'Annonces'; ?>" aria-label="<?php echo (int) $nav_annonces_count > 0
+                      ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
+                      : 'Annonces'; ?>">
             <i class="fa-solid fa-bell" aria-hidden="true"></i>
             <?php if ($nav_annonces_count > 0): ?>
-                <span class="nav-annonces-badge"><?php echo $nav_annonces_count > 99 ? '99+' : (int) $nav_annonces_count; ?></span>
+            <span
+                class="nav-annonces-badge"><?php echo $nav_annonces_count > 99 ? '99+' : (int) $nav_annonces_count; ?></span>
             <?php endif; ?>
         </a>
         <?php endif; ?>
-        <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>"
-            class="nav-panier-link"
+        <a href="<?php echo htmlspecialchars($nav_panier_href, ENT_QUOTES, 'UTF-8'); ?>" class="nav-panier-link"
             title="<?php echo $panier_count > 0 ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Voir mon panier'; ?>">
             <i class="fa-solid fa-cart-shopping"></i>
             <?php if ($panier_count > 0): ?>
-                <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
+            <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
             <?php endif; ?>
         </a>
         <?php if ($nav_annonces_show): ?>
         <a href="<?php echo htmlspecialchars($nav_annonces_href, ENT_QUOTES, 'UTF-8'); ?>"
-            class="nav-annonces-link nav-annonces-link--desktop"
-            title="<?php echo (int) $nav_annonces_count > 0
-                ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
-                : 'Annonces'; ?>"
-            aria-label="<?php echo (int) $nav_annonces_count > 0
-                ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
-                : 'Annonces'; ?>">
+            class="nav-annonces-link nav-annonces-link--desktop" title="<?php echo (int) $nav_annonces_count > 0
+                    ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
+                    : 'Annonces'; ?>" aria-label="<?php echo (int) $nav_annonces_count > 0
+                      ? (int) $nav_annonces_count . ' annonce' . ($nav_annonces_count > 1 ? 's' : '') . ' non lue' . ($nav_annonces_count > 1 ? 's' : '')
+                      : 'Annonces'; ?>">
             <i class="fa-solid fa-bell" aria-hidden="true"></i>
             <?php if ($nav_annonces_count > 0): ?>
-                <span class="nav-annonces-badge"><?php echo $nav_annonces_count > 99 ? '99+' : (int) $nav_annonces_count; ?></span>
+            <span
+                class="nav-annonces-badge"><?php echo $nav_annonces_count > 99 ? '99+' : (int) $nav_annonces_count; ?></span>
             <?php endif; ?>
         </a>
         <?php endif; ?>
-        <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo htmlspecialchars($nav_compte_btn_class, ENT_QUOTES, 'UTF-8'); ?>">
+        <a href="<?php echo htmlspecialchars($nav_compte_href, ENT_QUOTES, 'UTF-8'); ?>"
+            class="<?php echo htmlspecialchars($nav_compte_btn_class, ENT_QUOTES, 'UTF-8'); ?>">
             <span class="nav-compte-avatar" aria-hidden="true">
                 <?php if ($nav_compte_logged && $nav_compte_avatar_letter !== ''): ?>
-                    <?php echo htmlspecialchars($nav_compte_avatar_letter, ENT_QUOTES, 'UTF-8'); ?>
+                <?php echo htmlspecialchars($nav_compte_avatar_letter, ENT_QUOTES, 'UTF-8'); ?>
                 <?php else: ?>
-                    <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-user"></i>
                 <?php endif; ?>
             </span>
             <span class="nav-compte-text">
@@ -1379,7 +1383,8 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         <form class="nav-search-form" action="<?php echo htmlspecialchars($u_produits); ?>" method="get"
             id="nav-search-form">
             <?php if (defined('BOUTIQUE_SLUG') && BOUTIQUE_SLUG !== ''): ?>
-            <input type="hidden" name="boutique" value="<?php echo htmlspecialchars(BOUTIQUE_SLUG, ENT_QUOTES, 'UTF-8'); ?>">
+            <input type="hidden" name="boutique"
+                value="<?php echo htmlspecialchars(BOUTIQUE_SLUG, ENT_QUOTES, 'UTF-8'); ?>">
             <?php endif; ?>
             <button type="submit" class="nav-search-btn" aria-label="Rechercher">
                 <i class="fa-solid fa-magnifying-glass"></i>
@@ -1397,9 +1402,8 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
                 value="<?php echo isset($_GET['tri']) ? htmlspecialchars($_GET['tri']) : ''; ?>">
         </form>
         <div class="nav-language-switcher" id="navLangSwitcher">
-            <button type="button" class="nav-lang-trigger" id="navLangTrigger"
-                aria-expanded="false" aria-haspopup="listbox" aria-controls="navLangPanel"
-                title="Changer la langue">
+            <button type="button" class="nav-lang-trigger" id="navLangTrigger" aria-expanded="false"
+                aria-haspopup="listbox" aria-controls="navLangPanel" title="Changer la langue">
                 <span class="nav-lang-flag" id="navLangFlag" aria-hidden="true"></span>
                 <span class="nav-lang-code" id="navLangCode">FR</span>
                 <i class="fa-solid fa-chevron-down nav-lang-chevron" aria-hidden="true"></i>
@@ -1407,31 +1411,36 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             <div class="nav-lang-panel" id="navLangPanel" role="listbox" aria-label="Changer la langue" hidden>
                 <button type="button" class="nav-lang-option" role="option" data-lang="fr"
                     data-flag-src="https://flagcdn.com/w40/fr.png" data-code="FR">
-                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/fr.png')"></span>
+                    <span class="nav-lang-option-flag"
+                        style="background-image:url('https://flagcdn.com/w40/fr.png')"></span>
                     <span class="nav-lang-option-label">Français</span>
                     <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="nav-lang-option" role="option" data-lang="en"
                     data-flag-src="https://flagcdn.com/w40/gb.png" data-code="EN">
-                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/gb.png')"></span>
+                    <span class="nav-lang-option-flag"
+                        style="background-image:url('https://flagcdn.com/w40/gb.png')"></span>
                     <span class="nav-lang-option-label">English</span>
                     <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="nav-lang-option" role="option" data-lang="es"
                     data-flag-src="https://flagcdn.com/w40/es.png" data-code="ES">
-                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/es.png')"></span>
+                    <span class="nav-lang-option-flag"
+                        style="background-image:url('https://flagcdn.com/w40/es.png')"></span>
                     <span class="nav-lang-option-label">Español</span>
                     <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="nav-lang-option" role="option" data-lang="pt"
                     data-flag-src="https://flagcdn.com/w40/pt.png" data-code="PT">
-                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/pt.png')"></span>
+                    <span class="nav-lang-option-flag"
+                        style="background-image:url('https://flagcdn.com/w40/pt.png')"></span>
                     <span class="nav-lang-option-label">Português</span>
                     <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="nav-lang-option" role="option" data-lang="ar"
                     data-flag-src="https://flagcdn.com/w40/sa.png" data-code="AR">
-                    <span class="nav-lang-option-flag" style="background-image:url('https://flagcdn.com/w40/sa.png')"></span>
+                    <span class="nav-lang-option-flag"
+                        style="background-image:url('https://flagcdn.com/w40/sa.png')"></span>
                     <span class="nav-lang-option-label">العربية</span>
                     <i class="fa-solid fa-check nav-lang-option-check" aria-hidden="true"></i>
                 </button>
@@ -1447,210 +1456,213 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         </div>
     </div>
     <script>
-        window.gtranslateSettings = {
-            default_language: 'fr',
-            native_language_names: true,
-            detect_browser_language: false,
-            languages: ['fr', 'en', 'es', 'pt', 'ar'],
-            wrapper_selector: '.gtranslate_wrapper'
-        };
+    window.gtranslateSettings = {
+        default_language: 'fr',
+        native_language_names: true,
+        detect_browser_language: false,
+        languages: ['fr', 'en', 'es', 'pt', 'ar'],
+        wrapper_selector: '.gtranslate_wrapper'
+    };
 
-        (function () {
-            var win = window;
-            var switcher = document.getElementById('navLangSwitcher');
-            var trigger = document.getElementById('navLangTrigger');
-            var panel = document.getElementById('navLangPanel');
-            var select = document.getElementById('navLangSelect');
-            var flag = document.getElementById('navLangFlag');
-            var code = document.getElementById('navLangCode');
-            var options = panel ? panel.querySelectorAll('.nav-lang-option') : [];
-            if (!switcher || !trigger || !panel || !select || !flag || !code) {
-                return;
+    (function() {
+        var win = window;
+        var switcher = document.getElementById('navLangSwitcher');
+        var trigger = document.getElementById('navLangTrigger');
+        var panel = document.getElementById('navLangPanel');
+        var select = document.getElementById('navLangSelect');
+        var flag = document.getElementById('navLangFlag');
+        var code = document.getElementById('navLangCode');
+        var options = panel ? panel.querySelectorAll('.nav-lang-option') : [];
+        if (!switcher || !trigger || !panel || !select || !flag || !code) {
+            return;
+        }
+
+        function getCookie(name) {
+            var parts = ('; ' + document.cookie).split('; ' + name + '=');
+            if (parts.length >= 2) {
+                return parts.pop().split(';').shift();
             }
+            return '';
+        }
 
-            function getCookie(name) {
-                var parts = ('; ' + document.cookie).split('; ' + name + '=');
-                if (parts.length >= 2) {
-                    return parts.pop().split(';').shift();
-                }
-                return '';
+        function setCookie(name, value) {
+            var expires = '; expires=' + new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = name + '=' + value + expires + '; path=/';
+            if (location.hostname.indexOf('.') !== -1) {
+                document.cookie = name + '=' + value + expires + '; path=/; domain=.' + location.hostname.replace(
+                    /^www\./, '');
             }
+        }
 
-            function setCookie(name, value) {
-                var expires = '; expires=' + new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-                document.cookie = name + '=' + value + expires + '; path=/';
-                if (location.hostname.indexOf('.') !== -1) {
-                    document.cookie = name + '=' + value + expires + '; path=/; domain=.' + location.hostname.replace(/^www\./, '');
-                }
+        function clearCookie(name) {
+            var past = '; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = name + '=' + past + '; path=/';
+            if (location.hostname.indexOf('.') !== -1) {
+                document.cookie = name + '=' + past + '; path=/; domain=.' + location.hostname.replace(/^www\./,
+                    '');
             }
+        }
 
-            function clearCookie(name) {
-                var past = '; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                document.cookie = name + '=' + past + '; path=/';
-                if (location.hostname.indexOf('.') !== -1) {
-                    document.cookie = name + '=' + past + '; path=/; domain=.' + location.hostname.replace(/^www\./, '');
+        function currentLangFromCookie() {
+            /* 1. localStorage — source la plus fiable (pas de problème de domaine) */
+            try {
+                var stored = localStorage.getItem('nav_selected_lang');
+                if (stored && /^[a-z]{2}$/.test(stored)) {
+                    return stored;
                 }
-            }
+            } catch (e) {}
 
-            function currentLangFromCookie() {
-                /* 1. localStorage — source la plus fiable (pas de problème de domaine) */
-                try {
-                    var stored = localStorage.getItem('nav_selected_lang');
-                    if (stored && /^[a-z]{2}$/.test(stored)) {
-                        return stored;
-                    }
-                } catch (e) {}
-
-                /* 2. Fallback : lecture du cookie googtrans */
-                var raw = getCookie('googtrans');
-                if (!raw) {
-                    return 'fr';
-                }
-                try {
-                    raw = decodeURIComponent(raw.replace(/\+/g, ' ')).trim();
-                } catch (e1) {
-                    raw = raw.trim();
-                }
-                /* Variante sans slash : "fr|es" */
-                if (raw.indexOf('/') === -1 && raw.indexOf('|') !== -1) {
-                    var pv = raw.split('|').filter(function (s) {
-                        return s.length > 0;
-                    });
-                    if (pv.length) {
-                        var lp = pv[pv.length - 1].toLowerCase().trim();
-                        if (/^[a-z]{2}$/.test(lp)) {
-                            return lp;
-                        }
-                    }
-                }
-                /* googtrans : souvent "/fr/es", "/auto/en", ou encodé %2Ffr%2Fes */
-                var segments = raw.split('/').filter(function (s) {
-                    return s.length > 0;
-                });
-                if (!segments.length) {
-                    return 'fr';
-                }
-                var target = segments[segments.length - 1].toLowerCase();
-                target = target.split('|')[0].trim();
-                if (target.indexOf('-') !== -1) {
-                    target = target.split('-')[0];
-                }
-                if (/^[a-z]{2}$/.test(target)) {
-                    return target;
-                }
+            /* 2. Fallback : lecture du cookie googtrans */
+            var raw = getCookie('googtrans');
+            if (!raw) {
                 return 'fr';
             }
-
-            function syncFlag() {
-                var lang = select.value || 'fr';
-                var opt = select.querySelector('option[value="' + lang + '"]');
-                var url =
-                    opt && opt.getAttribute('data-flag-src')
-                        ? opt.getAttribute('data-flag-src')
-                        : 'https://flagcdn.com/w40/fr.png';
-                flag.style.backgroundImage = 'url("' + url + '")';
-                code.textContent = opt ? opt.textContent.trim().toUpperCase() : 'FR';
-                options.forEach(function (btn) {
-                    var active = btn.getAttribute('data-lang') === lang;
-                    btn.classList.toggle('is-active', active);
-                    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+            try {
+                raw = decodeURIComponent(raw.replace(/\+/g, ' ')).trim();
+            } catch (e1) {
+                raw = raw.trim();
+            }
+            /* Variante sans slash : "fr|es" */
+            if (raw.indexOf('/') === -1 && raw.indexOf('|') !== -1) {
+                var pv = raw.split('|').filter(function(s) {
+                    return s.length > 0;
                 });
-            }
-
-            function openPanel() {
-                panel.removeAttribute('hidden');
-                switcher.classList.add('is-open');
-                trigger.setAttribute('aria-expanded', 'true');
-            }
-
-            function closePanel() {
-                panel.setAttribute('hidden', '');
-                switcher.classList.remove('is-open');
-                trigger.setAttribute('aria-expanded', 'false');
-            }
-
-            function togglePanel() {
-                if (panel.hasAttribute('hidden')) {
-                    openPanel();
-                } else {
-                    closePanel();
-                }
-            }
-
-            function applyLanguage(lang) {
-                /* Mémoriser dans localStorage pour survie multi-domaine / multi-cookie */
-                try {
-                    if (lang === 'fr') {
-                        localStorage.removeItem('nav_selected_lang');
-                    } else {
-                        localStorage.setItem('nav_selected_lang', lang);
+                if (pv.length) {
+                    var lp = pv[pv.length - 1].toLowerCase().trim();
+                    if (/^[a-z]{2}$/.test(lp)) {
+                        return lp;
                     }
-                } catch (e) {}
+                }
+            }
+            /* googtrans : souvent "/fr/es", "/auto/en", ou encodé %2Ffr%2Fes */
+            var segments = raw.split('/').filter(function(s) {
+                return s.length > 0;
+            });
+            if (!segments.length) {
+                return 'fr';
+            }
+            var target = segments[segments.length - 1].toLowerCase();
+            target = target.split('|')[0].trim();
+            if (target.indexOf('-') !== -1) {
+                target = target.split('-')[0];
+            }
+            if (/^[a-z]{2}$/.test(target)) {
+                return target;
+            }
+            return 'fr';
+        }
+
+        function syncFlag() {
+            var lang = select.value || 'fr';
+            var opt = select.querySelector('option[value="' + lang + '"]');
+            var url =
+                opt && opt.getAttribute('data-flag-src') ?
+                opt.getAttribute('data-flag-src') :
+                'https://flagcdn.com/w40/fr.png';
+            flag.style.backgroundImage = 'url("' + url + '")';
+            code.textContent = opt ? opt.textContent.trim().toUpperCase() : 'FR';
+            options.forEach(function(btn) {
+                var active = btn.getAttribute('data-lang') === lang;
+                btn.classList.toggle('is-active', active);
+                btn.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+        }
+
+        function openPanel() {
+            panel.removeAttribute('hidden');
+            switcher.classList.add('is-open');
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        function closePanel() {
+            panel.setAttribute('hidden', '');
+            switcher.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function togglePanel() {
+            if (panel.hasAttribute('hidden')) {
+                openPanel();
+            } else {
+                closePanel();
+            }
+        }
+
+        function applyLanguage(lang) {
+            /* Mémoriser dans localStorage pour survie multi-domaine / multi-cookie */
+            try {
                 if (lang === 'fr') {
-                    clearCookie('googtrans');
+                    localStorage.removeItem('nav_selected_lang');
                 } else {
-                    setCookie('googtrans', '/fr/' + lang);
+                    localStorage.setItem('nav_selected_lang', lang);
                 }
-                function reloadPage() {
-                    window.location.reload();
-                }
-                if (lang !== 'fr' && win.ColobanesPerf && typeof win.ColobanesPerf.loadGtranslate === 'function') {
-                    win.ColobanesPerf.loadGtranslate(reloadPage);
-                    win.setTimeout(reloadPage, 1200);
+            } catch (e) {}
+            if (lang === 'fr') {
+                clearCookie('googtrans');
+            } else {
+                setCookie('googtrans', '/fr/' + lang);
+            }
+
+            function reloadPage() {
+                window.location.reload();
+            }
+            if (lang !== 'fr' && win.ColobanesPerf && typeof win.ColobanesPerf.loadGtranslate === 'function') {
+                win.ColobanesPerf.loadGtranslate(reloadPage);
+                win.setTimeout(reloadPage, 1200);
+                return;
+            }
+            reloadPage();
+        }
+
+        var initial = currentLangFromCookie();
+        if (select.querySelector('option[value="' + initial + '"]')) {
+            select.value = initial;
+        } else {
+            select.value = 'fr';
+        }
+        syncFlag();
+
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            togglePanel();
+        });
+
+        options.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var lang = btn.getAttribute('data-lang');
+                if (!lang || lang === select.value) {
+                    closePanel();
                     return;
                 }
-                reloadPage();
-            }
+                select.value = lang;
+                applyLanguage(lang);
+            });
+        });
 
-            var initial = currentLangFromCookie();
-            if (select.querySelector('option[value="' + initial + '"]')) {
-                select.value = initial;
-            } else {
-                select.value = 'fr';
+        document.addEventListener('click', function(e) {
+            if (!switcher.contains(e.target)) {
+                closePanel();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePanel();
+            }
+        });
+
+        window.addEventListener('pageshow', function() {
+            var lang = currentLangFromCookie();
+            if (select.querySelector('option[value="' + lang + '"]')) {
+                select.value = lang;
             }
             syncFlag();
+        });
 
-            trigger.addEventListener('click', function (e) {
-                e.stopPropagation();
-                togglePanel();
-            });
-
-            options.forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var lang = btn.getAttribute('data-lang');
-                    if (!lang || lang === select.value) {
-                        closePanel();
-                        return;
-                    }
-                    select.value = lang;
-                    applyLanguage(lang);
-                });
-            });
-
-            document.addEventListener('click', function (e) {
-                if (!switcher.contains(e.target)) {
-                    closePanel();
-                }
-            });
-
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') {
-                    closePanel();
-                }
-            });
-
-            window.addEventListener('pageshow', function () {
-                var lang = currentLangFromCookie();
-                if (select.querySelector('option[value="' + lang + '"]')) {
-                    select.value = lang;
-                }
-                syncFlag();
-            });
-
-            window.addEventListener('load', function () {
-                syncFlag();
-            });
-        })();
+        window.addEventListener('load', function() {
+            syncFlag();
+        });
+    })();
     </script>
 </nav>
 
@@ -1667,26 +1679,30 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
     <div class="nav-sidebar-content">
         <ul class="nav-glass-rayons-list nav-glass-rayons-list--shortcuts" role="list">
             <li>
-                <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-glass-rayon-card nav-glass-rayon-card--nouveautes">
+                <a href="<?php echo htmlspecialchars($u_nouveautes); ?>"
+                    class="nav-glass-rayon-card nav-glass-rayon-card--nouveautes">
                     <span class="nav-glass-rayon-icon" aria-hidden="true"><i class="fa-solid fa-sparkles"></i></span>
                     <span class="nav-glass-rayon-label">NOUVEAUTÉS</span>
-                    <span class="nav-glass-rayon-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
+                    <span class="nav-glass-rayon-arrow" aria-hidden="true"><i
+                            class="fa-solid fa-arrow-right"></i></span>
                 </a>
             </li>
             <li>
-                <a href="<?php echo htmlspecialchars($u_promo); ?>" class="nav-glass-rayon-card nav-glass-rayon-card--promo">
+                <a href="<?php echo htmlspecialchars($u_promo); ?>"
+                    class="nav-glass-rayon-card nav-glass-rayon-card--promo">
                     <span class="nav-glass-rayon-icon" aria-hidden="true"><i class="fa-solid fa-percent"></i></span>
                     <span class="nav-glass-rayon-label">PROMO</span>
-                    <span class="nav-glass-rayon-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
+                    <span class="nav-glass-rayon-arrow" aria-hidden="true"><i
+                            class="fa-solid fa-arrow-right"></i></span>
                 </a>
             </li>
         </ul>
         <div class="nav-sidebar-categories nav-sidebar-categories--glass">
             <?php if (!empty($nav_megamenu)): ?>
-                <p class="nav-sidebar-section-label">Nos rayons</p>
-                <ul class="nav-glass-rayons-list" role="list">
-                    <?php foreach ($nav_megamenu as $mega): ?>
-                        <?php
+            <p class="nav-sidebar-section-label">Nos rayons</p>
+            <ul class="nav-glass-rayons-list" role="list">
+                <?php foreach ($nav_megamenu as $mega): ?>
+                <?php
                         $g = $mega['general'];
                         $gid = (int) $g['id'];
                         $ic_class = function_exists('categorie_fa_icon_class') ? categorie_fa_icon_class($g) : 'fa-solid fa-layer-group';
@@ -1696,40 +1712,40 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
                             ? nav_categorie_generale_href($gid)
                             : nav_categorie_href($gid);
                         ?>
-                        <li>
-                            <a class="nav-glass-rayon-card" href="<?php echo htmlspecialchars($rayon_href); ?>">
-                                <span class="nav-glass-rayon-icon<?php echo $has_cg_img ? ' nav-glass-rayon-icon--photo' : ''; ?>" aria-hidden="true">
-                                    <?php if ($has_cg_img): ?>
-                                        <img src="<?php echo htmlspecialchars($cg_img, ENT_QUOTES, 'UTF-8'); ?>"
-                                            alt=""
-                                            loading="lazy"
-                                            decoding="async">
-                                    <?php else: ?>
-                                        <i class="<?php echo htmlspecialchars($ic_class); ?>"></i>
-                                    <?php endif; ?>
-                                </span>
-                                <span class="nav-glass-rayon-label"><?php echo htmlspecialchars($g['nom']); ?></span>
-                                <span class="nav-glass-rayon-arrow" aria-hidden="true"><i
-                                        class="fa-solid fa-arrow-right"></i></span>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php elseif (!empty($categories_menu)): ?>
-                <p class="nav-sidebar-section-label">Catégories</p>
-                <?php foreach ($categories_menu as $categorie): ?>
-                    <a href="<?php echo htmlspecialchars(nav_categorie_href($categorie['id'])); ?>"
-                        class="nav-sidebar-category">
-                        <span><?php echo htmlspecialchars($categorie['nom']); ?></span>
-                        <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+                <li>
+                    <a class="nav-glass-rayon-card" href="<?php echo htmlspecialchars($rayon_href); ?>">
+                        <span
+                            class="nav-glass-rayon-icon<?php echo $has_cg_img ? ' nav-glass-rayon-icon--photo' : ''; ?>"
+                            aria-hidden="true">
+                            <?php if ($has_cg_img): ?>
+                            <img src="<?php echo htmlspecialchars($cg_img, ENT_QUOTES, 'UTF-8'); ?>" alt=""
+                                loading="lazy" decoding="async">
+                            <?php else: ?>
+                            <i class="<?php echo htmlspecialchars($ic_class); ?>"></i>
+                            <?php endif; ?>
+                        </span>
+                        <span class="nav-glass-rayon-label"><?php echo htmlspecialchars($g['nom']); ?></span>
+                        <span class="nav-glass-rayon-arrow" aria-hidden="true"><i
+                                class="fa-solid fa-arrow-right"></i></span>
                     </a>
+                </li>
                 <?php endforeach; ?>
+            </ul>
+            <?php elseif (!empty($categories_menu)): ?>
+            <p class="nav-sidebar-section-label">Catégories</p>
+            <?php foreach ($categories_menu as $categorie): ?>
+            <a href="<?php echo htmlspecialchars(nav_categorie_href($categorie['id'])); ?>"
+                class="nav-sidebar-category">
+                <span><?php echo htmlspecialchars($categorie['nom']); ?></span>
+                <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+            </a>
+            <?php endforeach; ?>
             <?php else: ?>
-                <p class="nav-sidebar-section-label">Catalogue</p>
-                <a href="<?php echo htmlspecialchars($u_produits); ?>" class="nav-sidebar-category">
-                    <span>Tous les produits</span>
-                    <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
-                </a>
+            <p class="nav-sidebar-section-label">Catalogue</p>
+            <a href="<?php echo htmlspecialchars($u_produits); ?>" class="nav-sidebar-category">
+                <span>Tous les produits</span>
+                <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+            </a>
             <?php endif; ?>
         </div>
     </div>
@@ -1760,11 +1776,11 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         </button>
     </div>
     <?php if (isset($section1_mp_page_title) && trim((string) $section1_mp_page_title) !== ''): ?>
-        <div class="section1-center section1-center--mp-title">
-            <h1 class="section1-page-title">
-                <?php echo htmlspecialchars(trim((string) $section1_mp_page_title), ENT_QUOTES, 'UTF-8'); ?>
-            </h1>
-        </div>
+    <div class="section1-center section1-center--mp-title">
+        <h1 class="section1-page-title">
+            <?php echo htmlspecialchars(trim((string) $section1_mp_page_title), ENT_QUOTES, 'UTF-8'); ?>
+        </h1>
+    </div>
     <?php endif; ?>
     <div class="section1-right">
         <a href="<?php echo htmlspecialchars($u_nouveautes); ?>" class="nav-action-btn nav-btn-nouveautes">
@@ -1777,21 +1793,26 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
         </a>
         <?php if ($nav_show_region_filter): ?>
         <div class="nav-region-wrap" id="navRegionWrap">
-            <button type="button" class="nav-action-btn nav-btn-region" id="navRegionToggle"
-                aria-expanded="false" aria-haspopup="listbox" aria-controls="navRegionMenu">
+            <button type="button" class="nav-action-btn nav-btn-region" id="navRegionToggle" aria-expanded="false"
+                aria-haspopup="listbox" aria-controls="navRegionMenu">
                 <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
-                <span class="nav-btn-region__label"><?php echo htmlspecialchars($nav_region_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span
+                    class="nav-btn-region__label"><?php echo htmlspecialchars($nav_region_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
                 <i class="fa-solid fa-chevron-down nav-btn-region__chev" aria-hidden="true"></i>
             </button>
             <div class="nav-region-menu" id="navRegionMenu" role="listbox" hidden>
                 <form method="post" action="/set-region.php" class="nav-region-form">
-                    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_region_redirect, ENT_QUOTES, 'UTF-8'); ?>">
-                    <button type="submit" name="region" value="all" class="nav-region-item<?php echo $nav_region_selected === '' ? ' is-active' : ''; ?>">Toutes les régions</button>
+                    <input type="hidden" name="redirect"
+                        value="<?php echo htmlspecialchars($nav_region_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+                    <button type="submit" name="region" value="all"
+                        class="nav-region-item<?php echo $nav_region_selected === '' ? ' is-active' : ''; ?>">Toutes les
+                        régions</button>
                     <?php foreach ($nav_regions_for_country as $code => $label): ?>
-                        <button type="submit" name="region" value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
-                            class="nav-region-item<?php echo $nav_region_selected === $code ? ' is-active' : ''; ?>">
-                            <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
-                        </button>
+                    <button type="submit" name="region"
+                        value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
+                        class="nav-region-item<?php echo $nav_region_selected === $code ? ' is-active' : ''; ?>">
+                        <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
+                    </button>
                     <?php endforeach; ?>
                 </form>
             </div>
@@ -1801,16 +1822,20 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
 </section>
 
 <?php if ($nav_needs_country_welcome): ?>
-<div class="mp-country-welcome" id="mpCountryWelcome" role="dialog" aria-modal="true" aria-labelledby="mpCountryWelcomeTitle">
+<div class="mp-country-welcome" id="mpCountryWelcome" role="dialog" aria-modal="true"
+    aria-labelledby="mpCountryWelcomeTitle">
     <div class="mp-country-welcome__backdrop" aria-hidden="true">
         <div class="mp-country-welcome__glow mp-country-welcome__glow--blue"></div>
         <div class="mp-country-welcome__glow mp-country-welcome__glow--orange"></div>
     </div>
     <div class="mp-country-welcome__panel">
-        <h2 class="mp-country-welcome__title" id="mpCountryWelcomeTitle">Bienvenue sur <?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?></h2>
-        <p class="mp-country-welcome__text">Choisissez votre pays pour afficher les produits disponibles près de chez vous.</p>
+        <h2 class="mp-country-welcome__title" id="mpCountryWelcomeTitle">Bienvenue sur
+            <?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?></h2>
+        <p class="mp-country-welcome__text">Choisissez votre pays pour afficher les produits disponibles près de chez
+            vous.</p>
         <form method="post" action="/set-country.php" class="mp-country-welcome__form">
-            <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($nav_geo_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+            <input type="hidden" name="redirect"
+                value="<?php echo htmlspecialchars($nav_geo_redirect, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="mp-country-welcome__grid">
                 <?php foreach (marketplace_countries_nav_list() as $code => $meta): ?>
                 <?php $flag_src = marketplace_country_flag_url($code, 80); ?>
@@ -1820,14 +1845,10 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
                         <img class="mp-country-welcome__flag mp-country-flag-img"
                             src="<?php echo htmlspecialchars($flag_src, ENT_QUOTES, 'UTF-8'); ?>"
                             data-fallback="<?php echo htmlspecialchars(marketplace_country_flag_url_alt($code, 80), ENT_QUOTES, 'UTF-8'); ?>"
-                            alt=""
-                            width="40"
-                            height="28"
-                            loading="eager"
-                            decoding="async"
-                            referrerpolicy="no-referrer">
+                            alt="" width="40" height="28" loading="eager" decoding="async" referrerpolicy="no-referrer">
                     </span>
-                    <span class="mp-country-welcome__name"><?php echo htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    <span
+                        class="mp-country-welcome__name"><?php echo htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8'); ?></span>
                     <?php if ($nav_suggested_country === $code): ?>
                     <span class="mp-country-welcome__hint">Suggéré</span>
                     <?php endif; ?>
@@ -1838,136 +1859,273 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
     </div>
 </div>
 <style>
-    .mp-country-welcome {
-        position: fixed;
-        inset: 0;
-        z-index: 20000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        overflow: hidden;
-    }
-    .mp-country-welcome__backdrop {
-        position: absolute;
-        inset: 0;
-        overflow: hidden;
-        background:
-            linear-gradient(145deg, rgba(53, 100, 166, 0.18) 0%, rgba(13, 13, 13, 0.72) 45%, rgba(255, 107, 53, 0.14) 100%);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-    }
-    .mp-country-welcome__glow {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(48px);
-        pointer-events: none;
-        opacity: 0.45;
-    }
-    .mp-country-welcome__glow--blue {
-        width: 280px;
-        height: 280px;
-        top: -60px;
-        left: -40px;
-        background: rgba(53, 100, 166, 0.55);
-    }
-    .mp-country-welcome__glow--orange {
-        width: 240px;
-        height: 240px;
-        right: -30px;
-        bottom: -50px;
-        background: rgba(255, 107, 53, 0.45);
-    }
-    .mp-country-welcome__panel {
-        position: relative;
-        z-index: 2;
-        width: min(100%, 480px);
-        padding: 28px 24px;
-        border-radius: 18px;
-        background: #fff;
-        border: 1px solid rgba(53, 100, 166, 0.12);
-        box-shadow:
-            0 20px 60px rgba(53, 100, 166, 0.28),
-            0 0 0 1px rgba(255, 255, 255, 0.6) inset;
-        text-align: center;
-    }
-    .mp-country-welcome__title {
-        margin: 0 0 10px;
-        font-size: 1.35rem;
-        color: var(--titres, #0d0d0d);
-    }
-    .mp-country-welcome__text {
-        margin: 0 0 22px;
-        color: var(--gris-moyen, #737373);
-        font-size: 0.95rem;
-        line-height: 1.5;
-    }
-    .mp-country-welcome__grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-    .mp-country-welcome__choice {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-        padding: 14px 16px;
-        border: 1.5px solid rgba(53, 100, 166, 0.2);
-        border-radius: 12px;
-        background: #fff;
-        cursor: pointer;
-        font-family: inherit;
-        text-align: left;
-        transition: border-color 0.18s, background 0.18s, transform 0.15s, box-shadow 0.18s;
-    }
-    .mp-country-welcome__choice:hover,
-    .mp-country-welcome__choice.is-suggested {
-        border-color: var(--couleur-dominante, #3564a6);
-        background: rgba(53, 100, 166, 0.06);
-        box-shadow: 0 4px 16px rgba(53, 100, 166, 0.12);
-    }
-    .mp-country-welcome__choice:active {
-        transform: scale(0.99);
-    }
-    .mp-country-welcome__flag-wrap {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 28px;
-        flex-shrink: 0;
-        border-radius: 4px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        background: #f0f0f0;
-    }
-    .mp-country-welcome__flag {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-    }
-    .mp-country-welcome__name {
-        flex: 1;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--texte-fonce, #0d0d0d);
-    }
-    .mp-country-welcome__hint {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--couleur-dominante, #3564a6);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
+.mp-country-welcome {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.mp-country-welcome__backdrop {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background:
+        linear-gradient(145deg, rgba(53, 100, 166, 0.18) 0%, rgba(13, 13, 13, 0.72) 45%, rgba(255, 107, 53, 0.14) 100%);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.mp-country-welcome__glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(48px);
+    pointer-events: none;
+    opacity: 0.45;
+}
+
+.mp-country-welcome__glow--blue {
+    width: 280px;
+    height: 280px;
+    top: -60px;
+    left: -40px;
+    background: rgba(53, 100, 166, 0.55);
+}
+
+.mp-country-welcome__glow--orange {
+    width: 240px;
+    height: 240px;
+    right: -30px;
+    bottom: -50px;
+    background: rgba(255, 107, 53, 0.45);
+}
+
+.mp-country-welcome__panel {
+    position: relative;
+    z-index: 2;
+    width: min(100%, 480px);
+    padding: 28px 24px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid rgba(53, 100, 166, 0.12);
+    box-shadow:
+        0 20px 60px rgba(53, 100, 166, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+    text-align: center;
+}
+
+.mp-country-welcome__title {
+    margin: 0 0 10px;
+    font-size: 1.35rem;
+    color: var(--titres, #0d0d0d);
+}
+
+.mp-country-welcome__text {
+    margin: 0 0 22px;
+    color: var(--gris-moyen, #737373);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.mp-country-welcome__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.mp-country-welcome__choice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid rgba(53, 100, 166, 0.2);
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: border-color 0.18s, background 0.18s, transform 0.15s, box-shadow 0.18s;
+}
+
+.mp-country-welcome__choice:hover,
+.mp-country-welcome__choice.is-suggested {
+    border-color: var(--couleur-dominante, #3564a6);
+    background: rgba(53, 100, 166, 0.06);
+    box-shadow: 0 4px 16px rgba(53, 100, 166, 0.12);
+}
+
+.mp-country-welcome__choice:active {
+    transform: scale(0.99);
+}
+
+.mp-country-welcome__flag-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #f0f0f0;
+}
+
+.mp-country-welcome__flag {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.mp-country-welcome__name {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--texte-fonce, #0d0d0d);
+}
+
+.mp-country-welcome__hint {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--couleur-dominante, #3564a6);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
 </style>
 <script>
-    document.documentElement.classList.add('mp-country-welcome-open');
-    document.body.style.overflow = 'hidden';
-    document.querySelectorAll('.mp-country-flag-img[data-fallback]').forEach(function (img) {
+document.documentElement.classList.add('mp-country-welcome-open');
+document.body.style.overflow = 'hidden';
+document.querySelectorAll('.mp-country-flag-img[data-fallback]').forEach(function(img) {
+    img.addEventListener('error', function onFlagError() {
+        var fb = img.getAttribute('data-fallback');
+        if (!fb || img.dataset.fallbackUsed === '1') {
+            return;
+        }
+        img.dataset.fallbackUsed = '1';
+        img.src = fb;
+    }, {
+        once: true
+    });
+});
+</script>
+<?php endif; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var toggle = document.getElementById('navMenuToggle');
+    var sidebar = document.getElementById('navSidebar');
+    var overlay = document.getElementById('navSidebarOverlay');
+
+    function openSidebarMenu() {
+        if (sidebar) sidebar.classList.add('open');
+        if (overlay) overlay.classList.add('show');
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        var icon = toggle ? toggle.querySelector('i') : null;
+        if (icon) {
+            icon.classList.remove('fa-bars');
+            icon.classList.add('fa-times');
+        }
+    }
+
+    function closeSidebarMenu() {
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('show');
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        var icon = toggle ? toggle.querySelector('i') : null;
+        if (icon) {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
+    }
+
+    window.openBoutiqueNavSidebar = openSidebarMenu;
+    window.closeBoutiqueNavSidebar = closeSidebarMenu;
+
+    if (toggle) toggle.addEventListener('click', function() {
+        if (sidebar && sidebar.classList.contains('open')) closeSidebarMenu();
+        else openSidebarMenu();
+    });
+    if (overlay) overlay.addEventListener('click', closeSidebarMenu);
+
+    var dockSidebarBtn = document.getElementById('shopDockSidebarBtn');
+    if (dockSidebarBtn) {
+        dockSidebarBtn.addEventListener('click', function() {
+            if (sidebar && sidebar.classList.contains('open')) closeSidebarMenu();
+            else openSidebarMenu();
+        });
+    }
+
+    window.addEventListener('resize', function() {
+        if (window.innerWidth <= 1024) return;
+        if (sidebar && sidebar.classList.contains('open')) {
+            closeSidebarMenu();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        closeSidebarMenu();
+        closeAllRegionMenus();
+    });
+
+    function closeAllRegionMenus() {
+        [
+            ['navRegionWrap', 'navRegionToggle', 'navRegionMenu'],
+            ['navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop'],
+            ['navCountryWrapTop', 'navCountryToggleTop', 'navCountryMenuTop']
+        ].forEach(function(ids) {
+            var wrap = document.getElementById(ids[0]);
+            var toggle = document.getElementById(ids[1]);
+            var menu = document.getElementById(ids[2]);
+            if (wrap) wrap.classList.remove('open');
+            if (menu) menu.hidden = true;
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    function initRegionDropdown(wrapId, toggleId, menuId) {
+        var regionWrap = document.getElementById(wrapId);
+        var regionToggle = document.getElementById(toggleId);
+        var regionMenu = document.getElementById(menuId);
+        if (!regionWrap || !regionToggle || !regionMenu) return;
+        regionToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var willOpen = !regionWrap.classList.contains('open');
+            closeAllRegionMenus();
+            if (willOpen) {
+                regionWrap.classList.add('open');
+                regionMenu.hidden = false;
+                regionToggle.setAttribute('aria-expanded', 'true');
+            }
+        });
+    }
+
+    initRegionDropdown('navRegionWrap', 'navRegionToggle', 'navRegionMenu');
+    initRegionDropdown('navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop');
+    initRegionDropdown('navCountryWrapTop', 'navCountryToggleTop', 'navCountryMenuTop');
+
+    document.addEventListener('click', function(e) {
+        var inRegion = e.target.closest('#navRegionWrap, #navRegionWrapTop, #navCountryWrapTop');
+        if (!inRegion) {
+            closeAllRegionMenus();
+        }
+    });
+
+    document.querySelectorAll('.mp-country-flag-img[data-fallback]').forEach(function(img) {
+        if (img.dataset.fallbackBound === '1') {
+            return;
+        }
+        img.dataset.fallbackBound = '1';
         img.addEventListener('error', function onFlagError() {
             var fb = img.getAttribute('data-fallback');
             if (!fb || img.dataset.fallbackUsed === '1') {
@@ -1975,129 +2133,11 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             }
             img.dataset.fallbackUsed = '1';
             img.src = fb;
-        }, { once: true });
-    });
-</script>
-<?php endif; ?>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var toggle = document.getElementById('navMenuToggle');
-        var sidebar = document.getElementById('navSidebar');
-        var overlay = document.getElementById('navSidebarOverlay');
-
-        function openSidebarMenu() {
-            if (sidebar) sidebar.classList.add('open');
-            if (overlay) overlay.classList.add('show');
-            document.documentElement.style.overflow = 'hidden';
-            document.body.style.overflow = 'hidden';
-            var icon = toggle ? toggle.querySelector('i') : null;
-            if (icon) {
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-times');
-            }
-        }
-
-        function closeSidebarMenu() {
-            if (sidebar) sidebar.classList.remove('open');
-            if (overlay) overlay.classList.remove('show');
-            document.documentElement.style.overflow = '';
-            document.body.style.overflow = '';
-            var icon = toggle ? toggle.querySelector('i') : null;
-            if (icon) {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
-        }
-
-        window.openBoutiqueNavSidebar = openSidebarMenu;
-        window.closeBoutiqueNavSidebar = closeSidebarMenu;
-
-        if (toggle) toggle.addEventListener('click', function () {
-            if (sidebar && sidebar.classList.contains('open')) closeSidebarMenu();
-            else openSidebarMenu();
-        });
-        if (overlay) overlay.addEventListener('click', closeSidebarMenu);
-
-        var dockSidebarBtn = document.getElementById('shopDockSidebarBtn');
-        if (dockSidebarBtn) {
-            dockSidebarBtn.addEventListener('click', function () {
-                if (sidebar && sidebar.classList.contains('open')) closeSidebarMenu();
-                else openSidebarMenu();
-            });
-        }
-
-        window.addEventListener('resize', function () {
-            if (window.innerWidth <= 1024) return;
-            if (sidebar && sidebar.classList.contains('open')) {
-                closeSidebarMenu();
-            }
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Escape') return;
-            closeSidebarMenu();
-            closeAllRegionMenus();
-        });
-
-        function closeAllRegionMenus() {
-            [
-                ['navRegionWrap', 'navRegionToggle', 'navRegionMenu'],
-                ['navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop'],
-                ['navCountryWrapTop', 'navCountryToggleTop', 'navCountryMenuTop']
-            ].forEach(function (ids) {
-                var wrap = document.getElementById(ids[0]);
-                var toggle = document.getElementById(ids[1]);
-                var menu = document.getElementById(ids[2]);
-                if (wrap) wrap.classList.remove('open');
-                if (menu) menu.hidden = true;
-                if (toggle) toggle.setAttribute('aria-expanded', 'false');
-            });
-        }
-
-        function initRegionDropdown(wrapId, toggleId, menuId) {
-            var regionWrap = document.getElementById(wrapId);
-            var regionToggle = document.getElementById(toggleId);
-            var regionMenu = document.getElementById(menuId);
-            if (!regionWrap || !regionToggle || !regionMenu) return;
-            regionToggle.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var willOpen = !regionWrap.classList.contains('open');
-                closeAllRegionMenus();
-                if (willOpen) {
-                    regionWrap.classList.add('open');
-                    regionMenu.hidden = false;
-                    regionToggle.setAttribute('aria-expanded', 'true');
-                }
-            });
-        }
-
-        initRegionDropdown('navRegionWrap', 'navRegionToggle', 'navRegionMenu');
-        initRegionDropdown('navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop');
-        initRegionDropdown('navCountryWrapTop', 'navCountryToggleTop', 'navCountryMenuTop');
-
-        document.addEventListener('click', function (e) {
-            var inRegion = e.target.closest('#navRegionWrap, #navRegionWrapTop, #navCountryWrapTop');
-            if (!inRegion) {
-                closeAllRegionMenus();
-            }
-        });
-
-        document.querySelectorAll('.mp-country-flag-img[data-fallback]').forEach(function (img) {
-            if (img.dataset.fallbackBound === '1') {
-                return;
-            }
-            img.dataset.fallbackBound = '1';
-            img.addEventListener('error', function onFlagError() {
-                var fb = img.getAttribute('data-fallback');
-                if (!fb || img.dataset.fallbackUsed === '1') {
-                    return;
-                }
-                img.dataset.fallbackUsed = '1';
-                img.src = fb;
-            }, { once: true });
+        }, {
+            once: true
         });
     });
+});
 </script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
 <?php include __DIR__ . '/includes/geo_auto_capture.php'; ?>
