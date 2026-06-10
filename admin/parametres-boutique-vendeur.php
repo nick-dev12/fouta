@@ -134,6 +134,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['boutique_branding_sav
     }
 }
 
+/* --- Position GPS de la boutique (service de localisation exacte) --- */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['geo_boutique_action'])) {
+    $tok = (string)($_POST['csrf_token'] ?? '');
+    if (!hash_equals((string)($_SESSION['admin_csrf'] ?? ''), $tok)) {
+        flash_toast_queue_page('error', 'Session expirée. Veuillez recharger la page.');
+    } else {
+        require_once __DIR__ . '/../includes/geo_location_service.php';
+        $geo_action = (string)$_POST['geo_boutique_action'];
+
+        if ($geo_action === 'capture') {
+            $g_lat = geo_parse_coord($_POST['geo_lat'] ?? null);
+            $g_lng = geo_parse_coord($_POST['geo_lng'] ?? null);
+            if (geo_coords_valid($g_lat, $g_lng) && geo_save_boutique_location($admin_id, $g_lat, $g_lng, 'gps')) {
+                $_SESSION['success_message'] = 'Position GPS de votre boutique enregistrée.';
+            } else {
+                flash_toast_queue_page('error', 'Position invalide. Autorisez la localisation puis réessayez.');
+            }
+        } elseif ($geo_action === 'geocode') {
+            require_once __DIR__ . '/../includes/geo_geocoder.php';
+            if (geo_geocode_boutique($admin_id)) {
+                $_SESSION['success_message'] = 'Position estimée à partir de votre adresse et enregistrée.';
+            } else {
+                flash_toast_queue_page('error', 'Adresse introuvable. Renseignez d\'abord une adresse précise, ou utilisez le bouton "Utiliser ma position actuelle".');
+            }
+        } elseif ($geo_action === 'clear') {
+            geo_save_boutique_location($admin_id, null, null);
+            $_SESSION['success_message'] = 'Position GPS de votre boutique supprimée.';
+        }
+
+        if (!empty($_SESSION['success_message'])) {
+            header('Location: parametres-boutique-vendeur.php');
+            exit;
+        }
+        $admin = get_admin_by_id($admin_id);
+    }
+}
+
 $logo_url    = '';
 $clogo       = trim((string)($admin['boutique_logo'] ?? ''));
 if ($clogo !== '') {
@@ -1440,6 +1477,77 @@ $admin_initial = $admin_prenom !== '' ? mb_strtoupper(mb_substr($admin_prenom, 0
 
     </form>
 
+    <!-- POSITION GPS DE LA BOUTIQUE -->
+    <?php
+    require_once __DIR__ . '/../includes/geo_location_service.php';
+    $pbv_geo_lat = geo_parse_coord($admin['boutique_latitude'] ?? null);
+    $pbv_geo_lng = geo_parse_coord($admin['boutique_longitude'] ?? null);
+    $pbv_geo_set = geo_coords_valid($pbv_geo_lat, $pbv_geo_lng);
+    $pbv_geo_maj = !empty($admin['boutique_geo_maj']) ? date('d/m/Y à H:i', strtotime((string)$admin['boutique_geo_maj'])) : '';
+    ?>
+    <section class="pbv-card pbv-grid--wide" aria-labelledby="pbv-geo-title" style="margin-top:24px;">
+        <div class="pbv-card__head">
+            <div class="pbv-card__head-icon pbv-card__head-icon--map"><i class="fas fa-location-crosshairs"></i></div>
+            <div class="pbv-card__head-text">
+                <h3 id="pbv-geo-title">Position GPS de la boutique</h3>
+                <p>Permet aux clients proches de vous de trouver vos produits en priorit&eacute;</p>
+            </div>
+        </div>
+        <div class="pbv-card__body">
+            <?php if ($pbv_geo_set): ?>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;font-size:0.85rem;">
+                <span style="background:rgba(53,100,166,0.12);padding:5px 12px;border-radius:20px;">
+                    <i class="fas fa-crosshairs"></i>
+                    <?php echo htmlspecialchars(number_format($pbv_geo_lat, 6, '.', '')); ?>, <?php echo htmlspecialchars(number_format($pbv_geo_lng, 6, '.', '')); ?>
+                </span>
+                <?php if ($pbv_geo_maj !== ''): ?>
+                <span style="background:rgba(53,100,166,0.12);padding:5px 12px;border-radius:20px;">
+                    <i class="far fa-clock"></i> Mise à jour le <?php echo htmlspecialchars($pbv_geo_maj); ?>
+                </span>
+                <?php endif; ?>
+                <a href="<?php echo htmlspecialchars(geo_osm_link($pbv_geo_lat, $pbv_geo_lng), ENT_QUOTES, 'UTF-8'); ?>"
+                    target="_blank" rel="noopener noreferrer"
+                    style="color:var(--couleur-dominante,#3564a6);font-weight:600;">
+                    <i class="fas fa-map"></i> Vérifier sur la carte
+                </a>
+            </div>
+            <?php else: ?>
+            <p style="font-size:0.85rem;color:var(--gris-moyen,#737373);margin-bottom:16px;">
+                <i class="fas fa-info-circle"></i> Aucune position enregistrée pour le moment.
+            </p>
+            <?php endif; ?>
+
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                <form method="POST" action="parametres-boutique-vendeur.php" id="pbv-geo-capture-form">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars((string)($_SESSION['admin_csrf'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="geo_boutique_action" value="capture">
+                    <input type="hidden" name="geo_lat" id="pbv_geo_lat" value="">
+                    <input type="hidden" name="geo_lng" id="pbv_geo_lng" value="">
+                    <button type="button" id="pbv-btn-geo-capture" class="pbv-section-save pbv-section-save--gold">
+                        <i class="fas fa-location-crosshairs"></i> Utiliser ma position actuelle
+                    </button>
+                </form>
+                <form method="POST" action="parametres-boutique-vendeur.php">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars((string)($_SESSION['admin_csrf'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="geo_boutique_action" value="geocode">
+                    <button type="submit" class="pbv-section-save pbv-section-save--green">
+                        <i class="fas fa-map-pin"></i> Estimer depuis mon adresse
+                    </button>
+                </form>
+                <?php if ($pbv_geo_set): ?>
+                <form method="POST" action="parametres-boutique-vendeur.php">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars((string)($_SESSION['admin_csrf'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="geo_boutique_action" value="clear">
+                    <button type="submit" class="pbv-section-save" style="background:var(--error-bg,rgba(255,107,53,0.12));color:var(--orange-fonce,#E85A2A);">
+                        <i class="fas fa-trash-can"></i> Supprimer la position
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+            <div id="pbv-geo-status" style="display:none;margin-top:12px;font-size:0.85rem;padding:10px 12px;border-radius:6px;background:var(--blanc-neige,#F5F5F5);"></div>
+        </div>
+    </section>
+
 </div><!-- /.pbv-page -->
 
 <script>
@@ -1582,6 +1690,41 @@ $admin_initial = $admin_prenom !== '' ? mb_strtoupper(mb_substr($admin_prenom, 0
 </script>
 
 <script src="/js/geo-country-region.js" defer></script>
+<script>
+(function () {
+    var btn = document.getElementById('pbv-btn-geo-capture');
+    var form = document.getElementById('pbv-geo-capture-form');
+    var latInput = document.getElementById('pbv_geo_lat');
+    var lngInput = document.getElementById('pbv_geo_lng');
+    var statusEl = document.getElementById('pbv-geo-status');
+    if (!btn || !form || !latInput || !lngInput) return;
+
+    function setStatus(msg) {
+        if (!statusEl) return;
+        statusEl.style.display = '';
+        statusEl.innerHTML = msg;
+    }
+
+    btn.addEventListener('click', function () {
+        if (!('geolocation' in navigator)) {
+            setStatus('<i class="fas fa-triangle-exclamation"></i> Géolocalisation non disponible sur cet appareil.');
+            return;
+        }
+        setStatus('<i class="fas fa-circle-notch fa-spin"></i> Recherche de votre position…');
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                latInput.value = pos.coords.latitude.toFixed(8);
+                lngInput.value = pos.coords.longitude.toFixed(8);
+                form.submit();
+            },
+            function () {
+                setStatus('<i class="fas fa-triangle-exclamation"></i> Impossible d\u2019obtenir la position. Autorisez la localisation dans votre navigateur, ou utilisez "Estimer depuis mon adresse".');
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+    });
+})();
+</script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

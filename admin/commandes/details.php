@@ -318,6 +318,79 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
         ?>
     </section>
 
+    <?php
+    /* ---- Position GPS exacte du client (capturée à la commande) ---- */
+    require_once __DIR__ . '/../../includes/geo_location_service.php';
+    $geo_cmd_lat = geo_parse_coord($commande['delivery_latitude'] ?? null);
+    $geo_cmd_lng = geo_parse_coord($commande['delivery_longitude'] ?? null);
+    if (geo_coords_valid($geo_cmd_lat, $geo_cmd_lng)):
+        $geo_cmd_precision = geo_parse_precision($commande['delivery_geo_precision'] ?? null);
+        $geo_cmd_source = (string) ($commande['delivery_geo_source'] ?? '');
+        $geo_cmd_date = !empty($commande['delivery_geo_date']) ? date('d/m/Y à H:i', strtotime($commande['delivery_geo_date'])) : '';
+        $geo_source_labels = ['gps' => 'GPS appareil', 'map_pin' => 'Pin carte', 'adresse' => 'Adresse géocodée', 'ip' => 'Estimation IP'];
+
+        /* Distance boutique -> client si la boutique du vendeur est géolocalisée */
+        $geo_distance_txt = '';
+        if (!empty($commande['vendeur_id']) && geo_boutiques_ready()) {
+            try {
+                $stmt_geo_b = $db->prepare("SELECT boutique_latitude, boutique_longitude FROM admin WHERE id = :id");
+                $stmt_geo_b->execute(['id' => (int) $commande['vendeur_id']]);
+                $geo_b = $stmt_geo_b->fetch(PDO::FETCH_ASSOC);
+                $geo_b_lat = $geo_b ? geo_parse_coord($geo_b['boutique_latitude']) : null;
+                $geo_b_lng = $geo_b ? geo_parse_coord($geo_b['boutique_longitude']) : null;
+                if (geo_coords_valid($geo_b_lat, $geo_b_lng)) {
+                    $geo_distance_txt = geo_format_distance(geo_distance_km($geo_b_lat, $geo_b_lng, $geo_cmd_lat, $geo_cmd_lng));
+                }
+            } catch (PDOException $e) { /* distance facultative */ }
+        }
+    ?>
+    <section class="cmd-geo-section" aria-labelledby="cmd-geo-heading"
+        style="background:var(--glass-bg,#fff);border:1px solid rgba(53,100,166,0.2);border-radius:12px;padding:20px 24px;margin-bottom:1.5rem;">
+        <h2 id="cmd-geo-heading" style="font-size:1.05rem;display:flex;align-items:center;gap:10px;margin:0 0 12px;">
+            <i class="fas fa-map-location-dot" style="color:var(--couleur-dominante,#3564a6);"></i>
+            Position exacte du client
+        </h2>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px;font-size:0.85rem;color:var(--gris-fonce,#4a4a4a);">
+            <span style="background:rgba(53,100,166,0.12);padding:4px 10px;border-radius:20px;">
+                <i class="fas fa-crosshairs"></i>
+                <?php echo htmlspecialchars(number_format($geo_cmd_lat, 6, '.', '')); ?>, <?php echo htmlspecialchars(number_format($geo_cmd_lng, 6, '.', '')); ?>
+            </span>
+            <?php if ($geo_cmd_precision !== null): ?>
+            <span style="background:rgba(53,100,166,0.12);padding:4px 10px;border-radius:20px;">
+                <i class="fas fa-bullseye"></i> Précision ± <?php echo htmlspecialchars(number_format($geo_cmd_precision, 0, ',', ' ')); ?> m
+            </span>
+            <?php endif; ?>
+            <?php if (isset($geo_source_labels[$geo_cmd_source])): ?>
+            <span style="background:rgba(53,100,166,0.12);padding:4px 10px;border-radius:20px;">
+                <i class="fas fa-satellite-dish"></i> <?php echo $geo_source_labels[$geo_cmd_source]; ?>
+            </span>
+            <?php endif; ?>
+            <?php if ($geo_cmd_date !== ''): ?>
+            <span style="background:rgba(53,100,166,0.12);padding:4px 10px;border-radius:20px;">
+                <i class="far fa-clock"></i> Capturée le <?php echo htmlspecialchars($geo_cmd_date); ?>
+            </span>
+            <?php endif; ?>
+            <?php if ($geo_distance_txt !== ''): ?>
+            <span style="background:rgba(255,107,53,0.12);padding:4px 10px;border-radius:20px;color:var(--orange-fonce,#E85A2A);font-weight:600;">
+                <i class="fas fa-route"></i> À <?php echo htmlspecialchars($geo_distance_txt); ?> de votre boutique
+            </span>
+            <?php endif; ?>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <a href="<?php echo htmlspecialchars(geo_osm_link($geo_cmd_lat, $geo_cmd_lng), ENT_QUOTES, 'UTF-8'); ?>"
+                target="_blank" rel="noopener noreferrer" class="btn-primary"
+                style="display:inline-flex;align-items:center;gap:8px;">
+                <i class="fas fa-map"></i> Voir sur OpenStreetMap
+            </a>
+            <a href="<?php echo htmlspecialchars(geo_gmaps_link($geo_cmd_lat, $geo_cmd_lng), ENT_QUOTES, 'UTF-8'); ?>"
+                target="_blank" rel="noopener noreferrer" class="btn-back"
+                style="display:inline-flex;align-items:center;gap:8px;">
+                <i class="fab fa-google"></i> Ouvrir dans Google Maps
+            </a>
+        </div>
+    </section>
+    <?php endif; ?>
+
     <section class="cmd-products-section" aria-labelledby="cmd-products-heading">
         <div class="cmd-products-section__head">
             <div class="cmd-products-section__head-left">

@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_admin.php';
 require_once __DIR__ . '/../includes/db_schema_helpers.php';
+require_once __DIR__ . '/../includes/geo_location_service.php';
 
 /**
  * Construit la liste produits pour e-mail / notification (sous-ensemble panier).
@@ -115,6 +116,16 @@ function process_create_commande() {
     $zone_livraison_id = null;
     $frais_livraison = 0;
     $notes = null;
+
+    /* Position exacte du client (champs cachés remplis par le navigateur, facultatif) */
+    $geo_lat = geo_parse_coord($_POST['geo_lat'] ?? null);
+    $geo_lng = geo_parse_coord($_POST['geo_lng'] ?? null);
+    $geo_precision = geo_parse_precision($_POST['geo_precision'] ?? null);
+    $geo_source = (string) ($_POST['geo_source'] ?? 'gps');
+    if (!in_array($geo_source, GEO_SOURCES_COMMANDE, true)) {
+        $geo_source = 'gps';
+    }
+    $geo_disponible = geo_coords_valid($geo_lat, $geo_lng);
     
     $panier_items = get_panier_by_user($user_id);
     if ($limit_vendeur_id !== null) {
@@ -181,6 +192,21 @@ function process_create_commande() {
             delete_panier_lines_for_vendeur($user_id, $limit_vendeur_id);
         } else {
             clear_panier($user_id);
+        }
+
+        /* Attacher la position exacte du client à chaque commande créée */
+        if ($geo_disponible) {
+            $cmds_geo = isset($result['commandes']) && is_array($result['commandes']) ? $result['commandes'] : [];
+            if (empty($cmds_geo) && !empty($result['commande_id'])) {
+                $cmds_geo = [['commande_id' => $result['commande_id']]];
+            }
+            foreach ($cmds_geo as $cg) {
+                if (!empty($cg['commande_id'])) {
+                    geo_save_commande_location((int) $cg['commande_id'], $geo_lat, $geo_lng, $geo_precision, $geo_source);
+                }
+            }
+            geo_save_user_last_location((int) $user_id, $geo_lat, $geo_lng, $geo_precision);
+            geo_session_set_location($geo_lat, $geo_lng, $geo_precision);
         }
 
         /* Une notification par boutique (même ordre que create_marketplace_commandes_from_panier) */

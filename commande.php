@@ -113,6 +113,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Récupérer les informations de l'utilisateur
 $user = get_user_by_id($_SESSION['user_id']);
 
+// Position déjà connue : session (fraîche) en priorité, sinon dernière position BDD
+require_once __DIR__ . '/includes/geo_location_service.php';
+$geo_saved = geo_session_get_location();
+if ($geo_saved === null && $user) {
+    $u_lat = geo_parse_coord($user['last_latitude'] ?? null);
+    $u_lng = geo_parse_coord($user['last_longitude'] ?? null);
+    if (geo_coords_valid($u_lat, $u_lng)) {
+        $geo_saved = [
+            'lat' => $u_lat,
+            'lng' => $u_lng,
+            'precision' => geo_parse_precision($user['last_geo_precision'] ?? null),
+        ];
+    }
+}
+
 // Récupérer les produits du panier (éventuellement limités à une boutique)
 $panier_items = get_panier_by_user($_SESSION['user_id']);
 if ($commande_boutique_admin) {
@@ -153,6 +168,10 @@ include 'nav_bar.php';
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <?php require_once __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
     <style>
     .commande-container {
@@ -433,6 +452,82 @@ include 'nav_bar.php';
         text-decoration: underline;
     }
 
+    /* Bloc consentement géolocalisation */
+    .geo-consent-box {
+        background: var(--bleu-pale);
+        border: 1px solid var(--border-input);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .geo-consent-box .geo-consent-text {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--texte-fonce);
+        margin-bottom: 12px;
+    }
+
+    .geo-consent-box .geo-consent-text i {
+        color: var(--couleur-dominante);
+        font-size: 18px;
+        margin-top: 2px;
+    }
+
+    .btn-geo-capture {
+        background: var(--couleur-dominante);
+        color: var(--texte-clair);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-geo-capture:hover {
+        background: var(--couleur-dominante-hover);
+    }
+
+    .geo-status {
+        margin-top: 12px;
+        font-size: 13px;
+        padding: 10px 12px;
+        border-radius: 6px;
+    }
+
+    .geo-status[data-geo-state="pending"] {
+        background: var(--blanc-neige);
+        color: var(--gris-fonce);
+    }
+
+    .geo-status[data-geo-state="ok"] {
+        background: var(--success-bg);
+        border: 1px solid var(--success-border);
+        color: var(--texte-fonce);
+    }
+
+    .geo-status[data-geo-state="error"] {
+        background: var(--error-bg);
+        border: 1px solid var(--error-border);
+        color: var(--texte-fonce);
+    }
+
+    .geo-map {
+        margin-top: 14px;
+        height: 280px;
+        border-radius: 8px;
+        border: 1px solid var(--border-input);
+        overflow: hidden;
+        z-index: 0;
+    }
+
     /* Styles pour éviter que le footer s'incruste */
     .commande-container {
         margin-bottom: 100px;
@@ -546,6 +641,29 @@ include 'nav_bar.php';
                     <input type="hidden" name="boutique_slug" value="<?php echo htmlspecialchars($commande_boutique_slug, ENT_QUOTES, 'UTF-8'); ?>">
                     <?php endif; ?>
 
+                    <!-- Position exacte du client (remplie par le navigateur après consentement) -->
+                    <input type="hidden" name="geo_lat" id="geo_lat"
+                        value="<?php echo $geo_saved ? htmlspecialchars(number_format($geo_saved['lat'], 8, '.', ''), ENT_QUOTES, 'UTF-8') : ''; ?>">
+                    <input type="hidden" name="geo_lng" id="geo_lng"
+                        value="<?php echo $geo_saved ? htmlspecialchars(number_format($geo_saved['lng'], 8, '.', ''), ENT_QUOTES, 'UTF-8') : ''; ?>">
+                    <input type="hidden" name="geo_precision" id="geo_precision"
+                        value="<?php echo $geo_saved && $geo_saved['precision'] !== null ? (int) $geo_saved['precision'] : ''; ?>">
+                    <input type="hidden" name="geo_source" id="geo_source" value="<?php echo $geo_saved ? 'gps' : ''; ?>">
+
+                    <div class="geo-consent-box">
+                        <div class="geo-consent-text">
+                            <i class="fas fa-map-location-dot"></i>
+                            <span>Partagez votre position exacte pour faciliter la livraison.
+                            Elle est transmise uniquement au vendeur de votre commande.</span>
+                        </div>
+                        <button type="button" id="btn-geo-capture" class="btn-geo-capture">
+                            <i class="fas fa-location-crosshairs"></i>
+                            <?php echo $geo_saved ? 'Mettre à jour ma position' : 'Utiliser ma position'; ?>
+                        </button>
+                        <div id="geo-status" class="geo-status" style="display:none;"></div>
+                        <div id="geo-map" class="geo-map" style="display:none;"></div>
+                    </div>
+
                     <div class="form-group">
                         <label for="telephone_livraison">
                             <i class="fas fa-phone"></i> Téléphone de livraison *
@@ -575,10 +693,31 @@ include 'nav_bar.php';
     <?php include 'footer.php'; ?>
 
     <?php require_once __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+    <script src="/js/geo-location.js<?php echo asset_version_query(); ?>"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof window.initAuthIntlTel === 'function') {
             window.initAuthIntlTel('telephone_livraison');
+        }
+        if (window.GeoLocationCapture) {
+            window.GeoLocationCapture.init({
+                latInput: 'geo_lat',
+                lngInput: 'geo_lng',
+                precisionInput: 'geo_precision',
+                sourceInput: 'geo_source',
+                statusEl: 'geo-status',
+                button: 'btn-geo-capture',
+                mapContainer: 'geo-map',
+                addressInput: 'adresse_livraison',
+                <?php if ($geo_saved): ?>
+                initial: {
+                    lat: <?php echo json_encode((float) $geo_saved['lat']); ?>,
+                    lng: <?php echo json_encode((float) $geo_saved['lng']); ?>,
+                    precision: <?php echo json_encode($geo_saved['precision'] !== null ? (float) $geo_saved['precision'] : null); ?>
+                },
+                <?php endif; ?>
+                auto: true
+            });
         }
     });
     </script>

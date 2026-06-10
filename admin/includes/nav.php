@@ -850,5 +850,73 @@ if ($is_vendeur_menu) {
     </script>
     <?php endif; ?>
 
+    <?php
+    /* Position GPS boutique : capture automatique à la 1re connexion vendeur
+       (uniquement si aucune position n'est encore enregistrée). */
+    $geo_vnav_show = false;
+    if ($is_vendeur_menu && !empty($_SESSION['admin_id'])) {
+        require_once dirname(__DIR__, 2) . '/includes/geo_location_service.php';
+        if (geo_boutiques_ready() && isset($GLOBALS['db']) && $GLOBALS['db'] instanceof PDO) {
+            try {
+                $geo_vnav_stmt = $GLOBALS['db']->prepare("SELECT boutique_latitude FROM admin WHERE id = :id");
+                $geo_vnav_stmt->execute(['id' => (int) $_SESSION['admin_id']]);
+                $geo_vnav_row = $geo_vnav_stmt->fetch(PDO::FETCH_ASSOC);
+                $geo_vnav_show = $geo_vnav_row && $geo_vnav_row['boutique_latitude'] === null;
+            } catch (PDOException $e) {
+                $geo_vnav_show = false;
+            }
+        }
+    }
+    $geo_vnav_redirect = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/admin/dashboard.php';
+    if ($geo_vnav_redirect === '' || strpos($geo_vnav_redirect, '/') !== 0 || strpos($geo_vnav_redirect, '//') === 0) {
+        $geo_vnav_redirect = '/admin/dashboard.php';
+    }
+    ?>
+    <?php if ($geo_vnav_show): ?>
+    <form method="POST" action="/admin/set-boutique-location.php" id="geo-vendeur-auto-form" style="display:none;">
+        <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($geo_vnav_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+        <input type="hidden" name="geo_lat" id="geo_vnav_lat" value="">
+        <input type="hidden" name="geo_lng" id="geo_vnav_lng" value="">
+    </form>
+    <script>
+    (function () {
+        'use strict';
+        if (!('geolocation' in navigator)) return;
+        try {
+            if (sessionStorage.getItem('geoVendeurAutoDone') === '1') return;
+        } catch (e) { return; }
+
+        function attempt() {
+            try { sessionStorage.setItem('geoVendeurAutoDone', '1'); } catch (e) {}
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    var form = document.getElementById('geo-vendeur-auto-form');
+                    var lat = document.getElementById('geo_vnav_lat');
+                    var lng = document.getElementById('geo_vnav_lng');
+                    if (!form || !lat || !lng) return;
+                    lat.value = pos.coords.latitude.toFixed(8);
+                    lng.value = pos.coords.longitude.toFixed(8);
+                    form.submit();
+                },
+                function () { /* refus : le vendeur pourra le faire dans ses paramètres */ },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+            );
+        }
+
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'geolocation' }).then(function (st) {
+                if (st.state === 'denied') {
+                    try { sessionStorage.setItem('geoVendeurAutoDone', '1'); } catch (e) {}
+                    return;
+                }
+                attempt();
+            }).catch(attempt);
+        } else {
+            attempt();
+        }
+    })();
+    </script>
+    <?php endif; ?>
+
     <!-- Contenu principal -->
     <main class="admin-content" id="adminContent">

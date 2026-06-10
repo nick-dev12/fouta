@@ -2100,3 +2100,4 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
     });
 </script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+<?php include __DIR__ . '/includes/geo_auto_capture.php'; ?>
