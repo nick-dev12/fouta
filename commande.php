@@ -145,6 +145,7 @@ $panier_total = panier_items_sous_total($panier_items);
 $nombre_total_articles = panier_items_count_quantites($panier_items);
 
 require_once __DIR__ . '/includes/commande_mode_helpers.php';
+require_once __DIR__ . '/includes/image_optimizer.php';
 $commande_pickup_boutiques = commande_pickup_boutiques_from_panier($panier_items);
 $commande_mode_selected = commande_mode_livraison_normalize($_POST['mode_livraison'] ?? 'livraison');
 
@@ -375,7 +376,7 @@ include 'nav_bar.php';
 
     .panier-item-summary {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 15px;
         padding: 12px 0;
         border-bottom: 1px solid var(--border-input);
@@ -385,32 +386,45 @@ include 'nav_bar.php';
         border-bottom: none;
     }
 
+    .panier-item-img {
+        flex-shrink: 0;
+    }
+
     .panier-item-summary img {
         width: 60px;
         height: 60px;
         object-fit: cover;
         border-radius: 8px;
+        display: block;
     }
 
-    .panier-item-summary-info {
+    .panier-item-summary-content {
         flex: 1;
+        min-width: 0;
     }
 
-    .panier-item-summary-info h4 {
+    .panier-item-summary-title {
         font-size: 14px;
         color: var(--titres);
-        margin-bottom: 5px;
+        margin: 0 0 4px;
         font-weight: 600;
+        line-height: 1.35;
     }
 
-    .panier-item-boutique {
-        font-size: 12px;
-        color: var(--orange, #c26638);
-        font-weight: 600;
-        margin-bottom: 4px;
+    .panier-item-summary-opts {
+        font-size: 11px;
+        color: var(--gris-moyen);
+        margin: 0 0 6px;
     }
 
-    .panier-item-summary-info p {
+    .panier-item-summary-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .panier-item-qty {
         font-size: 12px;
         color: var(--gris-moyen);
         margin: 0;
@@ -418,8 +432,9 @@ include 'nav_bar.php';
 
     .panier-item-summary-price {
         font-size: 14px;
-        font-weight: 600;
-        color: var(--titres);
+        font-weight: 700;
+        color: var(--orange);
+        white-space: nowrap;
     }
 
     .commande-page-title {
@@ -459,21 +474,6 @@ include 'nav_bar.php';
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 20px;
-    }
-
-    .geo-consent-box .geo-consent-text {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        font-size: 13px;
-        color: var(--texte-fonce);
-        margin-bottom: 12px;
-    }
-
-    .geo-consent-box .geo-consent-text i {
-        color: var(--couleur-dominante);
-        font-size: 18px;
-        margin-top: 2px;
     }
 
     .btn-geo-capture {
@@ -620,42 +620,41 @@ include 'nav_bar.php';
         color: var(--gris-moyen);
     }
 
-    .geo-search-hint {
-        font-size: 12px;
-        color: var(--gris-moyen);
-        margin-top: 6px;
-    }
-
     .cmd-mode-chooser {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 8px;
         margin-bottom: 20px;
     }
 
     .cmd-mode-btn {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        padding: 16px 12px;
+        gap: 10px;
+        padding: 10px 12px;
         border: 2px solid var(--border-input);
         border-radius: 12px;
         background: var(--blanc);
         color: var(--texte-fonce);
         font-family: inherit;
-        font-size: 0.88rem;
+        font-size: 1rem;
         font-weight: 700;
         cursor: pointer;
         transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
         text-align: center;
-        min-height: 88px;
+        min-height: 0;
     }
 
     .cmd-mode-btn i {
-        font-size: 1.35rem;
+        font-size: 1.5rem;
         color: var(--couleur-dominante);
+        flex-shrink: 0;
+    }
+
+    .cmd-mode-btn span {
+        line-height: 1.2;
     }
 
     .cmd-mode-btn.is-active {
@@ -726,13 +725,105 @@ include 'nav_bar.php';
 
     .cmd-pickup-card__maps a:hover { text-decoration: underline; }
 
-    @media (max-width: 480px) {
-        .cmd-mode-chooser { grid-template-columns: 1fr; }
-        .cmd-mode-btn {
-            min-height: 72px;
-            flex-direction: row;
-            justify-content: flex-start;
-            padding: 14px 16px;
+    @media (max-width: 991px) {
+        .commande-container {
+            margin-top: 24px;
+            padding: 0 16px;
+        }
+
+        .commande-page-title {
+            font-size: 1.35rem;
+            margin-bottom: 6px;
+        }
+
+        .commande-summary-section,
+        .commande-form-section {
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+        }
+
+        .summary-item {
+            padding: 6px 0;
+        }
+
+        .summary-item-label,
+        .summary-item-value {
+            font-size: 12px;
+        }
+
+        .summary-total {
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        .summary-total .summary-item-label {
+            font-size: 14px;
+        }
+
+        .summary-total .summary-item-value {
+            font-size: 16px;
+        }
+
+        .panier-item-summary {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            column-gap: 12px;
+            row-gap: 6px;
+            padding: 10px 0;
+        }
+
+        .panier-item-img {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .panier-item-summary-content {
+            display: contents;
+        }
+
+        .panier-item-summary-title {
+            grid-column: 2;
+            grid-row: 1;
+            align-self: center;
+            margin: 0;
+        }
+
+        .panier-item-summary-opts {
+            grid-column: 1 / -1;
+            margin: 0;
+        }
+
+        .panier-item-summary-meta {
+            grid-column: 1 / -1;
+        }
+
+        .geo-consent-box {
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+
+        .geo-search-label {
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .geo-search-input {
+            padding: 10px 12px 10px 38px;
+            font-size: 13px;
+        }
+
+        .geo-map {
+            height: 220px;
+        }
+
+        .btn-geo-capture {
+            padding: 9px 14px;
+            font-size: 13px;
         }
     }
 
@@ -777,15 +868,12 @@ include 'nav_bar.php';
                         ?>
                     <div class="panier-item-summary">
                         <div class="panier-item-img">
-                            <img src="/upload/<?php echo htmlspecialchars($item_img); ?>"
-                                alt="<?php echo htmlspecialchars($item['nom']); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url((string) $item_img, 'sm'), ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="<?php echo htmlspecialchars($item['nom'], ENT_QUOTES, 'UTF-8'); ?>"
                                 onerror="this.src='/image/produit1.jpg'">
                         </div>
-                        <div class="panier-item-summary-info">
-                            <?php if (!empty($item['vendeur_boutique_nom'])): ?>
-                            <div class="panier-item-boutique"><i class="fas fa-store"></i> <?php echo htmlspecialchars($item['vendeur_boutique_nom']); ?></div>
-                            <?php endif; ?>
-                            <h4><?php echo htmlspecialchars(!empty($item['panier_variante_nom']) ? $item['nom'] . ' - ' . $item['panier_variante_nom'] : $item['nom']); ?></h4>
+                        <div class="panier-item-summary-content">
+                            <h4 class="panier-item-summary-title"><?php echo htmlspecialchars(!empty($item['panier_variante_nom']) ? $item['nom'] . ' - ' . $item['panier_variante_nom'] : $item['nom'], ENT_QUOTES, 'UTF-8'); ?></h4>
                             <?php
                             $opts = [];
                             if (!empty($item['panier_couleur'])) $opts[] = 'Couleur: ' . htmlspecialchars($item['panier_couleur']);
@@ -793,12 +881,14 @@ include 'nav_bar.php';
                             if (!empty($item['panier_taille'])) $opts[] = 'Taille: ' . htmlspecialchars($item['panier_taille']) . (!empty($item['panier_surcout_taille']) && $item['panier_surcout_taille'] > 0 ? ' (+' . number_format($item['panier_surcout_taille'], 0, ',', ' ') . ' FCFA)' : '');
                             ?>
                             <?php if (!empty($opts)): ?>
-                            <p style="font-size: 11px; color: var(--gris-moyen); margin-bottom: 4px;"><?php echo implode(' • ', $opts); ?></p>
+                            <p class="panier-item-summary-opts"><?php echo implode(' • ', $opts); ?></p>
                             <?php endif; ?>
-                            <p>Quantité: <?php echo $item['quantite']; ?> × <?php echo number_format($prix_unitaire, 0, ',', ' '); ?> FCFA</p>
-                        </div>
-                        <div class="panier-item-summary-price">
-                            <?php echo number_format($prix_total_item, 0, ',', ' '); ?> FCFA
+                            <div class="panier-item-summary-meta">
+                                <p class="panier-item-qty">Quantité: <?php echo (int) $item['quantite']; ?> × <?php echo number_format($prix_unitaire, 0, ',', ' '); ?> FCFA</p>
+                                <div class="panier-item-summary-price">
+                                    <?php echo number_format($prix_total_item, 0, ',', ' '); ?> FCFA
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -919,12 +1009,6 @@ include 'nav_bar.php';
                     <input type="hidden" name="geo_source" id="geo_source" value="<?php echo $geo_saved ? 'gps' : ''; ?>">
 
                     <div class="geo-consent-box">
-                        <div class="geo-consent-text">
-                            <i class="fas fa-map-location-dot"></i>
-                            <span>Indiquez où livrer la commande : votre position, celle d'un proche, ou une adresse recherchée.
-                            Elle est transmise uniquement au vendeur.</span>
-                        </div>
-
                         <div class="geo-search-wrap">
                             <label class="geo-search-label" for="geo_address_search">
                                 <i class="fas fa-magnifying-glass"></i> Rechercher une adresse de livraison
@@ -936,10 +1020,6 @@ include 'nav_bar.php';
                                     placeholder="Quartier, rue, marché, ville… ou collez une adresse">
                             </div>
                             <div id="geo_search_suggestions" class="geo-search-suggestions" aria-hidden="true"></div>
-                            <p class="geo-search-hint">
-                                Suggestions limitées au <?php echo htmlspecialchars($geo_search_country_label, ENT_QUOTES, 'UTF-8'); ?>.
-                                Tapez un quartier, une rue ou une ville, ou collez une adresse.
-                            </p>
                         </div>
 
                         <div id="geo-map" class="geo-map" style="display:none;"></div>
