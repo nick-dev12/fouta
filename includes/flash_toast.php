@@ -45,39 +45,81 @@ if (!function_exists('flash_toast_queue_page')) {
     }
 }
 
+if (!function_exists('flash_toast_query_once')) {
+    /**
+     * Affiche un toast issu d’un paramètre GET une seule fois par session.
+     */
+    function flash_toast_query_once($session_key, $type, $message)
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            @session_start();
+        }
+        if (!isset($_SESSION['flash_query_once']) || !is_array($_SESSION['flash_query_once'])) {
+            $_SESSION['flash_query_once'] = [];
+        }
+        if (!empty($_SESSION['flash_query_once'][$session_key])) {
+            return null;
+        }
+        $message = flash_toast_plain($message);
+        if ($message === '') {
+            return null;
+        }
+        $_SESSION['flash_query_once'][$session_key] = 1;
+        $type = in_array($type, ['success', 'error', 'info', 'warning'], true) ? $type : 'info';
+        return ['type' => $type, 'message' => $message];
+    }
+}
+
 if (!function_exists('flash_toast_from_query')) {
     function flash_toast_from_query()
     {
         $items = [];
 
         if (isset($_GET['added']) && in_array((string) $_GET['added'], ['1', 'success'], true)) {
-            $items[] = ['type' => 'success', 'message' => 'Produit ajouté au panier avec succès.'];
+            $row = flash_toast_query_once('added_panier', 'success', 'Produit ajouté au panier avec succès.');
+            if ($row) {
+                $items[] = $row;
+            }
         }
 
         if (!empty($_GET['recommande']) && (string) $_GET['recommande'] === '1') {
             $count = max(1, (int) ($_GET['count'] ?? 1));
-            $items[] = [
-                'type' => 'success',
-                'message' => $count > 1
-                    ? $count . ' produits de votre commande annulée ont été ajoutés au panier avec succès !'
-                    : 'Les produits ont été ajoutés au panier avec succès !',
-            ];
+            $msg = $count > 1
+                ? $count . ' produits de votre commande annulée ont été ajoutés au panier avec succès !'
+                : 'Les produits ont été ajoutés au panier avec succès !';
+            $row = flash_toast_query_once('recommande_panier_' . $count, 'success', $msg);
+            if ($row) {
+                $items[] = $row;
+            }
         }
 
         if (!empty($_GET['receive_ok'])) {
-            $items[] = ['type' => 'success', 'message' => 'Réception du colis confirmée avec succès !'];
+            $row = flash_toast_query_once('receive_ok', 'success', 'Réception du colis confirmée avec succès !');
+            if ($row) {
+                $items[] = $row;
+            }
         }
 
         if (!empty($_GET['commande_annulee'])) {
-            $items[] = ['type' => 'success', 'message' => 'Commande annulée avec succès.'];
+            $row = flash_toast_query_once('commande_annulee', 'success', 'Commande annulée avec succès.');
+            if ($row) {
+                $items[] = $row;
+            }
         }
 
         if (!empty($_GET['livraison_confirmee'])) {
-            $items[] = ['type' => 'success', 'message' => 'Colis reçu confirmé avec succès !'];
+            $row = flash_toast_query_once('livraison_confirmee', 'success', 'Colis reçu confirmé avec succès !');
+            if ($row) {
+                $items[] = $row;
+            }
         }
 
         if (isset($_GET['error']) && (string) $_GET['error'] !== '') {
-            $items[] = ['type' => 'error', 'message' => flash_toast_plain((string) $_GET['error'])];
+            $err = flash_toast_plain((string) $_GET['error']);
+            $row = flash_toast_query_once('error_' . md5($err), 'error', $err);
+            if ($row) {
+                $items[] = $row;
+            }
         }
 
         return $items;
@@ -178,7 +220,6 @@ if (!function_exists('flash_toast_render')) {
         $items = flash_toast_collect();
 
         echo '<link rel="stylesheet" href="/css/flash-toast.css' . asset_version_query() . '">' . "\n";
-        echo '<div id="flashToastHost" class="flash-toast-host" aria-live="polite" aria-atomic="true"></div>' . "\n";
         echo '<script>window.__FLASH_TOASTS__=' . json_encode(
             $items,
             JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT

@@ -30,6 +30,7 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 auth_clear_portal_cookie();
+auth_revoke_vendeur_marketplace_visit();
 
 header('Location: /choix-connexion.php');
 exit;

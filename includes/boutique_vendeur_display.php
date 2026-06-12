@@ -68,7 +68,7 @@ if (!function_exists('boutique_pickup_info_from_admin')) {
     /**
      * Infos point de retrait pour affichage client.
      *
-     * @return array{nom: string, adresse: string, region: string, telephone: string, lat: ?float, lng: ?float, adresse_ligne: string, maps_url: string}
+     * @return array{nom: string, adresse: string, region: string, telephone: string, lat: ?float, lng: ?float, adresse_ligne: string, maps_url: string, whatsapp_url: string}
      */
     function boutique_pickup_info_from_admin(?array $adm, string $fallback_nom = 'Boutique'): array
     {
@@ -91,9 +91,17 @@ if (!function_exists('boutique_pickup_info_from_admin')) {
         }
         $adresse_ligne = boutique_adresse_publique($adm && is_array($adm) ? $adm : []);
         $maps_url = '';
+        $whatsapp_url = '';
+        $wa_label = 'Point de retrait — ' . $nom;
+
         if ($lat !== null && $lng !== null && geo_coords_valid($lat, $lng)) {
-            $maps_url = geo_gmaps_link($lat, $lng);
+            $maps_url = geo_nav_google_maps_dir((float) $lat, (float) $lng);
+            $whatsapp_url = geo_share_whatsapp((float) $lat, (float) $lng, $wa_label);
+        } elseif ($adresse_ligne !== '') {
+            $maps_url = geo_gmaps_search_link($adresse_ligne);
+            $whatsapp_url = 'https://wa.me/?text=' . rawurlencode($wa_label . ' : ' . $adresse_ligne . ' ' . $maps_url);
         }
+
         return [
             'nom' => $nom,
             'adresse' => $adresse,
@@ -103,6 +111,7 @@ if (!function_exists('boutique_pickup_info_from_admin')) {
             'lng' => geo_coords_valid($lat, $lng) ? (float) $lng : null,
             'adresse_ligne' => $adresse_ligne,
             'maps_url' => $maps_url,
+            'whatsapp_url' => $whatsapp_url,
         ];
     }
 }

@@ -2,9 +2,9 @@
     'use strict';
 
     var ICONS = {
-        success: 'fa-circle-check',
-        error:   'fa-circle-xmark',
-        info:    'fa-bell',
+        success: 'fa-check',
+        error:   'fa-xmark',
+        info:    'fa-circle-info',
         warning: 'fa-triangle-exclamation'
     };
 
@@ -15,68 +15,117 @@
         warning: 'Attention'
     };
 
+    var QUERY_STRIP = [
+        'added', 'recommande', 'receive_ok', 'commande_annulee',
+        'livraison_confirmee', 'error', 'success', 'numeros', 'numero', 'count'
+    ];
+
+    var queue = [];
+    var hostEl = null;
+
     function escHtml(t) {
         var d = document.createElement('div');
         d.textContent = t == null ? '' : String(t);
         return d.innerHTML;
     }
 
-    function dismiss(el) {
-        if (!el || el.classList.contains('is-leaving')) return;
-        el.classList.remove('is-visible');
-        el.classList.add('is-leaving');
+    function getHost() {
+        if (hostEl && document.body.contains(hostEl)) {
+            return hostEl;
+        }
+        hostEl = document.createElement('div');
+        hostEl.id = 'flashToastHost';
+        hostEl.className = 'flash-toast-host';
+        hostEl.setAttribute('aria-live', 'polite');
+        hostEl.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(hostEl);
+        return hostEl;
+    }
+
+    function stripFlashQueryParams() {
+        try {
+            var url = new URL(window.location.href);
+            var changed = false;
+            QUERY_STRIP.forEach(function (key) {
+                if (url.searchParams.has(key)) {
+                    url.searchParams.delete(key);
+                    changed = true;
+                }
+            });
+            if (changed && window.history && window.history.replaceState) {
+                var qs = url.searchParams.toString();
+                window.history.replaceState({}, '', url.pathname + (qs ? '?' + qs : '') + url.hash);
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function dismissPopup(popup) {
+        if (!popup || popup.classList.contains('is-leaving')) return;
+        popup.classList.remove('is-visible');
+        popup.classList.add('is-leaving');
         setTimeout(function () {
-            if (el.parentNode) el.parentNode.removeChild(el);
-        }, 420);
+            if (popup.parentNode) popup.parentNode.removeChild(popup);
+            processQueue();
+        }, 320);
+    }
+
+    function processQueue() {
+        var host = getHost();
+        if (host.querySelector('.flash-popup:not(.is-leaving)')) return;
+        if (queue.length === 0) return;
+        show(queue.shift());
     }
 
     function show(item) {
-        var host = document.getElementById('flashToastHost');
-        if (!host) return;
-
         var type = (item && ICONS[item.type]) ? item.type : 'info';
         var msg  = item && item.message ? String(item.message) : '';
-        if (!msg) return;
+        if (!msg) {
+            processQueue();
+            return;
+        }
 
-        var toast = document.createElement('div');
-        toast.className = 'flash-toast flash-toast--' + type;
-        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
-        toast.innerHTML =
-            '<span class="flash-toast__glow" aria-hidden="true"></span>' +
-            '<div class="flash-toast__inner">' +
-                '<div class="flash-toast__icon-wrap" aria-hidden="true">' +
-                    '<span class="flash-toast__icon-ring"></span>' +
-                    '<span class="flash-toast__icon"><i class="fas ' + ICONS[type] + '"></i></span>' +
-                '</div>' +
-                '<div class="flash-toast__body">' +
-                    '<p class="flash-toast__title"><span class="flash-toast__badge">' + escHtml(TITLES[type]) + '</span></p>' +
-                    '<p class="flash-toast__message">' + escHtml(msg) + '</p>' +
-                '</div>' +
-                '<button type="button" class="flash-toast__close" aria-label="Fermer la notification">' +
-                    '<i class="fas fa-xmark" aria-hidden="true"></i>' +
-                '</button>' +
-            '</div>' +
-            '<span class="flash-toast__progress" aria-hidden="true"></span>';
+        var host = getHost();
+        var popup = document.createElement('div');
+        popup.className = 'flash-popup flash-popup--' + type;
+        popup.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        popup.innerHTML =
+            '<div class="flash-popup__icon" aria-hidden="true"><i class="fas ' + ICONS[type] + '"></i></div>' +
+            '<h2 class="flash-popup__title">' + escHtml(TITLES[type]) + '</h2>' +
+            '<p class="flash-popup__message">' + escHtml(msg) + '</p>' +
+            '<button type="button" class="flash-popup__done">Terminé</button>';
 
-        toast.querySelector('.flash-toast__close').addEventListener('click', function () {
-            dismiss(toast);
+        popup.querySelector('.flash-popup__done').addEventListener('click', function () {
+            dismissPopup(popup);
         });
-        host.appendChild(toast);
+
+        host.appendChild(popup);
 
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
-                toast.classList.add('is-visible');
+                popup.classList.add('is-visible');
             });
         });
 
-        setTimeout(function () { dismiss(toast); }, 5600);
+        setTimeout(function () { dismissPopup(popup); }, 5200);
+    }
+
+    function enqueue(item) {
+        queue.push(item);
+        processQueue();
     }
 
     function boot() {
         var list = Array.isArray(window.__FLASH_TOASTS__) ? window.__FLASH_TOASTS__ : [];
-        list.forEach(function (item, i) {
-            setTimeout(function () { show(item); }, i * 160);
+        window.__FLASH_TOASTS__ = [];
+        list.forEach(function (item) {
+            if (item && item.message) {
+                queue.push(item);
+            }
         });
+        if (list.length > 0) {
+            stripFlashQueryParams();
+        }
+        processQueue();
     }
 
     if (document.readyState === 'loading') {
@@ -86,10 +135,10 @@
     }
 
     window.FlashToast = {
-        show:    function (type, msg) { show({ type: type, message: msg }); },
-        success: function (msg)       { show({ type: 'success', message: msg }); },
-        error:   function (msg)       { show({ type: 'error',   message: msg }); },
-        info:    function (msg)       { show({ type: 'info',    message: msg }); },
-        warning: function (msg)       { show({ type: 'warning', message: msg }); }
+        show:    function (type, msg) { enqueue({ type: type, message: msg }); },
+        success: function (msg)       { enqueue({ type: 'success', message: msg }); },
+        error:   function (msg)       { enqueue({ type: 'error',   message: msg }); },
+        info:    function (msg)       { enqueue({ type: 'info',    message: msg }); },
+        warning: function (msg)       { enqueue({ type: 'warning', message: msg }); }
     };
 })();

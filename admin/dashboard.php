@@ -170,11 +170,39 @@ if (count($dash_promo_images) < 4) {
             width: 100%;
         }
 
-        .dash-v2-header__left { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+        .dash-v2-header__left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1 1 auto;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .dash-v2-header__title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
+        }
 
         .dash-v2-header__notify {
             flex: 0 0 auto;
-            margin-left: auto;
+            margin-left: 0;
+            white-space: nowrap;
+            padding: 6px 10px;
+            font-size: 0.72rem;
+            max-width: 46%;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dash-v2-header__notify-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .dash-v2-header__eyebrow {
@@ -196,11 +224,17 @@ if (count($dash_promo_images) < 4) {
 
         .dash-v2-header__title .highlight {
             color: var(--couleur-dominante, #3564a6);
-            display: block;
+            display: inline;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             max-width: 100%;
+        }
+
+        .dash-v2-header__title-row .dash-v2-header__title {
+            flex: 1 1 auto;
+            min-width: 0;
+            margin: 0;
         }
 
         .dash-v2-header__actions {
@@ -1313,23 +1347,32 @@ if (count($dash_promo_images) < 4) {
             }
 
             .dash-v2-header__left {
-                flex: 1 1 120px;
+                flex: 1 1 100%;
                 min-width: 0;
+                width: 100%;
             }
 
             .dash-v2-header__eyebrow {
-                font-size: 0.62rem;
-                letter-spacing: 0.1em;
+                font-size: 0.6rem;
+                letter-spacing: 0.08em;
+            }
+
+            .dash-v2-header__title-row {
+                gap: 6px;
             }
 
             .dash-v2-header__title {
-                font-size: clamp(0.92rem, 4.2vw, 1.15rem);
+                font-size: clamp(0.82rem, 3.6vw, 1rem);
             }
 
             .dash-v2-header__notify {
-                padding: 7px 10px;
+                padding: 5px 8px;
+                font-size: 0.64rem;
+                max-width: 52%;
+            }
+
+            .dash-v2-header__notify i {
                 font-size: 0.72rem;
-                max-width: 48%;
             }
 
             .mc-v2-shop-promo__content {
@@ -1353,16 +1396,22 @@ if (count($dash_promo_images) < 4) {
         }
 
         @media (max-width: 480px) {
-            .dash-v2-header__notify {
-                max-width: 100%;
-                width: 100%;
-                justify-content: center;
-                margin-left: 0;
+            .dash-v2-header__row {
+                align-items: stretch;
             }
 
-            .dash-v2-header__row {
-                flex-direction: column;
-                align-items: stretch;
+            .dash-v2-header__title-row {
+                flex-wrap: nowrap;
+            }
+
+            .dash-v2-header__notify {
+                max-width: 54%;
+                padding: 4px 7px;
+                font-size: 0.6rem;
+            }
+
+            .dash-v2-header__title {
+                font-size: clamp(0.78rem, 3.2vw, 0.92rem);
             }
 
             .dash-v2-hero__amount-row {
@@ -1379,8 +1428,13 @@ if (count($dash_promo_images) < 4) {
         @media (max-width: 380px) {
             .dash-v2-stats { grid-template-columns: 1fr; }
             .dash-v2-produits-grid { grid-template-columns: 1fr; }
-            .dash-v2-header__title { font-size: 0.88rem; }
-            .dash-v2-header__eyebrow { font-size: 0.58rem; }
+            .dash-v2-header__title { font-size: 0.74rem; }
+            .dash-v2-header__eyebrow { font-size: 0.55rem; }
+            .dash-v2-header__notify {
+                font-size: 0.56rem;
+                padding: 4px 6px;
+                max-width: 56%;
+            }
         }
     </style>
 </head>
@@ -1402,7 +1456,7 @@ if (count($dash_promo_images) < 4) {
         $ca_total = $stats_ventes['ca_total'] ?? 0;
         $nb_produits = count($produits_all);
         $toutes_commandes = get_all_commandes(null, $vf_dash);
-        $commandes_recentes = array_slice(is_array($toutes_commandes) ? $toutes_commandes : [], 0, 6);
+        $commandes_recentes = array_slice(is_array($toutes_commandes) ? $toutes_commandes : [], 0, 3);
         $dash_boutique_nom = trim((string) ($_SESSION['admin_boutique_nom'] ?? ''));
         if ($dash_boutique_nom === '') {
             $dash_boutique_nom = 'Ma boutique';
@@ -1431,15 +1485,18 @@ if (count($dash_promo_images) < 4) {
             <div class="dash-v2-header__row">
                 <div class="dash-v2-header__left">
                     <p class="dash-v2-header__eyebrow">Bienvenue</p>
-                    <h1 class="dash-v2-header__title">
-                        <span class="highlight"><?php echo $dash_boutique_nom; ?></span>
-                    </h1>
+                    <div class="dash-v2-header__title-row">
+                        <h1 class="dash-v2-header__title">
+                            <span class="highlight"><?php echo $dash_boutique_nom; ?></span>
+                        </h1>
+                        <button type="button" id="btn-enable-notifications"
+                            class="dash-v2-tool-btn dash-v2-tool-btn--outline dash-v2-header__notify"
+                            data-notify-type="admin" title="Activer les notifications">
+                            <i class="fas fa-bell-slash"></i>
+                            <span class="dash-v2-header__notify-label">Activer les notifications</span>
+                        </button>
+                    </div>
                 </div>
-                <button type="button" id="btn-enable-notifications"
-                    class="dash-v2-tool-btn dash-v2-tool-btn--outline dash-v2-header__notify"
-                    data-notify-type="admin" title="Activer les notifications">
-                    <i class="fas fa-bell-slash"></i>
-                </button>
             </div>
             <button type="button" id="btn-install-pwa" class="dash-v2-tool-btn dash-v2-tool-btn--ghost"
                 style="display:none;" title="Installer l'application">

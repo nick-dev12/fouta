@@ -1,10 +1,17 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_user.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 require_once __DIR__ . '/includes/auth_redirect.php';
+
+/* Ancien lien : redirection vers le script dédié (évite page blanche / bouton retour) */
 if (isset($_GET['visite_marketplace']) && (string) $_GET['visite_marketplace'] === '1') {
-    auth_grant_vendeur_marketplace_visit();
+    header('Location: /visiter-marketplace.php', true, 302);
+    exit;
 }
+
 auth_redirect_vendeur_to_dashboard();
 
 require_once __DIR__ . '/includes/produit_boutique_line.php';
@@ -615,7 +622,11 @@ $seo_canonical = $base . '/';
         }
 
         .mp-hero .mp-hero-slider-wrap .owl-nav {
-            margin-top: 0;
+            display: none !important;
+            margin: 0;
+            height: 0;
+            overflow: hidden;
+            pointer-events: none;
         }
 
         .mp-hero-slider-wrap {
@@ -2929,7 +2940,7 @@ $seo_canonical = $base . '/';
                     slideBy: 1,
                     loop: mpHeroCarouselEnabled,
                     dots: mpHeroCarouselEnabled,
-                    nav: mpHeroCarouselEnabled,
+                    nav: false,
                     autoplay: mpHeroCarouselEnabled,
                     autoplayTimeout: 5000,
                     autoplayHoverPause: true,

@@ -14,9 +14,34 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_admin.php';
+require_once __DIR__ . '/../includes/flash_toast.php';
+require_once __DIR__ . '/../includes/commande_mode_helpers.php';
+require_once __DIR__ . '/../includes/boutique_vendeur_display.php';
 
 $success_message = '';
 $error_message   = '';
+
+// Toast commande créée : une seule fois, puis URL propre (évite réaffichage à chaque F5)
+if (!empty($_GET['success']) && (string) $_GET['success'] === '1') {
+    $cmd_success_msg = '';
+    if (!empty($_GET['numeros'])) {
+        $nums = array_filter(array_map('trim', explode(',', (string) $_GET['numeros'])));
+        $cmd_success_msg = count($nums) > 1
+            ? 'Vos commandes ont été créées : ' . implode(', ', $nums) . '.'
+            : 'Votre commande #' . ($nums[0] ?? '') . ' a été créée avec succès !';
+    } elseif (!empty($_GET['numero'])) {
+        $cmd_success_msg = 'Votre commande #' . trim((string) $_GET['numero']) . ' a été créée avec succès !';
+    }
+    if ($cmd_success_msg !== '') {
+        flash_toast_push('success', $cmd_success_msg);
+        $tab_keep = isset($_GET['tab']) ? trim((string) $_GET['tab']) : '';
+        $redir = '/user/mes-commandes.php';
+        if ($tab_keep !== '' && $tab_keep !== 'actives') {
+            $redir .= '?tab=' . rawurlencode($tab_keep);
+        }
+        http_redirect_safe($redir);
+    }
+}
 
 // ---- Confirmation livraison ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirmer_livraison'])) {
@@ -89,17 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recommander'])) {
     }
 }
 
-// ---- Messages GET ----
-if (!empty($_GET['success']) && $_GET['success'] == '1') {
-    if (!empty($_GET['numeros'])) {
-        $nums = array_filter(array_map('trim', explode(',', (string) $_GET['numeros'])));
-        $success_message = count($nums) > 1
-            ? 'Vos commandes ont &eacute;t&eacute; cr&eacute;&eacute;es : ' . implode(', ', array_map('htmlspecialchars', $nums)) . '.'
-            : 'Votre commande #' . htmlspecialchars($nums[0] ?? '') . ' a &eacute;t&eacute; cr&eacute;&eacute;e avec succ&egrave;s !';
-    } elseif (!empty($_GET['numero'])) {
-        $success_message = 'Votre commande #' . htmlspecialchars($_GET['numero']) . ' a &eacute;t&eacute; cr&eacute;&eacute;e avec succ&egrave;s !';
-    }
-}
 // commande_annulee, livraison_confirmee : toast via flash_toast_from_query()
 
 // ---- Données ----
@@ -173,7 +187,6 @@ if (file_exists(__DIR__ . '/../models/model_produits_avis.php')) {
 
 $pr_open_noter_commande = isset($_GET['noter']) ? (int) $_GET['noter'] : 0;
 
-require_once __DIR__ . '/../includes/flash_toast.php';
 if (!empty($success_message)) {
     flash_toast_queue_page('success', $success_message);
 }
@@ -796,6 +809,30 @@ function cmd_timeline_steps($statut) {
         .uc-card-btn--cancel:hover { background: rgba(239,68,68,0.16); }
 
         .uc-card-btn--reorder  { background: rgba(255,107,53,0.1); color: var(--orange, #FF6B35); }
+
+        .uc-card-btn--gmaps {
+            background: #fff;
+            color: #4285F4;
+            border: 1px solid rgba(66, 133, 244, 0.28);
+            box-shadow: 0 1px 4px rgba(66, 133, 244, 0.12);
+        }
+        .uc-card-btn--gmaps:hover {
+            background: rgba(66, 133, 244, 0.08);
+            border-color: rgba(66, 133, 244, 0.4);
+        }
+        .uc-card-btn--gmaps .fab.fa-google {
+            font-size: 1em;
+        }
+
+        .uc-card-btn--wa-share {
+            background: #25D366;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(37, 211, 102, 0.28);
+        }
+        .uc-card-btn--wa-share:hover {
+            background: #1da851;
+            color: #fff;
+        }
         .uc-card-btn--reorder:hover { background: rgba(255,107,53,0.18); }
 
         .uc-card-btn--rate {
@@ -981,6 +1018,19 @@ function cmd_timeline_steps($statut) {
                     $can_noter = in_array($st, ['livree', 'paye'], true)
                         && $cmd_id > 0
                         && !empty($commandes_noter_pending[$cmd_id]);
+                    $is_retrait_cmd = commande_is_retrait($commande);
+                    $pickup_maps_url = '';
+                    $pickup_wa_url = '';
+                    if ($is_retrait_cmd) {
+                        $vendeur_pickup_id = (int) ($commande['vendeur_id'] ?? 0);
+                        $adm_pickup = ($vendeur_pickup_id > 0) ? get_admin_by_id($vendeur_pickup_id) : null;
+                        $pickup_info = boutique_pickup_info_from_admin(
+                            $adm_pickup && is_array($adm_pickup) ? $adm_pickup : null,
+                            $boutique_nom
+                        );
+                        $pickup_maps_url = trim((string) ($pickup_info['maps_url'] ?? ''));
+                        $pickup_wa_url = trim((string) ($pickup_info['whatsapp_url'] ?? ''));
+                    }
                 ?>
                     <article class="uc-v2-card">
 
@@ -1049,6 +1099,21 @@ function cmd_timeline_steps($statut) {
 
                         <!-- Footer actions -->
                         <div class="uc-v2-card__footer">
+                            <?php if ($is_retrait_cmd && $pickup_maps_url !== ''): ?>
+                                <a href="<?php echo htmlspecialchars($pickup_maps_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                    class="uc-card-btn uc-card-btn--gmaps" target="_blank" rel="noopener noreferrer"
+                                    title="Ouvrir la localisation de la boutique sur Google Maps">
+                                    <i class="fab fa-google" aria-hidden="true"></i> Localisation
+                                </a>
+                            <?php endif; ?>
+                            <?php if ($is_retrait_cmd && $pickup_wa_url !== ''): ?>
+                                <a href="<?php echo htmlspecialchars($pickup_wa_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                    class="uc-card-btn uc-card-btn--wa-share" target="_blank" rel="noopener noreferrer"
+                                    title="Partager la localisation de la boutique sur WhatsApp">
+                                    <i class="fab fa-whatsapp" aria-hidden="true"></i> Partager
+                                </a>
+                            <?php endif; ?>
+
                             <a href="commande-categorie.php?commande_id=<?php echo (int) $commande['id']; ?>"
                                 class="uc-card-btn uc-card-btn--track">
                                 <i class="fas fa-route"></i> Suivre

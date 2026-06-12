@@ -313,7 +313,6 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
     <?php
     require_once __DIR__ . '/../../includes/commande_mode_helpers.php';
     $cmd_is_retrait = commande_is_retrait($commande);
-    $cmd_adresse_aff = trim((string) ($commande['adresse_livraison'] ?? ''));
 
     if ($cmd_is_retrait):
     ?>
@@ -326,12 +325,6 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
             <i class="fas fa-bag-shopping" aria-hidden="true"></i>
             Le client viendra récupérer sa commande en boutique
         </p>
-        <?php if ($cmd_adresse_aff !== ''): ?>
-        <p class="cmd-retrait-adresse">
-            <i class="fas fa-location-dot" aria-hidden="true"></i>
-            <?php echo htmlspecialchars($cmd_adresse_aff, ENT_QUOTES, 'UTF-8'); ?>
-        </p>
-        <?php endif; ?>
     </section>
     <?php else:
     /* ---- Position GPS exacte du client (livraison) ---- */

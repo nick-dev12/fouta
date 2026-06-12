@@ -1674,14 +1674,14 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             <img src="/image/logo_market.png"
                 alt="<?php echo htmlspecialchars(SITE_BRAND_NAME, ENT_QUOTES, 'UTF-8'); ?>">
         </a>
-        <p class="nav-sidebar-slogan"><?php echo htmlspecialchars(SITE_BRAND_TAGLINE, ENT_QUOTES, 'UTF-8'); ?></p>
+        <p class="nav-sidebar-tagline">GLOBALE Marketplace tous vos produits</p>
     </div>
     <div class="nav-sidebar-content">
         <ul class="nav-glass-rayons-list nav-glass-rayons-list--shortcuts" role="list">
             <li>
                 <a href="<?php echo htmlspecialchars($u_nouveautes); ?>"
                     class="nav-glass-rayon-card nav-glass-rayon-card--nouveautes">
-                    <span class="nav-glass-rayon-icon" aria-hidden="true"><i class="fa-solid fa-sparkles"></i></span>
+                    <span class="nav-glass-rayon-icon" aria-hidden="true"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
                     <span class="nav-glass-rayon-label">NOUVEAUTÉS</span>
                     <span class="nav-glass-rayon-arrow" aria-hidden="true"><i
                             class="fa-solid fa-arrow-right"></i></span>

@@ -4,19 +4,20 @@
  * Programmation procédurale uniquement
  */
 
+ob_start();
+
 require_once __DIR__ . '/../includes/require_admin_session.php';
-
-
-
 require_once __DIR__ . '/../includes/require_access.php';
 require_once __DIR__ . '/../../includes/admin_route_access.php';
+require_once __DIR__ . '/../../includes/flash_toast.php';
 
-// Récupérer l'ID du produit
-$produit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$stock_list_url = admin_route_build_url('stock/index.php');
+
+// Récupérer l'ID du produit (GET ou POST)
+$produit_id = isset($_REQUEST['id']) ? (int) $_REQUEST['id'] : 0;
 
 if ($produit_id <= 0) {
-    header('Location: index.php');
-    exit;
+    http_redirect_safe($stock_list_url);
 }
 
 // Récupérer le produit
@@ -24,25 +25,22 @@ require_once __DIR__ . '/../../models/model_produits.php';
 $produit = get_produit_by_id($produit_id);
 
 if (!$produit) {
-    header('Location: index.php');
-    exit;
+    http_redirect_safe($stock_list_url);
 }
 admin_vendeur_assert_produit_owned($produit);
 
 // Traiter la suppression
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     require_once __DIR__ . '/../../controllers/controller_produits.php';
-    require_once __DIR__ . '/../../includes/flash_toast.php';
     $result = process_delete_produit($produit_id);
 
     if ($result['success']) {
         flash_toast_push('success', $result['message']);
-        header('Location: index.php');
-        exit;
-    } else {
-        $error_message = $result['message'];
-        flash_toast_queue_page('error', $error_message);
+        http_redirect_safe($stock_list_url);
     }
+
+    $error_message = $result['message'];
+    flash_toast_queue_page('error', $error_message);
 }
 ?>
 <!DOCTYPE html>
@@ -131,8 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     
     <div class="content-header">
         <h1><i class="fas fa-trash"></i> Supprimer un Produit</h1>
-        <a href="index.php" class="btn-back">
-            <i class="fas fa-arrow-left"></i> Retour
+        <a href="<?php echo htmlspecialchars($stock_list_url, ENT_QUOTES, 'UTF-8'); ?>" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Retour au stock
         </a>
     </div>
 
@@ -159,12 +157,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
             <p><strong>Catégorie:</strong> <?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie'); ?></p>
         </div>
 
-        <form method="POST" action="" onsubmit="return confirm('Êtes-vous absolument sûr de vouloir supprimer ce produit ? Cette action est irréversible.');">
+        <form method="POST" action="supprimer.php?id=<?php echo (int) $produit_id; ?>" onsubmit="return confirm('Êtes-vous absolument sûr de vouloir supprimer ce produit ? Cette action est irréversible.');">
             <input type="hidden" name="confirm_delete" value="1">
+            <input type="hidden" name="id" value="<?php echo (int) $produit_id; ?>">
             <button type="submit" class="btn-danger">
                 <i class="fas fa-trash"></i> Confirmer la suppression
             </button>
-            <a href="index.php" class="btn-cancel">
+            <a href="<?php echo htmlspecialchars($stock_list_url, ENT_QUOTES, 'UTF-8'); ?>" class="btn-cancel">
                 <i class="fas fa-times"></i> Annuler
             </a>
         </form>

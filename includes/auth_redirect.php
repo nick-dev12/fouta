@@ -148,20 +148,69 @@ if (!function_exists('auth_vendeur_dashboard_url')) {
     }
 }
 
+if (!function_exists('auth_vendeur_mp_visit_cookie_name')) {
+    function auth_vendeur_mp_visit_cookie_name()
+    {
+        return 'colobane_vendeur_mp_visit';
+    }
+}
+
+if (!function_exists('auth_sync_vendeur_marketplace_visit')) {
+    /**
+     * Réaligne la session si le cookie de visite est présent (prod / partage session).
+     */
+    function auth_sync_vendeur_marketplace_visit()
+    {
+        if (!auth_session_is_vendeur()) {
+            return;
+        }
+        $cookie_name = auth_vendeur_mp_visit_cookie_name();
+        if (!empty($_SESSION['vendeur_visite_marketplace'])) {
+            return;
+        }
+        if (isset($_COOKIE[$cookie_name]) && (string) $_COOKIE[$cookie_name] === '1') {
+            $_SESSION['vendeur_visite_marketplace'] = true;
+        }
+    }
+}
+
 if (!function_exists('auth_vendeur_may_browse_marketplace')) {
     /**
-     * Le vendeur a choisi de visiter la marketplace publique (session explicite).
+     * Le vendeur a choisi de visiter la marketplace publique (session ou cookie explicite).
      */
     function auth_vendeur_may_browse_marketplace()
     {
-        return !empty($_SESSION['vendeur_visite_marketplace']);
+        if (!auth_session_is_vendeur()) {
+            return false;
+        }
+        auth_sync_vendeur_marketplace_visit();
+        if (!empty($_SESSION['vendeur_visite_marketplace'])) {
+            return true;
+        }
+        $cookie_name = auth_vendeur_mp_visit_cookie_name();
+        return isset($_COOKIE[$cookie_name]) && (string) $_COOKIE[$cookie_name] === '1';
     }
 }
 
 if (!function_exists('auth_grant_vendeur_marketplace_visit')) {
     function auth_grant_vendeur_marketplace_visit()
     {
+        if (!auth_session_is_vendeur()) {
+            return false;
+        }
         $_SESSION['vendeur_visite_marketplace'] = true;
+
+        $lifetime = auth_portal_cookie_lifetime();
+        setcookie(auth_vendeur_mp_visit_cookie_name(), '1', [
+            'expires' => time() + $lifetime,
+            'path' => '/',
+            'domain' => '',
+            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+
+        return true;
     }
 }
 
@@ -169,26 +218,24 @@ if (!function_exists('auth_revoke_vendeur_marketplace_visit')) {
     function auth_revoke_vendeur_marketplace_visit()
     {
         unset($_SESSION['vendeur_visite_marketplace']);
+        setcookie(auth_vendeur_mp_visit_cookie_name(), '', [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'domain' => '',
+            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 }
 
 if (!function_exists('auth_marketplace_visit_url')) {
     /**
-     * URL d’entrée marketplace pour un vendeur connecté (active la session de visite).
+     * URL d’entrée marketplace pour un vendeur connecté (script léger + redirection propre).
      */
-    function auth_marketplace_visit_url($path = '/index.php')
+    function auth_marketplace_visit_url($path = '')
     {
-        $path = trim((string) $path);
-        if ($path === '' || strpos($path, '//') !== false) {
-            $path = '/index.php';
-        }
-        if ($path[0] !== '/') {
-            $path = '/' . $path;
-        }
-
-        $sep = (strpos($path, '?') !== false) ? '&' : '?';
-
-        return $path . $sep . 'visite_marketplace=1';
+        return '/visiter-marketplace.php';
     }
 }
 
@@ -201,6 +248,8 @@ if (!function_exists('auth_redirect_vendeur_to_dashboard')) {
         if (!auth_session_is_vendeur()) {
             return;
         }
+
+        auth_sync_vendeur_marketplace_visit();
 
         if (auth_vendeur_may_browse_marketplace()) {
             return;

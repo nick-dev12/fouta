@@ -320,18 +320,19 @@ nav .containernav .users img {
   margin-bottom: 8px;
 }
 .nav-sidebar-logo img {
-  height: 50px;
+  height: 62px;
   width: auto;
-  max-width: 180px;
+  max-width: 200px;
   object-fit: contain;
 }
-.nav-sidebar-slogan {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--texte-fonce);
-  text-transform: uppercase;
+.nav-sidebar-tagline {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--gris-fonce, #4a4a4a);
   margin: 0;
+  line-height: 1.45;
+  padding: 0 4px;
 }
 .nav-sidebar-content {
   flex: 1;
@@ -465,8 +466,8 @@ nav .containernav .users img {
   gap: 10px;
 }
 .nav-glass-rayons-list--shortcuts {
-  padding: 14px 14px 10px;
-  gap: 8px;
+  padding: 10px 14px 8px;
+  gap: 10px;
 }
 .nav-glass-rayons-list > li {
   margin: 0;
@@ -497,59 +498,82 @@ nav .containernav .users img {
     border-color 0.22s ease,
     background 0.22s ease;
 }
-.nav-glass-rayon-card--nouveautes {
-  background: var(--couleur-dominante, #3564a6);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 4px 14px rgba(53, 100, 166, 0.25);
+.nav-glass-rayon-card--nouveautes,
+.nav-glass-rayon-card--promo {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(15, 23, 42, 0.06);
+  box-shadow: var(--nav-soft-shadow);
+  min-height: 56px;
 }
 .nav-glass-rayon-card--nouveautes .nav-glass-rayon-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.35);
+  background: var(--bleu-pale, rgba(53, 100, 166, 0.12));
+  color: var(--couleur-dominante, #3564a6);
+  border-color: rgba(53, 100, 166, 0.18);
 }
 .nav-glass-rayon-card--nouveautes .nav-glass-rayon-label {
-  color: #fff;
+  color: var(--couleur-dominante, #3564a6);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
 }
 .nav-glass-rayon-card--nouveautes .nav-glass-rayon-arrow {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(53, 100, 166, 0.08);
+  color: var(--couleur-dominante, #3564a6);
+  border-color: rgba(53, 100, 166, 0.12);
 }
 .nav-glass-rayon-card--nouveautes:hover {
-  background: var(--couleur-dominante-hover, #2d5690);
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 6px 18px rgba(53, 100, 166, 0.32);
+  background: var(--blanc-neige, #f5f5f5);
+  border-color: rgba(53, 100, 166, 0.16);
+  box-shadow: var(--nav-soft-shadow-hover);
+  transform: translateY(-1px);
 }
-.nav-glass-rayon-card--promo {
-  background: var(--accent-promo, #ff6b35);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.28);
+.nav-glass-rayon-card--nouveautes:hover .nav-glass-rayon-label,
+.nav-glass-rayon-card--nouveautes:hover .nav-glass-rayon-icon,
+.nav-glass-rayon-card--nouveautes:hover .nav-glass-rayon-arrow {
+  color: var(--couleur-dominante, #3564a6);
 }
 .nav-glass-rayon-card--promo .nav-glass-rayon-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 107, 53, 0.12);
+  color: var(--accent-promo, #ff6b35);
+  border-color: rgba(255, 107, 53, 0.18);
 }
 .nav-glass-rayon-card--promo .nav-glass-rayon-label {
-  color: #fff;
+  color: var(--accent-promo, #ff6b35);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
 }
 .nav-glass-rayon-card--promo .nav-glass-rayon-arrow {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 107, 53, 0.08);
+  color: var(--accent-promo, #ff6b35);
+  border-color: rgba(255, 107, 53, 0.12);
 }
 .nav-glass-rayon-card--promo:hover {
-  background: var(--orange-fonce, #e85a2a);
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.35);
+  background: var(--blanc-neige, #f5f5f5);
+  border-color: rgba(255, 107, 53, 0.16);
+  box-shadow: var(--nav-soft-shadow-hover);
+  transform: translateY(-1px);
+}
+.nav-glass-rayon-card--promo:hover .nav-glass-rayon-label,
+.nav-glass-rayon-card--promo:hover .nav-glass-rayon-icon,
+.nav-glass-rayon-card--promo:hover .nav-glass-rayon-arrow {
+  color: var(--accent-promo, #ff6b35);
 }
 .nav-glass-rayon-card:hover {
   transform: translateY(-1px);
   background: #ffffff;
   border-color: rgba(53, 100, 166, 0.16);
   box-shadow: var(--nav-soft-shadow-hover);
+}
+.nav-glass-rayon-card--nouveautes:hover {
+  background: var(--blanc-neige, #f5f5f5);
+  border-color: rgba(53, 100, 166, 0.16);
+}
+.nav-glass-rayon-card--promo:hover {
+  background: var(--blanc-neige, #f5f5f5);
+  border-color: rgba(255, 107, 53, 0.16);
 }
 .nav-glass-rayon-card:focus-visible {
   outline: 2px solid var(--couleur-dominante);
@@ -1343,12 +1367,12 @@ nav .containernav .users img {
     margin-bottom: 6px;
   }
   .nav-sidebar-logo img {
-    height: 40px;
-    max-width: 150px;
+    height: 48px;
+    max-width: 168px;
   }
-  .nav-sidebar-slogan {
-    font-size: 10px;
-    letter-spacing: 0.08em;
+  .nav-sidebar-tagline {
+    font-size: 11px;
+    line-height: 1.4;
   }
   .nav-sidebar-item {
     gap: 10px;
@@ -1381,8 +1405,13 @@ nav .containernav .users img {
     margin: 0 0 6px;
   }
   .nav-glass-rayons-list--shortcuts {
-    padding: 10px 10px 8px;
-    gap: 6px;
+    padding: 8px 10px 6px;
+    gap: 8px;
+  }
+  .nav-glass-rayon-card--nouveautes .nav-glass-rayon-label,
+  .nav-glass-rayon-card--promo .nav-glass-rayon-label {
+    font-size: 11px;
+    letter-spacing: 0.05em;
   }
   .nav-glass-rayons-list {
     padding: 0 10px 14px;
@@ -1510,11 +1539,12 @@ nav .containernav .users img {
     padding: 12px 10px 10px;
   }
   .nav-sidebar-logo img {
-    height: 36px;
-    max-width: 132px;
+    height: 44px;
+    max-width: 148px;
   }
-  .nav-sidebar-slogan {
-    font-size: 9px;
+  .nav-sidebar-tagline {
+    font-size: 10px;
+    line-height: 1.35;
   }
   .nav-sidebar-item {
     gap: 8px;
@@ -1538,8 +1568,17 @@ nav .containernav .users img {
     margin: 0 0 5px;
   }
   .nav-glass-rayons-list--shortcuts {
-    padding: 8px 8px 6px;
-    gap: 5px;
+    padding: 6px 8px 5px;
+    gap: 6px;
+  }
+  .nav-glass-rayon-card--nouveautes,
+  .nav-glass-rayon-card--promo {
+    min-height: 46px;
+  }
+  .nav-glass-rayon-card--nouveautes .nav-glass-rayon-label,
+  .nav-glass-rayon-card--promo .nav-glass-rayon-label {
+    font-size: 10px;
+    letter-spacing: 0.04em;
   }
   .nav-glass-rayons-list {
     padding: 0 8px 12px;
