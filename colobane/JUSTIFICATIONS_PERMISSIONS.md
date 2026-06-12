@@ -1,10 +1,14 @@
 # Justifications des permissions — COLObanes
 
-Application marketplace (WebView + pont natif). Usage réel documenté dans `lib/main.dart` et `ios/Runner/Info.plist`.
+Application marketplace (WebView + pont natif). Usage réel documenté dans `lib/main.dart`, `lib/services/native_permission_service.dart` et `ios/Runner/Info.plist`.
 
 ## Apple App Store (chaînes Info.plist)
 
-Voir `ios/Runner/Info.plist` — chaque clé inclut finalité + exemple (exigence 5.1.1).
+Voir `ios/Runner/Info.plist` — chaque clé inclut finalité + exemple concret (exigence 5.1.1).
+
+**Localisation** : uniquement `NSLocationWhenInUseUsageDescription` (pas d'accès « Toujours » / arrière-plan).
+
+Avant la boîte système iOS, l'app affiche un **dialogue explicatif** (`NativePermissionService`) reprenant les mêmes finalités.
 
 ## Google Play Console
 
@@ -17,8 +21,17 @@ COLObanes permet de prendre une photo lorsque l'utilisateur appuie sur « Prendr
 ### ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION
 
 ```
-La localisation n'est demandée que lorsque l'utilisateur active la fonction de position sur la carte pour confirmer une adresse de livraison. Exemple : afficher le point de livraison lors d'une commande au Sénégal. Pas de suivi en arrière-plan.
+COLObanes utilise la localisation uniquement lorsque l'utilisateur appuie sur « Localiser » ou « Mettre à jour ma position » pour : confirmer une adresse de livraison lors d'une commande, enregistrer son adresse à l'inscription, afficher les boutiques à proximité, ou localiser sa boutique vendeur. Exemple : positionner le point de livraison à Dakar sur la carte. Pas de suivi en arrière-plan ; accès « pendant l'utilisation » uniquement.
 ```
+
+**Formulaire Sécurité des données (Play Console)** — localisation approximative et précise :
+- Collectées : Oui (sur action utilisateur)
+- Partagées : Non (sauf exécution livraison / affichage boutique sur la plateforme)
+- Obligatoire : Non
+- Finalité : Fonctionnalité de l'app (livraison, carte, boutiques proches)
+
+Chaînes Android : `android/app/src/main/res/values/strings.xml`  
+Dialogue in-app avant autorisation système : `NativePermissionService.requestLocationWithRationale()`
 
 ### POST_NOTIFICATIONS (Android 13+)
 
@@ -35,3 +48,9 @@ Accès aux images uniquement lorsque l'utilisateur choisit d'importer une photo 
 ## Permissions non utilisées
 
 - **Microphone** : non demandé (retiré des autorisations WebView et absent d'Info.plist iOS).
+- **Localisation en arrière-plan** : non demandée (`ACCESS_BACKGROUND_LOCATION` absent du manifeste).
+
+## Pages légales (URLs store)
+
+- Politique de confidentialité : https://colobanes.com/politique-confidentialite.php (section 9 — app mobile et GPS)
+- CGU : https://colobanes.com/conditions-utilisation.php (section 4 bis — autorisations)

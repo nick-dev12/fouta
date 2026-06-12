@@ -4,7 +4,7 @@
 
 Apple exige que chaque `NS*UsageDescription` dans `Info.plist` explique **comment** et **pourquoi** l'app utilise la ressource, avec un **exemple concret**. Les formulations du type « l'application a besoin d'accéder à… » sont refusées.
 
-Les textes ont été mis à jour dans `ios/Runner/Info.plist` (version **1.0.3+6**).
+Les textes ont été mis à jour dans `ios/Runner/Info.plist`. Un **dialogue in-app** (`lib/services/native_permission_service.dart`) s'affiche avant la boîte système pour la caméra et la localisation, avec les mêmes finalités que les chaînes Info.plist.
 
 Référence : [Human Interface Guidelines — Privacy](https://developer.apple.com/design/human-interface-guidelines/privacy#Requesting-permission)
 
@@ -61,7 +61,7 @@ Ou ouvrir **`ios/Runner.xcworkspace`** dans Xcode :
 
 Dans **App Privacy**, déclarer notamment :
 
-- Données de localisation (coarse/precise) — liées à la livraison, sur action utilisateur
+- Données de localisation (coarse/precise) — livraison, inscription, boutiques proches, emplacement boutique vendeur ; **sur action utilisateur** (« Localiser ») ; **When In Use** uniquement, pas de suivi arrière-plan
 - Photos — contenu fourni par l'utilisateur
 - Identifiants (jeton push FCM/APNs)
 - Données d'utilisation / diagnostics si collectés par Firebase (selon configuration console)
@@ -71,6 +71,6 @@ URL CGU : `https://colobanes.com/conditions-utilisation.php`
 
 ## Après correction
 
-1. Incrémenter le **build number** (déjà `1.0.3+6` dans `pubspec.yaml`)
+1. Incrémenter le **build number** si besoin (version actuelle : `1.2.0+2` dans `pubspec.yaml`)
 2. Soumettre une nouvelle build
-3. Dans la résolution du rejet, indiquer que les chaînes caméra / photos / localisation ont été réécrites avec exemples, que le micro n'est pas utilisé, et que la politique de confidentialité section 9 a été mise à jour
+3. Dans la résolution du rejet, indiquer que les chaînes caméra / photos / localisation ont été réécrites avec exemples et finalités détaillées, qu'un dialogue explicatif in-app précède la demande système, que le micro et la localisation arrière-plan ne sont pas utilisés, et que la politique de confidentialité (section 9) et les CGU (section 4 bis) ont été mises à jour

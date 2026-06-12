@@ -69,10 +69,8 @@
 		<string>COLObanes accède à vos photos uniquement si vous choisissez « Importer depuis la galerie » pour ajouter une image à votre profil, à une boutique ou à un produit (par exemple : sélectionner une photo existante comme photo de profil).</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>COLObanes peut enregistrer dans votre photothèque une image que vous téléchargez depuis la plateforme, uniquement lorsque vous utilisez explicitement la fonction d'enregistrement proposée à l'écran.</string>
-		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>COLObanes utilise votre position lorsque vous demandez la localisation pour préremplir ou confirmer votre adresse de livraison sur la carte (par exemple : afficher le point de livraison lors du passage d'une commande au Sénégal).</string>
-		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>COLObanes accède à votre position uniquement lorsque vous utilisez la fonction de localisation pour préremplir ou confirmer une adresse de livraison sur la carte. L'app ne suit pas votre position en arrière-plan.</string>
+        <key>NSLocationWhenInUseUsageDescription</key>
+        <string>COLObanes utilise votre position uniquement lorsque vous appuyez sur « Localiser », « Mettre à jour ma position » ou une action équivalente sur la carte, pour : confirmer votre adresse de livraison lors d'une commande, enregistrer votre adresse lors de l'inscription, afficher les boutiques à proximité, ou indiquer l'emplacement de votre boutique si vous êtes vendeur (ex. : positionner votre point de livraison à Dakar). La position n'est jamais suivie en arrière-plan.</string>
 		<!-- Production : HTTPS uniquement (développement local possible via exceptions ciblées si besoin) -->
 		<key>NSAppTransportSecurity</key>
 		<dict>

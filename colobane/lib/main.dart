@@ -16,6 +16,7 @@ import 'dart:async';
 import 'firebase_options.dart';
 import 'services/fcm_service.dart';
 import 'services/social_auth_service.dart';
+import 'services/native_permission_service.dart';
 
 /// URL de la marketplace chargée dans la WebView (production)
 const String kMarketplaceBaseUrl = 'https://colobanes.com/';
@@ -421,32 +422,19 @@ class _WebViewScreenState extends State<WebViewScreen>
   // Gérer la demande de caméra
   Future<Map<String, dynamic>> _handleCameraRequest() async {
     try {
-      // Vérifier d'abord le statut de la permission de caméra
-      PermissionStatus cameraStatus = await Permission.camera.status;
-
-      // Si la permission n'est pas accordée, la demander
-      if (!cameraStatus.isGranted) {
-        cameraStatus = await Permission.camera.request();
-
-        // Si la permission est refusée de manière permanente
-        if (cameraStatus.isPermanentlyDenied) {
-          return {
-            'success': false,
-            'error':
-                'L\'accès à la caméra est refusé de manière permanente. Veuillez l\'activer dans les paramètres de l\'application.',
-          };
-        }
-
-        // Si la permission est refusée
-        if (!cameraStatus.isGranted) {
-          return {
-            'success': false,
-            'error': 'L\'accès à la caméra a été refusé.',
-          };
-        }
+      if (!mounted) {
+        return {'success': false, 'error': 'Application non prête.'};
+      }
+      final granted = await NativePermissionService.requestCameraWithRationale(
+        context,
+      );
+      if (!granted) {
+        return {
+          'success': false,
+          'error': 'L\'accès à la caméra a été refusé.',
+        };
       }
 
-      // Maintenant que la permission est accordée, accéder à la caméra
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.camera,
@@ -479,17 +467,17 @@ class _WebViewScreenState extends State<WebViewScreen>
         };
       }
 
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return {
-            'success': false,
-            'error': 'Autorisation de localisation refusée.',
-          };
-        }
+      if (!mounted) {
+        return {'success': false, 'error': 'Application non prête.'};
       }
-
+      final permission =
+          await NativePermissionService.requestLocationWithRationale(context);
+      if (permission == LocationPermission.denied) {
+        return {
+          'success': false,
+          'error': 'Autorisation de localisation refusée.',
+        };
+      }
       if (permission == LocationPermission.deniedForever) {
         return {
           'success': false,
@@ -975,20 +963,22 @@ class _WebViewScreenState extends State<WebViewScreen>
                     for (final resource in request.resources) {
                       final name = resource.toString().toLowerCase();
                       if (name.contains('camera')) {
-                        var cameraStatus = await Permission.camera.status;
-                        if (!cameraStatus.isGranted) {
-                          cameraStatus = await Permission.camera.request();
-                        }
-                        if (cameraStatus.isGranted) {
+                        if (!mounted) break;
+                        final cameraOk =
+                            await NativePermissionService.requestCameraWithRationale(
+                          context,
+                        );
+                        if (cameraOk) {
                           granted.add(resource);
                         }
                         continue;
                       }
                       if (name.contains('geolocation') || name.contains('location')) {
-                        var geoPerm = await Geolocator.checkPermission();
-                        if (geoPerm == LocationPermission.denied) {
-                          geoPerm = await Geolocator.requestPermission();
-                        }
+                        if (!mounted) break;
+                        final geoPerm =
+                            await NativePermissionService.requestLocationWithRationale(
+                          context,
+                        );
                         if (geoPerm == LocationPermission.always ||
                             geoPerm == LocationPermission.whileInUse) {
                           granted.add(resource);
@@ -1008,10 +998,17 @@ class _WebViewScreenState extends State<WebViewScreen>
                   },
                   onGeolocationPermissionsShowPrompt:
                       (controller, origin) async {
-                    var geoPerm = await Geolocator.checkPermission();
-                    if (geoPerm == LocationPermission.denied) {
-                      geoPerm = await Geolocator.requestPermission();
+                    if (!mounted) {
+                      return GeolocationPermissionShowPromptResponse(
+                        origin: origin,
+                        allow: false,
+                        retain: false,
+                      );
                     }
+                    final geoPerm =
+                        await NativePermissionService.requestLocationWithRationale(
+                      context,
+                    );
                     final allowed = geoPerm == LocationPermission.always ||
                         geoPerm == LocationPermission.whileInUse;
                     return GeolocationPermissionShowPromptResponse(

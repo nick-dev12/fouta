@@ -248,18 +248,30 @@ $seo_canonical = $base . '/conditions-utilisation.php';
 
         <h2 id="cgu-4b">4 bis. Application mobile et autorisations système (iOS / Android)</h2>
         <p>
-            L'application mobile COLObanes donne accès aux mêmes services que le site web. Elle peut solliciter, <strong>uniquement sur votre initiative</strong>, les autorisations suivantes&nbsp;:
+            L'application mobile COLObanes donne accès aux mêmes services que le site web. Elle peut solliciter, <strong>uniquement lorsque vous utilisez la fonction concernée</strong>, les autorisations suivantes&nbsp;:
         </p>
         <ul>
             <li><strong>Caméra et photothèque</strong> — pour prendre ou choisir une photo (profil, produit vendeur, pièce jointe). Exemple&nbsp;: photographier un article mis en vente.</li>
-            <li><strong>Localisation (pendant l'utilisation)</strong> — pour afficher ou confirmer un point de livraison sur la carte lors d'une commande. Exemple&nbsp;: positionner votre adresse de livraison à Dakar.</li>
+            <li><strong>Localisation (pendant l'utilisation uniquement)</strong> — pour obtenir vos coordonnées GPS lorsque vous appuyez sur «&nbsp;Localiser&nbsp;», «&nbsp;Mettre à jour ma position&nbsp;» ou une action équivalente sur la carte, afin de&nbsp;:
+                <ul>
+                    <li>confirmer ou préremplir votre <strong>adresse de livraison</strong> lors d'une commande ;</li>
+                    <li>enregistrer votre adresse lors de l'<strong>inscription</strong> client ;</li>
+                    <li>afficher les <strong>boutiques à proximité</strong> lorsque vous consultez cette fonctionnalité ;</li>
+                    <li>indiquer l'<strong>emplacement de votre boutique</strong> si vous êtes vendeur (inscription ou paramètres).</li>
+                </ul>
+                Exemple&nbsp;: positionner votre point de livraison à Dakar sur la carte. Vous pouvez refuser et saisir votre adresse manuellement.
+            </li>
             <li><strong>Notifications</strong> — pour vous informer du statut de vos commandes ou de messages liés à votre compte.</li>
         </ul>
         <p>
-            L'application <strong>ne demande pas l'accès au microphone</strong> et <strong>ne suit pas votre position en arrière-plan</strong>.
+            Avant la demande système iOS ou Android, l'application peut afficher un <strong>écran explicatif</strong> rappelant la finalité de l'autorisation (caméra ou localisation). Les textes affichés par le système reprennent les mêmes informations.
+        </p>
+        <p>
+            L'application <strong>ne demande pas l'accès au microphone</strong>, <strong>ne suit pas votre position en arrière-plan</strong> et <strong>ne demande pas l'accès «&nbsp;Toujours&nbsp;»</strong> à la localisation.
             Le refus d'une autorisation limite la fonction concernée sans empêcher la navigation générale ni la consultation du catalogue.
             Le détail des traitements de données liés à ces fonctions figure dans la
-            <a href="/politique-confidentialite.php#priv-9">Politique de confidentialité (section&nbsp;9)</a>.
+            <a href="/politique-confidentialite.php#priv-9">Politique de confidentialité (section&nbsp;9)</a>, notamment la
+            <a href="/politique-confidentialite.php#priv-9-gps">section sur le traitement des coordonnées GPS</a>.
         </p>
         <p>
             En installant l'application depuis l'App Store ou Google Play, vous acceptez également les conditions propres à ces plateformes (Apple Media Services, Google Play) pour les téléchargements, mises à jour et achats intégrés le cas échéant.
@@ -312,6 +324,12 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         <p>
             Les zones desservies, délais indicatifs et tarifs sont précisés avant validation. Les délais sont fournis à titre indicatif sauf engagement ferme expresse du Vendeur ou de COLObanes sur une offre donnée.
             Le Client s'engage à être joignable au numéro indiqué et, le cas échéant, à faciliter l'accès au lieu de livraison (codes, étage, consignes). En cas d'absence répétée ou d'adresse incomplète, des frais de réexpédition ou de garde pourront être facturés selon les règles affichées ou le droit commun.
+        </p>
+        <h3>9.1 Adresse de livraison et localisation GPS</h3>
+        <p>
+            Lors du passage de commande, vous pouvez indiquer votre adresse de livraison manuellement ou, si vous l'acceptez, utiliser la fonction «&nbsp;Localiser&nbsp;» pour préremplir votre position sur la carte.
+            Les coordonnées GPS et l'adresse dérivée sont utilisées pour l'exécution de la livraison et la communication avec le vendeur ou le livreur. Vous restez responsable de l'exactitude de l'adresse finale validée avant confirmation de la commande.
+            Le refus de la localisation n'empêche pas de commander si vous saisissez une adresse complète et vérifiable.
         </p>
         <p>
             Les risques de perte ou de détérioration des biens sont transférés au Client au moment de la remise physique au Client ou à un tiers mandaté, sauf disposition impérative contraire.

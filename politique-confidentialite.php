@@ -254,6 +254,8 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         <h3>3.2 Données de commande, livraison et relation commerciale</h3>
         <ul>
             <li>Adresses postales complètes (livraison et, le cas échéant, facturation) ;</li>
+            <li>Coordonnées géographiques (<strong>latitude / longitude</strong>) et, le cas échéant, <strong>précision estimée</strong> (en mètres), lorsque vous utilisez la fonction «&nbsp;Localiser&nbsp;» ou «&nbsp;Mettre à jour ma position&nbsp;» sur le site ou l'application mobile ;</li>
+            <li>Adresse textuelle dérivée du géocodage inverse (lieu, quartier, arrondissement, ville, pays) associée à ces coordonnées ;</li>
             <li>Zone ou commune de livraison sélectionnée ;</li>
             <li>Détails des commandes : références produits, quantités, prix, personnalisations, messages associés au panier ou à la commande ;</li>
             <li>Historique des statuts de commande, échanges avec le support ou avec la boutique ;</li>
@@ -321,6 +323,11 @@ $seo_canonical = $base . '/politique-confidentialite.php';
                         <td>Passation, suivi et livraison des commandes</td>
                         <td>Coordonnées, détail du panier, statut, échanges logistiques</td>
                         <td>Exécution du contrat de vente / de prestation marketplace</td>
+                    </tr>
+                    <tr>
+                        <td>Localisation GPS (site et application mobile)</td>
+                        <td>Latitude, longitude, précision, adresse dérivée ; position boutique vendeur</td>
+                        <td>Exécution du contrat (livraison) ; consentement via l'autorisation système lors de l'action «&nbsp;Localiser&nbsp;» ; intérêt légitime pour afficher les boutiques à proximité lorsque vous sollicitez cette fonction</td>
                     </tr>
                     <tr>
                         <td>Paiement et prévention de la fraude</td>
@@ -433,6 +440,10 @@ $seo_canonical = $base . '/politique-confidentialite.php';
                         <td>Données des comptes vendeurs</td>
                         <td>Durée du contrat partenaire + obligations légales ; certains justificatifs peuvent être archivés au-delà</td>
                     </tr>
+                    <tr>
+                        <td>Coordonnées GPS enregistrées sur le compte (client ou boutique vendeur)</td>
+                        <td>Tant que le compte est actif et que la position reste pertinente pour la livraison ou l'affichage de la boutique ; mise à jour ou suppression via votre espace compte / paramètres vendeur</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -459,8 +470,8 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         <h3>9.1 Application mobile COLObanes (iOS et Android)</h3>
         <p>
             L'application mobile officielle COLObanes (identifiant de bundle iOS&nbsp;: <strong>com.colobanes.app</strong>, package Android&nbsp;: <strong>com.colobanes.app</strong>)
-            charge le site marketplace dans une interface sécurisée et expose, sur demande explicite de l'utilisateur, des fonctions natives (prise de photo, localisation pour la livraison, notifications de commande).
-            Elle ne collecte pas de données via la caméra, la galerie ou le GPS sans action de votre part (bouton dédié dans l'écran concerné).
+            charge le site marketplace dans une interface sécurisée et expose, sur demande explicite de l'utilisateur, des fonctions natives (prise de photo, localisation GPS pour la livraison ou la boutique vendeur, notifications de commande).
+            Elle ne collecte pas de données via la caméra, la galerie ou le GPS sans action de votre part (bouton «&nbsp;Localiser&nbsp;», «&nbsp;Prendre une photo&nbsp;», etc.) ni sans l'autorisation affichée par iOS ou Android.
         </p>
         <h3>9.2 Identifiants d'appareil et notifications push</h3>
         <p>
@@ -504,8 +515,8 @@ $seo_canonical = $base . '/politique-confidentialite.php';
                     </tr>
                     <tr>
                         <td><strong>Localisation (pendant l'utilisation)</strong></td>
-                        <td>Afficher ou confirmer un point sur la carte pour l'adresse de livraison</td>
-                        <td>Préremplir la position sur la carte lors du passage de commande</td>
+                        <td>Obtenir vos coordonnées GPS pour préremplir ou confirmer une adresse sur la carte (livraison, inscription, boutiques proches, emplacement boutique vendeur)</td>
+                        <td>Positionner votre point de livraison à Dakar lors d'une commande ; localiser votre boutique à l'inscription vendeur</td>
                         <td>Non — saisie manuelle de l'adresse possible</td>
                     </tr>
                     <tr>
@@ -519,13 +530,25 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         </div>
         <p>
             <strong>Microphone&nbsp;:</strong> l'application COLObanes <strong>ne demande pas</strong> l'accès au microphone et n'enregistre pas d'audio.
-            <strong>Localisation en arrière-plan&nbsp;:</strong> non utilisée ; seule la localisation «&nbsp;pendant l'utilisation de l'app&nbsp;» peut être sollicitée.
+            <strong>Localisation en arrière-plan&nbsp;:</strong> non utilisée ; seule la localisation «&nbsp;pendant l'utilisation de l'app&nbsp;» (<em>When In Use</em>) peut être sollicitée. L'application <strong>ne demande pas</strong> l'accès «&nbsp;Toujours&nbsp;» / en arrière-plan.
+        </p>
+        <h3 id="priv-9-gps">9.4 Traitement des coordonnées GPS</h3>
+        <p>
+            Lorsque vous autorisez la localisation, l'application ou le site peut&nbsp;:
+        </p>
+        <ul>
+            <li>lire la position GPS de votre appareil (via le GPS natif de l'application mobile ou le navigateur) ;</li>
+            <li>convertir ces coordonnées en adresse lisible par géocodage inverse (service COLObanes et, en secours, prestataire cartographique) ;</li>
+            <li>enregistrer latitude, longitude, précision et adresse associée sur votre compte client, votre commande ou votre fiche boutique vendeur, <strong>lorsque vous validez le formulaire concerné</strong>.</li>
+        </ul>
+        <p>
+            Les coordonnées ne sont pas vendues à des tiers publicitaires. Elles peuvent être transmises au vendeur ou au livreur dans la limite nécessaire à l'exécution de la commande ou à l'affichage de votre boutique sur la marketplace.
         </p>
         <p>
             Les coordonnées GPS ou les images capturées sont transmises à nos serveurs uniquement lorsque vous validez l'action dans l'interface (envoi du formulaire, enregistrement du profil, etc.) et sont traitées selon les sections 3 et 4 de la présente politique.
-            Vous pouvez révoquer toute autorisation dans les réglages iOS (Réglages &gt; Confidentialité) ou Android (Paramètres &gt; Applications &gt; COLObanes &gt; Autorisations).
+            Vous pouvez révoquer toute autorisation dans les réglages iOS (Réglages &gt; Confidentialité &gt; Service de localisation &gt; COLObanes) ou Android (Paramètres &gt; Applications &gt; COLObanes &gt; Autorisations &gt; Localisation).
         </p>
-        <h3>9.4 Mode Web (PWA)</h3>
+        <h3>9.5 Mode Web (PWA)</h3>
         <p>
             Si vous utilisez COLObanes via un navigateur en mode installable (PWA), des technologies similaires aux cookies et au cache local peuvent stocker des ressources pour le fonctionnement hors ligne partiel ; aucune donnée bancaire n'y est conservée en clair.
         </p>
