@@ -6,10 +6,14 @@
  * Usage CLI :
  *   php scripts/optimize_existing_images.php produits
  *   php scripts/optimize_existing_images.php categories
+ *   php scripts/optimize_existing_images.php marketplace_hero
  *
  * Dossier « categories » : upload/categories/
  *   - rayons catalogue → table categories_generales.image
  *   - sous-catégories plateforme → table categories.image
+ *
+ * Dossier « marketplace_hero » : upload/marketplace_hero/
+ *   - bannières hero accueil → table marketplace_hero_affiches.image (nom de fichier seul)
  */
 if (PHP_SAPI !== 'cli') {
     fwrite(STDERR, "Ce script doit être exécuté en ligne de commande.\n");
@@ -44,6 +48,9 @@ if (!is_dir($scan_dir)) {
 
 if ($target_subdir === 'categories') {
     echo "Cible : upload/categories/ → BDD categories.image + categories_generales.image\n";
+}
+if ($target_subdir === 'marketplace_hero') {
+    echo "Cible : upload/marketplace_hero/ → BDD marketplace_hero_affiches.image\n";
 }
 
 $skip_suffixes = ['_md', '_sm'];
@@ -122,6 +129,14 @@ if ($target_subdir === 'categories' && $db instanceof PDO && function_exists('im
     $n_cg = image_db_sync_table_column($db, 'categories_generales', 'image', $sync_details);
     if ($n_sc > 0 || $n_cg > 0) {
         echo "Sync chemins BDD : {$n_sc} sous-catégorie(s), {$n_cg} rayon(s).\n";
+    }
+}
+
+if ($target_subdir === 'marketplace_hero' && $db instanceof PDO && function_exists('image_db_sync_marketplace_hero_images')) {
+    $sync_details = [];
+    $n_hero = image_db_sync_marketplace_hero_images($db, $sync_details);
+    if ($n_hero > 0) {
+        echo "Sync chemins BDD : {$n_hero} bannière(s) hero.\n";
     }
 }
 

@@ -85,6 +85,20 @@ function _commandes_has_vendeur_id_column() {
     return $has;
 }
 
+function _commandes_has_mode_livraison_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM commandes LIKE 'mode_livraison'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
 /**
  * Génère un numéro de commande unique
  * @return string Le numéro de commande
@@ -105,10 +119,16 @@ function generate_numero_commande() {
  * @param array $choix Choix couleur/poids/taille par panier_id [panier_id => ['couleur'=>..., 'poids'=>..., 'taille'=>...]]
  * @param int|null $vendeur_id Boutique vendeuse (marketplace). Si null, dérivé du premier article si colonne présente.
  * @param bool $manage_transaction Si false, ne pas begin/commit (transaction gérée par l'appelant)
+ * @param string $mode_livraison 'livraison' ou 'retrait'
  * @return array|false Tableau avec 'success' et 'commande_id' ou False en cas d'erreur
  */
-function create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = [], $vendeur_id = null, $manage_transaction = true) {
+function create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = [], $vendeur_id = null, $manage_transaction = true, $mode_livraison = 'livraison') {
     global $db;
+
+    if (!function_exists('commande_mode_livraison_normalize')) {
+        require_once __DIR__ . '/../includes/commande_mode_helpers.php';
+    }
+    $mode_livraison = commande_mode_livraison_normalize($mode_livraison);
     
     try {
         if ($manage_transaction) {
@@ -127,6 +147,10 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
             }
         } else {
             $vendeur_id = null;
+        }
+
+        if ($mode_livraison === 'retrait' && $vendeur_id !== null && (int) $vendeur_id > 0) {
+            $adresse_livraison = commande_build_retrait_adresse((int) $vendeur_id);
         }
         
         $sous_total = 0;
@@ -209,6 +233,14 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
         $stmt->execute($params_cmd);
         
         $commande_id = $db->lastInsertId();
+
+        if (_commandes_has_mode_livraison_column() && $commande_id) {
+            $stmt_mode = $db->prepare('UPDATE commandes SET mode_livraison = :mode WHERE id = :id');
+            $stmt_mode->execute([
+                'mode' => $mode_livraison,
+                'id' => (int) $commande_id,
+            ]);
+        }
         
         // Insérer les produits de la commande
         foreach ($panier_items as $item) {
@@ -298,11 +330,11 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
  *
  * @return array|false ['success'=>true,'commandes'=>[...],'numeros_commandes'=>[...]] ou false
  */
-function create_marketplace_commandes_from_panier($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = []) {
+function create_marketplace_commandes_from_panier($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = [], $mode_livraison = 'livraison') {
     global $db;
 
     if (!_commandes_has_vendeur_id_column()) {
-        return create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes, $zone_livraison_id, $frais_livraison, $choix, null, true);
+        return create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes, $zone_livraison_id, $frais_livraison, $choix, null, true, $mode_livraison);
     }
 
     $groups = [];
@@ -331,7 +363,7 @@ function create_marketplace_commandes_from_panier($user_id, $panier_items, $adre
         foreach ($groups as $vid => $subset) {
             $frais_ligne = ($i === 0) ? (float) $frais_livraison : 0.0;
             $i++;
-            $res = create_commande($user_id, $subset, $adresse_livraison, $telephone_livraison, $notes, $zone_livraison_id, $frais_ligne, $choix, $vid, false);
+            $res = create_commande($user_id, $subset, $adresse_livraison, $telephone_livraison, $notes, $zone_livraison_id, $frais_ligne, $choix, $vid, false, $mode_livraison);
             if ($res === false || empty($res['success'])) {
                 $db->rollBack();
                 return false;

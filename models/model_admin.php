@@ -584,32 +584,41 @@ function update_admin_boutique_branding($id, array $data)
 {
     global $db;
 
+    if ((int) $id <= 0) {
+        return false;
+    }
+
     try {
-        $sets = [
-            'boutique_logo = :boutique_logo',
-            'boutique_couleur_principale = :boutique_couleur_principale',
-            'boutique_couleur_accent = :boutique_couleur_accent',
-            'boutique_adresse = :boutique_adresse',
-        ];
-        $params = [
-            'id' => (int) $id,
-            'boutique_logo' => $data['boutique_logo'] !== null && $data['boutique_logo'] !== ''
+        $sets = [];
+        $params = ['id' => (int) $id];
+
+        if (array_key_exists('boutique_logo', $data)) {
+            $sets[] = 'boutique_logo = :boutique_logo';
+            $params['boutique_logo'] = $data['boutique_logo'] !== null && $data['boutique_logo'] !== ''
                 ? (string) $data['boutique_logo']
-                : null,
-            'boutique_couleur_principale' => $data['boutique_couleur_principale'] !== null && $data['boutique_couleur_principale'] !== ''
+                : null;
+        }
+        if (array_key_exists('boutique_couleur_principale', $data)) {
+            $sets[] = 'boutique_couleur_principale = :boutique_couleur_principale';
+            $params['boutique_couleur_principale'] = $data['boutique_couleur_principale'] !== null && $data['boutique_couleur_principale'] !== ''
                 ? (string) $data['boutique_couleur_principale']
-                : null,
-            'boutique_couleur_accent' => $data['boutique_couleur_accent'] !== null && $data['boutique_couleur_accent'] !== ''
+                : null;
+        }
+        if (array_key_exists('boutique_couleur_accent', $data)) {
+            $sets[] = 'boutique_couleur_accent = :boutique_couleur_accent';
+            $params['boutique_couleur_accent'] = $data['boutique_couleur_accent'] !== null && $data['boutique_couleur_accent'] !== ''
                 ? (string) $data['boutique_couleur_accent']
-                : null,
-            'boutique_adresse' => $data['boutique_adresse'] !== null && trim((string) $data['boutique_adresse']) !== ''
+                : null;
+        }
+        if (array_key_exists('boutique_adresse', $data)) {
+            $sets[] = 'boutique_adresse = :boutique_adresse';
+            $params['boutique_adresse'] = $data['boutique_adresse'] !== null && trim((string) $data['boutique_adresse']) !== ''
                 ? trim((string) $data['boutique_adresse'])
-                : null,
-        ];
-        if (admin_has_boutique_country_column()) {
+                : null;
+        }
+        if (admin_has_boutique_country_column() && array_key_exists('boutique_country', $data)) {
             $sets[] = 'boutique_country = :boutique_country';
-            $country = $data['boutique_country'] ?? null;
-            $country = $country !== null ? strtoupper(trim((string) $country)) : '';
+            $country = $data['boutique_country'] !== null ? strtoupper(trim((string) $data['boutique_country'])) : '';
             if (!function_exists('marketplace_country_is_valid')) {
                 require_once __DIR__ . '/../includes/marketplace_countries.php';
             }
@@ -617,13 +626,18 @@ function update_admin_boutique_branding($id, array $data)
                 ? $country
                 : 'SN';
         }
-        if (admin_has_boutique_region_column()) {
+        if (admin_has_boutique_region_column() && array_key_exists('boutique_region', $data)) {
             $sets[] = 'boutique_region = :boutique_region';
-            $region = $data['boutique_region'] ?? null;
+            $region = $data['boutique_region'];
             $params['boutique_region'] = $region !== null && trim((string) $region) !== ''
                 ? trim((string) $region)
                 : null;
         }
+
+        if ($sets === []) {
+            return false;
+        }
+
         $stmt = $db->prepare('
             UPDATE admin SET ' . implode(', ', $sets) . "
             WHERE id = :id AND role = 'vendeur'

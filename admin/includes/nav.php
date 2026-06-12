@@ -873,6 +873,7 @@ if ($is_vendeur_menu) {
     }
     ?>
     <?php if ($geo_vnav_show): ?>
+    <?php require_once __DIR__ . '/../../includes/geo_native_bridge_script.php'; ?>
     <form method="POST" action="/admin/set-boutique-location.php" id="geo-vendeur-auto-form" style="display:none;">
         <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($geo_vnav_redirect, ENT_QUOTES, 'UTF-8'); ?>">
         <input type="hidden" name="geo_lat" id="geo_vnav_lat" value="">
@@ -881,37 +882,42 @@ if ($is_vendeur_menu) {
     <script>
     (function () {
         'use strict';
-        if (!('geolocation' in navigator)) return;
         try {
             if (sessionStorage.getItem('geoVendeurAutoDone') === '1') return;
         } catch (e) { return; }
 
+        function submitPosition(pos) {
+            var form = document.getElementById('geo-vendeur-auto-form');
+            var lat = document.getElementById('geo_vnav_lat');
+            var lng = document.getElementById('geo_vnav_lng');
+            if (!form || !lat || !lng) return;
+            lat.value = pos.coords.latitude.toFixed(8);
+            lng.value = pos.coords.longitude.toFixed(8);
+            form.submit();
+        }
+
         function attempt() {
-            try { sessionStorage.setItem('geoVendeurAutoDone', '1'); } catch (e) {}
+            if (window.GeoNativeBridge && typeof window.GeoNativeBridge.getCurrentPosition === 'function') {
+                window.GeoNativeBridge.getCurrentPosition({ maximumAge: 300000, nativeWaitMs: 6000 })
+                    .then(function (pos) {
+                        try { sessionStorage.setItem('geoVendeurAutoDone', '1'); } catch (e) {}
+                        submitPosition(pos);
+                    })
+                    .catch(function () {});
+                return;
+            }
+            if (!('geolocation' in navigator)) return;
             navigator.geolocation.getCurrentPosition(
                 function (pos) {
-                    var form = document.getElementById('geo-vendeur-auto-form');
-                    var lat = document.getElementById('geo_vnav_lat');
-                    var lng = document.getElementById('geo_vnav_lng');
-                    if (!form || !lat || !lng) return;
-                    lat.value = pos.coords.latitude.toFixed(8);
-                    lng.value = pos.coords.longitude.toFixed(8);
-                    form.submit();
+                    try { sessionStorage.setItem('geoVendeurAutoDone', '1'); } catch (e) {}
+                    submitPosition(pos);
                 },
                 function () { /* refus : le vendeur pourra le faire dans ses paramètres */ },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
             );
         }
 
-        if (navigator.permissions && navigator.permissions.query) {
-            navigator.permissions.query({ name: 'geolocation' }).then(function (st) {
-                if (st.state === 'denied') {
-                    try { sessionStorage.setItem('geoVendeurAutoDone', '1'); } catch (e) {}
-                    return;
-                }
-                attempt();
-            }).catch(attempt);
-        } else {
+        if (window.GeoNativeBridge || ('geolocation' in navigator)) {
             attempt();
         }
     })();

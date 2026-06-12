@@ -129,28 +129,53 @@
             }
         },
 
-        /* ---- Adresse (géocodage inverse Nominatim, affichage uniquement) ---- */
+        /* ---- Adresse (géocodage inverse Nominatim, affichage concis) ---- */
 
-        fillAddress: function (lat, lng) {
+        conciseAddress: function (data) {
+            if (window.GeoAddressFormat && typeof window.GeoAddressFormat.fromNominatim === 'function') {
+                return window.GeoAddressFormat.fromNominatim(data);
+            }
+            if (!data) return '';
+            if (data.display_name && window.GeoAddressFormat && typeof window.GeoAddressFormat.fromDisplayName === 'function') {
+                return window.GeoAddressFormat.fromDisplayName(data.display_name);
+            }
+            return '';
+        },
+
+        fillAddress: function (lat, lng, force) {
             var input = this.opts.addressInput ? document.getElementById(this.opts.addressInput) : null;
             if (!input) return;
-            // Ne jamais écraser une adresse saisie manuellement par l'utilisateur
-            if (input.value.trim() !== '' && input.dataset.geoAutofilled !== '1') return;
+            if (!force && input.value.trim() !== '' && input.dataset.geoAutofilled !== '1') return;
 
-            var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17'
-                + '&lat=' + encodeURIComponent(lat)
-                + '&lon=' + encodeURIComponent(lng)
-                + '&accept-language=fr';
+            var applyLabel = function (label) {
+                if (label) {
+                    input.value = label;
+                    input.dataset.geoAutofilled = '1';
+                }
+            };
 
-            fetch(url, { headers: { 'Accept': 'application/json' } })
-                .then(function (r) { return r.ok ? r.json() : null; })
-                .then(function (data) {
-                    if (data && data.display_name) {
-                        input.value = data.display_name;
-                        input.dataset.geoAutofilled = '1';
-                    }
-                })
-                .catch(function () { /* adresse facultative, silencieux */ });
+            if (window.GeoNativeBridge && typeof window.GeoNativeBridge.reverseGeocode === 'function') {
+                window.GeoNativeBridge.reverseGeocode(lat, lng).then(applyLabel).catch(function () {});
+                return;
+            }
+            if (window.GeoAddressFormat && typeof window.GeoAddressFormat.fromNominatim === 'function') {
+                var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=17'
+                    + '&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng);
+                fetch(url, { headers: { 'Accept': 'application/json' } })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (data) { applyLabel(window.GeoAddressFormat.fromNominatim(data)); })
+                    .catch(function () {});
+            }
+        },
+
+        /** Définit l'adresse texte (recherche ou collage) sans écraser si force=false */
+        setAddressValue: function (text, force) {
+            var input = this.opts.addressInput ? document.getElementById(this.opts.addressInput) : null;
+            if (!input || !text) return;
+            if (force || input.value.trim() === '' || input.dataset.geoAutofilled === '1') {
+                input.value = text;
+                input.dataset.geoAutofilled = '1';
+            }
         },
 
         /* ---- Application d'une position (champs + carte + adresse) ---- */
@@ -162,7 +187,11 @@
             this.fill(this.opts.precisionInput, precision !== null && precision !== undefined ? Math.round(precision) : '');
             this.fill(this.opts.sourceInput, source || 'gps');
             this.updateMap(lat, lng, precision, !!flags.keepView);
-            this.fillAddress(lat, lng);
+            if (flags.addressText) {
+                this.setAddressValue(flags.addressText, true);
+            } else {
+                this.fillAddress(lat, lng, !!flags.forceAddress);
+            }
             if (!flags.quiet && typeof this.opts.onSuccess === 'function') {
                 this.opts.onSuccess(lat, lng, precision);
             }
@@ -172,44 +201,56 @@
 
         capture: function (silent) {
             var self = this;
-            if (!('geolocation' in navigator)) {
+
+            function onSuccess(pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                var precision = Math.round(pos.coords.accuracy || 0);
+                self.applyPosition(lat, lng, precision, 'gps');
+                self.setStatus('ok', 'Position captur\u00e9e (\u00b1 ' + precision + ' m). Ajustez le marqueur sur la carte si besoin.');
+            }
+
+            function onError(err) {
+                var msg;
+                if (err && err.code === 1) {
+                    msg = 'Localisation refus\u00e9e. Vous pouvez quand m\u00eame commander : renseignez bien votre adresse.';
+                } else if (err && err.code === 2) {
+                    msg = 'Position indisponible pour le moment. Renseignez votre adresse de livraison.';
+                } else {
+                    msg = 'D\u00e9lai d\u00e9pass\u00e9 pour obtenir la position. Renseignez votre adresse de livraison.';
+                }
+                if (silent && self.opts.initial) {
+                    self.setStatus('ok', 'Position enregistr\u00e9e conserv\u00e9e. Cliquez sur le bouton pour la mettre \u00e0 jour.');
+                } else {
+                    self.setStatus('error', msg);
+                }
+                if (typeof self.opts.onError === 'function') {
+                    self.opts.onError(err);
+                }
+            }
+
+            var runCapture = window.GeoNativeBridge && typeof window.GeoNativeBridge.getCurrentPosition === 'function'
+                ? window.GeoNativeBridge.getCurrentPosition.bind(window.GeoNativeBridge)
+                : null;
+
+            if (!runCapture && !('geolocation' in navigator)) {
                 if (!silent) self.setStatus('error', 'La g\u00e9olocalisation n\u2019est pas disponible sur cet appareil.');
                 return;
             }
+
             self.setStatus('pending', 'Recherche de votre position\u2026');
-            navigator.geolocation.getCurrentPosition(
-                function (pos) {
-                    var lat = pos.coords.latitude;
-                    var lng = pos.coords.longitude;
-                    var precision = Math.round(pos.coords.accuracy || 0);
-                    self.applyPosition(lat, lng, precision, 'gps');
-                    self.setStatus('ok', 'Position captur\u00e9e (\u00b1 ' + precision + ' m). Ajustez le marqueur sur la carte si besoin.');
-                },
-                function (err) {
-                    var msg;
-                    if (err.code === err.PERMISSION_DENIED) {
-                        msg = 'Localisation refus\u00e9e. Vous pouvez quand m\u00eame commander : renseignez bien votre adresse.';
-                    } else if (err.code === err.POSITION_UNAVAILABLE) {
-                        msg = 'Position indisponible pour le moment. Renseignez votre adresse de livraison.';
-                    } else {
-                        msg = 'D\u00e9lai d\u00e9pass\u00e9 pour obtenir la position. Renseignez votre adresse de livraison.';
-                    }
-                    if (silent && self.opts.initial) {
-                        // Une position enregistrée existe déjà : la garder sans alarmer
-                        self.setStatus('ok', 'Position enregistr\u00e9e conserv\u00e9e. Cliquez sur le bouton pour la mettre \u00e0 jour.');
-                    } else {
-                        self.setStatus('error', msg);
-                    }
-                    if (typeof self.opts.onError === 'function') {
-                        self.opts.onError(err);
-                    }
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 12000,
-                    maximumAge: 60000
-                }
-            );
+
+            var promise = runCapture
+                ? runCapture({ enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 })
+                : new Promise(function (resolve, reject) {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 12000,
+                        maximumAge: 60000
+                    });
+                });
+
+            promise.then(onSuccess).catch(onError);
         }
     };
 

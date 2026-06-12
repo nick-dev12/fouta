@@ -130,6 +130,9 @@ if (isset($result['success']) && $result['success']) {
                         <button type="submit" class="btn-submit">
                             <i class="fas fa-user-plus"></i> S'inscrire
                         </button>
+                        <input type="hidden" name="insc_geo_lat" id="insc_geo_lat" value="">
+                        <input type="hidden" name="insc_geo_lng" id="insc_geo_lng" value="">
+                        <input type="hidden" name="insc_geo_precision" id="insc_geo_precision" value="">
                     </form>
 
                     <div class="auth-footer">
@@ -161,6 +164,9 @@ echo $inscription_redirect_get !== '' ? htmlspecialchars('?' . http_build_query(
     </script>
     <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
+    <?php require_once __DIR__ . '/../includes/geo_native_bridge_script.php'; ?>
+    <script src="/js/geo-address-format.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/geo-inscription-location.js<?php echo asset_version_query(); ?>" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (typeof window.initAuthIntlTel === 'function') {

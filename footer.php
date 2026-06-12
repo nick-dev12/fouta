@@ -8,6 +8,9 @@ if (!function_exists('asset_version_query')) {
 if (!function_exists('boutique_url')) {
     require_once __DIR__ . '/includes/marketplace_helpers.php';
 }
+if (!function_exists('boutique_adresse_publique')) {
+    require_once __DIR__ . '/includes/boutique_vendeur_display.php';
+}
 $__footer_vd = isset($GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']) && is_array($GLOBALS['BOUTIQUE_VENDEUR_DISPLAY'])
     ? $GLOBALS['BOUTIQUE_VENDEUR_DISPLAY']
     : null;
@@ -30,12 +33,12 @@ $__footer_mail = '';
 $__footer_addr = '';
 if ($__footer_is_boutique) {
     $__footer_mail = trim((string) ($__footer_vd['email'] ?? ''));
-    $__footer_addr = trim((string) ($__footer_vd['boutique_adresse'] ?? ''));
+    $__footer_addr = boutique_adresse_publique($__footer_vd);
     if ($__footer_mail === '') {
         $__footer_mail = 'contact@colobanes.com';
     }
     if ($__footer_addr === '') {
-        $__footer_addr = 'Adresse non renseignée — contactez la boutique par courriel.';
+        $__footer_addr = 'Adresse non renseignée — renseignez-la dans Paramètres (admin).';
     }
 } else {
     $__footer_mail = 'contact@colobanes.com';

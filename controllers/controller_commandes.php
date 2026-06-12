@@ -9,6 +9,7 @@ require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_admin.php';
 require_once __DIR__ . '/../includes/db_schema_helpers.php';
 require_once __DIR__ . '/../includes/geo_location_service.php';
+require_once __DIR__ . '/../includes/commande_mode_helpers.php';
 
 /**
  * Construit la liste produits pour e-mail / notification (sous-ensemble panier).
@@ -113,11 +114,16 @@ function process_create_commande() {
     }
 
     $adresse_livraison = trim($_POST['adresse_livraison'] ?? '');
+    if ($adresse_livraison !== '') {
+        require_once __DIR__ . '/../includes/geo_geocoder.php';
+        $adresse_livraison = geo_address_concise_normalize($adresse_livraison);
+    }
+    $mode_livraison = commande_mode_livraison_normalize($_POST['mode_livraison'] ?? 'livraison');
     $zone_livraison_id = null;
     $frais_livraison = 0;
     $notes = null;
 
-    /* Position exacte du client (champs cachés remplis par le navigateur, facultatif) */
+    /* Position exacte du client (champs cachés remplis par le navigateur, facultatif — livraison uniquement) */
     $geo_lat = geo_parse_coord($_POST['geo_lat'] ?? null);
     $geo_lng = geo_parse_coord($_POST['geo_lng'] ?? null);
     $geo_precision = geo_parse_precision($_POST['geo_precision'] ?? null);
@@ -125,7 +131,11 @@ function process_create_commande() {
     if (!in_array($geo_source, GEO_SOURCES_COMMANDE, true)) {
         $geo_source = 'gps';
     }
-    $geo_disponible = geo_coords_valid($geo_lat, $geo_lng);
+    $geo_disponible = ($mode_livraison === 'livraison') && geo_coords_valid($geo_lat, $geo_lng);
+
+    if ($mode_livraison === 'retrait') {
+        $adresse_livraison = '';
+    }
     
     $panier_items = get_panier_by_user($user_id);
     if ($limit_vendeur_id !== null) {
@@ -177,7 +187,8 @@ function process_create_commande() {
         $notes,
         $zone_livraison_id,
         $frais_livraison,
-        $choix
+        $choix,
+        $mode_livraison
     );
     
     if ($result === false) {

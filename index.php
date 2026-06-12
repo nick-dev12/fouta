@@ -2,6 +2,9 @@
 session_start();
 
 require_once __DIR__ . '/includes/auth_redirect.php';
+if (isset($_GET['visite_marketplace']) && (string) $_GET['visite_marketplace'] === '1') {
+    auth_grant_vendeur_marketplace_visit();
+}
 auth_redirect_vendeur_to_dashboard();
 
 require_once __DIR__ . '/includes/produit_boutique_line.php';
@@ -2876,10 +2879,10 @@ $seo_canonical = $base . '/';
             }
         });
     </script>
-    <script src="/js/owl.carousel.min.js" defer></script>
     <script src="/js/owl.carousel.js" defer></script>
-    <script src="/js/owl.animate.js" defer></script>
+    <script src="/js/owl.navigation.js" defer></script>
     <script src="/js/owl.autoplay.js" defer></script>
+    <script src="/js/owl.animate.js" defer></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -2915,27 +2918,38 @@ $seo_canonical = $base . '/';
 
             if ($('.mp-hero-slider-wrap .slider-area').length && $('.mp-hero-slider-wrap .slider-item').length) {
                 var $mpHeroSlider = $('.mp-hero-slider-wrap .slider-area');
+                var mpHeroSlideCount = $mpHeroSlider.children('.slider-item').length;
                 var mpHeroUsesAutoHeight = function () {
                     return window.matchMedia('(max-width: 992px)').matches;
                 };
+                var mpHeroCarouselEnabled = mpHeroSlideCount > 1;
+
                 $mpHeroSlider.owlCarousel({
                     items: 1,
-                    loop: true,
-                    dots: true,
-                    autoplay: true,
-                    autoplayTimeout: 6000,
+                    slideBy: 1,
+                    loop: mpHeroCarouselEnabled,
+                    dots: mpHeroCarouselEnabled,
+                    nav: mpHeroCarouselEnabled,
+                    autoplay: mpHeroCarouselEnabled,
+                    autoplayTimeout: 5000,
+                    autoplayHoverPause: true,
+                    autoplaySpeed: 450,
                     smartSpeed: 450,
                     stagePadding: 0,
                     autoHeight: mpHeroUsesAutoHeight(),
-                    nav: true,
                     navText: ['<i class="fa-solid fa-chevron-left"></i>',
                         '<i class="fa-solid fa-chevron-right"></i>'
                     ]
                 });
+
                 var refreshMpHeroSlider = function () {
                     $mpHeroSlider.trigger('refresh.owl.carousel');
                 };
-                $mpHeroSlider.on('changed.owl.carousel', refreshMpHeroSlider);
+                var mpHeroResizeTimer;
+                $(window).on('resize', function () {
+                    clearTimeout(mpHeroResizeTimer);
+                    mpHeroResizeTimer = setTimeout(refreshMpHeroSlider, 150);
+                });
                 $('.mp-hero-slider-wrap .slider-item img').each(function () {
                     if (this.complete) {
                         refreshMpHeroSlider();
@@ -2943,7 +2957,10 @@ $seo_canonical = $base . '/';
                         $(this).on('load', refreshMpHeroSlider);
                     }
                 });
-                $(window).on('resize', refreshMpHeroSlider);
+
+                if (mpHeroCarouselEnabled) {
+                    $mpHeroSlider.trigger('play.owl.autoplay', [5000]);
+                }
             }
             var carousel2 = $('.carousel2').owlCarousel();
             $('.owl-next2').click(function () {

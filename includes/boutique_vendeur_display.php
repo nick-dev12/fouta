@@ -20,6 +20,89 @@ if (!function_exists('boutique_vendeur_display_from_row')) {
             'boutique_couleur_principale' => trim((string) ($row['boutique_couleur_principale'] ?? '')),
             'boutique_couleur_accent' => trim((string) ($row['boutique_couleur_accent'] ?? '')),
             'boutique_adresse' => trim((string) ($row['boutique_adresse'] ?? '')),
+            'boutique_region' => trim((string) ($row['boutique_region'] ?? '')),
+            'boutique_country' => strtoupper(trim((string) ($row['boutique_country'] ?? ''))),
+            'boutique_latitude' => $row['boutique_latitude'] ?? null,
+            'boutique_longitude' => $row['boutique_longitude'] ?? null,
+        ];
+    }
+}
+
+if (!function_exists('boutique_adresse_publique')) {
+    /**
+     * Adresse affichée publiquement (footer, retrait sur site).
+     */
+    function boutique_adresse_publique(array $row): string
+    {
+        $adresse = trim((string) ($row['boutique_adresse'] ?? ''));
+        if ($adresse !== '') {
+            if (!function_exists('geo_address_concise_normalize')) {
+                require_once __DIR__ . '/geo_geocoder.php';
+            }
+            return geo_address_concise_normalize($adresse);
+        }
+        $region = trim((string) ($row['boutique_region'] ?? ''));
+        $country = strtoupper(trim((string) ($row['boutique_country'] ?? '')));
+        if ($region !== '') {
+            if (!function_exists('marketplace_country_label')) {
+                require_once __DIR__ . '/marketplace_countries.php';
+            }
+            $country_label = ($country !== '' && function_exists('marketplace_country_is_valid') && marketplace_country_is_valid($country))
+                ? marketplace_country_label($country)
+                : '';
+            return $country_label !== '' ? $region . ', ' . $country_label : $region;
+        }
+        if (!function_exists('geo_parse_coord')) {
+            require_once __DIR__ . '/geo_location_service.php';
+        }
+        $lat = geo_parse_coord($row['boutique_latitude'] ?? null);
+        $lng = geo_parse_coord($row['boutique_longitude'] ?? null);
+        if (geo_coords_valid($lat, $lng)) {
+            return 'Position GPS : ' . number_format($lat, 5, '.', '') . ', ' . number_format($lng, 5, '.', '');
+        }
+        return '';
+    }
+}
+
+if (!function_exists('boutique_pickup_info_from_admin')) {
+    /**
+     * Infos point de retrait pour affichage client.
+     *
+     * @return array{nom: string, adresse: string, region: string, telephone: string, lat: ?float, lng: ?float, adresse_ligne: string, maps_url: string}
+     */
+    function boutique_pickup_info_from_admin(?array $adm, string $fallback_nom = 'Boutique'): array
+    {
+        if (!function_exists('geo_parse_coord')) {
+            require_once __DIR__ . '/geo_location_service.php';
+        }
+        $nom = $fallback_nom;
+        $adresse = '';
+        $region = '';
+        $telephone = '';
+        $lat = null;
+        $lng = null;
+        if ($adm && is_array($adm)) {
+            $nom = trim((string) ($adm['boutique_nom'] ?? '')) ?: $fallback_nom;
+            $adresse = trim((string) ($adm['boutique_adresse'] ?? ''));
+            $region = trim((string) ($adm['boutique_region'] ?? ''));
+            $telephone = trim((string) ($adm['telephone'] ?? ''));
+            $lat = geo_parse_coord($adm['boutique_latitude'] ?? null);
+            $lng = geo_parse_coord($adm['boutique_longitude'] ?? null);
+        }
+        $adresse_ligne = boutique_adresse_publique($adm && is_array($adm) ? $adm : []);
+        $maps_url = '';
+        if ($lat !== null && $lng !== null && geo_coords_valid($lat, $lng)) {
+            $maps_url = geo_gmaps_link($lat, $lng);
+        }
+        return [
+            'nom' => $nom,
+            'adresse' => $adresse,
+            'region' => $region,
+            'telephone' => $telephone,
+            'lat' => geo_coords_valid($lat, $lng) ? (float) $lat : null,
+            'lng' => geo_coords_valid($lat, $lng) ? (float) $lng : null,
+            'adresse_ligne' => $adresse_ligne,
+            'maps_url' => $maps_url,
         ];
     }
 }

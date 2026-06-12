@@ -40,21 +40,21 @@ function vendeur_certification_niveaux() {
             'badge' => 'cert-badge--standard',
             'icon' => 'fa-shield',
             'color' => '#737373',
-            'desc' => 'Gagnez la confiance des clients et augmentez vos ventes. Badge gris — identité vérifiée avec pièce d\'identité.',
+            'desc' => 'Gagnez la confiance des clients et augmentez vos ventes.',
         ],
         'vip' => [
             'label' => 'VIP',
             'badge' => 'cert-badge--vip',
             'icon' => 'fa-gem',
             'color' => '#3564a6',
-            'desc' => 'Gagnez la confiance des clients et augmentez vos ventes. Badge bleu — boutique physique, photos du local et pièce d\'identité.',
+            'desc' => 'Augmentez votre visibilité et touchez plus de clients.',
         ],
         'premium' => [
             'label' => 'Premium',
             'badge' => 'cert-badge--premium',
             'icon' => 'fa-crown',
             'color' => '#d97706',
-            'desc' => 'Gagnez la confiance des clients et augmentez vos ventes. Badge doré — certification maximale avec justificatifs.',
+            'desc' => 'Placez-vous au top des ventes — visibilité x10, bénéfices garantis.',
         ],
     ];
 }

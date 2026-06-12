@@ -469,6 +469,23 @@ function process_inscription_vendeur() {
         return ['success' => false, 'message' => 'Erreur lors de la création du compte. Réessayez.'];
     }
 
+    require_once __DIR__ . '/../includes/geo_location_service.php';
+    require_once __DIR__ . '/../includes/geo_geocoder.php';
+    $boutique_adresse = geo_address_concise_normalize((string) ($_POST['boutique_adresse'] ?? ''));
+    $geo_lat = geo_parse_coord($_POST['insc_geo_lat'] ?? null);
+    $geo_lng = geo_parse_coord($_POST['insc_geo_lng'] ?? null);
+
+    if ($boutique_adresse !== '') {
+        $geocoded = geo_geocode_address($boutique_adresse, $boutique_country);
+        if ($geocoded !== null) {
+            geo_save_boutique_position_bundle((int) $id, $geocoded['lat'], $geocoded['lng'], 'adresse', $boutique_adresse);
+        } elseif (geo_coords_valid($geo_lat, $geo_lng)) {
+            geo_save_boutique_position_bundle((int) $id, $geo_lat, $geo_lng, 'gps', $boutique_adresse);
+        }
+    } elseif (geo_coords_valid($geo_lat, $geo_lng)) {
+        geo_save_boutique_position_bundle((int) $id, $geo_lat, $geo_lng, 'gps', null);
+    }
+
     return [
         'success' => true,
         'message' => 'Votre boutique a été créée. Connectez-vous avec votre téléphone et votre code PIN.',

@@ -238,6 +238,13 @@ function process_user_inscription() {
         $user_id = create_user($nom, $prenom, $email_db, $telephone_digits, $password_hash, $creation_err);
         
         if ($user_id) {
+            require_once __DIR__ . '/../includes/geo_location_service.php';
+            $geo_lat = geo_parse_coord($_POST['insc_geo_lat'] ?? null);
+            $geo_lng = geo_parse_coord($_POST['insc_geo_lng'] ?? null);
+            $geo_precision = geo_parse_precision($_POST['insc_geo_precision'] ?? null);
+            if (geo_coords_valid($geo_lat, $geo_lng)) {
+                geo_save_user_last_location((int) $user_id, $geo_lat, $geo_lng, $geo_precision);
+            }
             $success = true;
             $message = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
         } else {

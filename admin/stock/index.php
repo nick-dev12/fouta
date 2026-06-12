@@ -221,11 +221,20 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             justify-content: space-between; flex-wrap: wrap; gap: 14px; position: relative;
         }
 
-        .stk-hero__label  { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,.55); margin-bottom: 4px; }
-        .stk-hero__count  { font-size: clamp(1.9rem, 4.5vw, 3rem); font-weight: 900; color: #fff; font-family: var(--font-titres, 'Poppins', sans-serif); line-height: 1; letter-spacing: -.03em; }
-        .stk-hero__sub    { font-size: 0.79rem; color: rgba(255,255,255,.58); margin-top: 4px; }
+        .stk-hero__badge-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
 
-        .stk-hero__pills  { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 14px; }
+        .stk-hero__badge-row .vendeur-hero-cert {
+            position: static;
+            top: auto;
+            right: auto;
+        }
+
+        .stk-hero__pills  { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 0; }
 
         .stk-hero__pill {
             background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
@@ -724,9 +733,6 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                 gap: 12px;
             }
 
-            .stk-hero__count { font-size: 1.75rem; }
-            .stk-hero__sub { font-size: 0.72rem; }
-
             .stk-hero__pills {
                 display: grid;
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -813,12 +819,9 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         <!-- ===== HERO ===== -->
         <div class="stk-hero">
-            <?php require __DIR__ . '/../../includes/partials/vendeur_certification_hero_badge.php'; ?>
             <div class="stk-hero__inner">
-                <div>
-                    <p class="stk-hero__label">Total en stock</p>
-                    <div class="stk-hero__count"><?php echo $nb_total; ?></div>
-                    <p class="stk-hero__sub">produit<?php echo $nb_total > 1 ? 's' : ''; ?> enregistr&eacute;<?php echo $nb_total > 1 ? 's' : ''; ?></p>
+                <div class="stk-hero__badge-row">
+                    <?php require __DIR__ . '/../../includes/partials/vendeur_certification_hero_badge.php'; ?>
                     <div class="stk-hero__pills">
                         <div class="stk-hero__pill stk-hero__pill--ok">
                             <i class="fas fa-circle-check" style="font-size:.68rem;"></i>

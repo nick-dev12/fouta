@@ -228,6 +228,26 @@ function geo_save_user_last_location(int $user_id, ?float $lat, ?float $lng, ?fl
 }
 
 /**
+ * Enregistre position boutique + libellé court (boutique_adresse).
+ */
+function geo_save_boutique_position_bundle(int $admin_id, float $lat, float $lng, string $source, ?string $label = null): bool
+{
+    require_once __DIR__ . '/geo_geocoder.php';
+    if (!geo_save_boutique_location($admin_id, $lat, $lng, $source)) {
+        return false;
+    }
+    if ($label === null || trim($label) === '') {
+        $label = geo_reverse_geocode($lat, $lng);
+    }
+    $label = geo_address_concise_normalize((string) $label);
+    if ($label === '') {
+        return true;
+    }
+    require_once __DIR__ . '/../models/model_admin.php';
+    return update_admin_boutique_branding($admin_id, ['boutique_adresse' => $label]);
+}
+
+/**
  * Enregistre la position d'une boutique (vendeur).
  */
 function geo_save_boutique_location(int $admin_id, ?float $lat, ?float $lng, string $source = 'manuel'): bool
@@ -369,6 +389,18 @@ function geo_osm_link(float $lat, float $lng, int $zoom = 17): string
 function geo_gmaps_link(float $lat, float $lng): string
 {
     return 'https://www.google.com/maps?q=' . rawurlencode($lat . ',' . $lng);
+}
+
+/**
+ * Lien Google Maps recherche par adresse texte (copier-coller / VTC).
+ */
+function geo_gmaps_search_link(string $address): string
+{
+    $address = trim($address);
+    if ($address === '') {
+        return 'https://www.google.com/maps';
+    }
+    return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($address);
 }
 
 /* =========================================================================
@@ -530,4 +562,130 @@ function geo_produits_proches(float $lat, float $lng, float $rayon_km = 30.0, in
         error_log('[geo_produits_proches] ' . $e->getMessage());
         return [];
     }
+}
+
+/* =========================================================================
+ * Pays pour la recherche d'adresse (aligné marketplace / IP / boutique)
+ * ========================================================================= */
+
+/**
+ * Code ISO alpha-2 (majuscules) du pays pour filtrer les suggestions Nominatim.
+ * Priorité : boutique de la commande → pays session marketplace → détection IP → défaut SN.
+ *
+ * @param array|null $boutique_admin Ligne admin vendeur si commande limitée à une boutique
+ */
+function geo_search_country_code(?array $boutique_admin = null): string
+{
+    if (!function_exists('marketplace_country_is_valid')) {
+        require_once __DIR__ . '/marketplace_countries.php';
+    }
+
+    if ($boutique_admin !== null && !empty($boutique_admin['boutique_country'])) {
+        $bc = strtoupper(trim((string) $boutique_admin['boutique_country']));
+        if (marketplace_country_is_valid($bc)) {
+            return $bc;
+        }
+    }
+
+    require_once __DIR__ . '/marketplace_country_filter.php';
+
+    if (marketplace_country_filter_applies()) {
+        marketplace_ensure_session_started();
+        if (marketplace_country_welcome_done()) {
+            $session_code = marketplace_get_selected_country_code();
+            if ($session_code !== null && marketplace_country_is_valid($session_code)) {
+                return strtoupper($session_code);
+            }
+        }
+        require_once __DIR__ . '/ip_geo_resolver.php';
+        $ip_code = ip_geo_detect_country_code();
+        if (marketplace_country_is_valid($ip_code)) {
+            return strtoupper($ip_code);
+        }
+    }
+
+    return marketplace_country_default_code();
+}
+
+/**
+ * Code ISO alpha-2 minuscules pour l'API Nominatim (paramètre countrycodes).
+ */
+function geo_search_country_nominatim(?array $boutique_admin = null): string
+{
+    return strtolower(geo_search_country_code($boutique_admin));
+}
+
+/**
+ * Libellé du pays pour affichage UI (ex. « Sénégal »).
+ */
+function geo_search_country_label(?array $boutique_admin = null): string
+{
+    return marketplace_country_label(geo_search_country_code($boutique_admin));
+}
+
+/* =========================================================================
+ * Liens navigation / partage (Google Maps, Yango, Yassir, WhatsApp)
+ * ========================================================================= */
+
+function geo_nav_google_maps_dir(float $lat, float $lng): string
+{
+    return 'https://www.google.com/maps/dir/?api=1&destination='
+        . rawurlencode($lat . ',' . $lng) . '&travelmode=driving';
+}
+
+function geo_nav_yango(float $lat, float $lng): string
+{
+    return 'https://3.redirect.appmetrica.yandex.com/route?end-lat='
+        . rawurlencode((string) $lat) . '&end-lon=' . rawurlencode((string) $lng);
+}
+
+function geo_nav_yassir(float $lat, float $lng): string
+{
+    return 'yassir://book-ride?destinationLat=' . rawurlencode((string) $lat)
+        . '&destinationLng=' . rawurlencode((string) $lng);
+}
+
+function geo_share_whatsapp(float $lat, float $lng, string $label = 'Position client'): string
+{
+    $maps = 'https://maps.google.com/?q=' . rawurlencode($lat . ',' . $lng);
+    return 'https://wa.me/?text=' . rawurlencode(trim($label) . ' : ' . $maps);
+}
+
+/**
+ * Liste des apps navigation pour rendu JS (modal admin).
+ *
+ * @return array<int, array{name: string, icon: string, cls: string, url: string, external: bool}>
+ */
+function geo_nav_apps_for_js(float $lat, float $lng, string $label = 'Position client'): array
+{
+    return [
+        [
+            'name' => 'Google Maps',
+            'icon' => 'fab fa-google',
+            'cls' => 'gmaps',
+            'url' => geo_nav_google_maps_dir($lat, $lng),
+            'external' => true,
+        ],
+        [
+            'name' => 'Yango',
+            'icon' => 'fas fa-car',
+            'cls' => 'yango',
+            'url' => geo_nav_yango($lat, $lng),
+            'external' => true,
+        ],
+        [
+            'name' => 'Yassir',
+            'icon' => 'fas fa-taxi',
+            'cls' => 'yassir',
+            'url' => geo_nav_yassir($lat, $lng),
+            'external' => true,
+        ],
+        [
+            'name' => 'Partager sur WhatsApp',
+            'icon' => 'fab fa-whatsapp',
+            'cls' => 'whatsapp',
+            'url' => geo_share_whatsapp($lat, $lng, $label),
+            'external' => true,
+        ],
+    ];
 }

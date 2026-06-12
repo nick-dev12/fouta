@@ -48,24 +48,24 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
 
     $user_email = trim($user_email ?? '');
     if (!empty($user_email) && filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
-        $autoload = __DIR__ . '/../vendor/autoload.php';
-        if (file_exists($autoload)) {
-            require_once $autoload;
-        }
-        if (function_exists('mail_send')) {
-            $sujet = "[COLObanes] Mise à jour de votre commande #{$numero_commande}";
-            $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
-            $body_html .= '<h2 style="color: #918a44;">Mise à jour de votre commande</h2>';
-            $body_html .= '<p>Bonjour,</p>';
-            $body_html .= '<p>Le statut de votre commande <strong>#' . htmlspecialchars($numero_commande) . '</strong> a été mis à jour.</p>';
-            $body_html .= '<p><strong>Nouveau statut :</strong> <span style="color: #6b2f20; font-weight: 600;">' . htmlspecialchars($label) . '</span></p>';
-            $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Voir mes commandes</a></p>';
-            $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
-            $body_html .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
-            $body_html .= '</div>';
+        require_once __DIR__ . '/email_queue.php';
 
-            mail_send($user_email, $sujet, $body_html, true);
-        }
+        $sujet = "[COLObanes] Mise à jour de votre commande #{$numero_commande}";
+        $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
+        $body_html .= '<h2 style="color: #918a44;">Mise à jour de votre commande</h2>';
+        $body_html .= '<p>Bonjour,</p>';
+        $body_html .= '<p>Le statut de votre commande <strong>#' . htmlspecialchars($numero_commande) . '</strong> a été mis à jour.</p>';
+        $body_html .= '<p><strong>Nouveau statut :</strong> <span style="color: #6b2f20; font-weight: 600;">' . htmlspecialchars($label) . '</span></p>';
+        $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Voir mes commandes</a></p>';
+        $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
+        $body_html .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
+        $body_html .= '</div>';
+
+        mail_send_async($user_email, $sujet, $body_html, true, [
+            'type' => 'commande_statut',
+            'numero_commande' => $numero_commande,
+            'statut' => $nouveau_statut,
+        ]);
     }
 }
 
@@ -75,8 +75,9 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
  * @param int $user_id
  * @param array $numeros_commandes Liste des numéros de commande créés
  * @param float $montant_total Montant total (toutes commandes)
+ * @param string $user_email Email du client pour confirmation par email
  */
-function send_new_commande_confirmation_to_client($user_id, $numeros_commandes, $montant_total = 0) {
+function send_new_commande_confirmation_to_client($user_id, $numeros_commandes, $montant_total = 0, $user_email = '') {
     $user_id = (int) $user_id;
     if ($user_id <= 0 || empty($numeros_commandes)) {
         return;
@@ -85,11 +86,6 @@ function send_new_commande_confirmation_to_client($user_id, $numeros_commandes, 
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
     require_once __DIR__ . '/../includes/site_url.php';
-
-    $tokens = get_fcm_tokens_by_user($user_id);
-    if (empty($tokens)) {
-        return;
-    }
 
     $nums = array_values(array_filter(array_map('strval', $numeros_commandes)));
     $numero_affichage = count($nums) > 1 ? implode(', ', $nums) : $nums[0];
@@ -102,11 +98,46 @@ function send_new_commande_confirmation_to_client($user_id, $numeros_commandes, 
     }
 
     $base_url = get_site_base_url();
-    firebase_send_notification($tokens, $title, $body, [
-        'link' => $base_url . '/user/mes-commandes.php',
-        'numero_commande' => $numero_affichage,
-        'tag' => 'nouvelle-commande-client-' . $nums[0]
-    ]);
+    $link = $base_url . '/user/mes-commandes.php';
+
+    $tokens = get_fcm_tokens_by_user($user_id);
+    if (!empty($tokens)) {
+        firebase_send_notification($tokens, $title, $body, [
+            'link' => $link,
+            'numero_commande' => $numero_affichage,
+            'tag' => 'nouvelle-commande-client-' . $nums[0]
+        ]);
+    }
+
+    $user_email = trim($user_email ?? '');
+    if ($user_email !== '' && filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
+        require_once __DIR__ . '/email_queue.php';
+
+        $sujet = count($nums) > 1
+            ? '[COLObanes] Vos commandes ont bien été enregistrées'
+            : '[COLObanes] Votre commande #' . $numero_affichage . ' est enregistrée';
+
+        $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
+        $body_html .= '<h2 style="color: #918a44;">' . htmlspecialchars($title) . '</h2>';
+        $body_html .= '<p>Bonjour,</p>';
+        if (count($nums) > 1) {
+            $body_html .= '<p>Vos commandes <strong>#' . htmlspecialchars($numero_affichage) . '</strong> ont bien été reçues.</p>';
+        } else {
+            $body_html .= '<p>Votre commande <strong>#' . htmlspecialchars($numero_affichage) . '</strong> a bien été enregistrée.</p>';
+        }
+        if ($montant_total > 0) {
+            $body_html .= '<p><strong>Montant total :</strong> ' . number_format($montant_total, 0, ',', ' ') . ' FCFA</p>';
+        }
+        $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Suivre mes commandes</a></p>';
+        $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
+        $body_html .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
+        $body_html .= '</div>';
+
+        mail_send_async($user_email, $sujet, $body_html, true, [
+            'type' => 'commande_creation_client',
+            'numero_commande' => $numero_affichage,
+        ]);
+    }
 }
 
 /**

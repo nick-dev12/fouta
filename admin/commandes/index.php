@@ -94,6 +94,8 @@ function statut_class_cmd($s) {
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-commandes-index.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-card-uc.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <style>
         /* ===== REDESIGN COMMANDES v2 ===== */
 
@@ -250,6 +252,13 @@ function statut_class_cmd($s) {
             margin-bottom: 6px;
         }
 
+        .cmd-v2-hero__amount-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         .cmd-v2-hero__amount {
             font-size: clamp(1.8rem, 4.5vw, 2.9rem);
             font-weight: 900;
@@ -264,13 +273,6 @@ function statut_class_cmd($s) {
             font-weight: 600;
             opacity: 0.75;
             margin-left: 5px;
-        }
-
-        .cmd-v2-hero__pills {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 14px;
         }
 
         .cmd-v2-hero__pill {
@@ -779,11 +781,8 @@ function statut_class_cmd($s) {
                 font-size: 1.75rem;
             }
 
-            .cmd-v2-hero__pills {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+            .cmd-v2-hero__amount-row {
                 gap: 8px;
-                margin-top: 10px;
             }
 
             .cmd-v2-hero__pill {
@@ -835,8 +834,174 @@ function statut_class_cmd($s) {
 
         @media (max-width: 380px) {
             .cmd-v2-header__actions { grid-template-columns: 1fr; }
-            .cmd-v2-hero__pills { grid-template-columns: 1fr; }
+            .cmd-v2-hero__amount-row { flex-direction: column; align-items: flex-start; }
         }
+
+        /* ---- Modal position client ---- */
+        .cmd-pos-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10050;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .cmd-pos-modal.is-open { display: flex; }
+        .cmd-pos-modal__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(13, 13, 13, 0.55);
+        }
+        .cmd-pos-modal__panel {
+            position: relative;
+            z-index: 1;
+            width: min(560px, 100%);
+            max-height: 92vh;
+            overflow: auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .cmd-pos-modal__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(53,100,166,0.1);
+        }
+        .cmd-pos-modal__head h2 {
+            font-size: 1rem;
+            font-weight: 800;
+            margin: 0;
+            color: var(--titres);
+        }
+        .cmd-pos-modal__close {
+            border: none;
+            background: rgba(53,100,166,0.08);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--couleur-dominante);
+        }
+        .cmd-pos-modal__body { padding: 16px 20px 20px; }
+        .cmd-pos-modal__addr {
+            font-size: 0.82rem;
+            color: var(--gris-fonce);
+            margin-bottom: 10px;
+            line-height: 1.45;
+        }
+        #cmd-pos-map {
+            height: 180px;
+            border-radius: 10px;
+            border: 1px solid rgba(53,100,166,0.15);
+            margin-bottom: 12px;
+        }
+        @media (max-width: 480px) {
+            #cmd-pos-map { height: 130px; }
+            .cmd-pos-modal__panel { width: 100%; }
+            .cmd-pos-modal__body { padding: 12px 14px 16px; }
+        }
+        .cmd-pos-modal__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-start;
+        }
+        .cmd-pos-btn-livreur {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: auto;
+            max-width: 100%;
+            padding: 8px 14px;
+            min-height: 36px;
+            border: none;
+            border-radius: 8px;
+            background: var(--orange, #FF6B35);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .cmd-pos-btn-livreur:hover { filter: brightness(1.05); }
+        .cmd-pos-loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 40px 20px;
+            color: var(--gris-moyen);
+        }
+        .cmd-pos-no-geo {
+            padding: 32px 20px;
+            text-align: center;
+            color: var(--gris-moyen);
+        }
+        .cmd-pos-apps {
+            position: fixed;
+            inset: 0;
+            z-index: 10060;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .cmd-pos-apps.is-open { display: flex; }
+        .cmd-pos-apps__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(13,13,13,0.4);
+        }
+        .cmd-pos-apps__sheet {
+            position: relative;
+            z-index: 1;
+            width: min(420px, 100%);
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            padding: 20px 16px 28px;
+            max-height: 70vh;
+            overflow: auto;
+        }
+        .cmd-pos-apps__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .cmd-pos-apps__head h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+        .cmd-pos-app-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #fff;
+            border: none;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            transition: filter 0.15s, transform 0.12s;
+        }
+        .cmd-pos-app-link:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .cmd-pos-app-link i:first-child {
+            width: 26px;
+            text-align: center;
+            font-size: 1.15rem;
+        }
+        .cmd-pos-app-link--gmaps {
+            background: linear-gradient(135deg, #4285F4 0%, #34A853 50%, #FBBC05 75%, #EA4335 100%);
+        }
+        .cmd-pos-app-link--yango { background: #FF0000; }
+        .cmd-pos-app-link--yassir { background: #6316DB; }
+        .cmd-pos-app-link--whatsapp { background: #25D366; }
+        .cmd-pos-app-ext { margin-left: auto; font-size: 0.72rem; opacity: 0.85; color: inherit; }
     </style>
 </head>
 
@@ -876,21 +1041,20 @@ function statut_class_cmd($s) {
 
         <!-- ===== HERO BANNER ===== -->
         <div class="cmd-v2-hero">
-            <?php require __DIR__ . '/../../includes/partials/vendeur_certification_hero_badge.php'; ?>
             <div class="cmd-v2-hero__inner">
                 <div>
                     <p class="cmd-v2-hero__label">Montant total &mdash; Commandes &agrave; traiter</p>
-                    <div class="cmd-v2-hero__amount">
-                        <?php echo number_format($montant_total_a_traiter, 0, ',', ' '); ?><span>FCFA</span>
-                    </div>
-                    <?php if ($nb_en_attente > 0): ?>
-                    <div class="cmd-v2-hero__pills">
+                    <div class="cmd-v2-hero__amount-row">
+                        <div class="cmd-v2-hero__amount">
+                            <?php echo number_format($montant_total_a_traiter, 0, ',', ' '); ?><span>FCFA</span>
+                        </div>
+                        <?php if ($nb_en_attente > 0): ?>
                         <div class="cmd-v2-hero__pill cmd-v2-hero__pill--warn">
                             <i class="fas fa-clock"></i>
                             <span><strong><?php echo $nb_en_attente; ?></strong> en attente</span>
                         </div>
+                        <?php endif; ?>
                     </div>
-                    <?php endif; ?>
                 </div>
                 <div class="cmd-v2-hero__right">
                     <button type="button" class="cmd-v2-hero__cta" id="btn-commande-manuelle-hero">
@@ -1004,6 +1168,49 @@ function statut_class_cmd($s) {
 
     </div><!-- /.cmd-v2-page -->
     </div><!-- /.contents-container -->
+
+    <!-- ===== MODAL POSITION CLIENT ===== -->
+    <div id="cmd-pos-modal" class="cmd-pos-modal" aria-hidden="true" role="dialog" aria-labelledby="cmd-pos-modal-title">
+        <div class="cmd-pos-modal__backdrop" id="cmd-pos-modal-backdrop"></div>
+        <div class="cmd-pos-modal__panel">
+            <div class="cmd-pos-modal__head">
+                <h2 id="cmd-pos-modal-title">Position du client</h2>
+                <button type="button" class="cmd-pos-modal__close" id="cmd-pos-modal-close" aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="cmd-pos-loading" class="cmd-pos-loading">
+                <i class="fas fa-circle-notch fa-spin"></i> Localisation en cours…
+            </div>
+            <div id="cmd-pos-no-geo" class="cmd-pos-no-geo" style="display:none;">
+                <i class="fas fa-map-marker-alt" style="font-size:2rem;opacity:.4;display:block;margin-bottom:10px;"></i>
+                <p>Aucune position disponible.</p>
+            </div>
+            <div id="cmd-pos-modal-body" class="cmd-pos-modal__body" style="display:none;">
+                <p class="cmd-pos-modal__addr" id="cmd-pos-modal-addr"></p>
+                <div id="cmd-pos-map"></div>
+                <div class="cmd-pos-modal__actions">
+                    <button type="button" class="cmd-pos-btn-livreur" id="cmd-pos-btn-livreur">
+                        <i class="fas fa-motorcycle"></i> Commander un livreur
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feuille apps livraison / VTC -->
+    <div id="cmd-pos-apps-panel" class="cmd-pos-apps" aria-hidden="true">
+        <div class="cmd-pos-apps__backdrop" id="cmd-pos-apps-backdrop"></div>
+        <div class="cmd-pos-apps__sheet">
+            <div class="cmd-pos-apps__head">
+                <h3><i class="fas fa-route"></i> Ouvrir avec…</h3>
+                <button type="button" class="cmd-pos-modal__close" id="cmd-pos-apps-close" aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="cmd-pos-apps-list"></div>
+        </div>
+    </div>
 
     <!-- ===== MODAL COMMANDE MANUELLE ===== -->
     <div id="modal-commande-manuelle"
@@ -1482,6 +1689,11 @@ function statut_class_cmd($s) {
         }
     })();
     </script>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/admin-commande-position-modal.js<?php echo asset_version_query(); ?>"></script>
 
 </body>
 </html>

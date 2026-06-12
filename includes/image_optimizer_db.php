@@ -77,6 +77,10 @@ function image_db_apply_path_mapping($db, $old_rel, $new_rel) {
     if (image_db_table_exists($db, 'commandes_personnalisees')) {
         image_db_replace_column_exact($db, 'commandes_personnalisees', 'image_reference', $old_rel, $new_rel);
     }
+
+    if (image_db_table_exists($db, 'marketplace_hero_affiches')) {
+        image_db_replace_column_exact($db, 'marketplace_hero_affiches', 'image', basename($old_rel), basename($new_rel));
+    }
 }
 
 /**
@@ -150,7 +154,45 @@ function image_db_sync_all_image_paths($db) {
         $total += image_db_sync_table_column($db, 'commandes_personnalisees', 'image_reference', $details);
     }
 
+    $total += image_db_sync_marketplace_hero_images($db, $details);
+
     return ['updated' => $total, 'details' => $details];
+}
+
+/**
+ * Bannières hero marketplace : la BDD stocke le nom de fichier seul (hero_xxx.webp).
+ *
+ * @param PDO $db
+ */
+function image_db_sync_marketplace_hero_images($db, &$details) {
+    $key = 'marketplace_hero_affiches.image';
+    $details[$key] = 0;
+    if (!image_db_table_exists($db, 'marketplace_hero_affiches')
+        || !image_db_table_has_column($db, 'marketplace_hero_affiches', 'image')) {
+        return 0;
+    }
+
+    $stmt = $db->query("SELECT id, image FROM marketplace_hero_affiches WHERE image IS NOT NULL AND image != ''");
+    if (!$stmt) {
+        return 0;
+    }
+
+    $count = 0;
+    $update = $db->prepare('UPDATE marketplace_hero_affiches SET image = :new WHERE id = :id');
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $old = basename(trim(str_replace('\\', '/', (string) ($row['image'] ?? ''))));
+        if ($old === '') {
+            continue;
+        }
+        $new = basename(image_optimizer_normalize_db_path('marketplace_hero/' . $old));
+        if ($new === '' || $new === $old) {
+            continue;
+        }
+        $update->execute(['new' => $new, 'id' => (int) $row['id']]);
+        $count++;
+    }
+    $details[$key] = $count;
+    return $count;
 }
 
 /**

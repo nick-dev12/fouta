@@ -24,6 +24,7 @@ if ($geo_ac_redirect === '' || strpos($geo_ac_redirect, '/') !== 0 || strpos($ge
     $geo_ac_redirect = '/index.php';
 }
 ?>
+<?php require_once __DIR__ . '/geo_native_bridge_script.php'; ?>
 <form method="POST" action="/set-location.php" id="geo-auto-capture-form" style="display:none;">
     <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($geo_ac_redirect, ENT_QUOTES, 'UTF-8'); ?>">
     <input type="hidden" name="geo_lat" id="geo_ac_lat" value="">
@@ -34,42 +35,46 @@ if ($geo_ac_redirect === '' || strpos($geo_ac_redirect, '/') !== 0 || strpos($ge
 <script>
 (function () {
     'use strict';
-    if (!('geolocation' in navigator)) return;
-    // Ne pas interférer avec les pages qui gèrent déjà la position (ex: commande)
     if (document.getElementById('geo_lat')) return;
 
     try {
         if (sessionStorage.getItem('geoAutoCaptureDone') === '1') return;
     } catch (e) { return; }
 
+    function submitPosition(pos) {
+        var form = document.getElementById('geo-auto-capture-form');
+        var lat = document.getElementById('geo_ac_lat');
+        var lng = document.getElementById('geo_ac_lng');
+        var prec = document.getElementById('geo_ac_precision');
+        if (!form || !lat || !lng) return;
+        lat.value = pos.coords.latitude.toFixed(8);
+        lng.value = pos.coords.longitude.toFixed(8);
+        if (prec) prec.value = Math.round(pos.coords.accuracy || 0);
+        form.submit();
+    }
+
     function attempt() {
-        try { sessionStorage.setItem('geoAutoCaptureDone', '1'); } catch (e) {}
+        if (window.GeoNativeBridge && typeof window.GeoNativeBridge.getCurrentPosition === 'function') {
+            window.GeoNativeBridge.getCurrentPosition({ maximumAge: 300000, nativeWaitMs: 6000 })
+                .then(function (pos) {
+                    try { sessionStorage.setItem('geoAutoCaptureDone', '1'); } catch (e) {}
+                    submitPosition(pos);
+                })
+                .catch(function () {});
+            return;
+        }
+        if (!('geolocation' in navigator)) return;
         navigator.geolocation.getCurrentPosition(
             function (pos) {
-                var form = document.getElementById('geo-auto-capture-form');
-                var lat = document.getElementById('geo_ac_lat');
-                var lng = document.getElementById('geo_ac_lng');
-                var prec = document.getElementById('geo_ac_precision');
-                if (!form || !lat || !lng) return;
-                lat.value = pos.coords.latitude.toFixed(8);
-                lng.value = pos.coords.longitude.toFixed(8);
-                if (prec) prec.value = Math.round(pos.coords.accuracy || 0);
-                form.submit();
+                try { sessionStorage.setItem('geoAutoCaptureDone', '1'); } catch (e) {}
+                submitPosition(pos);
             },
-            function () { /* refus ou indisponible : silencieux */ },
+            function () { /* silencieux */ },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
         );
     }
 
-    if (navigator.permissions && navigator.permissions.query) {
-        navigator.permissions.query({ name: 'geolocation' }).then(function (st) {
-            if (st.state === 'denied') {
-                try { sessionStorage.setItem('geoAutoCaptureDone', '1'); } catch (e) {}
-                return;
-            }
-            attempt();
-        }).catch(attempt);
-    } else {
+    if (window.GeoNativeBridge || ('geolocation' in navigator)) {
         attempt();
     }
 })();

@@ -51,17 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['boutique_branding_sav
         } else {
             $c1 = $raw_c1 !== '' ? boutique_normalize_hex_color($raw_c1) : '';
             $c2 = $raw_c2 !== '' ? boutique_normalize_hex_color($raw_c2) : '';
-            require_once __DIR__ . '/../includes/marketplace_countries.php';
-            require_once __DIR__ . '/../includes/geo_regions.php';
-            $adresse          = isset($_POST['boutique_adresse']) ? trim((string)$_POST['boutique_adresse']) : '';
-            $boutique_country = isset($_POST['boutique_country']) ? strtoupper(trim((string)$_POST['boutique_country'])) : '';
-            $boutique_region  = isset($_POST['boutique_region']) ? trim((string)$_POST['boutique_region']) : '';
-
-            if (admin_has_boutique_country_column() && ($boutique_country === '' || !marketplace_country_is_valid($boutique_country))) {
-                $error_message = 'Veuillez sélectionner un pays valide pour votre boutique.';
-            } elseif (admin_has_boutique_region_column() && ($boutique_region === '' || !geo_region_is_valid($boutique_country !== '' ? $boutique_country : 'SN', $boutique_region))) {
-                $error_message = 'Veuillez sélectionner une région valide pour votre boutique.';
-            }
 
             $current_logo = trim((string)($admin['boutique_logo'] ?? ''));
             $logo_final   = $current_logo;
@@ -105,14 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['boutique_branding_sav
                     'boutique_logo'               => $logo_final !== '' ? $logo_final : null,
                     'boutique_couleur_principale' => $c1 !== '' ? $c1 : null,
                     'boutique_couleur_accent'     => $c2 !== '' ? $c2 : null,
-                    'boutique_adresse'            => $adresse !== '' ? $adresse : null,
                 ];
-                if (admin_has_boutique_country_column()) {
-                    $branding_data['boutique_country'] = $boutique_country;
-                }
-                if (admin_has_boutique_region_column()) {
-                    $branding_data['boutique_region'] = $boutique_region;
-                }
                 $ok = update_admin_boutique_branding($admin_id, $branding_data);
                 if ($ok) {
                     $admin = get_admin_by_id($admin_id);
@@ -134,43 +116,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['boutique_branding_sav
     }
 }
 
-/* --- Position GPS de la boutique (service de localisation exacte) --- */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['geo_boutique_action'])) {
-    $tok = (string)($_POST['csrf_token'] ?? '');
-    if (!hash_equals((string)($_SESSION['admin_csrf'] ?? ''), $tok)) {
-        flash_toast_queue_page('error', 'Session expirée. Veuillez recharger la page.');
-    } else {
-        require_once __DIR__ . '/../includes/geo_location_service.php';
-        $geo_action = (string)$_POST['geo_boutique_action'];
-
-        if ($geo_action === 'capture') {
-            $g_lat = geo_parse_coord($_POST['geo_lat'] ?? null);
-            $g_lng = geo_parse_coord($_POST['geo_lng'] ?? null);
-            if (geo_coords_valid($g_lat, $g_lng) && geo_save_boutique_location($admin_id, $g_lat, $g_lng, 'gps')) {
-                $_SESSION['success_message'] = 'Position GPS de votre boutique enregistrée.';
-            } else {
-                flash_toast_queue_page('error', 'Position invalide. Autorisez la localisation puis réessayez.');
-            }
-        } elseif ($geo_action === 'geocode') {
-            require_once __DIR__ . '/../includes/geo_geocoder.php';
-            if (geo_geocode_boutique($admin_id)) {
-                $_SESSION['success_message'] = 'Position estimée à partir de votre adresse et enregistrée.';
-            } else {
-                flash_toast_queue_page('error', 'Adresse introuvable. Renseignez d\'abord une adresse précise, ou utilisez le bouton "Utiliser ma position actuelle".');
-            }
-        } elseif ($geo_action === 'clear') {
-            geo_save_boutique_location($admin_id, null, null);
-            $_SESSION['success_message'] = 'Position GPS de votre boutique supprimée.';
-        }
-
-        if (!empty($_SESSION['success_message'])) {
-            header('Location: parametres-boutique-vendeur.php');
-            exit;
-        }
-        $admin = get_admin_by_id($admin_id);
-    }
-}
-
 $logo_url    = '';
 $clogo       = trim((string)($admin['boutique_logo'] ?? ''));
 if ($clogo !== '') {
@@ -178,14 +123,6 @@ if ($clogo !== '') {
 }
 $c1_val        = htmlspecialchars(boutique_normalize_hex_color($admin['boutique_couleur_principale'] ?? '') ?: '#3564a6', ENT_QUOTES, 'UTF-8');
 $c2_val        = htmlspecialchars(boutique_normalize_hex_color($admin['boutique_couleur_accent'] ?? '') ?: '#ff6b35', ENT_QUOTES, 'UTF-8');
-$adresse_val   = htmlspecialchars((string)($admin['boutique_adresse'] ?? ''), ENT_QUOTES, 'UTF-8');
-require_once __DIR__ . '/../includes/marketplace_countries.php';
-require_once __DIR__ . '/../includes/geo_regions.php';
-$country_val   = strtoupper(trim((string)($admin['boutique_country'] ?? 'SN')));
-if (!marketplace_country_is_valid($country_val)) {
-    $country_val = marketplace_country_default_code();
-}
-$region_val    = htmlspecialchars((string)($admin['boutique_region'] ?? ''), ENT_QUOTES, 'UTF-8');
 $logo_url_attr = $logo_url !== '' ? htmlspecialchars($logo_url, ENT_QUOTES, 'UTF-8') : '';
 
 $boutique_nom = trim((string)($_SESSION['admin_boutique_nom'] ?? ''));
@@ -1421,132 +1358,15 @@ $admin_initial = $admin_prenom !== '' ? mb_strtoupper(mb_substr($admin_prenom, 0
                 </div>
             </section>
 
-            <!-- PAYS & RÉGION -->
-            <section class="pbv-card pbv-grid--wide" aria-labelledby="pbv-region-title">
-                <div class="pbv-card__head">
-                    <div class="pbv-card__head-icon pbv-card__head-icon--map"><i class="fas fa-map-location-dot"></i></div>
-                    <div class="pbv-card__head-text">
-                        <h3 id="pbv-region-title">Pays et r&eacute;gion de la boutique</h3>
-                        <p>Zone g&eacute;ographique de votre vitrine (produits visibles pour les clients de ce pays)</p>
-                    </div>
-                </div>
-                <div class="pbv-card__body">
-                    <script type="application/json" id="geoRegionsData"><?php echo geo_regions_json_for_js(); ?></script>
-                    <div class="pbv-form-group">
-                        <label class="pbv-form-label" for="boutique_country">Pays <span style="color:var(--orange,#FF6B35)">*</span></label>
-                        <select id="boutique_country" class="pbv-select" name="boutique_country" required>
-                            <?php echo marketplace_countries_options_html($country_val, false); ?>
-                        </select>
-                    </div>
-                    <div class="pbv-form-group">
-                        <label class="pbv-form-label" for="boutique_region">R&eacute;gion <span style="color:var(--orange,#FF6B35)">*</span></label>
-                        <select id="boutique_region" class="pbv-select" name="boutique_region" required
-                            data-selected="<?php echo $region_val; ?>"
-                            data-empty-label="Sélectionnez une région">
-                            <?php echo geo_regions_options_html($country_val, $region_val, true, 'Sélectionnez une région'); ?>
-                        </select>
-                    </div>
-                    <button type="submit" class="pbv-section-save pbv-section-save--gold">
-                        <i class="fas fa-floppy-disk"></i> Enregistrer le pays et la r&eacute;gion
-                    </button>
-                </div>
-            </section>
-
-            <!-- ADRESSE -->
-            <section class="pbv-card pbv-grid--wide" aria-labelledby="pbv-addr-title">
-                <div class="pbv-card__head">
-                    <div class="pbv-card__head-icon pbv-card__head-icon--green"><i class="fas fa-location-dot"></i></div>
-                    <div class="pbv-card__head-text">
-                        <h3 id="pbv-addr-title">Adresse affich&eacute;e</h3>
-                        <p>Adresse physique ou contact visible sur votre boutique et le pied de page</p>
-                    </div>
-                </div>
-                <div class="pbv-card__body">
-                    <div class="pbv-form-group">
-                        <label class="pbv-form-label" for="boutique_adresse">Adresse <span style="color:var(--gris-clair,#a3a3a3);font-weight:500;text-transform:none;">(optionnel)</span></label>
-                        <textarea id="boutique_adresse" class="pbv-textarea" name="boutique_adresse"
-                            rows="3" placeholder="Ex. : 12 rue Sandaga, Dakar, S&eacute;n&eacute;gal"><?php echo $adresse_val; ?></textarea>
-                    </div>
-                    <button type="submit" class="pbv-section-save pbv-section-save--green">
-                        <i class="fas fa-floppy-disk"></i> Enregistrer l&rsquo;adresse
-                    </button>
-                </div>
-            </section>
-
         </div><!-- /.pbv-grid -->
 
     </form>
 
-    <!-- POSITION GPS DE LA BOUTIQUE -->
-    <?php
-    require_once __DIR__ . '/../includes/geo_location_service.php';
-    $pbv_geo_lat = geo_parse_coord($admin['boutique_latitude'] ?? null);
-    $pbv_geo_lng = geo_parse_coord($admin['boutique_longitude'] ?? null);
-    $pbv_geo_set = geo_coords_valid($pbv_geo_lat, $pbv_geo_lng);
-    $pbv_geo_maj = !empty($admin['boutique_geo_maj']) ? date('d/m/Y à H:i', strtotime((string)$admin['boutique_geo_maj'])) : '';
-    ?>
-    <section class="pbv-card pbv-grid--wide" aria-labelledby="pbv-geo-title" style="margin-top:24px;">
-        <div class="pbv-card__head">
-            <div class="pbv-card__head-icon pbv-card__head-icon--map"><i class="fas fa-location-crosshairs"></i></div>
-            <div class="pbv-card__head-text">
-                <h3 id="pbv-geo-title">Position GPS de la boutique</h3>
-                <p>Permet aux clients proches de vous de trouver vos produits en priorit&eacute;</p>
-            </div>
-        </div>
-        <div class="pbv-card__body">
-            <?php if ($pbv_geo_set): ?>
-            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;font-size:0.85rem;">
-                <span style="background:rgba(53,100,166,0.12);padding:5px 12px;border-radius:20px;">
-                    <i class="fas fa-crosshairs"></i>
-                    <?php echo htmlspecialchars(number_format($pbv_geo_lat, 6, '.', '')); ?>, <?php echo htmlspecialchars(number_format($pbv_geo_lng, 6, '.', '')); ?>
-                </span>
-                <?php if ($pbv_geo_maj !== ''): ?>
-                <span style="background:rgba(53,100,166,0.12);padding:5px 12px;border-radius:20px;">
-                    <i class="far fa-clock"></i> Mise à jour le <?php echo htmlspecialchars($pbv_geo_maj); ?>
-                </span>
-                <?php endif; ?>
-                <a href="<?php echo htmlspecialchars(geo_osm_link($pbv_geo_lat, $pbv_geo_lng), ENT_QUOTES, 'UTF-8'); ?>"
-                    target="_blank" rel="noopener noreferrer"
-                    style="color:var(--couleur-dominante,#3564a6);font-weight:600;">
-                    <i class="fas fa-map"></i> Vérifier sur la carte
-                </a>
-            </div>
-            <?php else: ?>
-            <p style="font-size:0.85rem;color:var(--gris-moyen,#737373);margin-bottom:16px;">
-                <i class="fas fa-info-circle"></i> Aucune position enregistrée pour le moment.
-            </p>
-            <?php endif; ?>
-
-            <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                <form method="POST" action="parametres-boutique-vendeur.php" id="pbv-geo-capture-form">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars((string)($_SESSION['admin_csrf'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-                    <input type="hidden" name="geo_boutique_action" value="capture">
-                    <input type="hidden" name="geo_lat" id="pbv_geo_lat" value="">
-                    <input type="hidden" name="geo_lng" id="pbv_geo_lng" value="">
-                    <button type="button" id="pbv-btn-geo-capture" class="pbv-section-save pbv-section-save--gold">
-                        <i class="fas fa-location-crosshairs"></i> Utiliser ma position actuelle
-                    </button>
-                </form>
-                <form method="POST" action="parametres-boutique-vendeur.php">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars((string)($_SESSION['admin_csrf'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-                    <input type="hidden" name="geo_boutique_action" value="geocode">
-                    <button type="submit" class="pbv-section-save pbv-section-save--green">
-                        <i class="fas fa-map-pin"></i> Estimer depuis mon adresse
-                    </button>
-                </form>
-                <?php if ($pbv_geo_set): ?>
-                <form method="POST" action="parametres-boutique-vendeur.php">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars((string)($_SESSION['admin_csrf'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-                    <input type="hidden" name="geo_boutique_action" value="clear">
-                    <button type="submit" class="pbv-section-save" style="background:var(--error-bg,rgba(255,107,53,0.12));color:var(--orange-fonce,#E85A2A);">
-                        <i class="fas fa-trash-can"></i> Supprimer la position
-                    </button>
-                </form>
-                <?php endif; ?>
-            </div>
-            <div id="pbv-geo-status" style="display:none;margin-top:12px;font-size:0.85rem;padding:10px 12px;border-radius:6px;background:var(--blanc-neige,#F5F5F5);"></div>
-        </div>
-    </section>
+    <p class="pbv-localisation-hint" style="font-size:0.82rem;color:var(--gris-moyen,#737373);margin-top:8px;">
+        <i class="fas fa-map-location-dot"></i>
+        Pays, adresse et position GPS de la boutique :
+        <a href="parametres.php" style="color:var(--couleur-dominante,#3564a6);font-weight:700;">Param&egrave;tres &rarr; Localisation</a>
+    </p>
 
 </div><!-- /.pbv-page -->
 
@@ -1686,43 +1506,6 @@ $admin_initial = $admin_prenom !== '' ? mb_strtoupper(mb_substr($admin_prenom, 0
     if (c1) c1.addEventListener('input', syncHex);
     if (c2) c2.addEventListener('input', syncHex);
     syncHex();
-})();
-</script>
-
-<script src="/js/geo-country-region.js" defer></script>
-<script>
-(function () {
-    var btn = document.getElementById('pbv-btn-geo-capture');
-    var form = document.getElementById('pbv-geo-capture-form');
-    var latInput = document.getElementById('pbv_geo_lat');
-    var lngInput = document.getElementById('pbv_geo_lng');
-    var statusEl = document.getElementById('pbv-geo-status');
-    if (!btn || !form || !latInput || !lngInput) return;
-
-    function setStatus(msg) {
-        if (!statusEl) return;
-        statusEl.style.display = '';
-        statusEl.innerHTML = msg;
-    }
-
-    btn.addEventListener('click', function () {
-        if (!('geolocation' in navigator)) {
-            setStatus('<i class="fas fa-triangle-exclamation"></i> Géolocalisation non disponible sur cet appareil.');
-            return;
-        }
-        setStatus('<i class="fas fa-circle-notch fa-spin"></i> Recherche de votre position…');
-        navigator.geolocation.getCurrentPosition(
-            function (pos) {
-                latInput.value = pos.coords.latitude.toFixed(8);
-                lngInput.value = pos.coords.longitude.toFixed(8);
-                form.submit();
-            },
-            function () {
-                setStatus('<i class="fas fa-triangle-exclamation"></i> Impossible d\u2019obtenir la position. Autorisez la localisation dans votre navigateur, ou utilisez "Estimer depuis mon adresse".');
-            },
-            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-        );
-    });
 })();
 </script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

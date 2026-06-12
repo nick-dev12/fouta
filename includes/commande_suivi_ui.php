@@ -153,7 +153,7 @@ if (!function_exists('commande_suivi_compute_metrics')) {
             }
             $pct_float = (($completed + ($has_cur ? 0.45 : 0)) / $n) * 100;
             $pct_num = max(8, min(100, (int) round($pct_float)));
-            if ($st === 'paye') {
+            if (in_array($st, ['livree', 'paye'], true)) {
                 $pct_num = 100;
             }
         }

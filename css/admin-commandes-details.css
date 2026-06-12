@@ -1349,3 +1349,99 @@
   .csf-action-btn__body strong { font-size: 0.78rem; }
   .csf-action-btn__body small  { font-size: 0.62rem; }
 }
+
+/* ——— Géolocalisation client ——— */
+.cmd-geo-section {
+  background: var(--glass-bg, #fff);
+  border: 1px solid rgba(53, 100, 166, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.1rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.cmd-geo-section h2 {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.75rem;
+  color: var(--titres, #0d0d0d);
+}
+
+.cmd-geo-section h2 i {
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.cmd-geo-distance {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--orange-fonce, #e85a2a);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.geo-nav-apps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.geo-nav-app {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.78rem;
+  transition: filter 0.15s;
+}
+
+.geo-nav-app:hover { filter: brightness(1.06); }
+
+.geo-nav-app--gmaps {
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 50%, #fbbc05 75%, #ea4335 100%);
+}
+
+.geo-nav-app--yango { background: #ff0000; }
+.geo-nav-app--yassir { background: #6316db; }
+.geo-nav-app--whatsapp { background: #25d366; }
+
+@media (max-width: 480px) {
+  .geo-nav-apps { flex-direction: column; }
+  .geo-nav-app { width: 100%; justify-content: center; }
+}
+
+.cmd-retrait-section .cmd-retrait-badge {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--orange-fonce, #e85a2a);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.cmd-retrait-section .cmd-retrait-adresse {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--gris-fonce, #4a4a4a);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.cmd-retrait-section .cmd-retrait-adresse i {
+  color: var(--couleur-dominante, #3564a6);
+  margin-top: 3px;
+}
+
+.cmd-detail-mode--retrait {
+  color: var(--orange-fonce, #e85a2a);
+  font-weight: 700;
+}

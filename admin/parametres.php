@@ -39,6 +39,13 @@ $__voir_site_href = ($__vendeur_boutique_slug !== '') ? $__vendeur_site_path : '
 $__vendeur_boutique_nom_aff = trim((string)($_SESSION['admin_boutique_nom'] ?? ''));
 if ($__vendeur_boutique_nom_aff === '') { $__vendeur_boutique_nom_aff = 'Ma boutique'; }
 
+if ($__param_role === 'vendeur') {
+    require_once __DIR__ . '/../models/model_admin.php';
+    $vbl_admin_id = (int) ($_SESSION['admin_id'] ?? 0);
+    $vbl_admin = $vbl_admin_id > 0 ? get_admin_by_id($vbl_admin_id) : null;
+    require_once __DIR__ . '/includes/vendeur_boutique_localisation.php';
+}
+
 $success_message = '';
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
@@ -74,6 +81,9 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-vendeur-share.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/vendor-cert-ribbon.css<?php echo asset_version_query(); ?>">
+    <?php if ($__param_role === 'vendeur'): ?>
+    <link rel="stylesheet" href="/css/admin-boutique-localisation.css<?php echo asset_version_query(); ?>">
+    <?php endif; ?>
     <style>
         /* ===== PARAMÈTRES v2 ===== */
 
@@ -543,54 +553,8 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
                     <?php endif; ?>
                 </div>
             </div>
-        <?php endif; ?>
 
-        <!-- ===== CERTIFICATION VENDEUR ===== -->
-        <?php if ($__param_role === 'vendeur'): ?>
-            <div class="prm-cert-banner" role="region" aria-labelledby="prm-cert-title">
-                <div class="prm-cert-banner__left">
-                    <div class="prm-cert-banner__icon"><i class="fas fa-certificate"></i></div>
-                    <div>
-                        <h3 id="prm-cert-title">Certification boutique</h3>
-                        <p>Standard, VIP ou Premium — gagnez la confiance des acheteurs avec un badge officiel.</p>
-                        <div class="prm-cert-banner__badges">
-                            <?php if ($__cert_niveau_actif): ?>
-                                <?php $cert_niveau = $__cert_niveau_actif; require __DIR__ . '/../includes/partials/vendeur_certification_badge.php'; ?>
-                            <?php else: ?>
-                                <span class="cert-badge cert-badge--standard cert-badge--sm"><i class="fas fa-shield"></i> Standard</span>
-                                <span class="cert-badge cert-badge--vip cert-badge--sm"><i class="fas fa-gem"></i> VIP</span>
-                                <span class="cert-badge cert-badge--premium cert-badge--sm"><i class="fas fa-crown"></i> Premium</span>
-                            <?php endif; ?>
-                            <?php if ($__cert_demande_en_cours): ?>
-                                <span class="cert-pill-wait"><i class="fas fa-hourglass-half"></i> En examen</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <a href="parametres/certification.php" class="prm-btn prm-btn--primary">
-                    <i class="fas fa-arrow-right"></i>
-                    <?php echo $__cert_niveau_actif ? 'Monter en niveau' : 'Demander une certification'; ?>
-                </a>
-            </div>
-            <style>
-                .prm-cert-banner {
-                    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
-                    padding: 20px 22px; border-radius: 18px;
-                    background: linear-gradient(135deg, #fff 0%, #f8fbff 50%, #fffdf8 100%);
-                    border: 1px solid rgba(53,100,166,0.12);
-                    box-shadow: 0 6px 22px rgba(53,100,166,0.08);
-                }
-                .prm-cert-banner__left { display: flex; align-items: flex-start; gap: 14px; flex: 1; min-width: 220px; }
-                .prm-cert-banner__icon {
-                    width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
-                    background: linear-gradient(135deg, rgba(53,100,166,0.15), rgba(240,180,41,0.12));
-                    color: var(--couleur-dominante, #3564a6);
-                    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-                }
-                .prm-cert-banner h3 { margin: 0 0 4px; font-size: 1.05rem; font-weight: 800; color: var(--titres, #0d0d0d); }
-                .prm-cert-banner p { margin: 0 0 10px; font-size: 0.82rem; color: var(--gris-moyen, #737373); line-height: 1.45; max-width: 480px; }
-                .prm-cert-banner__badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-            </style>
+            <?php require __DIR__ . '/includes/partials/vendeur_boutique_localisation_ui.php'; ?>
         <?php endif; ?>
 
         <!-- ===== MODULES / RACCOURCIS ===== -->
@@ -670,9 +634,6 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
                     <article class="prm-module-card prm-module-card--comptes">
                         <div class="prm-module-card__icon-wrap"><i class="fas fa-user-shield"></i></div>
                         <div class="prm-module-card__title">Comptes d&apos;acc&egrave;s</div>
-                        <div class="prm-module-card__desc">
-                            G&eacute;rez les comptes administrateurs&nbsp;: ajout, modification des r&ocirc;les et gestion des permissions.
-                        </div>
                         <a href="comptes/index.php" class="prm-module-card__link">
                             <i class="fas fa-pen-to-square"></i> G&eacute;rer les comptes
                         </a>

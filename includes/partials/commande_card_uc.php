@@ -18,6 +18,7 @@ if (empty($commande) || !is_array($commande)) {
 }
 
 require_once __DIR__ . '/../commande_card_helpers.php';
+require_once __DIR__ . '/../commande_mode_helpers.php';
 
 $card_context = isset($card_context) ? (string) $card_context : 'vendor';
 $cmd_id = (int) ($commande['id'] ?? 0);
@@ -59,6 +60,11 @@ if ($card_detail_url === '' && $cmd_id > 0) {
                     <span class="uc-urgence" title="Action requise"></span>
                 <?php endif; ?>
                 <span class="uc-v2-card__boutique"><?php echo htmlspecialchars($card_title, ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php if ($card_context === 'vendor' && commande_is_retrait($commande)): ?>
+                    <span class="uc-v2-card__mode uc-v2-card__mode--retrait" title="Retrait en boutique">
+                        <i class="fas fa-store" aria-hidden="true"></i> Retrait sur site
+                    </span>
+                <?php endif; ?>
             </div>
             <?php if ($card_rating_html !== ''): ?>
                 <div class="uc-v2-card__rating"><?php echo $card_rating_html; ?></div>
@@ -82,11 +88,32 @@ if ($card_detail_url === '' && $cmd_id > 0) {
                     <?php echo htmlspecialchars($card_phone, ENT_QUOTES, 'UTF-8'); ?>
                 </a>
             <?php endif; ?>
-            <?php if ($card_context === 'vendor' && !empty($commande['adresse_livraison'])): ?>
-                <div class="uc-v2-card__addr">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span><?php echo htmlspecialchars((string) $commande['adresse_livraison'], ENT_QUOTES, 'UTF-8'); ?></span>
-                </div>
+            <?php if ($card_context === 'vendor'): ?>
+                <?php
+                if (!function_exists('geo_parse_coord')) {
+                    require_once __DIR__ . '/../geo_location_service.php';
+                }
+                $card_geo_lat = geo_parse_coord($commande['delivery_latitude'] ?? null);
+                $card_geo_lng = geo_parse_coord($commande['delivery_longitude'] ?? null);
+                $card_has_geo = geo_coords_valid($card_geo_lat, $card_geo_lng);
+                $card_addr = trim((string) ($commande['adresse_livraison'] ?? ''));
+                ?>
+                <?php if (commande_is_retrait($commande) && $card_addr !== ''): ?>
+                <p class="uc-v2-card__pickup" title="<?php echo htmlspecialchars($card_addr, ENT_QUOTES, 'UTF-8'); ?>">
+                    <i class="fas fa-store"></i>
+                    <?php echo htmlspecialchars(mb_strlen($card_addr) > 72 ? mb_substr($card_addr, 0, 69) . '…' : $card_addr, ENT_QUOTES, 'UTF-8'); ?>
+                </p>
+                <?php elseif ($card_has_geo || $card_addr !== ''): ?>
+                <button type="button"
+                    class="uc-v2-card__pos-btn js-cmd-voir-position"
+                    data-cmd-id="<?php echo $cmd_id; ?>"
+                    data-numero="<?php echo htmlspecialchars((string) ($commande['numero_commande'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                    data-lat="<?php echo $card_has_geo ? htmlspecialchars((string) $card_geo_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                    data-lng="<?php echo $card_has_geo ? htmlspecialchars((string) $card_geo_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                    data-adresse="<?php echo htmlspecialchars($card_addr, ENT_QUOTES, 'UTF-8'); ?>">
+                    <i class="fas fa-map-location-dot"></i> Voir la position du client
+                </button>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
 

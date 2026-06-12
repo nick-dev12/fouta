@@ -103,6 +103,32 @@ if (!empty($produits)) {
     }));
 }
 
+require_once __DIR__ . '/../includes/image_optimizer.php';
+
+$dash_promo_images = [];
+$dash_promo_produits = get_produits_nouveautes(12);
+if (is_array($dash_promo_produits)) {
+    foreach ($dash_promo_produits as $dash_promo_p) {
+        $dash_promo_img = trim((string) ($dash_promo_p['image_principale'] ?? ''));
+        if ($dash_promo_img !== '') {
+            $dash_promo_images[] = $dash_promo_img;
+        }
+        if (count($dash_promo_images) >= 10) {
+            break;
+        }
+    }
+}
+if (count($dash_promo_images) < 4) {
+    foreach (['produit1.jpg', 'produit2.jpg', 'produit3.jpg', 'produit4.jpg', 'produit5.jpg', 'produit6.jpg'] as $dash_promo_fallback) {
+        if (!in_array($dash_promo_fallback, $dash_promo_images, true)) {
+            $dash_promo_images[] = $dash_promo_fallback;
+        }
+        if (count($dash_promo_images) >= 6) {
+            break;
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -131,13 +157,25 @@ if (!empty($produits)) {
         /* ---- Header ---- */
         .dash-v2-header {
             display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .dash-v2-header__row {
+            display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 14px;
+            gap: 12px;
+            width: 100%;
         }
 
-        .dash-v2-header__left { display: flex; flex-direction: column; gap: 2px; }
+        .dash-v2-header__left { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+
+        .dash-v2-header__notify {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
 
         .dash-v2-header__eyebrow {
             font-size: 0.76rem;
@@ -156,13 +194,161 @@ if (!empty($produits)) {
             letter-spacing: -0.025em;
         }
 
-        .dash-v2-header__title .highlight { color: var(--couleur-dominante, #3564a6); }
+        .dash-v2-header__title .highlight {
+            color: var(--couleur-dominante, #3564a6);
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
 
         .dash-v2-header__actions {
             display: flex;
             gap: 9px;
             align-items: center;
             flex-wrap: wrap;
+        }
+
+        /* ---- Bannière visite COLObanes (alignée mon-compte) ---- */
+        .mc-v2-shop-promo {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            height: 100px;
+            max-height: 100px;
+            background: linear-gradient(125deg, var(--bleu-fonce) 0%, var(--couleur-dominante) 48%, var(--bleu-clair) 100%);
+            box-shadow: var(--ombre-douce);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .mc-v2-shop-promo__veil {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(105deg, rgba(13, 13, 13, 0.72) 0%, rgba(45, 86, 144, 0.55) 42%, rgba(53, 100, 166, 0.25) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .mc-v2-shop-promo__icons {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            display: flex;
+            align-items: center;
+            opacity: 0.9;
+            mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+        }
+
+        .mc-v2-shop-promo__track {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            width: max-content;
+            animation: dash-v2-promo-scroll 38s linear infinite;
+            padding: 0 12px;
+        }
+
+        @keyframes dash-v2-promo-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .mc-v2-shop-promo__thumb {
+            flex: 0 0 auto;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            object-fit: cover;
+            opacity: 0.42;
+            filter: blur(1.5px) saturate(1.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            transform: rotate(-4deg);
+        }
+
+        .mc-v2-shop-promo__thumb:nth-child(even) {
+            transform: rotate(5deg) scale(0.95);
+            opacity: 0.35;
+        }
+
+        .mc-v2-shop-promo__content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px 14px;
+            height: 100%;
+            max-height: 100px;
+            box-sizing: border-box;
+            padding: 8px 12px;
+        }
+
+        .mc-v2-shop-promo__copy {
+            flex: 1 1 auto;
+            min-width: 0;
+            color: var(--texte-clair);
+        }
+
+        .mc-v2-shop-promo__eyebrow {
+            margin: 0 0 1px;
+            font-size: 0.5rem;
+            line-height: 1.1;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.78);
+        }
+
+        .mc-v2-shop-promo__title {
+            margin: 0;
+            font-family: var(--font-titres);
+            font-size: clamp(0.78rem, 2.2vw, 0.95rem);
+            font-weight: 700;
+            line-height: 1.2;
+            color: #fff;
+        }
+
+        .mc-v2-shop-promo__title span {
+            color: var(--orange-clair);
+        }
+
+        .mc-v2-shop-promo__cta {
+            flex: 0 1 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--orange);
+            color: #fff;
+            font-weight: 600;
+            font-size: clamp(0.6rem, 1.8vw, 0.7rem);
+            line-height: 1.2;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 0 6px 22px rgba(255, 107, 53, 0.45);
+            transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .mc-v2-shop-promo__cta:hover {
+            background: var(--orange-fonce);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(255, 107, 53, 0.5);
+            color: #fff;
+        }
+
+        .mc-v2-shop-promo__cta i {
+            font-size: 0.75rem;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .mc-v2-shop-promo__track {
+                animation: none;
+            }
         }
 
         /* ---- Boutons toolbar ---- */
@@ -201,15 +387,6 @@ if (!empty($produits)) {
         }
 
         .dash-v2-tool-btn--outline:hover { background: rgba(53,100,166,0.05); }
-
-        .dash-v2-tool-btn--visit {
-            white-space: nowrap;
-        }
-
-        .dash-v2-tool-btn--visit .dash-v2-tool-btn__label {
-            display: inline;
-            font-weight: 600;
-        }
 
         .dash-v2-tool-btn--ghost {
             background: transparent;
@@ -266,13 +443,28 @@ if (!empty($produits)) {
             pointer-events: none;
         }
 
-        .dash-v2-hero__label {
-            font-size: 0.76rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: rgba(255,255,255,0.6);
-            margin-bottom: 8px;
+        .dash-v2-hero__amount-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .dash-v2-hero__amount-row .dash-v2-hero__amount {
+            order: 1;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .dash-v2-hero__amount-row .vendeur-hero-cert {
+            position: static;
+            top: auto;
+            right: auto;
+            order: 2;
+            flex: 0 0 auto;
+            margin-left: auto;
         }
 
         .dash-v2-hero__amount {
@@ -1041,7 +1233,6 @@ if (!empty($produits)) {
             }
 
             .dash-v2-hero__amount { font-size: 1.75rem; }
-            .dash-v2-hero__label  { font-size: 0.66rem; letter-spacing: 0.1em; margin-bottom: 5px; }
 
             .dash-v2-hero__meta {
                 margin-top: 14px;
@@ -1116,21 +1307,80 @@ if (!empty($produits)) {
 
             .dash-v2-header__actions .hide-sm { display: none; }
 
-            .dash-v2-tool-btn--visit {
-                padding: 8px 10px;
-                font-size: .74rem;
-                gap: 6px;
+            .dash-v2-header__row {
+                align-items: flex-start;
+                gap: 8px;
             }
 
-            .dash-v2-tool-btn--visit .dash-v2-tool-btn__label {
-                display: inline;
-                font-size: .68rem;
+            .dash-v2-header__left {
+                flex: 1 1 120px;
+                min-width: 0;
+            }
+
+            .dash-v2-header__eyebrow {
+                font-size: 0.62rem;
+                letter-spacing: 0.1em;
+            }
+
+            .dash-v2-header__title {
+                font-size: clamp(0.92rem, 4.2vw, 1.15rem);
+            }
+
+            .dash-v2-header__notify {
+                padding: 7px 10px;
+                font-size: 0.72rem;
+                max-width: 48%;
+            }
+
+            .mc-v2-shop-promo__content {
+                flex-direction: row;
+                align-items: center;
+                padding: 6px 10px;
+                gap: 6px 8px;
+            }
+
+            .mc-v2-shop-promo__cta {
+                width: auto;
+                max-width: 50%;
+                justify-content: center;
+                padding: 5px 8px;
+            }
+
+            .mc-v2-shop-promo__thumb {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dash-v2-header__notify {
+                max-width: 100%;
+                width: 100%;
+                justify-content: center;
+                margin-left: 0;
+            }
+
+            .dash-v2-header__row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .dash-v2-hero__amount-row {
+                flex-wrap: nowrap;
+                gap: 10px;
+            }
+
+            .dash-v2-hero__amount-row .vendeur-hero-cert .cert-badge-img--sm {
+                width: 40px;
+                height: auto;
             }
         }
 
         @media (max-width: 380px) {
             .dash-v2-stats { grid-template-columns: 1fr; }
             .dash-v2-produits-grid { grid-template-columns: 1fr; }
+            .dash-v2-header__title { font-size: 0.88rem; }
+            .dash-v2-header__eyebrow { font-size: 0.58rem; }
         }
     </style>
 </head>
@@ -1153,7 +1403,11 @@ if (!empty($produits)) {
         $nb_produits = count($produits_all);
         $toutes_commandes = get_all_commandes(null, $vf_dash);
         $commandes_recentes = array_slice(is_array($toutes_commandes) ? $toutes_commandes : [], 0, 6);
-        $admin_prenom = htmlspecialchars($_SESSION['admin_prenom'] ?? $_SESSION['admin_nom'] ?? 'Vendeur');
+        $dash_boutique_nom = trim((string) ($_SESSION['admin_boutique_nom'] ?? ''));
+        if ($dash_boutique_nom === '') {
+            $dash_boutique_nom = 'Ma boutique';
+        }
+        $dash_boutique_nom = htmlspecialchars($dash_boutique_nom, ENT_QUOTES, 'UTF-8');
         ?>
 
         <?php if (!empty($success_message)): ?>
@@ -1174,45 +1428,67 @@ if (!empty($produits)) {
 
         <!-- ===== HEADER ===== -->
         <header class="dash-v2-header">
-            <div class="dash-v2-header__left">
-                <p class="dash-v2-header__eyebrow">Espace Vendeur</p>
-                <h1 class="dash-v2-header__title">
-                    Bonjour, <span class="highlight"><?php echo $admin_prenom; ?></span> &#x1F44B;
-                </h1>
-            </div>
-            <div class="dash-v2-header__actions">
-                <button type="button" id="btn-install-pwa" class="dash-v2-tool-btn dash-v2-tool-btn--ghost"
-                    style="display:none;" title="Installer l'application">
-                    <i class="fas fa-download"></i>
-                    <span class="hide-sm">Installer</span>
-                </button>
-                <button type="button" id="btn-enable-notifications" class="dash-v2-tool-btn dash-v2-tool-btn--outline"
+            <div class="dash-v2-header__row">
+                <div class="dash-v2-header__left">
+                    <p class="dash-v2-header__eyebrow">Bienvenue</p>
+                    <h1 class="dash-v2-header__title">
+                        <span class="highlight"><?php echo $dash_boutique_nom; ?></span>
+                    </h1>
+                </div>
+                <button type="button" id="btn-enable-notifications"
+                    class="dash-v2-tool-btn dash-v2-tool-btn--outline dash-v2-header__notify"
                     data-notify-type="admin" title="Activer les notifications">
                     <i class="fas fa-bell-slash"></i>
                 </button>
-                <a href="/index.php" class="dash-v2-tool-btn dash-v2-tool-btn--outline dash-v2-tool-btn--visit" title="Visiter COLObanes">
-                    <i class="fas fa-globe"></i>
-                    <span class="dash-v2-tool-btn__label">Visiter COLObanes</span>
-                </a>
-                <button type="button" id="btnOpenAddProduitModalDash" class="dash-v2-tool-btn dash-v2-tool-btn--primary">
-                    <i class="fas fa-plus"></i>
-                    Nouveau produit
-                </button>
             </div>
+            <button type="button" id="btn-install-pwa" class="dash-v2-tool-btn dash-v2-tool-btn--ghost"
+                style="display:none;" title="Installer l'application">
+                <i class="fas fa-download"></i>
+                <span class="hide-sm">Installer</span>
+            </button>
         </header>
+
+        <!-- ===== Bannière visite COLObanes ===== -->
+        <section class="mc-v2-shop-promo" aria-labelledby="dash-v2-shop-promo-title">
+            <div class="mc-v2-shop-promo__icons" aria-hidden="true">
+                <div class="mc-v2-shop-promo__track">
+                    <?php
+                    $dash_promo_track = array_merge($dash_promo_images, $dash_promo_images);
+                    foreach ($dash_promo_track as $dash_promo_file) :
+                        $dash_promo_src = str_contains((string) $dash_promo_file, '/')
+                            ? upload_image_url((string) $dash_promo_file, 'sm')
+                            : '/image/' . rawurlencode((string) $dash_promo_file);
+                        ?>
+                    <img class="mc-v2-shop-promo__thumb"
+                        src="<?php echo htmlspecialchars($dash_promo_src, ENT_QUOTES, 'UTF-8'); ?>"
+                        alt="" loading="lazy" decoding="async" width="36" height="36">
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <div class="mc-v2-shop-promo__veil" aria-hidden="true"></div>
+            <div class="mc-v2-shop-promo__content">
+                <div class="mc-v2-shop-promo__copy">
+                    <p class="mc-v2-shop-promo__eyebrow">Globale Marketplace</p>
+                    <h2 class="mc-v2-shop-promo__title" id="dash-v2-shop-promo-title">
+                        Visitez la marketplace <span>COLObanes</span>
+                    </h2>
+                </div>
+                <a href="<?php echo htmlspecialchars(auth_marketplace_visit_url('/index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="mc-v2-shop-promo__cta" title="Visiter COLObanes">
+                    <i class="fas fa-globe" aria-hidden="true"></i>
+                    Visiter COLObanes
+                </a>
+            </div>
+        </section>
 
         <!-- ===== HERO VUE D'ENSEMBLE ===== -->
         <div class="dash-v2-hero">
-            <?php require __DIR__ . '/../includes/partials/vendeur_certification_hero_badge.php'; ?>
-            <p class="dash-v2-hero__label">Vue d'ensemble &mdash; Total des ventes</p>
-            <div class="dash-v2-hero__amount">
-                <?php echo number_format($ca_total, 0, ',', ' '); ?><span class="currency">FCFA</span>
+            <div class="dash-v2-hero__amount-row">
+                <?php require __DIR__ . '/../includes/partials/vendeur_certification_hero_badge.php'; ?>
+                <div class="dash-v2-hero__amount">
+                    <?php echo number_format($ca_total, 0, ',', ' '); ?><span class="currency">FCFA</span>
+                </div>
             </div>
             <div class="dash-v2-hero__meta">
-                <div class="dash-v2-hero__pill">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span>Commandes &nbsp;<strong><?php echo $total_commandes; ?></strong></span>
-                </div>
                 <?php if (vendeur_share_boutique_is_available()): ?>
                     <?php $dash_boutique_vitrine = vendeur_share_boutique_get_data(); ?>
                     <a href="<?php echo htmlspecialchars($dash_boutique_vitrine['url'], ENT_QUOTES, 'UTF-8'); ?>"

@@ -148,6 +148,50 @@ if (!function_exists('auth_vendeur_dashboard_url')) {
     }
 }
 
+if (!function_exists('auth_vendeur_may_browse_marketplace')) {
+    /**
+     * Le vendeur a choisi de visiter la marketplace publique (session explicite).
+     */
+    function auth_vendeur_may_browse_marketplace()
+    {
+        return !empty($_SESSION['vendeur_visite_marketplace']);
+    }
+}
+
+if (!function_exists('auth_grant_vendeur_marketplace_visit')) {
+    function auth_grant_vendeur_marketplace_visit()
+    {
+        $_SESSION['vendeur_visite_marketplace'] = true;
+    }
+}
+
+if (!function_exists('auth_revoke_vendeur_marketplace_visit')) {
+    function auth_revoke_vendeur_marketplace_visit()
+    {
+        unset($_SESSION['vendeur_visite_marketplace']);
+    }
+}
+
+if (!function_exists('auth_marketplace_visit_url')) {
+    /**
+     * URL d’entrée marketplace pour un vendeur connecté (active la session de visite).
+     */
+    function auth_marketplace_visit_url($path = '/index.php')
+    {
+        $path = trim((string) $path);
+        if ($path === '' || strpos($path, '//') !== false) {
+            $path = '/index.php';
+        }
+        if ($path[0] !== '/') {
+            $path = '/' . $path;
+        }
+
+        $sep = (strpos($path, '?') !== false) ? '&' : '?';
+
+        return $path . $sep . 'visite_marketplace=1';
+    }
+}
+
 if (!function_exists('auth_redirect_vendeur_to_dashboard')) {
     /**
      * Redirige un vendeur connecté vers son tableau de bord.
@@ -155,6 +199,10 @@ if (!function_exists('auth_redirect_vendeur_to_dashboard')) {
     function auth_redirect_vendeur_to_dashboard()
     {
         if (!auth_session_is_vendeur()) {
+            return;
+        }
+
+        if (auth_vendeur_may_browse_marketplace()) {
             return;
         }
 

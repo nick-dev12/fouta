@@ -123,6 +123,18 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                         </div>
 
                         <div class="form-group">
+                            <label for="boutique_adresse"><i class="fas fa-location-dot"></i> Adresse de la boutique <span class="form-optional">(facultatif)</span></label>
+                            <div class="input-wrapper">
+                                <textarea id="boutique_adresse" name="boutique_adresse" rows="2" class="auth-textarea"
+                                    placeholder="Ex. : Plan Jaxaay 01 Parcelles Jaxaay Dakar"><?php echo isset($_POST['boutique_adresse']) ? htmlspecialchars((string) $_POST['boutique_adresse']) : ''; ?></textarea>
+                            </div>
+                            <button type="button" id="btn-localiser-boutique" class="btn-submit btn-submit--secondary" style="margin-top:0.5rem;">
+                                <i class="fas fa-location-crosshairs"></i> Localiser ma boutique
+                            </button>
+                            <p id="insc-geo-status" class="auth-hint" style="margin-top:0.5rem;font-size:0.85rem;color:var(--gris-moyen,#737373);"></p>
+                        </div>
+
+                        <div class="form-group">
                             <label for="telephone"><i class="fas fa-phone"></i> Téléphone (connexion) *</label>
                             <div class="input-wrapper input-wrapper--intl-tel">
                                 <input type="tel" id="telephone" name="telephone" placeholder="77 123 45 67"
@@ -167,6 +179,10 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                         <button type="submit" class="btn-submit">
                             <i class="fas fa-store"></i> Créer mon compte vendeur
                         </button>
+                        <input type="hidden" name="insc_geo_lat" id="insc_geo_lat" value="">
+                        <input type="hidden" name="insc_geo_lng" id="insc_geo_lng" value="">
+                        <input type="hidden" name="insc_geo_precision" id="insc_geo_precision" value="">
+                        <input type="hidden" name="insc_geo_manual" id="insc_geo_manual" value="">
                     </form>
 
                     <div class="auth-footer">
@@ -209,6 +225,9 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
     </script>
     <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
     <script src="/js/geo-country-region.js" defer></script>
+    <?php require_once __DIR__ . '/../includes/geo_native_bridge_script.php'; ?>
+    <script src="/js/geo-address-format.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/geo-inscription-location.js<?php echo asset_version_query(); ?>" defer></script>
     <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 </html>

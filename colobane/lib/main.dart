@@ -473,21 +473,28 @@ class _WebViewScreenState extends State<WebViewScreen>
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        return {'success': false, 'error': 'Location services are disabled'};
+        return {
+          'success': false,
+          'error': 'Les services de localisation sont désactivés sur cet appareil.',
+        };
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          return {'success': false, 'error': 'Location permissions are denied'};
+          return {
+            'success': false,
+            'error': 'Autorisation de localisation refusée.',
+          };
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         return {
           'success': false,
-          'error': 'Location permissions are permanently denied',
+          'error':
+              'Autorisation de localisation refusée définitivement. Activez-la dans les paramètres de l\'application.',
         };
       }
 
@@ -793,6 +800,9 @@ class _WebViewScreenState extends State<WebViewScreen>
         }
         
         console.log('ColobanesNative API initialized');
+        try {
+          window.dispatchEvent(new Event('colobanesNativeReady'));
+        } catch (e) {}
       })();
     ''';
 
@@ -899,8 +909,9 @@ class _WebViewScreenState extends State<WebViewScreen>
                     useShouldOverrideUrlLoading: true,
                     mediaPlaybackRequiresUserGesture: false,
                     allowsInlineMediaPlayback: true,
-                    iframeAllow: "camera",
+                    iframeAllow: "camera; geolocation",
                     iframeAllowFullscreen: true,
+                    geolocationEnabled: true,
                     // ─── Rendu WebView Android ───────────────────────────────
                     // Hybrid Composition (true) = défaut recommandé en
                     // flutter_inappwebview v6 sur Android 10+ : scroll fluide 60fps.
@@ -960,18 +971,53 @@ class _WebViewScreenState extends State<WebViewScreen>
                     }
                   },
                   onPermissionRequest: (controller, request) async {
-                    final allowed = request.resources.where((r) {
-                      return r.toString().toLowerCase().contains('camera');
-                    }).toList();
-                    if (allowed.isEmpty) {
+                    final granted = <PermissionResourceType>[];
+                    for (final resource in request.resources) {
+                      final name = resource.toString().toLowerCase();
+                      if (name.contains('camera')) {
+                        var cameraStatus = await Permission.camera.status;
+                        if (!cameraStatus.isGranted) {
+                          cameraStatus = await Permission.camera.request();
+                        }
+                        if (cameraStatus.isGranted) {
+                          granted.add(resource);
+                        }
+                        continue;
+                      }
+                      if (name.contains('geolocation') || name.contains('location')) {
+                        var geoPerm = await Geolocator.checkPermission();
+                        if (geoPerm == LocationPermission.denied) {
+                          geoPerm = await Geolocator.requestPermission();
+                        }
+                        if (geoPerm == LocationPermission.always ||
+                            geoPerm == LocationPermission.whileInUse) {
+                          granted.add(resource);
+                        }
+                      }
+                    }
+                    if (granted.isEmpty) {
                       return PermissionResponse(
                         resources: request.resources,
                         action: PermissionResponseAction.DENY,
                       );
                     }
                     return PermissionResponse(
-                      resources: allowed,
+                      resources: granted,
                       action: PermissionResponseAction.GRANT,
+                    );
+                  },
+                  onGeolocationPermissionsShowPrompt:
+                      (controller, origin) async {
+                    var geoPerm = await Geolocator.checkPermission();
+                    if (geoPerm == LocationPermission.denied) {
+                      geoPerm = await Geolocator.requestPermission();
+                    }
+                    final allowed = geoPerm == LocationPermission.always ||
+                        geoPerm == LocationPermission.whileInUse;
+                    return GeolocationPermissionShowPromptResponse(
+                      origin: origin,
+                      allow: allowed,
+                      retain: allowed,
                     );
                   },
                   onReceivedError: (controller, request, error) {

@@ -4,6 +4,7 @@
  */
 require_once __DIR__ . '/../includes/require_login.php';
 require_once dirname(__DIR__, 2) . '/includes/upload_image_limits.php';
+require_once dirname(__DIR__, 2) . '/includes/image_optimizer.php';
 require_once dirname(__DIR__, 2) . '/models/model_marketplace_hero.php';
 require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
 require_once dirname(__DIR__, 2) . '/controllers/controller_super_admin.php';
@@ -41,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $did = (int) $_POST['delete_id'];
         $row = marketplace_hero_get_by_id($did);
         if ($row && marketplace_hero_delete_by_id($did)) {
+            image_optimizer_delete_with_variants('marketplace_hero/' . basename((string) $row['image']));
             $fn = $upload_base . DIRECTORY_SEPARATOR . basename((string) $row['image']);
             if (is_file($fn)) {
                 @unlink($fn);
@@ -63,45 +65,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($alt === '') {
             $alt = 'Bannière marketplace';
         }
-        $tmp = $_FILES['image']['tmp_name'] ?? '';
-        $err = (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE);
-        $max = UPLOAD_MAX_IMAGE_BYTES;
-        if ($err !== UPLOAD_ERR_OK || $tmp === '' || !is_uploaded_file($tmp)) {
-            $msg_err = 'Envoi du fichier invalide.';
-        } elseif ((int) ($_FILES['image']['size'] ?? 0) > $max) {
-            $msg_err = 'Fichier trop volumineux (maximum 20 Mo).';
+        $result = upload_optimize_image_file($_FILES['image'], $upload_base, 'marketplace_hero', 'hero_');
+        if (empty($result['success']) || empty($result['filename'])) {
+            $msg_err = trim((string) ($result['message'] ?? ''));
+            if ($msg_err === '') {
+                $msg_err = 'Envoi du fichier invalide ou format non supporté (JPEG, PNG, WebP ou GIF — 20 Mo max).';
+            }
         } else {
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mime = $finfo ? $finfo->file($tmp) : '';
-            $map = [
-                'image/jpeg' => 'jpg',
-                'image/png' => 'png',
-                'image/webp' => 'webp',
-                'image/gif' => 'gif',
-            ];
-            if (!isset($map[$mime])) {
-                $msg_err = 'Format non autorisé (JPEG, PNG, WebP ou GIF uniquement).';
+            $safe = (string) $result['filename'];
+            $ord = marketplace_hero_next_ordre();
+            $nid = marketplace_hero_insert($safe, $alt, $ord);
+            if ($nid) {
+                super_admin_log_action((int) $_SESSION['super_admin_id'], 'hero_affiche_ajoutée', 'hero_affiche', (int) $nid, $safe);
+                $msg_ok = 'Image ajoutée et optimisée (WebP). Elle apparaît sur la page d’accueil.';
             } else {
-                $ext = $map[$mime];
-                if (@getimagesize($tmp) === false) {
-                    $msg_err = 'Le fichier n’est pas une image valide.';
-                } else {
-                    $safe = 'hero_' . bin2hex(random_bytes(12)) . '.' . $ext;
-                    $dest = $upload_base . DIRECTORY_SEPARATOR . $safe;
-                    if (!move_uploaded_file($tmp, $dest)) {
-                        $msg_err = 'Enregistrement du fichier impossible.';
-                    } else {
-                        $ord = marketplace_hero_next_ordre();
-                        $nid = marketplace_hero_insert($safe, $alt, $ord);
-                        if ($nid) {
-                            super_admin_log_action((int) $_SESSION['super_admin_id'], 'hero_affiche_ajoutée', 'hero_affiche', (int) $nid, $safe);
-                            $msg_ok = 'Image ajoutée. Elle apparaît sur la page d’accueil.';
-                        } else {
-                            @unlink($dest);
-                            $msg_err = 'Erreur base de données.';
-                        }
-                    }
-                }
+                image_optimizer_delete_with_variants('marketplace_hero/' . $safe);
+                $msg_err = 'Erreur base de données.';
             }
         }
     }
@@ -152,7 +131,7 @@ $hero_count = count($list);
                     <h1 class="sa-users-hero__title">Hero de la page d’accueil</h1>
                     <p class="sa-users-hero__lead">
                         Gérez le carrousel affiché dans la section <strong>mp-hero</strong> de <strong>index.php</strong>.
-                        Formats acceptés : JPEG, PNG, WebP, GIF — 20&nbsp;Mo max.
+                        Formats acceptés : JPEG, PNG, WebP, GIF — 20&nbsp;Mo max. Conversion WebP et compression automatiques à l’envoi.
                     </p>
                 </div>
                 <div class="sa-users-kpis" aria-label="Synthèse">
@@ -212,7 +191,7 @@ $hero_count = count($list);
                         <?php foreach ($list as $idx => $row): ?>
                             <?php
                             $rid = (int) $row['id'];
-                            $img = '/upload/marketplace_hero/' . rawurlencode((string) $row['image']);
+                            $img = upload_image_url('marketplace_hero/' . (string) $row['image'], 'md');
                             ?>
                             <article class="sa-hero-card">
                                 <div class="sa-hero-card__thumb">

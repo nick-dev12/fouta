@@ -31,7 +31,8 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
     }
 
     $admin_emails = get_all_admin_emails();
-    if (!empty($admin_emails) && function_exists('mail_send')) {
+    if (!empty($admin_emails)) {
+        require_once __DIR__ . '/email_queue.php';
         $sujet = "[COLObanes] Nouvelle commande #{$numero_commande}";
         $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
         $body_html .= '<h2 style="color: #918a44;">Nouvelle commande reçue</h2>';
@@ -83,7 +84,10 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
 
         foreach ($admin_emails as $email) {
             if (!empty(trim($email))) {
-                mail_send(trim($email), $sujet, $body_html, true);
+                mail_send_async(trim($email), $sujet, $body_html, true, [
+                    'type' => 'commande_creation_admin',
+                    'numero_commande' => $numero_commande,
+                ]);
             }
         }
     }
@@ -131,9 +135,11 @@ function send_new_commande_to_vendeur($vendeur_id, $commande_id, $numero_command
     }
 
     $admin = get_admin_by_id($vendeur_id);
-    if (!$admin || empty(trim($admin['email'] ?? '')) || !function_exists('mail_send')) {
+    if (!$admin || empty(trim($admin['email'] ?? ''))) {
         return;
     }
+
+    require_once __DIR__ . '/email_queue.php';
 
     $sujet = "[COLObanes] Nouvelle commande #{$numero_commande} (votre boutique)";
     $body_html = '<div style="font-family: \'Poppins\', Arial, sans-serif; max-width: 600px;">';
@@ -184,5 +190,9 @@ function send_new_commande_to_vendeur($vendeur_id, $commande_id, $numero_command
     $body_html .= '<p style="font-size: 12px; color: #999;">COLObanes — marketplace Sénégal</p>';
     $body_html .= '</div>';
 
-    mail_send(trim($admin['email']), $sujet, $body_html, true);
+    mail_send_async(trim($admin['email']), $sujet, $body_html, true, [
+        'type' => 'commande_creation_vendeur',
+        'numero_commande' => $numero_commande,
+        'vendeur_id' => $vendeur_id,
+    ]);
 }

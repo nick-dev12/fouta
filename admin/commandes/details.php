@@ -78,22 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && $commande_id > 0) {
     }
 
     if ($statut_mis_a_jour !== null) {
-        $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Le client a été notifié.';
-
-        while (ob_get_level() > 0) {
-            ob_end_clean();
-        }
-
-        $redirect_url = '/admin/commandes/details.php?id=' . (int) $commande_id;
-        header('Location: ' . $redirect_url, true, 303);
-
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } else {
-            @ini_set('zlib.output_compression', '0');
-            flush();
-        }
-
         try {
             require_once __DIR__ . '/../../services/send_commande_notification.php';
             send_commande_status_notification(
@@ -106,6 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && $commande_id > 0) {
             error_log('[commandes/details] notification : ' . $e->getMessage());
         }
 
+        $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Le client a été notifié.';
+        header('Location: /admin/commandes/details.php?id=' . (int) $commande_id);
         exit;
     }
 
@@ -162,6 +148,12 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
                     <h1 class="cmd-detail-hero__title" id="cmd-detail-title">Commande <span>#<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?></span></h1>
                     <p class="cmd-detail-meta">
                         <span><i class="far fa-calendar-alt" aria-hidden="true"></i> <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></span>
+                        <?php
+                        require_once __DIR__ . '/../../includes/commande_mode_helpers.php';
+                        if (commande_is_retrait($commande)):
+                        ?>
+                        <span class="cmd-detail-mode cmd-detail-mode--retrait"><i class="fas fa-store" aria-hidden="true"></i> Retrait sur site</span>
+                        <?php endif; ?>
                         <?php
                         $frais_liv = isset($commande['frais_livraison']) ? (float) $commande['frais_livraison'] : 0;
                         if ($frais_liv > 0):
@@ -319,17 +311,34 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
     </section>
 
     <?php
-    /* ---- Position GPS exacte du client (capturée à la commande) ---- */
+    require_once __DIR__ . '/../../includes/commande_mode_helpers.php';
+    $cmd_is_retrait = commande_is_retrait($commande);
+    $cmd_adresse_aff = trim((string) ($commande['adresse_livraison'] ?? ''));
+
+    if ($cmd_is_retrait):
+    ?>
+    <section class="cmd-geo-section cmd-retrait-section" aria-labelledby="cmd-retrait-heading">
+        <h2 id="cmd-retrait-heading">
+            <i class="fas fa-store" aria-hidden="true"></i>
+            Retrait sur site
+        </h2>
+        <p class="cmd-retrait-badge">
+            <i class="fas fa-bag-shopping" aria-hidden="true"></i>
+            Le client viendra récupérer sa commande en boutique
+        </p>
+        <?php if ($cmd_adresse_aff !== ''): ?>
+        <p class="cmd-retrait-adresse">
+            <i class="fas fa-location-dot" aria-hidden="true"></i>
+            <?php echo htmlspecialchars($cmd_adresse_aff, ENT_QUOTES, 'UTF-8'); ?>
+        </p>
+        <?php endif; ?>
+    </section>
+    <?php else:
+    /* ---- Position GPS exacte du client (livraison) ---- */
     require_once __DIR__ . '/../../includes/geo_location_service.php';
     $geo_cmd_lat = geo_parse_coord($commande['delivery_latitude'] ?? null);
     $geo_cmd_lng = geo_parse_coord($commande['delivery_longitude'] ?? null);
     if (geo_coords_valid($geo_cmd_lat, $geo_cmd_lng)):
-        $geo_cmd_precision = geo_parse_precision($commande['delivery_geo_precision'] ?? null);
-        $geo_cmd_source = (string) ($commande['delivery_geo_source'] ?? '');
-        $geo_cmd_date = !empty($commande['delivery_geo_date']) ? date('d/m/Y à H:i', strtotime($commande['delivery_geo_date'])) : '';
-        $geo_source_labels = ['gps' => 'GPS appareil', 'map_pin' => 'Pin carte', 'adresse' => 'Adresse géocodée', 'ip' => 'Estimation IP'];
-
-        /* Distance boutique -> client si la boutique du vendeur est géolocalisée */
         $geo_distance_txt = '';
         if (!empty($commande['vendeur_id']) && geo_boutiques_ready()) {
             try {
@@ -344,51 +353,25 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
             } catch (PDOException $e) { /* distance facultative */ }
         }
     ?>
-    <section class="cmd-geo-section" aria-labelledby="cmd-geo-heading"
-        style="background:var(--glass-bg,#fff);border:1px solid rgba(53,100,166,0.2);border-radius:12px;padding:20px 24px;margin-bottom:1.5rem;">
-        <h2 id="cmd-geo-heading" style="font-size:1.05rem;display:flex;align-items:center;gap:10px;margin:0 0 12px;">
-            <i class="fas fa-map-location-dot" style="color:var(--couleur-dominante,#3564a6);"></i>
+    <section class="cmd-geo-section" aria-labelledby="cmd-geo-heading">
+        <h2 id="cmd-geo-heading">
+            <i class="fas fa-map-location-dot" aria-hidden="true"></i>
             Position exacte du client
         </h2>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px;font-size:0.85rem;color:var(--gris-fonce,#4a4a4a);">
-            <span style="background:rgba(53,100,166,0.12);padding:4px 10px;border-radius:20px;">
-                <i class="fas fa-crosshairs"></i>
-                <?php echo htmlspecialchars(number_format($geo_cmd_lat, 6, '.', '')); ?>, <?php echo htmlspecialchars(number_format($geo_cmd_lng, 6, '.', '')); ?>
-            </span>
-            <?php if ($geo_cmd_precision !== null): ?>
-            <span style="background:rgba(53,100,166,0.12);padding:4px 10px;border-radius:20px;">
-                <i class="fas fa-bullseye"></i> Précision ± <?php echo htmlspecialchars(number_format($geo_cmd_precision, 0, ',', ' ')); ?> m
-            </span>
-            <?php endif; ?>
-            <?php if (isset($geo_source_labels[$geo_cmd_source])): ?>
-            <span style="background:rgba(53,100,166,0.12);padding:4px 10px;border-radius:20px;">
-                <i class="fas fa-satellite-dish"></i> <?php echo $geo_source_labels[$geo_cmd_source]; ?>
-            </span>
-            <?php endif; ?>
-            <?php if ($geo_cmd_date !== ''): ?>
-            <span style="background:rgba(53,100,166,0.12);padding:4px 10px;border-radius:20px;">
-                <i class="far fa-clock"></i> Capturée le <?php echo htmlspecialchars($geo_cmd_date); ?>
-            </span>
-            <?php endif; ?>
-            <?php if ($geo_distance_txt !== ''): ?>
-            <span style="background:rgba(255,107,53,0.12);padding:4px 10px;border-radius:20px;color:var(--orange-fonce,#E85A2A);font-weight:600;">
-                <i class="fas fa-route"></i> À <?php echo htmlspecialchars($geo_distance_txt); ?> de votre boutique
-            </span>
-            <?php endif; ?>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            <a href="<?php echo htmlspecialchars(geo_osm_link($geo_cmd_lat, $geo_cmd_lng), ENT_QUOTES, 'UTF-8'); ?>"
-                target="_blank" rel="noopener noreferrer" class="btn-primary"
-                style="display:inline-flex;align-items:center;gap:8px;">
-                <i class="fas fa-map"></i> Voir sur OpenStreetMap
-            </a>
-            <a href="<?php echo htmlspecialchars(geo_gmaps_link($geo_cmd_lat, $geo_cmd_lng), ENT_QUOTES, 'UTF-8'); ?>"
-                target="_blank" rel="noopener noreferrer" class="btn-back"
-                style="display:inline-flex;align-items:center;gap:8px;">
-                <i class="fab fa-google"></i> Ouvrir dans Google Maps
-            </a>
-        </div>
+        <?php if ($geo_distance_txt !== ''): ?>
+        <p class="cmd-geo-distance">
+            <i class="fas fa-route" aria-hidden="true"></i>
+            À <?php echo htmlspecialchars($geo_distance_txt); ?> de votre boutique
+        </p>
+        <?php endif; ?>
+        <?php
+        $geo_nav_lat = $geo_cmd_lat;
+        $geo_nav_lng = $geo_cmd_lng;
+        $geo_nav_label = 'Commande #' . (string) ($commande['numero_commande'] ?? '');
+        include __DIR__ . '/../../includes/partials/geo_nav_apps_buttons.php';
+        ?>
     </section>
+    <?php endif; ?>
     <?php endif; ?>
 
     <section class="cmd-products-section" aria-labelledby="cmd-products-heading">

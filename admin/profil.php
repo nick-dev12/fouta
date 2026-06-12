@@ -304,7 +304,6 @@ $profil_role_label = $is_vendeur ? 'Vendeur' : 'Administrateur';
         <div class="ap-page">
 
             <section class="ap-hero" aria-labelledby="ap-hero-title">
-                <?php require __DIR__ . '/../includes/partials/vendeur_certification_hero_badge.php'; ?>
                 <div class="ap-hero__avatar" aria-hidden="true"><?php echo htmlspecialchars($profil_initial, ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="ap-hero__body">
                     <p class="ap-hero__eyebrow"><i class="fas fa-user-shield"></i> Mon profil</p>

@@ -81,6 +81,9 @@ logs/
 cache/
 tmp/
 temp/
+storage/email_queue/pending/*.json
+storage/email_queue/failed/*.json
+storage/email_queue/worker.lock
 error_log
 **/error_log
 
