@@ -231,11 +231,31 @@ if (!function_exists('auth_revoke_vendeur_marketplace_visit')) {
 
 if (!function_exists('auth_marketplace_visit_url')) {
     /**
-     * URL d’entrée marketplace pour un vendeur connecté (script léger + redirection propre).
+     * URL d’entrée marketplace pour un vendeur connecté (une seule requête, pas de redirect intermédiaire).
      */
     function auth_marketplace_visit_url($path = '')
     {
-        return '/visiter-marketplace.php';
+        unset($path);
+        return '/index.php?vendeur_visite=1';
+    }
+}
+
+if (!function_exists('auth_handle_vendeur_marketplace_visit_request')) {
+    /**
+     * Accorde la visite marketplace si ?vendeur_visite=1 et session vendeur active.
+     *
+     * @return bool true si l’accès a été accordé sur cette requête
+     */
+    function auth_handle_vendeur_marketplace_visit_request()
+    {
+        if (!isset($_GET['vendeur_visite']) || (string) $_GET['vendeur_visite'] !== '1') {
+            return false;
+        }
+        if (!auth_session_is_vendeur()) {
+            return false;
+        }
+        auth_grant_vendeur_marketplace_visit();
+        return true;
     }
 }
 
