@@ -368,6 +368,20 @@ if (count($dash_promo_images) < 4) {
             transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
         }
 
+        .mc-v2-shop-promo__cta-form {
+            flex: 0 1 auto;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: transparent;
+        }
+
+        button.mc-v2-shop-promo__cta {
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
         .mc-v2-shop-promo__cta:hover {
             background: var(--orange-fonce);
             transform: translateY(-2px);
@@ -1530,10 +1544,13 @@ if (count($dash_promo_images) < 4) {
                         Visitez la marketplace <span>COLObanes</span>
                     </h2>
                 </div>
-                <a href="<?php echo htmlspecialchars(auth_marketplace_visit_url('/index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="mc-v2-shop-promo__cta" title="Visiter COLObanes">
-                    <i class="fas fa-globe" aria-hidden="true"></i>
-                    Visiter COLObanes
-                </a>
+                <form method="post" action="/index.php" class="mc-v2-shop-promo__cta-form">
+                    <input type="hidden" name="vendeur_visite_mp" value="1">
+                    <button type="submit" class="mc-v2-shop-promo__cta" title="Visiter COLObanes">
+                        <i class="fas fa-globe" aria-hidden="true"></i>
+                        Visiter COLObanes
+                    </button>
+                </form>
             </div>
         </section>
 

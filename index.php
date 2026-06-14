@@ -6,13 +6,18 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/includes/auth_redirect.php';
 
-/* Ancien lien intermédiaire — redirection vers l’accueil avec paramètre explicite */
+/* Ancien lien — accueil sans paramètre */
 if (isset($_GET['visite_marketplace']) && (string) $_GET['visite_marketplace'] === '1') {
-    header('Location: /index.php?vendeur_visite=1', true, 302);
-    exit;
+    if (auth_session_is_vendeur()) {
+        auth_grant_vendeur_marketplace_visit();
+    }
+    if (!headers_sent()) {
+        header('Location: /index.php', true, 302);
+        exit;
+    }
 }
 
-auth_handle_vendeur_marketplace_visit_request();
+auth_handle_vendeur_marketplace_visit_post();
 auth_redirect_vendeur_to_dashboard();
 
 require_once __DIR__ . '/includes/produit_boutique_line.php';
