@@ -177,15 +177,16 @@ include 'nav_bar.php';
     <style>
     .commande-container {
         max-width: 1200px;
-        margin: 40px auto;
-        padding: 0 20px;
+        margin: clamp(20px, 4vw, 40px) auto clamp(60px, 10vw, 100px);
+        padding: 0 clamp(12px, 3vw, 20px);
+        min-height: calc(100vh - 200px);
     }
 
     .commande-wrapper {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 30px;
-        margin-top: 30px;
+        gap: clamp(16px, 3vw, 30px);
+        margin-top: clamp(16px, 3vw, 30px);
         max-width: 827px;
         margin-left: auto;
         margin-right: auto;
@@ -438,15 +439,16 @@ include 'nav_bar.php';
     }
 
     .commande-page-title {
-        font-size: 28px;
+        font-size: clamp(1.25rem, 4vw, 1.75rem);
         color: var(--titres);
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         font-family: var(--font-titres);
     }
 
     .commande-page-subtitle {
         color: var(--gris-moyen);
-        margin-bottom: 30px;
+        margin-bottom: clamp(16px, 3vw, 30px);
+        font-size: clamp(0.82rem, 2.5vw, 1rem);
     }
 
     .summary-livraison {
@@ -723,58 +725,98 @@ include 'nav_bar.php';
         text-decoration: none;
     }
 
+    .commande-summary-items {
+        margin-bottom: 20px;
+    }
+
     .cmd-pickup-card__maps a:hover { text-decoration: underline; }
 
-    @media (max-width: 991px) {
-        .commande-container {
-            margin-top: 24px;
-            padding: 0 16px;
+    /* Responsive — adaptation progressive par taille d'écran */
+    @media (max-width: 968px) {
+        .commande-summary-section,
+        .commande-form-section {
+            padding: 20px;
+            border-radius: 10px;
         }
 
-        .commande-page-title {
-            font-size: 1.35rem;
-            margin-bottom: 6px;
+        .section-title {
+            font-size: 1.15rem;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
         }
+    }
 
+    @media (max-width: 768px) {
         .commande-summary-section,
         .commande-form-section {
             padding: 16px;
         }
 
         .section-title {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             margin-bottom: 14px;
             padding-bottom: 10px;
         }
 
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            font-size: 0.82rem;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+        }
+
+        .form-group small {
+            font-size: 0.72rem;
+        }
+
         .summary-item {
-            padding: 6px 0;
+            padding: 8px 0;
         }
 
         .summary-item-label,
         .summary-item-value {
-            font-size: 12px;
+            font-size: 0.82rem;
         }
 
         .summary-total {
-            margin-top: 10px;
-            padding-top: 10px;
+            margin-top: 12px;
+            padding-top: 12px;
         }
 
         .summary-total .summary-item-label {
-            font-size: 14px;
+            font-size: 0.92rem;
         }
 
         .summary-total .summary-item-value {
-            font-size: 16px;
+            font-size: 1.05rem;
         }
 
         .panier-item-summary {
             display: grid;
-            grid-template-columns: 60px 1fr;
-            column-gap: 12px;
-            row-gap: 6px;
-            padding: 10px 0;
+            grid-template-columns: 56px 1fr;
+            column-gap: 10px;
+            row-gap: 4px;
+            padding: 8px 0;
+        }
+
+        .panier-item-summary img {
+            width: 56px;
+            height: 56px;
+            border-radius: 6px;
         }
 
         .panier-item-img {
@@ -791,15 +833,81 @@ include 'nav_bar.php';
             grid-row: 1;
             align-self: center;
             margin: 0;
+            font-size: 0.82rem;
         }
 
         .panier-item-summary-opts {
             grid-column: 1 / -1;
             margin: 0;
+            font-size: 0.68rem;
         }
 
         .panier-item-summary-meta {
             grid-column: 1 / -1;
+            gap: 8px;
+        }
+
+        .panier-item-qty {
+            font-size: 0.72rem;
+        }
+
+        .panier-item-summary-price {
+            font-size: 0.82rem;
+        }
+
+        .btn-submit-commande {
+            padding: 12px 14px;
+            font-size: 0.92rem;
+            margin-top: 14px;
+            gap: 8px;
+        }
+
+        .commande-link-retour {
+            margin-top: 14px;
+            font-size: 0.85rem;
+        }
+
+        .message {
+            padding: 12px 14px;
+            font-size: 0.88rem;
+            margin-bottom: 14px;
+        }
+
+        .cmd-mode-btn {
+            padding: 8px 10px;
+            font-size: 0.88rem;
+            gap: 8px;
+            border-radius: 10px;
+        }
+
+        .cmd-mode-btn i {
+            font-size: 1.2rem;
+        }
+
+        .cmd-pickup-card {
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+
+        .cmd-pickup-card__name {
+            font-size: 0.85rem;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .cmd-pickup-card__addr {
+            font-size: 0.78rem;
+        }
+
+        .cmd-pickup-card__tel,
+        .cmd-pickup-card__maps {
+            font-size: 0.75rem;
+            margin-top: 6px;
+        }
+
+        .cmd-pickup-hint {
+            font-size: 0.75rem;
+            margin-bottom: 12px;
         }
 
         .geo-consent-box {
@@ -808,29 +916,236 @@ include 'nav_bar.php';
         }
 
         .geo-search-label {
-            font-size: 13px;
+            font-size: 0.82rem;
             margin-bottom: 6px;
         }
 
         .geo-search-input {
-            padding: 10px 12px 10px 38px;
-            font-size: 13px;
+            padding: 10px 12px 10px 36px;
+            font-size: 0.85rem;
+        }
+
+        .geo-search-input-wrap i {
+            left: 12px;
+            font-size: 0.85rem;
+        }
+
+        .geo-search-item {
+            padding: 9px 12px;
+            font-size: 0.78rem;
+            gap: 8px;
         }
 
         .geo-map {
-            height: 220px;
+            height: 200px;
+            margin-top: 10px;
         }
 
         .btn-geo-capture {
-            padding: 9px 14px;
-            font-size: 13px;
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            gap: 6px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .geo-status {
+            font-size: 0.78rem;
+            padding: 8px 10px;
+            margin-top: 10px;
         }
     }
 
-    /* Styles pour éviter que le footer s'incruste */
-    .commande-container {
-        margin-bottom: 100px;
-        min-height: calc(100vh - 200px);
+    @media (max-width: 600px) {
+        .commande-summary-items {
+            margin-bottom: 12px;
+        }
+
+        .cmd-mode-chooser {
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .cmd-mode-btn {
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px 6px;
+            font-size: 0.78rem;
+        }
+
+        .cmd-mode-btn i {
+            font-size: 1.1rem;
+        }
+
+        .panier-item-summary-meta {
+            flex-wrap: wrap;
+        }
+
+        .panier-item-summary-price {
+            margin-left: auto;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .commande-summary-section,
+        .commande-form-section {
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            font-size: 0.78rem;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            padding: 9px 10px;
+            font-size: 0.82rem;
+            border-width: 1.5px;
+        }
+
+        .form-group textarea {
+            min-height: 72px;
+        }
+
+        .summary-item-label,
+        .summary-item-value {
+            font-size: 0.75rem;
+        }
+
+        .summary-total .summary-item-label {
+            font-size: 0.85rem;
+        }
+
+        .summary-total .summary-item-value {
+            font-size: 0.95rem;
+        }
+
+        .panier-item-summary {
+            grid-template-columns: 48px 1fr;
+            column-gap: 8px;
+            padding: 6px 0;
+        }
+
+        .panier-item-summary img {
+            width: 48px;
+            height: 48px;
+        }
+
+        .panier-item-summary-title {
+            font-size: 0.76rem;
+            line-height: 1.25;
+        }
+
+        .panier-item-summary-opts {
+            font-size: 0.64rem;
+        }
+
+        .panier-item-qty {
+            font-size: 0.66rem;
+        }
+
+        .panier-item-summary-price {
+            font-size: 0.76rem;
+        }
+
+        .btn-submit-commande {
+            padding: 10px 12px;
+            font-size: 0.85rem;
+        }
+
+        .commande-link-retour {
+            font-size: 0.8rem;
+        }
+
+        .cmd-mode-btn {
+            font-size: 0.72rem;
+            border-radius: 8px;
+        }
+
+        .cmd-mode-btn i {
+            font-size: 1rem;
+        }
+
+        .cmd-pickup-card {
+            padding: 8px 10px;
+        }
+
+        .cmd-pickup-card__name {
+            font-size: 0.8rem;
+        }
+
+        .cmd-pickup-card__addr {
+            font-size: 0.72rem;
+        }
+
+        .geo-consent-box {
+            padding: 10px;
+        }
+
+        .geo-search-label {
+            font-size: 0.78rem;
+        }
+
+        .geo-search-input {
+            padding: 8px 10px 8px 34px;
+            font-size: 0.8rem;
+        }
+
+        .geo-map {
+            height: 170px;
+        }
+
+        .btn-geo-capture {
+            font-size: 0.78rem;
+            padding: 8px 10px;
+        }
+
+        .geo-status {
+            font-size: 0.72rem;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .commande-page-title {
+            font-size: 1.1rem;
+        }
+
+        .section-title {
+            font-size: 0.88rem;
+        }
+
+        .cmd-mode-btn span {
+            font-size: 0.68rem;
+        }
+
+        .summary-total .summary-item {
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .panier-item-summary {
+            grid-template-columns: 44px 1fr;
+        }
+
+        .panier-item-summary img {
+            width: 44px;
+            height: 44px;
+        }
+
+        .panier-item-summary-title {
+            font-size: 0.72rem;
+        }
+
+        .btn-submit-commande {
+            font-size: 0.8rem;
+        }
     }
 
     /* Footer - hérite du style global a_style.css */
@@ -857,7 +1172,7 @@ include 'nav_bar.php';
                     <i class="fas fa-shopping-cart"></i> Résumé
                 </h2>
 
-                <div style="margin-bottom: 20px;">
+                <div class="commande-summary-items">
                     <?php foreach ($panier_items as $item): ?>
                     <?php
                         $prix_unitaire = (!empty($item['panier_prix_unitaire']) && $item['panier_prix_unitaire'] > 0)

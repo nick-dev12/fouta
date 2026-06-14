@@ -68,40 +68,7 @@ $firebase_notify_type = 'admin';
 
 $vf_dash = admin_vendeur_filter_id();
 require_once __DIR__ . '/includes/vendeur_share_boutique.php';
-$recherche = trim($_GET['recherche'] ?? '');
-$categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
-$categories = admin_categories_list_for_session();
 $produits_all = get_all_produits(null, $vf_dash);
-$produits = is_array($produits_all) ? array_slice($produits_all, 0, 6) : [];
-
-if (!empty($produits)) {
-    $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id) {
-        if ($categorie_id > 0 && (int) ($produit['categorie_id'] ?? 0) !== $categorie_id) {
-            return false;
-        }
-
-        if ($recherche === '') {
-            return true;
-        }
-
-        $needle = function_exists('mb_strtolower') ? mb_strtolower($recherche) : strtolower($recherche);
-        $haystacks = [
-            $produit['nom'] ?? '',
-            $produit['description'] ?? '',
-            $produit['categorie_nom'] ?? '',
-            $produit['statut'] ?? ''
-        ];
-
-        foreach ($haystacks as $value) {
-            $value = function_exists('mb_strtolower') ? mb_strtolower((string) $value) : strtolower((string) $value);
-            if (strpos($value, $needle) !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }));
-}
 
 require_once __DIR__ . '/../includes/image_optimizer.php';
 
@@ -668,6 +635,14 @@ if (count($dash_promo_images) < 4) {
             font-family: var(--font-titres);
         }
 
+        .dash-v2-stat__value-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
+            min-width: 0;
+        }
+
         .dash-v2-stat__hint {
             font-size: 0.71rem;
             font-weight: 700;
@@ -676,8 +651,10 @@ if (count($dash_promo_images) < 4) {
             display: inline-flex;
             align-items: center;
             gap: 3px;
-            margin-top: 3px;
+            margin-top: 0;
             width: fit-content;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .dash-v2-stat--attente .dash-v2-stat__hint {
@@ -785,8 +762,9 @@ if (count($dash_promo_images) < 4) {
         .dash-commande-row {
             display: flex;
             align-items: center;
+            flex-wrap: nowrap;
             padding: 12px 22px;
-            gap: 11px;
+            gap: 10px;
             border-bottom: 1px solid rgba(53,100,166,0.05);
             transition: background 0.14s;
             text-decoration: none;
@@ -796,14 +774,11 @@ if (count($dash_promo_images) < 4) {
         .dash-commande-row:last-child { border-bottom: none; }
         .dash-commande-row:hover { background: rgba(53,100,166,0.03); }
 
-        .dash-commande-row__num {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--couleur-dominante, #3564a6);
-            min-width: 62px;
+        .dash-commande-row__client {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
-
-        .dash-commande-row__client { flex: 1; min-width: 0; }
 
         .dash-commande-row__name {
             font-size: 0.86rem;
@@ -831,6 +806,14 @@ if (count($dash_promo_images) < 4) {
             font-size: 0.69em;
             font-weight: 500;
             color: var(--gris-moyen);
+        }
+
+        .dash-commande-row__aside {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-left: auto;
         }
 
         /* ---- Badges statut ---- */
@@ -889,284 +872,6 @@ if (count($dash_promo_images) < 4) {
         .dash-quick-item__label { font-size: 0.87rem; font-weight: 600; color: var(--titres); }
         .dash-quick-item__sub { font-size: 0.72rem; color: var(--gris-moyen, #737373); margin-top: 1px; }
         .dash-quick-item__arrow { color: var(--gris-clair, #a3a3a3); font-size: 0.73rem; }
-
-        /* ---- Section Produits ---- */
-        .dash-v2-products-section {
-            background: #fff;
-            border-radius: 20px;
-            border: 1px solid rgba(53,100,166,0.08);
-            box-shadow: 0 2px 16px rgba(0,0,0,0.05);
-            overflow: hidden;
-        }
-
-        .dash-v2-products-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px;
-            padding: 19px 24px 15px;
-            border-bottom: 1px solid rgba(53,100,166,0.07);
-        }
-
-        .dash-v2-products-head h2 {
-            font-size: 1.02rem;
-            font-weight: 700;
-            color: var(--titres);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .dash-v2-products-head h2 i {
-            width: 33px; height: 33px;
-            border-radius: 10px;
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 0.87rem;
-            background: rgba(53,100,166,0.1);
-            color: var(--couleur-dominante, #3564a6);
-        }
-
-        .dash-v2-products-head__count {
-            display: inline-flex;
-            align-items: center;
-            background: rgba(53,100,166,0.09);
-            color: var(--couleur-dominante, #3564a6);
-            font-size: 0.76rem;
-            font-weight: 700;
-            padding: 2px 10px;
-            border-radius: 50px;
-        }
-
-        .dash-v2-products-head__right {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            flex-wrap: wrap;
-        }
-
-        /* Filtres */
-        .dash-v2-filters {
-            padding: 13px 24px;
-            background: rgba(53,100,166,0.025);
-            border-bottom: 1px solid rgba(53,100,166,0.05);
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: flex-end;
-        }
-
-        .dash-v2-filter-field {
-            flex: 1 1 190px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .dash-v2-filter-field label {
-            font-size: 0.73rem;
-            font-weight: 700;
-            color: var(--gris-moyen, #737373);
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-        }
-
-        .dash-v2-filter-field input,
-        .dash-v2-filter-field select {
-            padding: 9px 13px;
-            border: 1px solid rgba(53,100,166,0.18);
-            border-radius: 10px;
-            font-size: 0.85rem;
-            font-family: var(--font-corps);
-            background: #fff;
-            color: var(--titres);
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .dash-v2-filter-field input:focus,
-        .dash-v2-filter-field select:focus {
-            outline: none;
-            border-color: var(--couleur-dominante, #3564a6);
-            box-shadow: 0 0 0 3px rgba(53,100,166,0.1);
-        }
-
-        .dash-v2-filter-actions { display: flex; gap: 8px; align-items: flex-end; }
-
-        .btn-v2-filter {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 9px 17px;
-            background: var(--couleur-dominante, #3564a6);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-size: 0.82rem;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: var(--font-corps);
-            transition: background 0.2s;
-        }
-
-        .btn-v2-filter:hover { background: var(--bleu-fonce, #2d5690); }
-
-        .btn-v2-reset {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 9px 13px;
-            background: #fff;
-            color: var(--gris-fonce, #4a4a4a);
-            border: 1px solid rgba(53,100,166,0.18);
-            border-radius: 10px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            font-family: var(--font-corps);
-            transition: background 0.2s;
-        }
-
-        .btn-v2-reset:hover { background: rgba(53,100,166,0.05); }
-
-        /* Grille produits */
-        .dash-v2-produits-grid {
-            padding: 20px 24px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
-            gap: 15px;
-        }
-
-        .dash-v2-produit-card {
-            border-radius: 14px;
-            border: 1px solid rgba(53,100,166,0.09);
-            background: #fff;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.22s, box-shadow 0.22s;
-            position: relative;
-        }
-
-        .dash-v2-produit-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 28px rgba(53,100,166,0.14);
-        }
-
-        .dash-v2-produit-card__img {
-            width: 100%;
-            aspect-ratio: 4/3;
-            overflow: hidden;
-            background: var(--blanc-neige, #f5f5f5);
-        }
-
-        .dash-v2-produit-card__img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.35s;
-        }
-
-        .dash-v2-produit-card:hover .dash-v2-produit-card__img img { transform: scale(1.07); }
-
-        .dash-v2-produit-card__badge {
-            position: absolute;
-            top: 9px; left: 9px;
-            font-size: 0.67rem;
-            font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 50px;
-        }
-
-        .dash-v2-produit-card__badge--actif    { background: rgba(34,197,94,0.15); color: #15803d; }
-        .dash-v2-produit-card__badge--inactif  { background: rgba(100,100,100,0.12); color: #555; }
-        .dash-v2-produit-card__badge--rupture  { background: rgba(239,68,68,0.12); color: #b91c1c; }
-
-        .dash-v2-produit-card__body { padding: 12px 14px; }
-
-        .dash-v2-produit-card__name {
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: var(--titres);
-            margin-bottom: 2px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .dash-v2-produit-card__cat {
-            font-size: 0.71rem;
-            color: var(--gris-moyen, #737373);
-            margin-bottom: 7px;
-        }
-
-        .dash-v2-produit-card__prix-row {
-            display: flex;
-            align-items: baseline;
-            gap: 5px;
-            margin-bottom: 5px;
-            flex-wrap: wrap;
-        }
-
-        .dash-v2-produit-card__prix {
-            font-size: 0.99rem;
-            font-weight: 800;
-            color: var(--couleur-dominante, #3564a6);
-            font-family: var(--font-titres);
-        }
-
-        .dash-v2-produit-card__prix-unit { font-size: 0.67rem; font-weight: 600; color: var(--gris-moyen, #737373); }
-
-        .dash-v2-produit-card__promo {
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: var(--orange, #FF6B35);
-            background: rgba(255,107,53,0.1);
-            padding: 1px 7px;
-            border-radius: 50px;
-        }
-
-        .dash-v2-produit-card__stock {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.74rem;
-            color: var(--gris-moyen, #737373);
-        }
-
-        .dash-v2-produit-card__stock strong { color: var(--titres); font-weight: 700; }
-
-        .dash-v2-produit-card__actions { display: flex; gap: 7px; margin-top: 10px; }
-
-        .dash-v2-btn-edit {
-            flex: 1;
-            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-            padding: 7px 0;
-            background: rgba(53,100,166,0.08);
-            color: var(--couleur-dominante, #3564a6);
-            border: none;
-            border-radius: 8px;
-            font-size: 0.77rem;
-            font-weight: 700;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-family: var(--font-corps);
-        }
-
-        .dash-v2-btn-edit:hover { background: rgba(53,100,166,0.15); }
-
-        .dash-v2-btn-delete {
-            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-            padding: 7px 11px;
-            background: rgba(239,68,68,0.08);
-            color: #b91c1c;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.77rem;
-            font-weight: 700;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-family: var(--font-corps);
-        }
-
-        .dash-v2-btn-delete:hover { background: rgba(239,68,68,0.16); }
 
         /* Empty state */
         .dash-v2-empty {
@@ -1285,59 +990,62 @@ if (count($dash_promo_images) < 4) {
 
             .dash-v2-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 10px;
+                gap: 8px;
             }
 
             .dash-v2-stat {
-                padding: 13px 12px;
-                border-radius: 14px;
-                gap: 10px;
+                padding: 10px 10px;
+                border-radius: 12px;
+                gap: 8px;
             }
 
-            .dash-v2-stat__icon { width: 38px; height: 38px; font-size: 0.9rem; border-radius: 11px; }
-            .dash-v2-stat__value { font-size: 1.45rem; }
-            .dash-v2-stat__label { font-size: 0.62rem; }
+            .dash-v2-stat__icon { width: 32px; height: 32px; font-size: 0.78rem; border-radius: 9px; }
+            .dash-v2-stat__value { font-size: 1.15rem; }
+            .dash-v2-stat__label { font-size: 0.58rem; letter-spacing: 0.05em; }
+            .dash-v2-stat__hint { font-size: 0.58rem; padding: 1px 6px; }
+            .dash-v2-stat__value-row { gap: 4px; }
+
+            .dash-v2-alert {
+                padding: 10px 12px;
+                gap: 8px;
+                border-radius: 12px;
+            }
+
+            .dash-v2-alert i { font-size: 0.9rem; }
+            .dash-v2-alert__text { font-size: 0.76rem; }
+            .dash-v2-alert__btn { font-size: 0.72rem; padding: 5px 12px; }
 
             .dash-v2-mid { grid-template-columns: 1fr; gap: 14px; }
 
             .dash-v2-card { border-radius: 16px; }
 
-            .dash-commande-row { padding: 10px 16px; gap: 9px; }
-            .dash-commande-row__num { min-width: 52px; font-size: 0.8rem; }
-            .dash-commande-row__name { font-size: 0.8rem; }
-            .dash-commande-row__date { font-size: 0.66rem; }
-            .dash-commande-row__amount { font-size: 0.82rem; }
+            .dash-commande-row {
+                flex-wrap: nowrap;
+                align-items: center;
+                padding: 10px 14px;
+                gap: 8px;
+            }
+
+            .dash-commande-row__client { flex: 1 1 auto; min-width: 0; }
+            .dash-commande-row__name { font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .dash-commande-row__date { font-size: 0.64rem; display: block; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+            .dash-commande-row__aside {
+                width: auto;
+                margin-left: auto;
+                padding-left: 0;
+                flex-shrink: 0;
+                justify-content: flex-end;
+                gap: 6px;
+            }
+
+            .dash-commande-row__amount { font-size: 0.74rem; text-align: right; }
+            .dash-badge { font-size: 0.6rem; padding: 2px 7px; }
 
             .dash-quick-item { padding: 12px 16px; gap: 10px; }
             .dash-quick-item__icon { width: 36px; height: 36px; font-size: 0.82rem; border-radius: 10px; }
             .dash-quick-item__label { font-size: 0.82rem; }
             .dash-quick-item__sub   { font-size: 0.68rem; }
-
-            .dash-v2-filters {
-                padding: 12px 16px;
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .dash-v2-filter-field { flex: none; width: 100%; }
-
-            .dash-v2-filter-actions {
-                width: 100%;
-                display: flex;
-                gap: 8px;
-            }
-
-            .dash-v2-filter-actions .btn-v2-filter,
-            .dash-v2-filter-actions .btn-v2-reset {
-                flex: 1;
-                justify-content: center;
-            }
-
-            .dash-v2-produits-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                padding: 14px 12px;
-                gap: 10px;
-            }
 
             .dash-v2-header__actions .hide-sm { display: none; }
 
@@ -1426,8 +1134,14 @@ if (count($dash_promo_images) < 4) {
         }
 
         @media (max-width: 380px) {
-            .dash-v2-stats { grid-template-columns: 1fr; }
-            .dash-v2-produits-grid { grid-template-columns: 1fr; }
+            .dash-v2-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+            .dash-v2-stat { padding: 8px; gap: 6px; }
+            .dash-v2-stat__icon { width: 28px; height: 28px; font-size: 0.72rem; }
+            .dash-v2-stat__value { font-size: 1rem; }
+            .dash-v2-stat__label { font-size: 0.52rem; }
+            .dash-v2-stat__hint { font-size: 0.52rem; padding: 1px 5px; }
+            .dash-v2-alert { padding: 8px 10px; }
+            .dash-v2-alert__text { font-size: 0.7rem; }
             .dash-v2-header__title { font-size: 0.74rem; }
             .dash-v2-header__eyebrow { font-size: 0.55rem; }
             .dash-v2-header__notify {
@@ -1587,12 +1301,14 @@ if (count($dash_promo_images) < 4) {
                 <div class="dash-v2-stat__icon"><i class="fas fa-clock"></i></div>
                 <div class="dash-v2-stat__content">
                     <span class="dash-v2-stat__label">En attente</span>
-                    <span class="dash-v2-stat__value"><?php echo $en_attente; ?></span>
-                    <?php if ($en_attente > 0): ?>
-                        <span class="dash-v2-stat__hint">
-                            <i class="fas fa-circle" style="font-size:.4rem;"></i> Action requise
-                        </span>
-                    <?php endif; ?>
+                    <div class="dash-v2-stat__value-row">
+                        <span class="dash-v2-stat__value"><?php echo $en_attente; ?></span>
+                        <?php if ($en_attente > 0): ?>
+                            <span class="dash-v2-stat__hint">
+                                <i class="fas fa-circle" style="font-size:.4rem;"></i> Action requise
+                            </span>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </a>
             <a href="commandes/index.php?statut=prise_en_charge" class="dash-v2-stat dash-v2-stat--prise">
@@ -1669,16 +1385,17 @@ if (count($dash_promo_images) < 4) {
                         $date_fmt = isset($c['date_commande']) ? date('d/m/Y', strtotime($c['date_commande'])) : '&mdash;';
                     ?>
                         <a href="commandes/details.php?id=<?php echo (int) $c['id']; ?>" class="dash-commande-row">
-                            <span class="dash-commande-row__num">#<?php echo (int) $c['id']; ?></span>
                             <span class="dash-commande-row__client">
                                 <span class="dash-commande-row__name"><?php echo htmlspecialchars($client); ?></span>
                                 <span class="dash-commande-row__date"><?php echo $date_fmt; ?></span>
                             </span>
-                            <span class="dash-commande-row__amount">
-                                <?php echo number_format((float) ($c['montant_total'] ?? 0), 0, ',', ' '); ?>
-                                <small>FCFA</small>
+                            <span class="dash-commande-row__aside">
+                                <span class="dash-commande-row__amount">
+                                    <?php echo number_format((float) ($c['montant_total'] ?? 0), 0, ',', ' '); ?>
+                                    <small>FCFA</small>
+                                </span>
+                                <span class="dash-badge <?php echo $badge_class; ?>"><?php echo $badge_label; ?></span>
                             </span>
-                            <span class="dash-badge <?php echo $badge_class; ?>"><?php echo $badge_label; ?></span>
                         </a>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -1717,113 +1434,6 @@ if (count($dash_promo_images) < 4) {
 
         </div><!-- /.dash-v2-mid -->
 
-        <!-- ===== SECTION PRODUITS ===== -->
-        <div class="dash-v2-products-section">
-            <div class="dash-v2-products-head">
-                <h2>
-                    <i class="fas fa-store-alt"></i>
-                    Mes Produits
-                    <span class="dash-v2-products-head__count"><?php echo $nb_produits; ?></span>
-                </h2>
-                <div class="dash-v2-products-head__right">
-                    <a href="produits/index.php" class="dash-v2-tool-btn dash-v2-tool-btn--outline" style="font-size:.8rem;padding:8px 14px;">
-                        <i class="fas fa-external-link-alt"></i> G&eacute;rer
-                    </a>
-                    <button type="button" id="btnOpenAddProduitModalHeader" class="dash-v2-tool-btn dash-v2-tool-btn--primary" style="font-size:.8rem;padding:8px 14px;">
-                        <i class="fas fa-plus"></i> Ajouter
-                    </button>
-                </div>
-            </div>
-
-            <form method="GET" action="" class="dash-v2-filters">
-                <div class="dash-v2-filter-field">
-                    <label for="recherche">Recherche</label>
-                    <input type="text" id="recherche" name="recherche" placeholder="Nom, description..."
-                        value="<?php echo htmlspecialchars($recherche); ?>">
-                </div>
-                <div class="dash-v2-filter-field">
-                    <label for="categorie_id">Cat&eacute;gorie</label>
-                    <select id="categorie_id" name="categorie_id">
-                        <option value="0">Toutes les cat&eacute;gories</option>
-                        <?php foreach ($categories as $categorie): ?>
-                            <option value="<?php echo (int) $categorie['id']; ?>"
-                                <?php echo $categorie_id === (int) $categorie['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($categorie['nom']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="dash-v2-filter-actions">
-                    <button type="submit" class="btn-v2-filter">
-                        <i class="fas fa-search"></i> Filtrer
-                    </button>
-                    <a href="dashboard.php" class="btn-v2-reset">
-                        <i class="fas fa-rotate-left"></i> Reset
-                    </a>
-                </div>
-            </form>
-
-            <?php if (empty($produits)): ?>
-                <div class="dash-v2-empty">
-                    <i class="fas fa-box-open"></i>
-                    <p>Aucun produit enregistr&eacute; pour le moment.</p>
-                    <button type="button" class="dash-v2-tool-btn dash-v2-tool-btn--primary" id="btnOpenAddProduitModalDashEmpty">
-                        <i class="fas fa-plus"></i> Ajouter le premier produit
-                    </button>
-                </div>
-            <?php else: ?>
-                <div class="dash-v2-produits-grid">
-                    <?php foreach ($produits as $produit):
-                        $badge_cls = 'dash-v2-produit-card__badge--actif';
-                        $badge_lbl = 'Actif';
-                        if ($produit['statut'] === 'inactif') { $badge_cls = 'dash-v2-produit-card__badge--inactif'; $badge_lbl = 'Inactif'; }
-                        elseif ($produit['statut'] === 'rupture_stock') { $badge_cls = 'dash-v2-produit-card__badge--rupture'; $badge_lbl = 'Rupture'; }
-                    ?>
-                        <div class="dash-v2-produit-card produit-card-linkable"
-                            data-href="produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
-                            <div class="dash-v2-produit-card__img">
-                                <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
-                                    alt="<?php echo htmlspecialchars($produit['nom']); ?>"
-                                    onerror="this.src='/image/produit1.jpg'">
-                            </div>
-                            <span class="dash-v2-produit-card__badge <?php echo $badge_cls; ?>"><?php echo $badge_lbl; ?></span>
-                            <div class="dash-v2-produit-card__body">
-                                <div class="dash-v2-produit-card__name"><?php echo htmlspecialchars($produit['nom']); ?></div>
-                                <div class="dash-v2-produit-card__cat">
-                                    <?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans cat&eacute;gorie'); ?>
-                                </div>
-                                <div class="dash-v2-produit-card__prix-row">
-                                    <span class="dash-v2-produit-card__prix">
-                                        <?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                    </span>
-                                    <span class="dash-v2-produit-card__prix-unit">FCFA</span>
-                                    <?php if (!empty($produit['prix_promotion'])): ?>
-                                        <span class="dash-v2-produit-card__promo">
-                                            &minus; <?php echo number_format($produit['prix_promotion'], 0, ',', ' '); ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="dash-v2-produit-card__stock">
-                                    <i class="fas fa-warehouse" style="font-size:.68rem;"></i>
-                                    Stock:&nbsp;<strong><?php echo (int) $produit['stock']; ?></strong>
-                                </div>
-                                <div class="dash-v2-produit-card__actions">
-                                    <a href="produits/modifier.php?id=<?php echo (int) $produit['id']; ?>" class="dash-v2-btn-edit">
-                                        <i class="fas fa-edit"></i> Modifier
-                                    </a>
-                                    <a href="produits/supprimer.php?id=<?php echo (int) $produit['id']; ?>"
-                                        class="dash-v2-btn-delete"
-                                        onclick="return confirm('Supprimer ce produit ? Action irr\u00e9versible.');">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </div>
-
     </div><!-- /.dash-v2-page -->
     </div><!-- /.contents-container -->
 
@@ -1853,9 +1463,7 @@ if (count($dash_promo_images) < 4) {
             var modalAdd = document.getElementById('modalAddProduitDash');
             var btnsOpen = [
                 document.getElementById('btnOpenAddProduitModalDash'),
-                document.getElementById('btnOpenAddProduitModalDashEmpty'),
-                document.getElementById('btnOpenAddProduitModalSide'),
-                document.getElementById('btnOpenAddProduitModalHeader')
+                document.getElementById('btnOpenAddProduitModalSide')
             ];
             var btnCloseDash = document.getElementById('btnCloseAddProduitModalDash');
             var btnCancelModal = document.getElementById('btn-fap-cancel-modal');
@@ -1909,15 +1517,6 @@ if (count($dash_promo_images) < 4) {
                     }
                 }
             } catch (e) {}
-
-            // Clic sur carte produit
-            document.querySelectorAll('.produit-card-linkable').forEach(function (card) {
-                card.addEventListener('click', function (event) {
-                    if (event.target.closest('a, button, input, select, textarea, form')) return;
-                    var href = card.getAttribute('data-href');
-                    if (href) window.location.href = href;
-                });
-            });
 
             // PWA install
             var installBtn = document.getElementById('btn-install-pwa');

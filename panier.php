@@ -73,15 +73,15 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
         /* Styles panier - Palette COLObanes */
         .panier-container {
             max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
+            margin: clamp(20px, 4vw, 40px) auto;
+            padding: 0 clamp(12px, 3vw, 20px);
         }
 
         .panier-title {
-            font-size: 32px;
+            font-size: clamp(1.35rem, 4vw, 2rem);
             font-weight: 700;
             color: var(--titres);
-            margin-bottom: 30px;
+            margin-bottom: clamp(16px, 3vw, 30px);
             text-align: center;
             font-family: var(--font-titres);
         }
@@ -533,41 +533,418 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
             color: var(--titres);
         }
 
-        /* Responsive */
+        .panier-delete-form {
+            display: inline;
+        }
+
+        /* Responsive — adaptation progressive par taille d'écran */
         @media (max-width: 968px) {
             .panier-content {
                 grid-template-columns: 1fr;
+                gap: 20px;
             }
 
             .panier-summary {
                 position: static;
             }
+        }
+
+        @media (max-width: 768px) {
+            .panier-empty {
+                padding: 40px 16px;
+                border-radius: 10px;
+            }
+
+            .panier-empty i {
+                font-size: 48px;
+                margin-bottom: 14px;
+            }
+
+            .panier-empty p {
+                font-size: 0.95rem;
+                margin-bottom: 20px;
+            }
+
+            .panier-empty .btn-continuer {
+                padding: 10px 18px;
+                font-size: 0.88rem;
+            }
+
+            .panier-items {
+                gap: 12px;
+            }
+
+            .panier-vendeur-header {
+                font-size: 0.95rem;
+                margin-bottom: 8px;
+                padding-bottom: 6px;
+            }
 
             .panier-item {
-                flex-direction: column;
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px;
+                border-radius: 10px;
             }
 
             .panier-item-img {
-                flex: 0 0 auto;
-                width: 100%;
-                height: 200px;
+                flex: 0 0 84px;
+                width: 84px;
+                height: 84px;
+                border-radius: 8px;
             }
 
-            .panier-item-image {
-                width: 100%;
-                height: 100%;
+            .panier-item-nom {
+                font-size: 0.92rem;
+                margin-bottom: 4px;
+                line-height: 1.3;
             }
-        }
 
-        @media (max-width: 600px) {
+            .panier-item-categorie {
+                font-size: 0.72rem;
+                margin-bottom: 6px;
+            }
+
+            .panier-item-options {
+                font-size: 0.72rem;
+                margin-bottom: 6px;
+            }
+
+            .panier-item-prix {
+                font-size: 0.88rem;
+                margin-bottom: 10px;
+            }
+
+            .panier-prix-label {
+                font-size: 0.78rem;
+            }
+
+            .panier-prix-value {
+                font-size: 0.92rem;
+            }
+
+            .panier-prix-barré {
+                font-size: 0.72rem;
+                margin-left: 6px;
+            }
+
+            .panier-page .badge-promo {
+                font-size: 0.62rem;
+                padding: 1px 5px;
+            }
+
             .panier-item-controls {
-                flex-direction: column;
-                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .panier-update-form {
+                gap: 6px;
+            }
+
+            .panier-quantite-label {
+                font-size: 0.72rem;
+            }
+
+            .quantite-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 0.85rem;
+            }
+
+            .quantite-input {
+                width: 44px;
+                height: 30px;
+                font-size: 0.85rem;
+            }
+
+            .btn-delete {
+                padding: 6px 10px;
+                font-size: 0.72rem;
+                gap: 4px;
             }
 
             .panier-item-total {
                 margin-left: 0;
+            }
+
+            .panier-total-detail {
+                font-size: 0.72rem;
+            }
+
+            .panier-total-montant {
+                font-size: 0.88rem;
+            }
+
+            .panier-summary {
+                padding: 16px;
+                border-radius: 10px;
+            }
+
+            .summary-title {
+                font-size: 1.05rem;
+                margin-bottom: 14px;
+                padding-bottom: 10px;
+            }
+
+            .summary-row {
+                margin-bottom: 10px;
+                font-size: 0.85rem;
+            }
+
+            .summary-row.total {
+                font-size: 1.05rem;
+                margin-top: 14px;
+                padding-top: 14px;
+            }
+
+            .btn-commander,
+            .btn-commander-login {
+                padding: 12px 14px;
+                font-size: 0.92rem;
+                margin-top: 14px;
+                border-radius: 8px;
+            }
+
+            .panier-invite-notice {
+                font-size: 0.75rem;
+                padding: 8px 10px;
+                margin-bottom: 10px;
+            }
+
+            .panier-summary .link-continuer {
                 margin-top: 10px;
+                font-size: 0.82rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .panier-item {
+                gap: 10px;
+                padding: 10px;
+            }
+
+            .panier-item-img {
+                flex: 0 0 72px;
+                width: 72px;
+                height: 72px;
+            }
+
+            .panier-item-nom {
+                font-size: 0.84rem;
+            }
+
+            .panier-item-controls {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                grid-template-rows: auto auto;
+                align-items: center;
+                gap: 8px 6px;
+                width: 100%;
+            }
+
+            .panier-update-form {
+                grid-column: 1;
+                grid-row: 1;
+                flex-wrap: wrap;
+            }
+
+            .panier-item-controls .panier-delete-form {
+                grid-column: 2;
+                grid-row: 1;
+                justify-self: end;
+            }
+
+            .panier-item-total {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                text-align: right;
+                margin-top: 2px;
+            }
+
+            .panier-total-montant {
+                font-size: 0.82rem;
+            }
+
+            .summary-row {
+                font-size: 0.8rem;
+            }
+
+            .summary-row.total {
+                font-size: 0.98rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .panier-container {
+                padding: 0 10px;
+            }
+
+            .panier-title {
+                margin-bottom: 14px;
+            }
+
+            .panier-vendeur-header {
+                font-size: 0.88rem;
+            }
+
+            .panier-item {
+                gap: 8px;
+                padding: 8px;
+                border-radius: 8px;
+            }
+
+            .panier-item-img {
+                flex: 0 0 64px;
+                width: 64px;
+                height: 64px;
+                border-radius: 6px;
+            }
+
+            .panier-item-nom {
+                font-size: 0.78rem;
+            }
+
+            .panier-item-categorie,
+            .panier-item-options {
+                font-size: 0.66rem;
+            }
+
+            .panier-item-prix {
+                font-size: 0.78rem;
+                margin-bottom: 8px;
+            }
+
+            .panier-prix-label {
+                display: block;
+                font-size: 0.68rem;
+                margin-bottom: 2px;
+            }
+
+            .panier-prix-value {
+                font-size: 0.82rem;
+            }
+
+            .panier-quantite-label {
+                font-size: 0.66rem;
+            }
+
+            .quantite-controls {
+                border-width: 1.5px;
+                border-radius: 6px;
+            }
+
+            .quantite-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+
+            .quantite-input {
+                width: 38px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+
+            .btn-delete {
+                padding: 5px 8px;
+                font-size: 0.66rem;
+                border-radius: 5px;
+            }
+
+            .btn-delete i {
+                font-size: 0.72rem;
+            }
+
+            .panier-total-detail {
+                font-size: 0.66rem;
+            }
+
+            .panier-total-montant {
+                font-size: 0.78rem;
+            }
+
+            .panier-summary {
+                padding: 12px;
+            }
+
+            .summary-title {
+                font-size: 0.95rem;
+            }
+
+            .summary-row {
+                font-size: 0.75rem;
+                margin-bottom: 8px;
+            }
+
+            .summary-row.total {
+                font-size: 0.9rem;
+            }
+
+            .btn-commander,
+            .btn-commander-login {
+                padding: 10px 12px;
+                font-size: 0.84rem;
+            }
+
+            .panier-invite-notice {
+                font-size: 0.7rem;
+                line-height: 1.4;
+            }
+
+            .panier-empty {
+                padding: 32px 12px;
+            }
+
+            .panier-empty i {
+                font-size: 40px;
+            }
+
+            .panier-empty p {
+                font-size: 0.88rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .panier-item-img {
+                flex: 0 0 56px;
+                width: 56px;
+                height: 56px;
+            }
+
+            .panier-item-nom {
+                font-size: 0.74rem;
+            }
+
+            .panier-item-controls {
+                gap: 6px 4px;
+            }
+
+            .quantite-btn {
+                width: 26px;
+                height: 26px;
+            }
+
+            .quantite-input {
+                width: 34px;
+                height: 26px;
+                font-size: 0.75rem;
+            }
+
+            .btn-delete span,
+            .btn-delete {
+                font-size: 0;
+            }
+
+            .btn-delete i {
+                font-size: 0.8rem;
+                margin: 0;
+            }
+
+            .summary-row.total {
+                flex-wrap: wrap;
+                gap: 4px;
+                font-size: 0.85rem;
             }
         }
     </style>
@@ -676,7 +1053,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                                         </div>
                                     </form>
 
-                                    <form method="POST" action="" style="display: inline;"
+                                    <form method="POST" action="" class="panier-delete-form"
                                         onsubmit="return confirm('Êtes-vous sûr de vouloir retirer ce produit du panier ?');">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="panier_id" value="<?php echo $item['panier_id']; ?>">
