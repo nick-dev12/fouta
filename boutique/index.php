@@ -426,9 +426,9 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                     $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                 ?>
                 <article class="mp-card">
+                    <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                     <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                         <div class="mp-card-img">
-                            <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>
@@ -613,9 +613,9 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                     $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                 ?>
                 <article class="mp-card">
+                    <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                     <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                         <div class="mp-card-img">
-                            <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>
@@ -776,9 +776,9 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                         $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                 ?>
                 <article class="mp-card" data-produit-id="<?php echo (int)$produit['id']; ?>">
+                    <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                     <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                         <div class="mp-card-img">
-                            <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>

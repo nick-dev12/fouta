@@ -132,7 +132,7 @@
     }
     whenIdle(function () {
       loadJotform();
-    }, 6000);
+    }, 10000);
   }
 
   function scheduleGtranslateIdle() {

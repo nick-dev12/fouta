@@ -150,6 +150,16 @@ $__footer_show_social = $__ig_t !== '' || $__fb_t !== '' || $__li_t !== '' || $_
     </div>
 </footer>
 <?php include __DIR__ . '/includes/social_floating.php'; ?>
+<?php
+$__footer_script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+$__footer_load_share = $__footer_script !== ''
+    && (
+        in_array(basename($__footer_script), ['index.php', 'produits.php', 'nouveautes.php', 'promo.php', 'categorie.php', 'produit.php'], true)
+        || strpos($__footer_script, '/boutique/') !== false
+    );
+if ($__footer_load_share):
+?>
 <script src="/js/product-share.js<?php echo asset_version_query(); ?>" defer></script>
+<?php endif; ?>
 <?php require_once __DIR__ . '/includes/perf_lazy_assets.php'; ?>
 <?php require_once __DIR__ . '/includes/flash_toast.php'; flash_toast_render(); ?>

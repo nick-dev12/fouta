@@ -34,9 +34,7 @@ $seo_keywords = site_brand_seo_keywords_default();
 $seo_canonical = $base . '/';
 require_once __DIR__ . '/includes/seo_structured_data.php';
 $seo_json_ld_blocks = [
-    seo_structured_data_organization(),
-    seo_structured_data_website(),
-    seo_structured_data_local_business(),
+    seo_structured_data_homepage_graph(),
 ];
 ?>
 
@@ -1015,6 +1013,7 @@ $seo_json_ld_blocks = [
         }
 
         .mp-card {
+            position: relative;
             background: var(--blanc);
             border: 1px solid var(--glass-border);
             border-radius: 10px;

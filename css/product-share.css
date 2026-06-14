@@ -1,11 +1,20 @@
 /**
  * Bouton partage produit — cartes catalogue (mp-card, mp-new-card, etc.)
+ * Positionné en haut à droite du conteneur carte (pas sur l'image).
  */
-.pshare {
+.mp-card,
+.mp-top-card,
+.mp-new-card {
+    position: relative;
+}
+
+.mp-card > .pshare,
+.mp-top-card > .pshare,
+.mp-new-card > .pshare {
     position: absolute;
     top: 8px;
     right: 8px;
-    z-index: 12;
+    z-index: 15;
 }
 
 .pshare__toggle {
@@ -95,7 +104,7 @@
     color: var(--couleur-dominante, #3564a6);
 }
 
-/* Badge « Nouveau » déplacé à gauche quand partage à droite */
+/* Badges sur l'image */
 .mp-new-card-img,
 .mp-top-card-img-wrap,
 .mp-card-img,
@@ -126,7 +135,12 @@
 }
 
 @media (max-width: 640px) {
-    .pshare { top: 6px; right: 6px; }
+    .mp-card > .pshare,
+    .mp-top-card > .pshare,
+    .mp-new-card > .pshare {
+        top: 6px;
+        right: 6px;
+    }
     .pshare__toggle {
         width: 28px;
         height: 28px;

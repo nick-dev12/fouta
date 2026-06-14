@@ -162,9 +162,9 @@ $seo_canonical = $base . boutique_url('promo.php', BOUTIQUE_SLUG);
                             $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                             ?>
                             <article class="mp-card" data-produit-id="<?php echo (int) $produit['id']; ?>">
+                                <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                                 <a href="/produit.php?id=<?php echo (int) $produit['id']; ?>" class="mp-card-link">
                                     <div class="mp-card-img">
-                                        <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                                         <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                             alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                             loading="lazy" onerror="this.src='/image/produit1.jpg'">

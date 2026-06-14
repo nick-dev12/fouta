@@ -22,9 +22,9 @@ if ($pid <= 0) {
 }
 ?>
 <article class="mp-card">
+    <?php require __DIR__ . '/product_share_button.php'; ?>
     <a href="produit.php?id=<?php echo $pid; ?>" class="mp-card-link">
         <div class="mp-card-img">
-            <?php require __DIR__ . '/product_share_button.php'; ?>
             <?php if ($show_nouveau_badge): ?>
             <span class="mp-card-badge mp-card-badge--nouveau">Nouveau</span>
             <?php endif; ?>

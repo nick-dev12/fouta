@@ -178,7 +178,7 @@ html.sk-shimmer-pending .stock-cat-card__media.sk-loaded::before {
   transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ——— Cartes : contenu texte masqué pendant le chargement ——— */
+/* ——— Cartes : le texte reste visible (shimmer uniquement sur l'image) ——— */
 
 html.sk-shimmer-pending .mp-card:not(.sk-loaded) .mp-card-body,
 html.sk-shimmer-pending .mp-new-card:not(.sk-loaded) .mp-new-title,
@@ -190,7 +190,7 @@ html.sk-shimmer-pending .mp-trend-card:not(.sk-loaded) .mp-trend-label,
 html.sk-shimmer-pending .mp-trend-card:not(.sk-loaded) .mp-trend-sub,
 html.sk-shimmer-pending .boutique-top-cat-card:not(.sk-loaded) .boutique-top-cat-card__name,
 html.sk-shimmer-pending .boutique-top-cat-card:not(.sk-loaded) .boutique-top-cat-card__btn {
-  visibility: hidden;
+  visibility: visible;
 }
 
 /* Lignes squelette affichées seulement quand shimmer actif */

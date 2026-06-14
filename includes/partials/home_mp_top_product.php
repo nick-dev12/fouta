@@ -20,7 +20,6 @@ $nom_short = function_exists('mb_strlen') && mb_strlen($nom) > 38 ? mb_substr($n
 <article class="mp-top-card">
     <a href="produit.php?id=<?php echo $pid; ?>" class="mp-top-card-link">
         <div class="mp-top-card-img-wrap">
-            <?php require __DIR__ . '/product_share_button.php'; ?>
             <div class="mp-top-card-img">
                 <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                     alt="<?php echo htmlspecialchars($nom); ?>"

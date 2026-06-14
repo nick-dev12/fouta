@@ -609,6 +609,7 @@
 }
 
 .mp-card {
+  position: relative;
   background: var(--blanc);
   border: 1px solid var(--glass-border);
   border-radius: 10px;

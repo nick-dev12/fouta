@@ -8,8 +8,8 @@
 
     /* ——— Configuration ——— */
 
-    var MIN_SHIMMER_MS = 500; /* durée minimale d'affichage, même si l'image est en cache */
-    var TIMEOUT_MS     = 8000;
+    var MIN_SHIMMER_MS = 120; /* délai minimal uniquement pour images encore en chargement */
+    var TIMEOUT_MS     = 6000;
 
     /* Sélecteurs des conteneurs d'images connus */
     var IMG_CONT_SEL = [
@@ -118,15 +118,20 @@
 
     /* ——— Révélation d'un conteneur ——— */
 
-    function reveal(container, card) {
-        afterMin(function () {
+    function reveal(container, card, immediate) {
+        var apply = function () {
             if (container && container.isConnected) {
                 container.classList.add('sk-loaded');
             }
             if (card && card.isConnected) {
                 card.classList.add('sk-loaded');
             }
-        });
+        };
+        if (immediate) {
+            apply();
+            return;
+        }
+        afterMin(apply);
     }
 
     /* ——— Surveillance d'un conteneur image ——— */
@@ -141,25 +146,23 @@
 
         var img  = container.querySelector('img');
         if (!img) {
-            /* Pas d'image : révéler rapidement */
-            reveal(container, card);
+            reveal(container, card, true);
             return;
         }
 
         var done = false;
-        function finish() {
+        function finish(immediate) {
             if (done) return;
             done = true;
-            reveal(container, card);
+            reveal(container, card, !!immediate);
         }
 
         if (img.complete && img.naturalWidth > 0) {
-            /* Image déjà en cache : appliquer quand même la durée minimale */
-            finish();
+            finish(true);
         } else {
-            img.addEventListener('load',  finish, { once: true });
-            img.addEventListener('error', finish, { once: true });
-            setTimeout(finish, TIMEOUT_MS);
+            img.addEventListener('load',  function () { finish(false); }, { once: true });
+            img.addEventListener('error', function () { finish(false); }, { once: true });
+            setTimeout(function () { finish(false); }, TIMEOUT_MS);
         }
     }
 
@@ -168,8 +171,11 @@
     function scan(root) {
         var scope = root || document;
 
-        /* Injecter les lignes dans toutes les cartes trouvées */
-        scope.querySelectorAll(CARD_SEL).forEach(injectLines);
+        /* Lignes squelette désactivées — texte visible immédiatement */
+        scope.querySelectorAll(CARD_SEL).forEach(function (card) {
+            var old = card.querySelector('.sk-card-lines');
+            if (old) old.remove();
+        });
 
         /* Surveiller tous les conteneurs d'images */
         scope.querySelectorAll(IMG_CONT_SEL).forEach(watchContainer);

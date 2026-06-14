@@ -234,9 +234,9 @@ $seo_canonical = $base . boutique_url('produits.php', BOUTIQUE_SLUG);
                             $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                             ?>
                             <article class="mp-card" data-produit-id="<?php echo (int)$produit['id']; ?>">
+                                <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                                 <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                                     <div class="mp-card-img">
-                                        <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                                         <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                             alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                             loading="lazy" onerror="this.src='/image/produit1.jpg'">
@@ -340,8 +340,9 @@ $seo_canonical = $base . boutique_url('produits.php', BOUTIQUE_SLUG);
                     ? window.buildProductShareHtml({ url: shareUrl, text: shareText, title: produit.nom || 'Produit' })
                     : '';
                 article.innerHTML = `
+                    ${shareHtml}
                     <a href="/produit.php?id=${produit.id}" class="mp-card-link">
-                        <div class="mp-card-img">${shareHtml}<img src="${escapeHtml(produit.image_url || ('/upload/' + (produit.image_principale || 'produit1.jpg')))}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
+                        <div class="mp-card-img"><img src="${escapeHtml(produit.image_url || ('/upload/' + (produit.image_principale || 'produit1.jpg')))}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
                         <div class="mp-card-body"><p class="mp-card-title">${escapeHtml(produit.nom)}</p><div class="mp-card-price-row">${prixHTML}</div></div>
                     </a>
                     <div class="mp-card-cart"><form method="POST" action="/add-to-panier.php">

@@ -22,5 +22,5 @@ function skeleton_shimmer_include_head(): void
     $vq = asset_version_query();
     echo '<script>document.documentElement.classList.add("sk-shimmer-pending");</script>' . "\n";
     echo '<link rel="stylesheet" href="/css/skeleton-shimmer.css' . htmlspecialchars($vq, ENT_QUOTES, 'UTF-8') . '">' . "\n";
-    echo '<script src="/js/skeleton-shimmer.js' . htmlspecialchars($vq, ENT_QUOTES, 'UTF-8') . '"></script>' . "\n";
+    echo '<script src="/js/skeleton-shimmer.js' . htmlspecialchars($vq, ENT_QUOTES, 'UTF-8') . '" defer></script>' . "\n";
 }

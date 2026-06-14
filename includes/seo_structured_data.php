@@ -34,6 +34,52 @@ if (!function_exists('site_brand_alternate_names')) {
     }
 }
 
+if (!function_exists('seo_structured_data_homepage_graph')) {
+    /** Bloc unique @graph pour l'accueil (léger, une seule balise script). */
+    function seo_structured_data_homepage_graph() {
+        $base = get_site_base_url();
+        $names = site_brand_alternate_names();
+        return [
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                [
+                    '@type' => 'Organization',
+                    '@id' => $base . '/#organization',
+                    'name' => SITE_BRAND_NAME,
+                    'alternateName' => $names,
+                    'url' => $base . '/',
+                    'logo' => $base . '/icons/icon-512.png',
+                    'email' => SITE_BRAND_CONTACT_EMAIL,
+                ],
+                [
+                    '@type' => 'WebSite',
+                    '@id' => $base . '/#website',
+                    'name' => SITE_BRAND_NAME,
+                    'alternateName' => $names,
+                    'url' => $base . '/',
+                    'publisher' => ['@id' => $base . '/#organization'],
+                    'potentialAction' => [
+                        '@type' => 'SearchAction',
+                        'target' => $base . '/produits.php?recherche={search_term_string}',
+                        'query-input' => 'required name=search_term_string',
+                    ],
+                ],
+                [
+                    '@type' => 'OnlineStore',
+                    'name' => SITE_BRAND_NAME,
+                    'url' => $base . '/',
+                    'image' => $base . '/image/logo_market.png',
+                    'address' => [
+                        '@type' => 'PostalAddress',
+                        'addressLocality' => 'Dakar',
+                        'addressCountry' => 'SN',
+                    ],
+                ],
+            ],
+        ];
+    }
+}
+
 if (!function_exists('seo_structured_data_organization')) {
     function seo_structured_data_organization() {
         $base = get_site_base_url();
@@ -206,7 +252,7 @@ if (!function_exists('seo_meta_echo_json_ld')) {
         }
         $payload = count($blocks) === 1 ? $blocks[0] : $blocks;
         echo '<script type="application/ld+json">' . "\n";
-        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         echo "\n</script>\n";
     }
 }
