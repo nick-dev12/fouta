@@ -150,5 +150,6 @@ $__footer_show_social = $__ig_t !== '' || $__fb_t !== '' || $__li_t !== '' || $_
     </div>
 </footer>
 <?php include __DIR__ . '/includes/social_floating.php'; ?>
+<script src="/js/product-share.js<?php echo asset_version_query(); ?>" defer></script>
 <?php require_once __DIR__ . '/includes/perf_lazy_assets.php'; ?>
 <?php require_once __DIR__ . '/includes/flash_toast.php'; flash_toast_render(); ?>

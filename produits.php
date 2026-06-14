@@ -384,9 +384,14 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
                     ? `<span class="mp-card-price-old">${formatNumber(produit.prix)} FCFA</span><span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`
                     : `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`;
                 const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                const shareUrl = window.location.origin + '/produit.php?id=' + produit.id;
+                const shareText = 'Découvrez « ' + (produit.nom || 'Produit') + ' » à ' + formatNumber(produit.prix_affichage) + ' FCFA sur Colobanes :\n' + shareUrl;
+                const shareHtml = (typeof window.buildProductShareHtml === 'function')
+                    ? window.buildProductShareHtml({ url: shareUrl, text: shareText, title: produit.nom || 'Produit' })
+                    : '';
                 article.innerHTML = `
                     <a href="produit.php?id=${produit.id}" class="mp-card-link">
-                        <div class="mp-card-img"><img src="${escapeHtml(produit.image_url || ('/upload/' + (produit.image_principale || 'produit1.jpg')))}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
+                        <div class="mp-card-img">${shareHtml}<img src="${escapeHtml(produit.image_url || ('/upload/' + (produit.image_principale || 'produit1.jpg')))}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
                         <div class="mp-card-body"><h3 class="mp-card-title">${escapeHtml(produit.nom)}</h3>${starsHTML}<div class="mp-card-price-row">${prixHTML}</div></div>
                     </a>
                     <form method="POST" action="/add-to-panier.php" class="mp-card-cart">

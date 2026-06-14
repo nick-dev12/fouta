@@ -21,9 +21,10 @@ $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'
 $nom = (string) ($produit['nom'] ?? 'Produit');
 ?>
 <article class="mp-new-card">
-    <span class="mp-new-badge" aria-label="Nouveau">Nouveau</span>
     <a href="produit.php?id=<?php echo $pid; ?>" class="mp-new-card-link">
         <div class="mp-new-card-img">
+            <?php require __DIR__ . '/product_share_button.php'; ?>
+            <span class="mp-new-badge" aria-label="Nouveau">Nouveau</span>
             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                 alt="<?php echo htmlspecialchars($nom); ?>"
                 loading="lazy"

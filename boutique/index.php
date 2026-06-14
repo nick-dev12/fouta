@@ -428,6 +428,7 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                 <article class="mp-card">
                     <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                         <div class="mp-card-img">
+                            <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>
@@ -614,6 +615,7 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                 <article class="mp-card">
                     <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                         <div class="mp-card-img">
+                            <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>
@@ -776,6 +778,7 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                 <article class="mp-card" data-produit-id="<?php echo (int)$produit['id']; ?>">
                     <a href="/produit.php?id=<?php echo (int)$produit['id']; ?>" class="mp-card-link">
                         <div class="mp-card-img">
+                            <?php require __DIR__ . '/../includes/partials/product_share_button.php'; ?>
                             <?php if ($has_promotion): ?>
                             <span class="mp-card-badge mp-card-badge--nouveau">-<?php echo $pourcentage_promo; ?>%</span>
                             <?php endif; ?>

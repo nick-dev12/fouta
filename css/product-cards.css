@@ -3,6 +3,7 @@
  * Basé sur le design de l'image fournie
  */
 @import url('product-rating.css');
+@import url('product-share.css');
 
 /* ---- Masquer boutique + catégorie/ville dans les cards produit ---- */
 .produit-card-boutique,

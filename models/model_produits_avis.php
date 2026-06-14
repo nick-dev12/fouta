@@ -472,3 +472,48 @@ function produits_avis_moyennes_commandes(array $commande_ids) {
     }
     return $out;
 }
+
+/**
+ * Produits les mieux notés (moyenne des avis clients), pour vitrine accueil.
+ *
+ * @param int $max_rows  Nombre max de produits
+ * @param int $min_avis  Nombre minimum d'avis pour être éligible
+ * @return array
+ */
+function get_produits_mieux_notes_marketplace($max_rows = 40, $min_avis = 1)
+{
+    global $db;
+    $max_rows = max(4, (int) $max_rows);
+    $min_avis = max(1, (int) $min_avis);
+    if (!produits_avis_table_exists() || !$db) {
+        return [];
+    }
+    try {
+        require_once __DIR__ . '/model_produits.php';
+        $vj = produits_sql_vendeur_fragment();
+        $rj = produits_sql_rayon_categorie_nom_fragment();
+        $region_sql = produits_region_sql_with_alias(null)['sql'];
+        $sql = "
+            SELECT p.*, " . $rj['categorie_nom_sql'] . " AS categorie_nom,
+                   ROUND(AVG(pa.note), 2) AS avis_moyenne,
+                   COUNT(pa.id) AS avis_count
+            " . $vj['select'] . "
+            FROM produits p
+            INNER JOIN produits_avis pa ON pa.produit_id = p.id
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            " . $rj['join'] . "
+            " . $vj['join'] . "
+            WHERE p.statut IN ('actif', 'rupture_stock') $region_sql
+            GROUP BY p.id
+            HAVING avis_count >= " . (int) $min_avis . "
+            ORDER BY avis_moyenne DESC, avis_count DESC, p.id DESC
+            LIMIT " . (int) $max_rows;
+        $stmt = $db->prepare($sql);
+        produits_bind_region_stmt($stmt, null);
+        $stmt->execute();
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return is_array($produits) ? $produits : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}

@@ -2379,15 +2379,15 @@ $seo_canonical = $base . '/';
     if (file_exists(__DIR__ . '/models/model_recherches_catalogue.php')) {
         require_once __DIR__ . '/models/model_recherches_catalogue.php';
     }
-    if (file_exists(__DIR__ . '/models/model_favoris.php')) {
-        require_once __DIR__ . '/models/model_favoris.php';
+    if (file_exists(__DIR__ . '/models/model_produits_avis.php')) {
+        require_once __DIR__ . '/models/model_produits_avis.php';
     }
 
-    /* Recherches fréquentes : produits liés au journal de recherche catalogue (mélangés, max 20) */
+    /* Recherches fréquentes : produits liés aux termes les plus recherchés (ordre conservé) */
     $recherche_candidats = function_exists('get_produits_lies_aux_recherches_frequentes')
         ? get_produits_lies_aux_recherches_frequentes(40)
         : [];
-    $produits_tendance = marketplace_produits_aleatoires_avec_seuil($recherche_candidats, 20, 5);
+    $produits_tendance = marketplace_produits_ordre_ou_aleatoire($recherche_candidats, 20, 'marketplace_recherches');
 
     /* 4 articles / panneau : grille 2×2 sur mobile, 4 en ligne sur grand écran */
     $produits_top_panneau = !empty($produits_populaires)
@@ -2403,11 +2403,11 @@ $seo_canonical = $base . '/';
         : [];
     $produits_strip = marketplace_produits_aleatoires_avec_seuil($vendus_candidats, 8, 5);
 
-    /* Coups de cœur : carrousel — plusieurs diapos (2 produits), rotation côté client toutes les 1 min */
-    $favoris_candidats = function_exists('get_produits_plus_favoris_marketplace')
-        ? get_produits_plus_favoris_marketplace(40)
+    /* Mieux notés : carrousel — produits avec la meilleure moyenne d'avis (ordre décroissant) */
+    $mieux_notes_candidats = function_exists('get_produits_mieux_notes_marketplace')
+        ? get_produits_mieux_notes_marketplace(40)
         : [];
-    $spotlight_pool = marketplace_produits_aleatoires_avec_seuil($favoris_candidats, 12, 5);
+    $spotlight_pool = marketplace_produits_ordre_ou_aleatoire($mieux_notes_candidats, 12, 'marketplace_mieux_notes', false);
     if (!is_array($spotlight_pool)) {
         $spotlight_pool = [];
     }
@@ -2429,17 +2429,14 @@ $seo_canonical = $base . '/';
         $hero_affiches = [];
     }
 
-    if (file_exists(__DIR__ . '/models/model_produits_avis.php')) {
-        require_once __DIR__ . '/models/model_produits_avis.php';
-        if (function_exists('produits_avis_enrich_products')) {
-            $produits_tendance = produits_avis_enrich_products($produits_tendance);
-            $produits_strip = produits_avis_enrich_products($produits_strip);
-            $produits_top_panneau = produits_avis_enrich_products($produits_top_panneau);
-            $produits_new_panneau = produits_avis_enrich_products($produits_new_panneau);
-            $produits_tous = produits_avis_enrich_products($produits_tous);
-            if (!empty($spotlight_pool)) {
-                $spotlight_pool = produits_avis_enrich_products($spotlight_pool);
-            }
+    if (function_exists('produits_avis_enrich_products')) {
+        $produits_tendance = produits_avis_enrich_products($produits_tendance);
+        $produits_strip = produits_avis_enrich_products($produits_strip);
+        $produits_top_panneau = produits_avis_enrich_products($produits_top_panneau);
+        $produits_new_panneau = produits_avis_enrich_products($produits_new_panneau);
+        $produits_tous = produits_avis_enrich_products($produits_tous);
+        if (!empty($spotlight_pool)) {
+            $spotlight_pool = produits_avis_enrich_products($spotlight_pool);
         }
     }
 
