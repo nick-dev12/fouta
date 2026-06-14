@@ -5,6 +5,7 @@
 require_once __DIR__ . '/../includes/require_login.php';
 require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
 require_once dirname(__DIR__, 2) . '/controllers/controller_super_admin.php';
+require_once dirname(__DIR__, 2) . '/includes/marketplace_countries.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
@@ -46,6 +47,7 @@ if (super_admin_set_vendeur_statut($vid, $statut)) {
 
 $retQ = [
     'q' => isset($_POST['return_q']) ? trim((string) $_POST['return_q']) : '',
+    'pays' => isset($_POST['return_pays']) ? strtoupper(trim((string) $_POST['return_pays'])) : '',
     'statut' => isset($_POST['return_statut']) ? trim((string) $_POST['return_statut']) : '',
     'cert' => isset($_POST['return_cert']) ? trim((string) $_POST['return_cert']) : '',
     'per' => isset($_POST['return_per']) ? (int) $_POST['return_per'] : 15,
@@ -56,13 +58,22 @@ $retQ = [
  * Même logique que sb_boutiques_query_params dans index.php (redirect)
  */
 function _sb_boutique_redirect_query(array $overrides) {
+    $countries_nav = marketplace_countries_nav_list();
+    $default_pays = $countries_nav ? (string) array_key_first($countries_nav) : 'SN';
     $m = array_merge([
         'q' => '',
-        'statut' => '',
+        'pays' => $default_pays,
+        'statut' => 'actif',
         'cert' => 'non_certifie',
         'per' => 15,
         'p' => 1,
     ], $overrides);
+    if (!marketplace_country_is_valid($m['pays'])) {
+        $m['pays'] = $default_pays;
+    }
+    if ($m['statut'] !== 'actif' && $m['statut'] !== 'inactif') {
+        $m['statut'] = 'actif';
+    }
     if ($m['per'] < 5) {
         $m['per'] = 5;
     }
@@ -76,6 +87,7 @@ function _sb_boutique_redirect_query(array $overrides) {
     if ($m['q'] !== '') {
         $q['q'] = $m['q'];
     }
+    $q['pays'] = $m['pays'];
     if ($m['statut'] === 'actif' || $m['statut'] === 'inactif') {
         $q['statut'] = $m['statut'];
     }

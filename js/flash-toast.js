@@ -79,7 +79,7 @@
     function show(item) {
         var type = (item && ICONS[item.type]) ? item.type : 'info';
         var msg  = item && item.message ? String(item.message) : '';
-        if (!msg) {
+        if (!item) {
             processQueue();
             return;
         }
@@ -88,10 +88,14 @@
         var popup = document.createElement('div');
         popup.className = 'flash-popup flash-popup--' + type;
         popup.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        if (msg) {
+            popup.setAttribute('aria-label', TITLES[type] + '. ' + msg);
+        } else {
+            popup.setAttribute('aria-label', TITLES[type]);
+        }
         popup.innerHTML =
             '<div class="flash-popup__icon" aria-hidden="true"><i class="fas ' + ICONS[type] + '"></i></div>' +
             '<h2 class="flash-popup__title">' + escHtml(TITLES[type]) + '</h2>' +
-            '<p class="flash-popup__message">' + escHtml(msg) + '</p>' +
             '<button type="button" class="flash-popup__done">Terminé</button>';
 
         popup.querySelector('.flash-popup__done').addEventListener('click', function () {
@@ -118,7 +122,7 @@
         var list = Array.isArray(window.__FLASH_TOASTS__) ? window.__FLASH_TOASTS__ : [];
         window.__FLASH_TOASTS__ = [];
         list.forEach(function (item) {
-            if (item && item.message) {
+            if (item && (item.message || item.type)) {
                 queue.push(item);
             }
         });

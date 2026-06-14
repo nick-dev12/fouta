@@ -11,7 +11,10 @@
 $add_produit_modal = !empty($add_produit_modal);
 $fap_is_edit = !empty($fap_is_edit);
 $add_produit_form_action = isset($add_produit_form_action) ? (string) $add_produit_form_action : '';
-$form_el_id = $fap_is_edit ? 'form-edit-produit-page' : ($add_produit_modal ? 'form-add-produit-modal' : 'form-add-produit-page');
+$fap_edit_modal = !empty($fap_edit_modal);
+$form_el_id = $fap_is_edit
+    ? ($fap_edit_modal ? 'form-edit-produit-modal' : 'form-edit-produit-page')
+    : ($add_produit_modal ? 'form-add-produit-modal' : 'form-add-produit-page');
 if (!isset($PM) || !is_array($PM)) {
     $PM = $_POST;
 }
@@ -70,9 +73,13 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
 <form method="POST" action="<?php echo htmlspecialchars($add_produit_form_action); ?>"
     enctype="multipart/form-data"
     class="form-add form-add-produit-v2"
-    id="<?php echo htmlspecialchars($form_el_id); ?>">
+    id="<?php echo htmlspecialchars($form_el_id); ?>"<?php echo $fap_edit_modal ? ' target="_top"' : ''; ?>>
     <?php if ($add_produit_modal): ?>
     <input type="hidden" name="admin_add_produit" value="1">
+    <?php endif; ?>
+    <?php if ($fap_edit_modal && $fap_is_edit && $fap_edit_produit): ?>
+    <input type="hidden" name="admin_edit_produit" value="1">
+    <input type="hidden" name="produit_id" value="<?php echo (int) ($fap_edit_produit['id'] ?? 0); ?>">
     <?php endif; ?>
 
     <?php if (!empty($add_produit_error_message)): ?>
@@ -328,7 +335,9 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
         <button type="submit" class="btn-fap-submit">
             <i class="fas fa-check"></i> <?php echo $fap_is_edit ? 'Enregistrer les modifications' : 'Enregistrer le produit'; ?>
         </button>
-        <?php if ($fap_is_edit): ?>
+        <?php if ($fap_is_edit && $fap_edit_modal): ?>
+        <button type="button" class="btn-fap-cancel" id="btn-fap-cancel-edit-modal" data-close-edit-modal>Annuler</button>
+        <?php elseif ($fap_is_edit): ?>
         <a href="index.php" class="btn-fap-cancel">Annuler</a>
         <?php elseif ($add_produit_modal): ?>
         <button type="button" class="btn-fap-cancel" id="btn-fap-cancel-modal" data-close-modal>Annuler</button>
@@ -626,6 +635,177 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
 }
 .options-surcharge { width: 90px; padding: 8px 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px; }
 .option-tag .tag-surcharge { font-size: 11px; color: #666; margin-left: 4px; }
+
+/* ---- Responsive formulaire produit ---- */
+@media (max-width: 1024px) {
+    .fap-layout { gap: 14px; }
+    .fap-card {
+        padding: 16px 14px;
+        margin-bottom: 14px;
+        border-radius: 12px;
+    }
+    .fap-card-head { margin-bottom: 12px; padding-bottom: 10px; gap: 8px; }
+    .fap-card-head i { font-size: 1rem; }
+    .fap-card-head h3 { font-size: 0.95rem; }
+    .fap-card-sub { font-size: 11px; }
+    .fap-hint { font-size: 12px; margin-bottom: 10px; }
+    .fap-field { margin-bottom: 14px; }
+    .fap-field label { font-size: 12px; margin-bottom: 5px; }
+    .fap-field input[type=text],
+    .fap-field input[type=number],
+    .fap-field input[type=file],
+    .fap-field select,
+    .fap-field textarea {
+        padding: 10px 11px;
+        font-size: 14px;
+        border-radius: 8px;
+    }
+    .fap-field textarea { min-height: 100px; }
+    .fap-row-3 { gap: 10px; }
+    .fap-dropzone-inner { padding: 20px 12px; }
+    .fap-dropzone-inner i { font-size: 1.5rem; margin-bottom: 6px; }
+    .fap-dropzone-inner span { font-size: 0.88rem; }
+    .fap-dropzone-inner small { font-size: 11px; }
+    .btn-fap-add-variante { padding: 12px 14px; gap: 10px; border-radius: 12px; }
+    .btn-fap-add-variante-icon { width: 40px; height: 40px; font-size: 1rem; border-radius: 10px; }
+    .btn-fap-add-variante-text strong { font-size: 0.9rem; }
+    .btn-fap-add-variante-text small { font-size: 11px; }
+    .btn-fap-add-variante { font-size: 13px; }
+    .fap-actions { margin-top: 18px; padding-top: 14px; gap: 10px; }
+    .btn-fap-submit { padding: 11px 20px; font-size: 14px; border-radius: 10px; gap: 7px; }
+    .btn-fap-cancel { padding: 9px 16px; font-size: 13px; border-radius: 10px; }
+    .fap-variante-chip { padding: 10px 12px; gap: 10px; }
+    .fap-variante-chip-thumb { width: 44px; height: 44px; }
+    .fap-variante-chip-title { font-size: 13px; }
+    .fap-variante-chip-meta { font-size: 12px; }
+    .options-input { padding: 8px 10px; font-size: 13px; min-width: 0; }
+    .btn-add-option, .btn-add-couleur { padding: 8px 12px; font-size: 12px; }
+    .options-surcharge { width: 76px; padding: 6px 8px; font-size: 12px; }
+    .option-tag { padding: 4px 9px; font-size: 12px; }
+    .couleurs-add-row input[type="color"] { width: 42px; height: 34px; }
+    .fap-alert { padding: 10px 12px; font-size: 12px; margin-bottom: 14px; }
+    .image-preview-accumulator .preview-item img { width: 72px; height: 72px; }
+    .fap-variante-modal { padding: 12px; }
+    .fap-variante-modal-panel { max-width: 100%; border-radius: 14px; }
+    .fap-variante-modal-head { padding: 12px 14px; }
+    .fap-variante-modal-head h3 { font-size: 0.95rem; }
+    .fap-variante-modal-body { padding: 14px; }
+    .fap-variante-modal-foot { padding: 12px 14px; }
+    .fap-icon-close { width: 32px; height: 32px; font-size: 18px; }
+}
+
+@media (max-width: 640px) {
+    .fap-layout { gap: 10px; }
+    .fap-card {
+        padding: 11px 10px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        box-shadow: 0 3px 14px rgba(53, 100, 166, 0.06);
+    }
+    .fap-card-head { margin-bottom: 8px; padding-bottom: 8px; gap: 6px; }
+    .fap-card-head i { font-size: 0.9rem; margin-top: 1px; }
+    .fap-card-head h3 { font-size: 0.84rem; }
+    .fap-card-sub { font-size: 10px; margin-top: 2px; }
+    .fap-hint { font-size: 11px; margin-bottom: 8px; line-height: 1.4; }
+    .fap-field { margin-bottom: 10px; }
+    .fap-field label { font-size: 11px; margin-bottom: 4px; }
+    .fap-field input[type=text],
+    .fap-field input[type=number],
+    .fap-field input[type=file],
+    .fap-field select,
+    .fap-field textarea {
+        padding: 7px 9px;
+        font-size: 13px;
+        border-radius: 7px;
+        border-width: 1px;
+    }
+    .fap-field textarea { min-height: 76px; }
+    .fap-row-2 { grid-template-columns: 1fr; gap: 8px; }
+    .fap-row-3 { gap: 8px; }
+    .fap-dropzone { border-radius: 10px; }
+    .fap-dropzone-inner { padding: 14px 10px; }
+    .fap-dropzone-inner i { font-size: 1.25rem; margin-bottom: 4px; }
+    .fap-dropzone-inner span { font-size: 0.8rem; }
+    .fap-dropzone-inner small { font-size: 10px; }
+    .btn-fap-add-variante {
+        padding: 10px 12px;
+        gap: 8px;
+        font-size: 12px;
+        border-radius: 10px;
+        border-width: 1.5px;
+    }
+    .btn-fap-add-variante-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+        border-radius: 8px;
+    }
+    .btn-fap-add-variante-text strong { font-size: 0.82rem; }
+    .btn-fap-add-variante-text small { font-size: 10px; }
+    .btn-fap-add-variante:hover { transform: none; }
+    .fap-actions {
+        flex-direction: column;
+        align-items: stretch;
+        margin-top: 14px;
+        padding-top: 12px;
+        gap: 8px;
+    }
+    .btn-fap-submit,
+    .btn-fap-cancel {
+        width: 100%;
+        justify-content: center;
+        padding: 9px 14px;
+        font-size: 13px;
+        border-radius: 8px;
+    }
+    .fap-variantes-list-label { font-size: 10px; margin-bottom: 6px; }
+    .fap-variante-chip { padding: 8px 10px; gap: 8px; border-radius: 8px; }
+    .fap-variante-chip-thumb { width: 38px; height: 38px; border-radius: 7px; }
+    .fap-variante-chip-title { font-size: 12px; }
+    .fap-variante-chip-meta { font-size: 11px; }
+    .fap-variante-chip-actions button { padding: 6px 9px; font-size: 11px; }
+    .options-add-row, .couleurs-add-row { gap: 8px; margin-bottom: 8px; }
+    .options-input { padding: 7px 9px; font-size: 12px; flex: 1 1 100%; }
+    .btn-add-option, .btn-add-couleur {
+        padding: 7px 10px;
+        font-size: 11px;
+        gap: 5px;
+        border-radius: 7px;
+    }
+    .options-surcharge { width: 100%; max-width: 120px; padding: 6px 8px; font-size: 11px; }
+    .option-tag { padding: 4px 8px; font-size: 11px; gap: 4px; }
+    .option-tag .tag-remove, .couleur-swatch .swatch-remove { width: 18px; height: 18px; font-size: 11px; }
+    .couleur-swatch { padding: 4px 8px; gap: 4px; }
+    .couleur-swatch .swatch-preview { width: 18px; height: 18px; }
+    .couleur-swatch .swatch-hex { font-size: 10px; }
+    .couleurs-add-row input[type="color"] { width: 36px; height: 30px; }
+    .fap-alert { padding: 8px 10px; font-size: 11px; border-radius: 8px; margin-bottom: 10px; }
+    .image-preview-accumulator { gap: 8px; margin-top: 10px; }
+    .image-preview-accumulator .preview-item img { width: 60px; height: 60px; border-radius: 6px; }
+    .fap-variante-modal { padding: 8px; align-items: flex-end; }
+    .fap-variante-modal-panel { border-radius: 12px 12px 0 0; max-width: 100%; }
+    .fap-variante-modal-head { padding: 10px 12px; }
+    .fap-variante-modal-head h3 { font-size: 0.88rem; }
+    .fap-variante-modal-body { padding: 12px; }
+    .fap-variante-modal-foot {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    .fap-variante-modal-foot .btn-fap-submit,
+    .fap-variante-modal-foot .btn-fap-cancel { width: 100%; }
+}
+
+@media (max-width: 380px) {
+    .fap-card { padding: 9px 8px; }
+    .fap-card-head h3 { font-size: 0.8rem; }
+    .fap-field input[type=text],
+    .fap-field input[type=number],
+    .fap-field select,
+    .fap-field textarea { font-size: 12px; padding: 6px 8px; }
+    .btn-fap-submit, .btn-fap-cancel { font-size: 12px; padding: 8px 12px; }
+}
 </style>
 
 <script>

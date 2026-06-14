@@ -24,7 +24,50 @@ $stock_catalogue_vendeur_seul = ($__stock_role === 'vendeur' && function_exists(
 
 require_once __DIR__ . '/../../models/model_categories.php';
 require_once __DIR__ . '/../../models/model_produits.php';
+require_once __DIR__ . '/../../models/model_genres.php';
 require_once __DIR__ . '/../../includes/image_optimizer.php';
+
+// ---- Modal ajout produit ----
+$add_produit_error_message = '';
+$add_produit_post_error = false;
+$open_add_modal = isset($_GET['open_add']) && $_GET['open_add'] === '1';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_add_produit'])) {
+    require_once __DIR__ . '/../../controllers/controller_produits.php';
+    $add_result = process_add_produit();
+    if (!empty($add_result['success'])) {
+        $_SESSION['success_message'] = $add_result['message'];
+        header('Location: index.php');
+        exit;
+    }
+    $add_produit_error_message = $add_result['message'] ?? 'Erreur lors de l\'ajout.';
+    $add_produit_post_error = true;
+}
+
+// ---- Modal modification produit ----
+$open_edit_modal_id = isset($_GET['edit_id']) ? (int) $_GET['edit_id'] : 0;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_edit_produit'])) {
+    $edit_pid = (int) ($_POST['produit_id'] ?? 0);
+    if ($edit_pid > 0) {
+        require_once __DIR__ . '/../../controllers/controller_produits.php';
+        require_once __DIR__ . '/../../includes/flash_toast.php';
+        $edit_result = process_update_produit($edit_pid);
+        if (!empty($edit_result['success'])) {
+            $_SESSION['success_message'] = $edit_result['message'];
+            header('Location: index.php');
+            exit;
+        }
+        flash_toast_queue_page('error', $edit_result['message'] ?? 'Erreur lors de la modification.');
+        $open_edit_modal_id = $edit_pid;
+    }
+}
+
+$fap_use_category_hierarchy = categories_hierarchy_enabled() && ($__stock_role === 'vendeur');
+$vcat_prefill_sub = 0;
+$vcat_prefill_generale = 0;
+$vendeur_genre_ids_prefill = [];
+$categorie_id_prefill = 0;
 
 // ---- Modal nouvelle catégorie ----
 $cat_modal_error       = '';
@@ -140,6 +183,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== STOCK INDEX v2 ===== */
         .stk-page {
@@ -254,6 +298,8 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             border-radius: 12px; color: #fff;
             font-size: 0.82rem; font-weight: 700;
             text-decoration: none; transition: background .2s; white-space: nowrap; align-self: flex-start;
+            cursor: pointer;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
         }
 
         .stk-hero__cta:hover { background: rgba(255,255,255,.26); }
@@ -392,6 +438,189 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         .stk-filters__results strong { color: var(--titres, #0d0d0d); }
 
+        .stk-filters__search-row {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .stk-filters__toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(53,100,166,.18);
+            background: #f9fbff;
+            color: var(--couleur-dominante, #3564a6);
+            font-size: .78rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+            transition: background .2s, border-color .2s;
+            flex-shrink: 0;
+        }
+
+        .stk-filters__toggle:hover { background: rgba(53,100,166,.08); }
+        .stk-filters__toggle--active {
+            background: rgba(53,100,166,.12);
+            border-color: var(--couleur-dominante, #3564a6);
+        }
+
+        .stk-filters__extra-head {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stk-filters__extra-head span {
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--gris-moyen, #737373);
+        }
+
+        .stk-filters__extra-close {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(0,0,0,.05);
+            color: var(--gris-fonce, #4a4a4a);
+            font-size: .72rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
+        }
+
+        .stk-filters__extra-close:hover { background: rgba(0,0,0,.09); }
+
+        .stk-filters__extra-grid {
+            display: contents;
+        }
+
+        /* ---- Modales produit (plein écran) ---- */
+        .adm-modal-add-produit[hidden] { display: none !important; }
+        .adm-modal-add-produit {
+            position: fixed;
+            inset: 0;
+            z-index: 9990;
+            display: flex;
+            flex-direction: column;
+            background: rgba(13, 13, 13, 0.52);
+            backdrop-filter: blur(6px);
+        }
+        .adm-modal-add-produit-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            width: 100%;
+            background: linear-gradient(165deg, var(--fond-secondaire, #fafafa) 0%, var(--blanc, #fff) 42%, rgba(53, 100, 166, 0.04) 100%);
+            border-top: 3px solid var(--couleur-dominante, #3564a6);
+            overflow: hidden;
+        }
+        .adm-modal-add-head {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: clamp(12px, 2.5vw, 16px) clamp(14px, 3vw, 22px);
+            background: var(--blanc, #fff);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .adm-modal-add-head h2 {
+            margin: 0;
+            font-size: clamp(1rem, 2.8vw, 1.28rem);
+            font-family: var(--font-titres, inherit);
+            color: var(--titres, #0d0d0d);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .adm-modal-add-head h2 i { color: var(--couleur-dominante, #3564a6); }
+        .adm-modal-add-close {
+            width: clamp(36px, 8vw, 44px);
+            height: clamp(36px, 8vw, 44px);
+            border: none;
+            border-radius: 12px;
+            background: rgba(53, 100, 166, 0.1);
+            color: var(--couleur-dominante, #3564a6);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+        .adm-modal-add-close:hover {
+            background: var(--couleur-dominante, #3564a6);
+            color: #fff;
+        }
+        .adm-modal-add-body {
+            flex: 1;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: clamp(14px, 3vw, 22px) clamp(14px, 3vw, 24px) clamp(24px, 5vw, 40px);
+        }
+        .adm-modal-add-body .form-add-container { max-width: 1280px; margin: 0 auto; }
+        .adm-modal-add-body--iframe { padding: 0; overflow: hidden; }
+        .adm-modal-add-body--iframe iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .adm-modal-add-head {
+                padding: 10px 14px;
+                gap: 10px;
+            }
+            .adm-modal-add-head h2 {
+                font-size: clamp(0.92rem, 2.8vw, 1.1rem);
+                gap: 7px;
+            }
+            .adm-modal-add-body {
+                padding: 12px 12px 28px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .adm-modal-add-head {
+                padding: 8px 10px;
+            }
+            .adm-modal-add-head h2 {
+                font-size: 0.88rem;
+                gap: 6px;
+            }
+            .adm-modal-add-head h2 i { font-size: 0.9rem; }
+            .adm-modal-add-close {
+                width: 32px;
+                height: 32px;
+                font-size: 1.2rem;
+                border-radius: 8px;
+            }
+            .adm-modal-add-body {
+                padding: 8px 8px 20px;
+            }
+            .adm-modal-add-body .form-add-container {
+                max-width: none;
+            }
+        }
+
+        .js-open-add-produit,
+        .js-open-edit-produit { cursor: pointer; }
+
         /* ---- Grille produits ---- */
         .stk-section-head {
             display: flex; align-items: center; justify-content: space-between;
@@ -495,10 +724,20 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             font-size: .71rem; color: var(--gris-moyen, #737373); font-weight: 600;
         }
 
-        .stk-card__prix-row { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; }
+        .stk-card__prix-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
+        .stk-card__prix-groupe { display: inline-flex; align-items: baseline; gap: 4px; }
         .stk-card__prix     { font-size: 1.02rem; font-weight: 900; color: var(--titres, #0d0d0d); font-family: var(--font-titres, 'Poppins', sans-serif); }
         .stk-card__unit     { font-size: .65rem; font-weight: 600; color: var(--gris-moyen, #737373); }
-        .stk-card__promo    { font-size: .72rem; font-weight: 700; color: #15803d; background: rgba(34,197,94,.1); padding: 1px 7px; border-radius: 6px; }
+        .stk-card__prix-groupe--ancien .stk-card__prix {
+            font-size: .78rem; font-weight: 600;
+            color: var(--gris-moyen, #737373);
+            text-decoration: line-through;
+        }
+        .stk-card__prix-groupe--ancien .stk-card__unit {
+            font-size: .58rem;
+            color: var(--gris-clair, #a3a3a3);
+            text-decoration: line-through;
+        }
 
         /* Footer */
         .stk-card__footer {
@@ -700,6 +939,101 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         body.stock-cat-modal-active { overflow: hidden; }
 
         /* ---- Responsive ---- */
+        @media (max-width: 1024px) {
+            .stk-filters {
+                padding: clamp(10px, 2.5vw, 14px) clamp(10px, 2.5vw, 12px);
+            }
+
+            .stk-filters__form {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+            }
+
+            .stk-filters__compact { width: 100%; }
+
+            .stk-filters__group--search { gap: 3px; }
+
+            .stk-filters__label--compact {
+                font-size: 0.62rem;
+                margin-bottom: 1px;
+            }
+
+            .stk-filters__search-row { width: 100%; }
+
+            .stk-filters__search {
+                min-width: 0;
+                flex: 1;
+            }
+
+            .stk-filters__search input {
+                padding: 8px 8px 8px 0;
+                font-size: 0.8rem;
+            }
+
+            .stk-filters__search-icon {
+                padding: 0 10px;
+                font-size: 0.78rem;
+            }
+
+            .stk-filters__toggle { display: inline-flex; }
+
+            .stk-filters__extra {
+                display: none;
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px solid rgba(53,100,166,.08);
+            }
+
+            .stk-filters__extra.stk-filters__extra--open { display: block; }
+
+            .stk-filters__extra-head { display: flex; }
+
+            .stk-filters__extra-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .stk-filters__select {
+                width: 100%;
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .stk-filters__label {
+                font-size: 0.62rem;
+            }
+
+            .stk-filters__submit,
+            .stk-filters__reset {
+                width: 100%;
+                justify-content: center;
+                padding: 8px 14px;
+                font-size: 0.76rem;
+            }
+
+            .stk-filters__actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            .stk-filters__form {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: flex-end;
+                gap: 10px;
+            }
+
+            .stk-filters__compact { flex: 2; min-width: 200px; }
+
+            .stk-filters__extra { display: contents; }
+            .stk-filters__extra-grid { display: contents; }
+        }
+
         @media (max-width: 768px) {
             .stk-page { gap: 16px; padding-bottom: 96px; }
 
@@ -773,28 +1107,25 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                 padding: 14px 12px;
                 border-radius: 14px;
             }
-
-            .stk-filters__form {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-            }
-
-            .stk-filters__search,
-            .stk-filters__group,
-            .stk-filters__select {
-                width: 100%;
-                min-width: 0;
-            }
-
-            .stk-filters__submit {
-                width: 100%;
-                justify-content: center;
-            }
         }
 
         @media (max-width: 640px) {
             .stk-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+            .stk-card__body { padding: 10px 10px 8px; }
+
+            .stk-card__prix-row {
+                gap: 4px 6px;
+            }
+
+            .stk-card__prix {
+                font-size: 0.88rem;
+                line-height: 1.25;
+            }
+
+            .stk-card__prix-groupe--ancien .stk-card__prix {
+                font-size: 0.72rem;
+            }
         }
 
         @media (max-width: 380px) {
@@ -841,9 +1172,9 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                         <?php endif; ?>
                     </div>
                 </div>
-                <a href="../produits/ajouter.php" class="stk-hero__cta">
+                <button type="button" class="stk-hero__cta js-open-add-produit">
                     <i class="fas fa-plus"></i> Ajouter un produit
-                </a>
+                </button>
             </div>
         </div>
 
@@ -868,54 +1199,74 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         </div>
 
         <!-- ===== FILTRES ===== -->
+        <?php $stk_filters_active = ($cat_filter > 0 || $statut_filter !== ''); ?>
         <div class="stk-filters">
             <form method="get" action="index.php" class="stk-filters__form" id="stk-filter-form">
-                <!-- Recherche -->
-                <div class="stk-filters__group" style="flex:2;min-width:200px;">
-                    <label class="stk-filters__label" for="stk-search">Recherche</label>
-                    <div class="stk-filters__search">
-                        <span class="stk-filters__search-icon"><i class="fas fa-magnifying-glass"></i></span>
-                        <input type="text" id="stk-search" name="search"
-                            value="<?php echo htmlspecialchars($recherche); ?>"
-                            placeholder="Nom, description, statut&hellip;">
+                <div class="stk-filters__compact">
+                    <div class="stk-filters__group stk-filters__group--search">
+                        <label class="stk-filters__label stk-filters__label--compact" for="stk-search">Recherche</label>
+                        <div class="stk-filters__search-row">
+                            <div class="stk-filters__search">
+                                <span class="stk-filters__search-icon"><i class="fas fa-magnifying-glass"></i></span>
+                                <input type="text" id="stk-search" name="search"
+                                    value="<?php echo htmlspecialchars($recherche); ?>"
+                                    placeholder="Nom, description, statut&hellip;">
+                            </div>
+                            <button type="button"
+                                class="stk-filters__toggle<?php echo $stk_filters_active ? ' stk-filters__toggle--active' : ''; ?>"
+                                id="stkFiltersToggle"
+                                aria-expanded="<?php echo $stk_filters_active ? 'true' : 'false'; ?>"
+                                aria-controls="stkFiltersExtra">
+                                <i class="fas fa-sliders"></i><span>Filtres</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Catégorie -->
-                <div class="stk-filters__group">
-                    <label class="stk-filters__label" for="stk-cat">Cat&eacute;gorie</label>
-                    <select id="stk-cat" name="cat_id" class="stk-filters__select">
-                        <option value="0">Toutes les cat&eacute;gories</option>
-                        <?php foreach ($categories as $cat): ?>
-                            <option value="<?php echo (int)$cat['id']; ?>"
-                                <?php echo $cat_filter === (int)$cat['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($cat['nom']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+                <div class="stk-filters__extra<?php echo $stk_filters_active ? ' stk-filters__extra--open' : ''; ?>"
+                    id="stkFiltersExtra">
+                    <div class="stk-filters__extra-head">
+                        <span>Filtres avanc&eacute;s</span>
+                        <button type="button" class="stk-filters__extra-close" id="stkFiltersClose">
+                            <i class="fas fa-xmark"></i> Masquer
+                        </button>
+                    </div>
+                    <div class="stk-filters__extra-grid">
+                        <div class="stk-filters__group">
+                            <label class="stk-filters__label" for="stk-cat">Cat&eacute;gorie</label>
+                            <select id="stk-cat" name="cat_id" class="stk-filters__select">
+                                <option value="0">Toutes les cat&eacute;gories</option>
+                                <?php foreach ($categories as $cat): ?>
+                                    <option value="<?php echo (int)$cat['id']; ?>"
+                                        <?php echo $cat_filter === (int)$cat['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($cat['nom']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
 
-                <!-- Statut -->
-                <div class="stk-filters__group">
-                    <label class="stk-filters__label" for="stk-statut">Statut</label>
-                    <select id="stk-statut" name="statut" class="stk-filters__select">
-                        <option value="">Tous les statuts</option>
-                        <option value="actif"         <?php echo $statut_filter === 'actif'          ? 'selected' : ''; ?>>Actif</option>
-                        <option value="inactif"       <?php echo $statut_filter === 'inactif'        ? 'selected' : ''; ?>>Inactif</option>
-                        <option value="rupture_stock" <?php echo $statut_filter === 'rupture_stock'  ? 'selected' : ''; ?>>Rupture de stock</option>
-                        <option value="bloque" <?php echo $statut_filter === 'bloque' ? 'selected' : ''; ?>>Bloqué (plateforme)</option>
-                    </select>
-                </div>
+                        <div class="stk-filters__group">
+                            <label class="stk-filters__label" for="stk-statut">Statut</label>
+                            <select id="stk-statut" name="statut" class="stk-filters__select">
+                                <option value="">Tous les statuts</option>
+                                <option value="actif"         <?php echo $statut_filter === 'actif'          ? 'selected' : ''; ?>>Actif</option>
+                                <option value="inactif"       <?php echo $statut_filter === 'inactif'        ? 'selected' : ''; ?>>Inactif</option>
+                                <option value="rupture_stock" <?php echo $statut_filter === 'rupture_stock'  ? 'selected' : ''; ?>>Rupture de stock</option>
+                                <option value="bloque" <?php echo $statut_filter === 'bloque' ? 'selected' : ''; ?>>Bloqué (plateforme)</option>
+                            </select>
+                        </div>
 
-                <div class="stk-filters__group" style="flex-direction:row;gap:8px;align-items:flex-end;">
-                    <button type="submit" class="stk-filters__submit">
-                        <i class="fas fa-filter"></i> Filtrer
-                    </button>
-                    <?php if ($recherche !== '' || $cat_filter > 0 || $statut_filter !== ''): ?>
-                        <a href="index.php" class="stk-filters__reset">
-                            <i class="fas fa-xmark"></i> R&eacute;initialiser
-                        </a>
-                    <?php endif; ?>
+                        <div class="stk-filters__group stk-filters__actions">
+                            <button type="submit" class="stk-filters__submit">
+                                <i class="fas fa-filter"></i> Filtrer
+                            </button>
+                            <?php if ($recherche !== '' || $cat_filter > 0 || $statut_filter !== ''): ?>
+                                <a href="index.php" class="stk-filters__reset">
+                                    <i class="fas fa-xmark"></i> R&eacute;initialiser
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -932,9 +1283,9 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                         Ajoutez votre premier produit pour commencer &agrave; g&eacute;rer votre stock.
                     <?php endif; ?>
                 </p>
-                <a href="../produits/ajouter.php" class="stk-btn stk-btn--primary">
+                <button type="button" class="stk-btn stk-btn--primary js-open-add-produit">
                     <i class="fas fa-plus"></i> Ajouter un produit
-                </a>
+                </button>
             </div>
 
         <?php else: ?>
@@ -958,8 +1309,10 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                         ? produit_bloque_champs_labels((string) ($produit['bloque_champs'] ?? ''))
                         : [];
                 ?>
-                    <article class="stk-card<?php echo $is_bloque ? ' stk-card--bloque' : ''; ?>"
-                        onclick="window.location='../produits/modifier.php?id=<?php echo (int)$produit['id']; ?>'">
+                    <article class="stk-card js-open-edit-produit<?php echo $is_bloque ? ' stk-card--bloque' : ''; ?>"
+                        data-produit-id="<?php echo (int)$produit['id']; ?>"
+                        role="button"
+                        tabindex="0">
 
                         <div class="stk-card__img-wrap">
                             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
@@ -989,19 +1342,30 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                             <?php endif; ?>
                             <div class="stk-card__cat"><?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans cat&eacute;gorie'); ?></div>
                             <div class="stk-card__prix-row">
-                                <span class="stk-card__prix"><?php echo number_format((float)($produit['prix'] ?? 0), 0, ',', ' '); ?></span>
-                                <span class="stk-card__unit">FCFA</span>
                                 <?php if (!empty($produit['prix_promotion'])): ?>
-                                    <span class="stk-card__promo">&minus;&nbsp;<?php echo number_format((float)$produit['prix_promotion'], 0, ',', ' '); ?></span>
+                                    <span class="stk-card__prix-groupe stk-card__prix-groupe--ancien">
+                                        <span class="stk-card__prix"><?php echo number_format((float)($produit['prix'] ?? 0), 0, ',', ' '); ?></span>
+                                        <span class="stk-card__unit">FCFA</span>
+                                    </span>
+                                    <span class="stk-card__prix-groupe">
+                                        <span class="stk-card__prix"><?php echo number_format((float)$produit['prix_promotion'], 0, ',', ' '); ?></span>
+                                        <span class="stk-card__unit">FCFA</span>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="stk-card__prix-groupe">
+                                        <span class="stk-card__prix"><?php echo number_format((float)($produit['prix'] ?? 0), 0, ',', ' '); ?></span>
+                                        <span class="stk-card__unit">FCFA</span>
+                                    </span>
                                 <?php endif; ?>
                             </div>
                         </div>
 
                         <div class="stk-card__footer" onclick="event.stopPropagation()">
-                            <a href="../produits/modifier.php?id=<?php echo (int)$produit['id']; ?>"
-                                class="stk-card-btn stk-card-btn--edit">
+                            <button type="button"
+                                class="stk-card-btn stk-card-btn--edit js-open-edit-produit"
+                                data-produit-id="<?php echo (int)$produit['id']; ?>">
                                 <i class="fas fa-pen"></i> Modifier
-                            </a>
+                            </button>
                             <a href="../produits/supprimer.php?id=<?php echo (int)$produit['id']; ?>"
                                 class="stk-card-btn stk-card-btn--delete"
                                 onclick="event.stopPropagation();return confirm('Supprimer ce produit ?');">
@@ -1061,6 +1425,40 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         <?php endif; ?>
 
     </div><!-- /.stk-page -->
+
+    <?php
+    $add_produit_modal = true;
+    $add_produit_form_action = 'index.php';
+    $modal_add_should_show = $add_produit_post_error || $open_add_modal;
+    $modal_edit_should_show = $open_edit_modal_id > 0;
+    ?>
+    <div id="modalAddProduit" class="adm-modal-add-produit" <?php echo $modal_add_should_show ? '' : 'hidden'; ?>
+        aria-hidden="<?php echo $modal_add_should_show ? 'false' : 'true'; ?>">
+        <div class="adm-modal-add-produit-inner">
+            <div class="adm-modal-add-head">
+                <h2><i class="fas fa-plus-circle"></i> Ajouter un produit</h2>
+                <button type="button" class="adm-modal-add-close" id="btnCloseAddProduitModal" title="Fermer" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="adm-modal-add-body">
+                <div class="form-add-container">
+                    <?php require __DIR__ . '/../produits/inc_form_ajouter_produit.php'; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEditProduit" class="adm-modal-add-produit" <?php echo $modal_edit_should_show ? '' : 'hidden'; ?>
+        aria-hidden="<?php echo $modal_edit_should_show ? 'false' : 'true'; ?>">
+        <div class="adm-modal-add-produit-inner">
+            <div class="adm-modal-add-head">
+                <h2><i class="fas fa-edit"></i> Modifier le produit</h2>
+                <button type="button" class="adm-modal-add-close" id="btnCloseEditProduitModal" title="Fermer" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="adm-modal-add-body adm-modal-add-body--iframe">
+                <iframe id="stkEditIframe" title="Modifier le produit" src="<?php echo $modal_edit_should_show ? '../produits/embed_modifier.php?id=' . (int) $open_edit_modal_id : 'about:blank'; ?>"></iframe>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== MODAL NOUVELLE CATÉGORIE ===== -->
     <?php if (!$stock_catalogue_vendeur_seul): ?>
@@ -1124,30 +1522,159 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
     <script>
     (function () {
+        /* ---- Filtres compacts (tablette / mobile) ---- */
+        var filtersExtra = document.getElementById('stkFiltersExtra');
+        var filtersToggle = document.getElementById('stkFiltersToggle');
+        var filtersClose = document.getElementById('stkFiltersClose');
+        var mqCompact = window.matchMedia('(max-width: 1024px)');
+
+        function setFiltersOpen(open) {
+            if (!filtersExtra || !filtersToggle) return;
+            if (open && mqCompact.matches) {
+                filtersExtra.classList.add('stk-filters__extra--open');
+                filtersToggle.setAttribute('aria-expanded', 'true');
+            } else if (!open) {
+                filtersExtra.classList.remove('stk-filters__extra--open');
+                filtersToggle.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        if (filtersToggle) {
+            filtersToggle.addEventListener('click', function () {
+                if (!filtersExtra) return;
+                var willOpen = !filtersExtra.classList.contains('stk-filters__extra--open');
+                setFiltersOpen(willOpen);
+            });
+        }
+        if (filtersClose) {
+            filtersClose.addEventListener('click', function () { setFiltersOpen(false); });
+        }
+
+        /* ---- Modal ajout produit ---- */
+        var modalAdd = document.getElementById('modalAddProduit');
+        var btnCloseAdd = document.getElementById('btnCloseAddProduitModal');
+        var btnCancelAdd = document.getElementById('btn-fap-cancel-modal');
+
+        function openAddModal() {
+            if (!modalAdd) return;
+            modalAdd.removeAttribute('hidden');
+            modalAdd.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAddModal() {
+            if (!modalAdd) return;
+            modalAdd.setAttribute('hidden', '');
+            modalAdd.setAttribute('aria-hidden', 'true');
+            if (!isAnyProduitModalOpen()) document.body.style.overflow = '';
+        }
+
+        document.querySelectorAll('.js-open-add-produit').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openAddModal();
+            });
+        });
+        if (btnCloseAdd) btnCloseAdd.addEventListener('click', closeAddModal);
+        if (btnCancelAdd) btnCancelAdd.addEventListener('click', closeAddModal);
+        if (modalAdd) {
+            modalAdd.addEventListener('click', function (ev) {
+                if (ev.target === modalAdd) closeAddModal();
+            });
+        }
+
+        /* ---- Modal modification produit ---- */
+        var modalEdit = document.getElementById('modalEditProduit');
+        var btnCloseEdit = document.getElementById('btnCloseEditProduitModal');
+        var editIframe = document.getElementById('stkEditIframe');
+
+        function openEditModal(id) {
+            if (!modalEdit || !editIframe || !id) return;
+            editIframe.src = '../produits/embed_modifier.php?id=' + encodeURIComponent(id);
+            modalEdit.removeAttribute('hidden');
+            modalEdit.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditModal() {
+            if (!modalEdit) return;
+            modalEdit.setAttribute('hidden', '');
+            modalEdit.setAttribute('aria-hidden', 'true');
+            if (editIframe) editIframe.src = 'about:blank';
+            if (!isAnyProduitModalOpen()) document.body.style.overflow = '';
+        }
+
+        function isAnyProduitModalOpen() {
+            return (modalAdd && !modalAdd.hasAttribute('hidden')) || (modalEdit && !modalEdit.hasAttribute('hidden'));
+        }
+
+        document.querySelectorAll('.js-open-edit-produit').forEach(function (el) {
+            el.addEventListener('click', function (e) {
+                if (e.target.closest('.stk-card-btn--delete')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                var id = el.getAttribute('data-produit-id');
+                if (!id && el.closest('[data-produit-id]')) {
+                    id = el.closest('[data-produit-id]').getAttribute('data-produit-id');
+                }
+                openEditModal(id);
+            });
+            el.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    el.click();
+                }
+            });
+        });
+
+        if (btnCloseEdit) btnCloseEdit.addEventListener('click', closeEditModal);
+        if (modalEdit) {
+            modalEdit.addEventListener('click', function (ev) {
+                if (ev.target === modalEdit) closeEditModal();
+            });
+        }
+
+        window.addEventListener('message', function (ev) {
+            if (ev.data && ev.data.type === 'stk-close-edit-modal') closeEditModal();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            var vm = document.getElementById('fapVarianteModal');
+            if (vm && !vm.hidden) return;
+            if (modalEdit && !modalEdit.hasAttribute('hidden')) closeEditModal();
+            else if (modalAdd && !modalAdd.hasAttribute('hidden')) closeAddModal();
+        });
+
+        if (modalAdd && !modalAdd.hasAttribute('hidden')) document.body.style.overflow = 'hidden';
+        if (modalEdit && !modalEdit.hasAttribute('hidden')) document.body.style.overflow = 'hidden';
+
+        /* ---- Modal catégorie ---- */
         var modal = document.getElementById('stockCatModal');
         if (!modal) return;
 
-        function openModal() {
+        function openCatModal() {
             modal.classList.add('stock-cat-modal--open');
             modal.removeAttribute('hidden');
             document.body.classList.add('stock-cat-modal-active');
         }
 
-        function closeModal() {
+        function closeCatModal() {
             modal.classList.remove('stock-cat-modal--open');
             modal.setAttribute('hidden', 'hidden');
             document.body.classList.remove('stock-cat-modal-active');
         }
 
         document.querySelectorAll('.js-open-stock-cat-modal').forEach(function(btn) {
-            btn.addEventListener('click', openModal);
+            btn.addEventListener('click', openCatModal);
         });
         document.querySelectorAll('.js-close-stock-cat-modal').forEach(function(btn) {
-            btn.addEventListener('click', closeModal);
+            btn.addEventListener('click', closeCatModal);
         });
-        modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+        modal.addEventListener('click', function(e) { if (e.target === modal) closeCatModal(); });
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modal.classList.contains('stock-cat-modal--open')) closeModal();
+            if (e.key === 'Escape' && modal.classList.contains('stock-cat-modal--open')) closeCatModal();
         });
     })();
     </script>

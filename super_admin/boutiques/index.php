@@ -5,6 +5,7 @@
 require_once __DIR__ . '/../includes/require_login.php';
 require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
 require_once dirname(__DIR__, 2) . '/models/model_vendeur_certification.php';
+require_once dirname(__DIR__, 2) . '/includes/marketplace_countries.php';
 
 $msg_ok = $_SESSION['super_admin_flash_ok'] ?? '';
 $msg_err = $_SESSION['super_admin_flash_err'] ?? '';
@@ -15,16 +16,28 @@ unset($_SESSION['super_admin_flash_ok'], $_SESSION['super_admin_flash_err']);
  */
 function sb_boutiques_query_params(array $overrides = []) {
     static $base = null;
+    $countries_nav = marketplace_countries_nav_list();
+    $default_pays = $countries_nav ? (string) array_key_first($countries_nav) : 'SN';
+
     if ($base === null) {
+        $pays_in = isset($_GET['pays']) ? strtoupper(trim((string) $_GET['pays'])) : $default_pays;
+        $statut_in = isset($_GET['statut']) ? trim((string) $_GET['statut']) : 'actif';
         $base = [
             'q' => isset($_GET['q']) ? trim((string) $_GET['q']) : '',
-            'statut' => isset($_GET['statut']) ? trim((string) $_GET['statut']) : '',
+            'pays' => marketplace_country_is_valid($pays_in) ? $pays_in : $default_pays,
+            'statut' => ($statut_in === 'actif' || $statut_in === 'inactif') ? $statut_in : 'actif',
             'cert' => isset($_GET['cert']) ? trim((string) $_GET['cert']) : 'non_certifie',
             'per' => isset($_GET['per']) ? (int) $_GET['per'] : 15,
             'p' => isset($_GET['p']) ? (int) $_GET['p'] : 1,
         ];
     }
     $m = array_merge($base, $overrides);
+    if (!marketplace_country_is_valid($m['pays'])) {
+        $m['pays'] = $default_pays;
+    }
+    if ($m['statut'] !== 'actif' && $m['statut'] !== 'inactif') {
+        $m['statut'] = 'actif';
+    }
     if ($m['per'] < 5) {
         $m['per'] = 5;
     }
@@ -38,6 +51,7 @@ function sb_boutiques_query_params(array $overrides = []) {
     if ($m['q'] !== '') {
         $q['q'] = $m['q'];
     }
+    $q['pays'] = $m['pays'];
     if ($m['statut'] === 'actif' || $m['statut'] === 'inactif') {
         $q['statut'] = $m['statut'];
     }
@@ -84,9 +98,16 @@ function sb_boutiques_pagination_model($current, $total_pages) {
 }
 
 $search = isset($_GET['q']) ? trim((string) $_GET['q']) : '';
-$statut_filtre = isset($_GET['statut']) ? trim((string) $_GET['statut']) : '';
+$countries_nav = marketplace_countries_nav_list();
+$default_pays = $countries_nav ? (string) array_key_first($countries_nav) : 'SN';
+$pays_tab = isset($_GET['pays']) ? strtoupper(trim((string) $_GET['pays'])) : $default_pays;
+if (!marketplace_country_is_valid($pays_tab)) {
+    $pays_tab = $default_pays;
+}
+
+$statut_filtre = isset($_GET['statut']) ? trim((string) $_GET['statut']) : 'actif';
 if ($statut_filtre !== 'actif' && $statut_filtre !== 'inactif') {
-    $statut_filtre = '';
+    $statut_filtre = 'actif';
 }
 
 $cert_tab = isset($_GET['cert']) ? trim((string) $_GET['cert']) : 'non_certifie';
@@ -111,19 +132,27 @@ if ($page < 1) {
     $page = 1;
 }
 
-$total = count_boutiques_platform_filtered($search, $statut_filtre, $cert_tab);
+$total = count_boutiques_platform_filtered($search, $statut_filtre, $cert_tab, $pays_tab);
 $total_pages = max(1, (int) ceil($total / $per_page));
 if ($page > $total_pages) {
     $page = $total_pages;
 }
 
-$boutiques = get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_page, $cert_tab);
+$boutiques = get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_page, $cert_tab, $pays_tab);
 $csrf = super_admin_csrf_token();
 
 $total_plateforme = count_boutiques_platform_filtered('', '');
 $total_actives = count_boutiques_platform_filtered('', 'actif');
 $total_certifiees = $cert_col_ok ? count_boutiques_platform_filtered('', '', 'certifie') : 0;
 $total_non_certifiees = $cert_col_ok ? count_boutiques_platform_filtered('', '', 'non_certifie') : $total_plateforme;
+
+$pays_counts = [];
+$statut_counts_pays = ['actif' => 0, 'inactif' => 0];
+foreach ($countries_nav as $code => $meta) {
+    $pays_counts[$code] = count_boutiques_platform_filtered('', '', $cert_tab, $code);
+}
+$statut_counts_pays['actif'] = count_boutiques_platform_filtered('', 'actif', $cert_tab, $pays_tab);
+$statut_counts_pays['inactif'] = count_boutiques_platform_filtered('', 'inactif', $cert_tab, $pays_tab);
 
 $from_row = $total > 0 ? ($page - 1) * $per_page + 1 : 0;
 $to_row = min($page * $per_page, $total);
@@ -166,7 +195,7 @@ function sb_boutiques_page_url($pageNum) {
                     <p class="sa-users-hero__eyebrow"><i class="fas fa-store" aria-hidden="true"></i> Marketplace — vendeurs</p>
                     <h1 class="sa-users-hero__title" id="sa-btq-title">Boutiques inscrites</h1>
                     <p class="sa-users-hero__lead">
-                        Recherchez par nom commercial, slug, contact : filtrez par statut d’accès, parcourez les pages et gérez l’activation des comptes vendeurs (connexion boutique / vitrine).
+                        Parcourez les boutiques par pays, filtrez les comptes actifs ou désactivés, recherchez par nom commercial ou contact et gérez l’activation des vendeurs.
                     </p>
                 </div>
                 <div class="sa-users-kpis" role="group" aria-label="Indicateurs boutiques">
@@ -199,6 +228,31 @@ function sb_boutiques_page_url($pageNum) {
             </div>
         <?php endif; ?>
 
+        <nav class="sa-btq-tabs sa-btq-tabs--countries" aria-label="Filtrer par pays">
+            <?php foreach ($countries_nav as $code => $meta): ?>
+                <a href="<?php echo htmlspecialchars('index.php?' . http_build_query(sb_boutiques_query_params(['pays' => $code, 'p' => 1])), ENT_QUOTES, 'UTF-8'); ?>"
+                    class="sa-btq-tab<?php echo $pays_tab === $code ? ' is-active' : ''; ?>">
+                    <img src="<?php echo htmlspecialchars(marketplace_country_flag_url($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
+                        alt="" width="22" height="16" class="sa-btq-tab__flag" loading="lazy">
+                    <?php echo htmlspecialchars((string) $meta['label'], ENT_QUOTES, 'UTF-8'); ?>
+                    <span class="sa-btq-tab__count"><?php echo (int) ($pays_counts[$code] ?? 0); ?></span>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+
+        <nav class="sa-btq-subtabs" aria-label="Filtrer par statut d'accès">
+            <a href="<?php echo htmlspecialchars('index.php?' . http_build_query(sb_boutiques_query_params(['statut' => 'actif', 'p' => 1])), ENT_QUOTES, 'UTF-8'); ?>"
+                class="sa-btq-subtab<?php echo $statut_filtre === 'actif' ? ' is-active' : ''; ?>">
+                <i class="fas fa-circle-check" aria-hidden="true"></i> Boutiques actives
+                <span class="sa-btq-subtab__count"><?php echo (int) $statut_counts_pays['actif']; ?></span>
+            </a>
+            <a href="<?php echo htmlspecialchars('index.php?' . http_build_query(sb_boutiques_query_params(['statut' => 'inactif', 'p' => 1])), ENT_QUOTES, 'UTF-8'); ?>"
+                class="sa-btq-subtab<?php echo $statut_filtre === 'inactif' ? ' is-active' : ''; ?>">
+                <i class="fas fa-ban" aria-hidden="true"></i> Boutiques désactivées
+                <span class="sa-btq-subtab__count"><?php echo (int) $statut_counts_pays['inactif']; ?></span>
+            </a>
+        </nav>
+
         <?php if ($cert_col_ok): ?>
             <nav class="sa-btq-tabs" aria-label="Filtrer par certification">
                 <a href="<?php echo htmlspecialchars('index.php?' . http_build_query(sb_boutiques_query_params(['cert' => 'non_certifie', 'p' => 1])), ENT_QUOTES, 'UTF-8'); ?>"
@@ -215,6 +269,8 @@ function sb_boutiques_page_url($pageNum) {
         <?php endif; ?>
 
         <form class="sa-users-toolbar" method="get" action="index.php" role="search" aria-label="Filtrer les boutiques">
+            <input type="hidden" name="pays" value="<?php echo htmlspecialchars($pays_tab, ENT_QUOTES, 'UTF-8'); ?>">
+            <input type="hidden" name="statut" value="<?php echo htmlspecialchars($statut_filtre, ENT_QUOTES, 'UTF-8'); ?>">
             <?php if ($cert_col_ok && $cert_tab !== ''): ?>
                 <input type="hidden" name="cert" value="<?php echo htmlspecialchars($cert_tab, ENT_QUOTES, 'UTF-8'); ?>">
             <?php endif; ?>
@@ -229,14 +285,6 @@ function sb_boutiques_page_url($pageNum) {
             </div>
             <div class="sa-users-filters">
                 <div class="sa-field">
-                    <label for="sb-statut">Accès boutique</label>
-                    <select id="sb-statut" name="statut" onchange="this.form.submit()">
-                        <option value="" <?php echo $statut_filtre === '' ? 'selected' : ''; ?>>Tous</option>
-                        <option value="actif" <?php echo $statut_filtre === 'actif' ? 'selected' : ''; ?>>Actif</option>
-                        <option value="inactif" <?php echo $statut_filtre === 'inactif' ? 'selected' : ''; ?>>Désactivé</option>
-                    </select>
-                </div>
-                <div class="sa-field">
                     <label for="sb-per">Par page</label>
                     <select id="sb-per" name="per" onchange="this.form.submit()">
                         <?php foreach ([10, 15, 25, 50] as $n): ?>
@@ -244,13 +292,17 @@ function sb_boutiques_page_url($pageNum) {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <a class="sa-users-filters__reset" href="index.php<?php echo ($cert_col_ok && $cert_tab !== '') ? '?' . http_build_query(['cert' => $cert_tab]) : ''; ?>"><i class="fas fa-rotate-left" aria-hidden="true"></i> Réinitialiser</a>
+                <a class="sa-users-filters__reset" href="index.php?<?php echo htmlspecialchars(http_build_query(['pays' => $pays_tab, 'statut' => $statut_filtre] + ($cert_col_ok && $cert_tab !== '' ? ['cert' => $cert_tab] : [])), ENT_QUOTES, 'UTF-8'); ?>"><i class="fas fa-rotate-left" aria-hidden="true"></i> Réinitialiser</a>
             </div>
         </form>
 
         <section class="sa-users-panel" aria-labelledby="sa-btq-panel-title">
             <div class="sa-users-panel__head">
-                <h2 id="sa-btq-panel-title"><i class="fas fa-store" aria-hidden="true"></i> Liste des boutiques</h2>
+                <h2 id="sa-btq-panel-title">
+                    <i class="fas fa-store" aria-hidden="true"></i>
+                    <?php echo htmlspecialchars(marketplace_country_label($pays_tab), ENT_QUOTES, 'UTF-8'); ?>
+                    — <?php echo $statut_filtre === 'actif' ? 'Boutiques actives' : 'Boutiques désactivées'; ?>
+                </h2>
                 <p class="sa-users-panel__meta">
                     <?php if ($total > 0): ?>
                         Affichage <strong><?php echo (int) $from_row; ?></strong> – <strong><?php echo (int) $to_row; ?></strong>
@@ -333,6 +385,7 @@ function sb_boutiques_page_url($pageNum) {
                                                     <input type="hidden" name="vendeur_id" value="<?php echo (int) $b['id']; ?>">
                                                     <input type="hidden" name="nouveau_statut" value="inactif">
                                                     <input type="hidden" name="return_q" value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <input type="hidden" name="return_pays" value="<?php echo htmlspecialchars($pays_tab, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_statut" value="<?php echo htmlspecialchars($statut_filtre, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_cert" value="<?php echo htmlspecialchars($cert_tab, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_per" value="<?php echo (int) $per_page; ?>">
@@ -345,6 +398,7 @@ function sb_boutiques_page_url($pageNum) {
                                                     <input type="hidden" name="vendeur_id" value="<?php echo (int) $b['id']; ?>">
                                                     <input type="hidden" name="nouveau_statut" value="actif">
                                                     <input type="hidden" name="return_q" value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <input type="hidden" name="return_pays" value="<?php echo htmlspecialchars($pays_tab, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_statut" value="<?php echo htmlspecialchars($statut_filtre, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_cert" value="<?php echo htmlspecialchars($cert_tab, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="return_per" value="<?php echo (int) $per_page; ?>">

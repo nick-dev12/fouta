@@ -242,12 +242,14 @@ function super_admin_list_boutiques_with_stats() {
  * @param string $search Nom, slug, e-mail, téléphone, etc.
  * @param string $statut_filtre '' | 'actif' | 'inactif'
  * @param string $cert_filtre '' | 'certifie' | 'non_certifie'
+ * @param string $country_filtre Code ISO pays (ex. SN) ou ''
  * @return array{sql:string,params:array}
  */
-function _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre = '') {
+function _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre = '', $country_filtre = '') {
     $search = trim((string) $search);
     $statut_filtre = (string) $statut_filtre;
     $cert_filtre = (string) $cert_filtre;
+    $country_filtre = strtoupper(trim((string) $country_filtre));
     $parts = ["a.role = 'vendeur'"];
     $params = [];
 
@@ -279,6 +281,23 @@ function _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre
         }
     }
 
+    if ($country_filtre !== '') {
+        if (!function_exists('marketplace_country_is_valid')) {
+            require_once dirname(__DIR__) . '/includes/marketplace_countries.php';
+        }
+        if (marketplace_country_is_valid($country_filtre)) {
+            if (!function_exists('admin_has_boutique_country_column')) {
+                require_once __DIR__ . '/model_admin.php';
+            }
+            if (admin_has_boutique_country_column()) {
+                $parts[] = 'a.boutique_country = :bcountry';
+                $params['bcountry'] = $country_filtre;
+            } elseif ($country_filtre !== 'SN') {
+                $parts[] = '1 = 0';
+            }
+        }
+    }
+
     return [
         'sql' => implode(' AND ', $parts),
         'params' => $params,
@@ -288,10 +307,10 @@ function _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre
 /**
  * Nombre de boutiques (vendeurs) correspondant aux filtres.
  */
-function count_boutiques_platform_filtered($search, $statut_filtre, $cert_filtre = '') {
+function count_boutiques_platform_filtered($search, $statut_filtre, $cert_filtre = '', $country_filtre = '') {
     global $db;
 
-    $f = _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre);
+    $f = _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre, $country_filtre);
     try {
         $stmt = $db->prepare('SELECT COUNT(*) FROM admin a WHERE ' . $f['sql']);
         $stmt->execute($f['params']);
@@ -306,14 +325,14 @@ function count_boutiques_platform_filtered($search, $statut_filtre, $cert_filtre
  *
  * @return array
  */
-function get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_page, $cert_filtre = '') {
+function get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_page, $cert_filtre = '', $country_filtre = '') {
     global $db;
 
     $page = max(1, (int) $page);
     $per_page = max(5, min(100, (int) $per_page));
     $offset = ($page - 1) * $per_page;
 
-    $f = _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre);
+    $f = _super_admin_boutiques_filter_sql($search, $statut_filtre, $cert_filtre, $country_filtre);
     $whereSql = $f['sql'];
 
     $cert_select = '';
@@ -322,6 +341,14 @@ function get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_p
         if (vendeur_certification_admin_column_exists()) {
             $cert_select = ', a.certification_niveau, a.certification_date';
         }
+    }
+
+    $country_select = '';
+    if (!function_exists('admin_has_boutique_country_column')) {
+        require_once __DIR__ . '/model_admin.php';
+    }
+    if (admin_has_boutique_country_column()) {
+        $country_select = ', a.boutique_country';
     }
 
     try {
@@ -337,7 +364,8 @@ function get_boutiques_platform_paginated($search, $statut_filtre, $page, $per_p
                 a.statut,
                 a.date_creation,
                 a.role
-                $cert_select,
+                $cert_select
+                $country_select,
                 COALESCE(COUNT(p.id), 0) AS nb_produits_total,
                 COALESCE(SUM(CASE WHEN p.statut IN ('actif', 'rupture_stock') THEN 1 ELSE 0 END), 0) AS nb_produits_catalogue,
                 COALESCE(SUM(CASE WHEN p.statut = 'actif' THEN 1 ELSE 0 END), 0) AS nb_produits_actifs
