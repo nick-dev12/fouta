@@ -1962,10 +1962,20 @@ function produit_images_list_from_row(array $produit): array
     $out = [];
     $seen = [];
     if (!empty($produit['images'])) {
-        $decoded = json_decode((string) $produit['images'], true);
+        $raw = trim((string) $produit['images']);
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) && $raw !== '' && strpos($raw, ',') !== false) {
+            $decoded = array_map('trim', explode(',', $raw));
+        }
         if (is_array($decoded)) {
             foreach ($decoded as $img) {
+                if (is_array($img)) {
+                    $img = (string) ($img['path'] ?? $img['url'] ?? $img['src'] ?? '');
+                }
                 $path = trim(str_replace('\\', '/', (string) $img), '/');
+                if (str_starts_with($path, 'upload/')) {
+                    $path = substr($path, 7);
+                }
                 if ($path !== '' && !isset($seen[$path])) {
                     $seen[$path] = true;
                     $out[] = $path;
@@ -2002,7 +2012,7 @@ function super_admin_get_produits_boutique(int $admin_id): array
         : '';
     try {
         $stmt = $db->prepare("
-            SELECT p.id, p.nom, p.image_principale, p.images, p.statut, p.prix, p.stock, p.date_modification
+            SELECT p.id, p.nom, p.image_principale, p.images, p.statut, p.prix, p.prix_promotion, p.stock, p.date_modification
             $extra
             FROM produits p
             WHERE p.admin_id = :aid

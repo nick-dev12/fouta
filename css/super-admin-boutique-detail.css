@@ -284,106 +284,46 @@
   color: var(--gris-moyen, #737373);
 }
 
-.sa-bd-produits-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+/* Grille mp-card (comme produits.php) */
+.sa-bd-mp-grid {
+  margin: 0;
 }
 
-.sa-bd-produit {
-  border: 1px solid rgba(53, 100, 166, 0.12);
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-}
-
-.sa-bd-produit--bloque {
-  border-color: rgba(255, 107, 53, 0.35);
-  background: rgba(255, 107, 53, 0.04);
-}
-
-.sa-bd-produit__img-wrap {
+.sa-boutique-detail .mp-card--sa {
   position: relative;
-  aspect-ratio: 1;
-  background: var(--fond-secondaire, #fafafa);
 }
 
-.sa-bd-produit__img-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.sa-boutique-detail .mp-card--sa-bloque {
+  border-color: rgba(255, 107, 53, 0.4);
+  box-shadow: 0 0 0 1px rgba(255, 107, 53, 0.12);
 }
 
-.sa-bd-produit__gallery {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 10px 0;
-}
-
-.sa-bd-produit__gallery a {
-  display: block;
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid rgba(53, 100, 166, 0.18);
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-
-.sa-bd-produit__gallery a:hover {
-  border-color: var(--bleu-principal, #3564a6);
-  transform: scale(1.04);
-}
-
-.sa-bd-produit__gallery img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.sa-bd-produit__statut {
+.sa-mp-card-statut {
   position: absolute;
   top: 8px;
   right: 8px;
-  padding: 4px 10px;
+  z-index: 3;
+  padding: 4px 9px;
   border-radius: 8px;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
+  pointer-events: none;
 }
 
-.sa-bd-produit__statut--bloque {
-  background: var(--orange, #ff6b35);
-}
+.sa-mp-card-statut--bloque { background: var(--orange, #ff6b35); }
+.sa-mp-card-statut--actif { background: rgba(34, 197, 94, 0.9); }
+.sa-mp-card-statut--rupture_stock { background: rgba(220, 38, 38, 0.85); }
 
-.sa-bd-produit__nom {
-  margin: 10px 12px 4px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.sa-bd-produit__prix {
-  margin: 0 12px 8px;
-  font-size: 0.8rem;
-  color: var(--gris-moyen, #737373);
-}
-
-.sa-bd-produit__motif,
-.sa-bd-produit__champs {
-  margin: 0 12px 8px;
-  font-size: 0.72rem;
-  line-height: 1.35;
-  color: #b45309;
-}
-
-.sa-bd-produit__actions {
-  margin-top: auto;
-  padding: 10px 12px 12px;
+.mp-card-btn--sa-detail {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
 .sa-bd-produit-btn {
@@ -450,3 +390,158 @@
 .sa-bd-produits-empty {
   padding: 2rem;
 }
+
+/* ---- Page détail produit (produit.php) ---- */
+.sa-prod-back {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+.sa-prod-back:hover { text-decoration: underline; }
+
+.sa-prod-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.sa-prod-ref {
+  font-size: 0.82rem;
+  color: var(--gris-moyen, #737373);
+}
+
+.sa-prod-hero-price {
+  text-align: right;
+}
+.sa-prod-price {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--couleur-dominante, #3564a6);
+}
+.sa-prod-price small { font-size: 0.75em; font-weight: 600; }
+.sa-prod-price-old {
+  display: block;
+  font-size: 0.9rem;
+  text-decoration: line-through;
+  color: var(--gris-moyen, #737373);
+}
+
+.sa-prod-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 20px;
+  margin-top: 1.25rem;
+}
+@media (max-width: 960px) {
+  .sa-prod-layout { grid-template-columns: 1fr; }
+}
+
+.sa-prod-gallery-card,
+.sa-prod-info-card {
+  padding: 1.25rem;
+  background: var(--fond-principal);
+  border: 1px solid rgba(53, 100, 166, 0.12);
+  border-radius: var(--sa-radius-xl, 24px);
+  box-shadow: 0 4px 28px rgba(53, 100, 166, 0.06);
+}
+.sa-prod-gallery-card h2,
+.sa-prod-info-card h2 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.sa-prod-gallery-main {
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--fond-secondaire, #fafafa);
+  aspect-ratio: 1;
+}
+.sa-prod-gallery-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sa-prod-gallery-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.sa-prod-thumb {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid rgba(53, 100, 166, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #fff;
+}
+.sa-prod-thumb.is-active { border-color: var(--couleur-dominante, #3564a6); }
+.sa-prod-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.sa-prod-gallery-all {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(53, 100, 166, 0.1);
+}
+.sa-prod-gallery-all-item {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(53, 100, 166, 0.14);
+}
+.sa-prod-gallery-all-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sa-prod-no-img {
+  text-align: center;
+  color: var(--gris-moyen, #737373);
+  padding: 2rem;
+}
+
+.sa-prod-dl {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.sa-prod-dl > div {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  font-size: 0.88rem;
+}
+.sa-prod-dl dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--gris-moyen, #737373);
+}
+.sa-prod-dl dd { margin: 0; }
+
+.sa-prod-desc-title,
+.sa-prod-mod-title {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.sa-prod-desc {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--gris-fonce, #4a4a4a);
+}
+
+.sa-prod-mod-actions { margin-top: 8px; }
+.sa-bd-bloque-form--wide .sa-bd-bloque-form__inner { margin-top: 12px; }
+.sa-prod-mod-form { margin: 0; }
+

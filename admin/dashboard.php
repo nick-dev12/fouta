@@ -1563,7 +1563,7 @@ if (count($dash_promo_images) < 4) {
                 <?php endif; ?>
                 <?php if (vendeur_share_boutique_is_available()): ?>
                     <button type="button" class="dash-v2-hero__pill dash-v2-hero__pill--share"
-                        id="dashHeroShareBoutique" aria-haspopup="dialog" aria-controls="dashVendeurShareModal">
+                        id="dashHeroShareBoutique" aria-haspopup="dialog" aria-controls="platformShareModal">
                         <i class="fas fa-share-alt"></i>
                         <span>Partager ma boutique</span>
                     </button>
@@ -1950,9 +1950,11 @@ if (count($dash_promo_images) < 4) {
     </script>
     <?php
     if (vendeur_share_boutique_is_available()) {
-        vendeur_share_boutique_render_modal('dashVendeurShareModal');
+        include dirname(__DIR__) . '/includes/partials/platform_share_modal.php';
+        ?>
+        <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>" defer></script>
+        <?php
         vendeur_share_boutique_render_script([
-            'modal_id' => 'dashVendeurShareModal',
             'open_button_ids' => ['dashHeroShareBoutique'],
         ]);
     }

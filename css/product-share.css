@@ -47,63 +47,6 @@
     color: #fff;
 }
 
-.pshare__menu {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    min-width: 168px;
-    padding: 6px;
-    background: #fff;
-    border: 1px solid rgba(53, 100, 166, 0.14);
-    border-radius: 12px;
-    box-shadow: 0 10px 28px rgba(13, 13, 13, 0.14);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.pshare__menu[hidden] {
-    display: none !important;
-}
-
-.pshare__item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 9px 11px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--titres, #0d0d0d);
-    font-size: 13px;
-    font-weight: 600;
-    font-family: inherit;
-    text-decoration: none;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s;
-}
-
-.pshare__item i {
-    width: 16px;
-    text-align: center;
-    font-size: 15px;
-}
-
-.pshare__item:hover,
-.pshare__item:focus-visible {
-    background: rgba(53, 100, 166, 0.08);
-    outline: none;
-}
-
-.pshare__item--wa i { color: #25d366; }
-.pshare__item--wa:hover { background: rgba(37, 211, 102, 0.1); }
-
-.pshare__item--copy.is-copied {
-    color: var(--couleur-dominante, #3564a6);
-}
-
 /* Badges sur l'image */
 .mp-new-card-img,
 .mp-top-card-img-wrap,
@@ -146,6 +89,4 @@
         height: 28px;
         font-size: 12px;
     }
-    .pshare__menu { min-width: 152px; }
-    .pshare__item { font-size: 12px; padding: 8px 9px; }
 }

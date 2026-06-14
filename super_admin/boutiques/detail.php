@@ -7,6 +7,7 @@ require_once dirname(__DIR__, 2) . '/models/model_super_admin.php';
 require_once dirname(__DIR__, 2) . '/models/model_produits.php';
 require_once dirname(__DIR__, 2) . '/models/model_vendeur_certification.php';
 require_once dirname(__DIR__, 2) . '/includes/image_optimizer.php';
+require_once dirname(__DIR__, 2) . '/includes/marketplace_helpers.php';
 
 $msg_ok = $_SESSION['super_admin_flash_ok'] ?? '';
 $msg_err = $_SESSION['super_admin_flash_err'] ?? '';
@@ -54,6 +55,9 @@ $csrf = super_admin_csrf_token();
     <link rel="stylesheet" href="/css/vendor-cert-ribbon.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/super-admin-clients.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/super-admin-boutique-detail.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body class="page-users admin-clients-page sa-users-page sa-boutique-detail">
@@ -197,86 +201,12 @@ $csrf = super_admin_csrf_token();
                     <p>Aucun produit publié pour cette boutique.</p>
                 </div>
             <?php else: ?>
-                <div class="sa-bd-produits-grid">
+                <div class="mp-grid sa-bd-mp-grid">
                     <?php foreach ($produits_boutique as $pr):
-                        $pid = (int) ($pr['id'] ?? 0);
-                        $pst = (string) ($pr['statut'] ?? '');
-                        $is_bloque = ($pst === 'bloque');
-                        $img = trim((string) ($pr['image_principale'] ?? ''));
-                        $gallery = produit_images_list_from_row($pr);
-                        if (empty($gallery) && $img !== '') {
-                            $gallery = [$img];
-                        }
-                        ?>
-                        <article class="sa-bd-produit<?php echo $is_bloque ? ' sa-bd-produit--bloque' : ''; ?>">
-                            <div class="sa-bd-produit__img-wrap">
-                                <img src="<?php echo htmlspecialchars(upload_image_url($gallery[0] ?? $img, 'md'), ENT_QUOTES, 'UTF-8'); ?>"
-                                    alt="<?php echo htmlspecialchars((string) ($pr['nom'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                    onerror="this.src='/image/produit1.jpg'">
-                                <span class="sa-bd-produit__statut sa-bd-produit__statut--<?php echo htmlspecialchars($pst, ENT_QUOTES, 'UTF-8'); ?>">
-                                    <?php echo htmlspecialchars(produit_statut_label($pst), ENT_QUOTES, 'UTF-8'); ?>
-                                </span>
-                            </div>
-                            <?php if (count($gallery) > 1): ?>
-                            <div class="sa-bd-produit__gallery" aria-label="Toutes les images du produit">
-                                <?php foreach ($gallery as $gidx => $gpath): ?>
-                                <a href="<?php echo htmlspecialchars(upload_image_url($gpath, 'original'), ENT_QUOTES, 'UTF-8'); ?>"
-                                    target="_blank" rel="noopener noreferrer"
-                                    title="Image <?php echo (int) $gidx + 1; ?> sur <?php echo count($gallery); ?>">
-                                    <img src="<?php echo htmlspecialchars(upload_image_url($gpath, 'sm'), ENT_QUOTES, 'UTF-8'); ?>"
-                                        alt=""
-                                        loading="lazy"
-                                        onerror="this.src='/image/produit1.jpg'">
-                                </a>
-                                <?php endforeach; ?>
-                            </div>
-                            <?php endif; ?>
-                            <h3 class="sa-bd-produit__nom"><?php echo htmlspecialchars((string) ($pr['nom'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></h3>
-                            <p class="sa-bd-produit__prix"><?php echo number_format((float) ($pr['prix'] ?? 0), 0, ',', ' '); ?> FCFA</p>
-
-                            <?php if ($is_bloque && !empty($pr['bloque_motif'])): ?>
-                                <p class="sa-bd-produit__motif"><strong>Motif :</strong> <?php echo htmlspecialchars((string) $pr['bloque_motif'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                <?php
-                                $lbls = produit_bloque_champs_labels((string) ($pr['bloque_champs'] ?? ''));
-                                if (!empty($lbls)):
-                                    ?>
-                                    <p class="sa-bd-produit__champs"><i class="fas fa-pen"></i> À corriger : <?php echo htmlspecialchars(implode(', ', $lbls), ENT_QUOTES, 'UTF-8'); ?></p>
-                                <?php endif; ?>
-                            <?php endif; ?>
-
-                            <?php if ($moderation_ok): ?>
-                                <div class="sa-bd-produit__actions">
-                                    <?php if ($is_bloque): ?>
-                                        <form method="post" action="toggle-produit-bloque.php" style="margin:0;">
-                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <input type="hidden" name="produit_id" value="<?php echo $pid; ?>">
-                                            <input type="hidden" name="vendeur_id" value="<?php echo $id; ?>">
-                                            <input type="hidden" name="action" value="debloquer">
-                                            <button type="submit" class="sa-bd-produit-btn sa-bd-produit-btn--ok">Débloquer</button>
-                                        </form>
-                                    <?php else: ?>
-                                        <details class="sa-bd-bloque-form">
-                                            <summary class="sa-bd-produit-btn sa-bd-produit-btn--no"><i class="fas fa-ban"></i> Bloquer</summary>
-                                            <form method="post" action="toggle-produit-bloque.php" class="sa-bd-bloque-form__inner">
-                                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
-                                                <input type="hidden" name="produit_id" value="<?php echo $pid; ?>">
-                                                <input type="hidden" name="vendeur_id" value="<?php echo $id; ?>">
-                                                <input type="hidden" name="action" value="bloquer">
-                                                <label>Motif <span class="req">*</span></label>
-                                                <textarea name="motif" required maxlength="500" placeholder="Raison du blocage visible par le vendeur…"></textarea>
-                                                <fieldset>
-                                                    <legend>Le vendeur devra modifier :</legend>
-                                                    <label><input type="checkbox" name="champ_nom" value="1"> Nom du produit</label>
-                                                    <label><input type="checkbox" name="champ_image" value="1" checked> Image(s) du produit</label>
-                                                </fieldset>
-                                                <button type="submit" class="sa-bd-produit-btn sa-bd-produit-btn--no">Confirmer le blocage</button>
-                                            </form>
-                                        </details>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endif; ?>
-                        </article>
-                    <?php endforeach; ?>
+                        $produit = $pr;
+                        $vendeur_id = $id;
+                        require dirname(__DIR__, 2) . '/includes/partials/super_admin_mp_product_card.php';
+                    endforeach; ?>
                 </div>
             <?php endif; ?>
         </section>

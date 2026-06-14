@@ -159,7 +159,9 @@ $__footer_load_share = $__footer_script !== ''
     );
 if ($__footer_load_share):
 ?>
-<script src="/js/product-share.js<?php echo asset_version_query(); ?>" defer></script>
+<link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
+<?php include __DIR__ . '/includes/partials/platform_share_modal.php'; ?>
+<script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>" defer></script>
 <?php endif; ?>
 <?php require_once __DIR__ . '/includes/perf_lazy_assets.php'; ?>
 <?php require_once __DIR__ . '/includes/flash_toast.php'; flash_toast_render(); ?>

@@ -68,5 +68,10 @@ if ($action === 'debloquer') {
     $_SESSION['super_admin_flash_err'] = 'Action non reconnue.';
 }
 
-header('Location: detail.php?id=' . $vendeur_id);
+$return_to = isset($_POST['return_to']) ? trim((string) $_POST['return_to']) : 'detail';
+if ($return_to === 'produit') {
+    header('Location: produit.php?id=' . $produit_id . '&vendeur_id=' . $vendeur_id);
+} else {
+    header('Location: detail.php?id=' . $vendeur_id);
+}
 exit;

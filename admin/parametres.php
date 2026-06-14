@@ -538,7 +538,7 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
                                 <button type="button" class="prm-boutique__action-btn prm-boutique__action-btn--share"
                                     id="vendeurShareBoutiqueUrl"
                                     aria-haspopup="dialog"
-                                    aria-controls="vendeurShareModal">
+                                    aria-controls="platformShareModal">
                                     <i class="fas fa-share-alt"></i> Partager
                                 </button>
                             </div>
@@ -681,7 +681,8 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
 
     <?php require_once __DIR__ . '/includes/vendeur_share_boutique.php'; ?>
     <?php if (vendeur_share_boutique_is_available()): ?>
-        <?php vendeur_share_boutique_render_modal('vendeurShareModal'); ?>
+        <?php include dirname(__DIR__) . '/includes/partials/platform_share_modal.php'; ?>
+        <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>" defer></script>
     <?php endif; ?>
 
     <?php include 'includes/footer.php'; ?>
@@ -689,10 +690,8 @@ $rl = $role_labels[$__param_role] ?? ['label' => ucfirst($__param_role), 'icon' 
     <?php if (vendeur_share_boutique_is_available()): ?>
     <?php
     vendeur_share_boutique_render_script([
-        'modal_id' => 'vendeurShareModal',
         'open_button_ids' => ['vendeurShareBoutiqueUrl'],
         'external_copy_button_id' => 'vendeurCopyBoutiqueUrl',
-        'url_input_id' => 'vendeurBoutiquePublicUrl',
         'feedback_id' => 'vendeurCopyBoutiqueFeedback',
     ]);
     ?>
