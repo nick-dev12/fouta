@@ -4,22 +4,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once __DIR__ . '/includes/auth_redirect.php';
-
-/* Ancien lien — accueil sans paramètre */
-if (isset($_GET['visite_marketplace']) && (string) $_GET['visite_marketplace'] === '1') {
-    if (auth_session_is_vendeur()) {
-        auth_grant_vendeur_marketplace_visit();
-    }
-    if (!headers_sent()) {
-        header('Location: /index.php', true, 302);
-        exit;
-    }
-}
-
-auth_handle_vendeur_marketplace_visit_post();
-auth_redirect_vendeur_to_dashboard();
-
 require_once __DIR__ . '/includes/produit_boutique_line.php';
 
 // Inclusion du fichier de connexion à la BDD

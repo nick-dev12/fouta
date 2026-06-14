@@ -176,19 +176,11 @@ if (!function_exists('auth_sync_vendeur_marketplace_visit')) {
 
 if (!function_exists('auth_vendeur_may_browse_marketplace')) {
     /**
-     * Le vendeur a choisi de visiter la marketplace publique (session ou cookie explicite).
+     * Vendeur connecté : accès libre au site public (catalogue, accueil, etc.).
      */
     function auth_vendeur_may_browse_marketplace()
     {
-        if (!auth_session_is_vendeur()) {
-            return false;
-        }
-        auth_sync_vendeur_marketplace_visit();
-        if (!empty($_SESSION['vendeur_visite_marketplace'])) {
-            return true;
-        }
-        $cookie_name = auth_vendeur_mp_visit_cookie_name();
-        return isset($_COOKIE[$cookie_name]) && (string) $_COOKIE[$cookie_name] === '1';
+        return auth_session_is_vendeur();
     }
 }
 
@@ -240,44 +232,16 @@ if (!function_exists('auth_marketplace_visit_url')) {
     }
 }
 
-if (!function_exists('auth_handle_vendeur_marketplace_visit_post')) {
-    /**
-     * Accorde la visite marketplace via POST explicite (formulaire dashboard vendeur).
-     *
-     * @return bool true si l’accès a été accordé sur cette requête
-     */
-    function auth_handle_vendeur_marketplace_visit_post()
-    {
-        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            return false;
-        }
-        if (empty($_POST['vendeur_visite_mp'])) {
-            return false;
-        }
-        if (!auth_session_is_vendeur()) {
-            return false;
-        }
-        auth_grant_vendeur_marketplace_visit();
-        return true;
-    }
-}
 
 if (!function_exists('auth_redirect_vendeur_to_dashboard')) {
     /**
-     * Redirige un vendeur connecté vers son tableau de bord.
+     * Redirige un vendeur déjà connecté vers son tableau de bord (ex. page inscription).
      */
     function auth_redirect_vendeur_to_dashboard()
     {
         if (!auth_session_is_vendeur()) {
             return;
         }
-
-        auth_sync_vendeur_marketplace_visit();
-
-        if (auth_vendeur_may_browse_marketplace()) {
-            return;
-        }
-
         auth_redirect_after_login(auth_vendeur_dashboard_url());
     }
 }
