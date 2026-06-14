@@ -510,7 +510,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         .adm-modal-add-produit {
             position: fixed;
             inset: 0;
-            z-index: 9990;
+            z-index: 10100; /* au-dessus du dock vendeur (10050) */
             display: flex;
             flex-direction: column;
             background: rgba(13, 13, 13, 0.52);
@@ -591,7 +591,12 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                 gap: 7px;
             }
             .adm-modal-add-body {
-                padding: 12px 12px 28px;
+                padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+                scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+            }
+            body.stk-produit-modal-open #adminVendeurBottomDock {
+                visibility: hidden;
+                pointer-events: none;
             }
         }
 
@@ -611,7 +616,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                 border-radius: 8px;
             }
             .adm-modal-add-body {
-                padding: 8px 8px 20px;
+                padding: 8px 8px calc(24px + env(safe-area-inset-bottom, 0px));
             }
             .adm-modal-add-body .form-add-container {
                 max-width: none;
@@ -1555,18 +1560,28 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         var btnCloseAdd = document.getElementById('btnCloseAddProduitModal');
         var btnCancelAdd = document.getElementById('btn-fap-cancel-modal');
 
+        function setProduitModalBodyState() {
+            if (isAnyProduitModalOpen()) {
+                document.body.classList.add('stk-produit-modal-open');
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.classList.remove('stk-produit-modal-open');
+                document.body.style.overflow = '';
+            }
+        }
+
         function openAddModal() {
             if (!modalAdd) return;
             modalAdd.removeAttribute('hidden');
             modalAdd.setAttribute('aria-hidden', 'false');
-            document.body.style.overflow = 'hidden';
+            setProduitModalBodyState();
         }
 
         function closeAddModal() {
             if (!modalAdd) return;
             modalAdd.setAttribute('hidden', '');
             modalAdd.setAttribute('aria-hidden', 'true');
-            if (!isAnyProduitModalOpen()) document.body.style.overflow = '';
+            setProduitModalBodyState();
         }
 
         document.querySelectorAll('.js-open-add-produit').forEach(function (btn) {
@@ -1594,7 +1609,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             editIframe.src = '../produits/embed_modifier.php?id=' + encodeURIComponent(id);
             modalEdit.removeAttribute('hidden');
             modalEdit.setAttribute('aria-hidden', 'false');
-            document.body.style.overflow = 'hidden';
+            setProduitModalBodyState();
         }
 
         function closeEditModal() {
@@ -1602,7 +1617,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
             modalEdit.setAttribute('hidden', '');
             modalEdit.setAttribute('aria-hidden', 'true');
             if (editIframe) editIframe.src = 'about:blank';
-            if (!isAnyProduitModalOpen()) document.body.style.overflow = '';
+            setProduitModalBodyState();
         }
 
         function isAnyProduitModalOpen() {

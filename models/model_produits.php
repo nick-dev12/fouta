@@ -1952,6 +1952,40 @@ function produit_bloque_champs_labels(string $champs_csv): array
 }
 
 /**
+ * Liste des chemins images d'un produit (principale + galerie JSON).
+ *
+ * @param array<string, mixed> $produit
+ * @return array<int, string>
+ */
+function produit_images_list_from_row(array $produit): array
+{
+    $out = [];
+    $seen = [];
+    if (!empty($produit['images'])) {
+        $decoded = json_decode((string) $produit['images'], true);
+        if (is_array($decoded)) {
+            foreach ($decoded as $img) {
+                $path = trim(str_replace('\\', '/', (string) $img), '/');
+                if ($path !== '' && !isset($seen[$path])) {
+                    $seen[$path] = true;
+                    $out[] = $path;
+                }
+            }
+        }
+    }
+    $main = trim(str_replace('\\', '/', (string) ($produit['image_principale'] ?? '')), '/');
+    if ($main !== '' && !isset($seen[$main])) {
+        array_unshift($out, $main);
+    } elseif ($main === '' && empty($out)) {
+        return [];
+    }
+    if ($main !== '' && !empty($out) && $out[0] !== $main) {
+        $out = array_values(array_unique(array_merge([$main], $out)));
+    }
+    return $out;
+}
+
+/**
  * Produits publiés d'une boutique (actif, rupture, bloqué) — Super Admin.
  *
  * @return array
@@ -1968,7 +2002,7 @@ function super_admin_get_produits_boutique(int $admin_id): array
         : '';
     try {
         $stmt = $db->prepare("
-            SELECT p.id, p.nom, p.image_principale, p.statut, p.prix, p.stock, p.date_modification
+            SELECT p.id, p.nom, p.image_principale, p.images, p.statut, p.prix, p.stock, p.date_modification
             $extra
             FROM produits p
             WHERE p.admin_id = :aid

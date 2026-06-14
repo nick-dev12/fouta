@@ -157,7 +157,10 @@ foreach ($variantes as $v) {
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <style>
         body { margin: 0; background: var(--fond-secondaire, #fafafa); }
-        .form-add-section { padding: clamp(10px, 2.5vw, 18px) clamp(8px, 2.5vw, 16px) clamp(20px, 4vw, 32px); }
+        .form-add-section { padding: clamp(10px, 2.5vw, 18px) clamp(8px, 2.5vw, 16px) clamp(28px, 5vw, 40px); }
+        @media (max-width: 1024px) {
+            .form-add-section { padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px)); }
+        }
     </style>
 </head>
 <body>

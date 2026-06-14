@@ -49,6 +49,10 @@ config/email.php
 config/site.php
 config/assets.php
 
+# Modération images (clés Sightengine / Google Vision)
+config/image_moderation.php
+config/login_rate_secret.php
+
 # Exemples config (sans secrets)
 !config/*.example.php
 !config/email.example.php

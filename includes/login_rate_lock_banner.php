@@ -10,12 +10,21 @@ if ($__lr_sec <= 0) {
 $__lr_m = intdiv($__lr_sec, 60);
 $__lr_s = $__lr_sec % 60;
 $__lr_initial = sprintf('%02d:%02d', $__lr_m, $__lr_s);
+$__lr_lock_min = max(1, (int) round($__lr_sec / 60));
+if (function_exists('login_attempt_active_lock_duration_seconds')) {
+    $__lr_dur = login_attempt_active_lock_duration_seconds();
+    if ($__lr_dur > 0) {
+        $__lr_lock_min = max(1, (int) round($__lr_dur / 60));
+    }
+}
+$__lr_next_min = $__lr_lock_min * 2;
 ?>
 <div class="login-lock-banner error-message" role="alert" aria-live="polite">
     <i class="fas fa-lock" aria-hidden="true"></i>
     <div class="login-lock-banner__body">
         <strong>Connexion bloquée temporairement</strong>
-        <p class="login-lock-banner__lead">Trop de tentatives incorrectes. Réessayez après le délai affiché.</p>
+        <p class="login-lock-banner__lead">Trop de tentatives incorrectes. Les champs sont désactivés pendant <?php echo (int) $__lr_lock_min; ?> minute<?php echo $__lr_lock_min > 1 ? 's' : ''; ?>. Réessayez après le compte à rebours.</p>
+        <p class="login-lock-banner__sub">En cas de nouvelles erreurs répétées, le blocage pourra atteindre <?php echo (int) $__lr_next_min; ?> minutes.</p>
         <p class="login-lock-countdown"
             id="login-lock-countdown"
             data-seconds="<?php echo $__lr_sec; ?>"

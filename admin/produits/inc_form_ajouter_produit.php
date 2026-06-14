@@ -72,7 +72,7 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
 ?>
 <form method="POST" action="<?php echo htmlspecialchars($add_produit_form_action); ?>"
     enctype="multipart/form-data"
-    class="form-add form-add-produit-v2"
+    class="form-add form-add-produit-v2 <?php echo htmlspecialchars($form_el_id); ?>"
     id="<?php echo htmlspecialchars($form_el_id); ?>"<?php echo $fap_edit_modal ? ' target="_top"' : ''; ?>>
     <?php if ($add_produit_modal): ?>
     <input type="hidden" name="admin_add_produit" value="1">
@@ -533,6 +533,22 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
     display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
     margin-top: 28px; padding-top: 22px;
     border-top: 1px solid rgba(0,0,0,0.08);
+}
+.form-add-produit-modal .fap-actions,
+.form-edit-produit-modal .fap-actions {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+@media (max-width: 1024px) {
+    .form-add-produit-modal .fap-actions,
+    .form-edit-produit-modal .fap-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        margin-bottom: 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #fff 28%);
+        box-shadow: 0 -12px 28px rgba(13, 13, 13, 0.1);
+        padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    }
 }
 .btn-fap-submit {
     display: inline-flex; align-items: center; gap: 10px;

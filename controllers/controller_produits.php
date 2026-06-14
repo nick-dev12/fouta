@@ -8,6 +8,24 @@ require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../includes/barcode_fpl.php';
 require_once __DIR__ . '/../includes/upload_image_limits.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
+require_once __DIR__ . '/../includes/produit_image_moderation.php';
+
+/**
+ * @return void
+ */
+function produit_upload_reset_moderation_batch()
+{
+    $GLOBALS['produit_image_moderation_batch_hold'] = false;
+    produit_image_moderation_set_last_error('');
+}
+
+/**
+ * @return bool
+ */
+function produit_upload_batch_needs_hold()
+{
+    return !empty($GLOBALS['produit_image_moderation_batch_hold']);
+}
 
 /**
  * Génère et sauvegarde le QR code d'un produit (pointant vers stock-info.php)
@@ -65,6 +83,15 @@ function upload_produit_image($file, $field_name = 'image') {
     $file_info = $file[$field_name];
     $result = upload_optimize_image_file($file_info, $upload_dir, 'produits', 'produit_');
     if (!empty($result['success']) && !empty($result['relative_path'])) {
+        $role = (string) ($_SESSION['admin_role'] ?? 'admin');
+        $admin_id = (int) ($_SESSION['admin_id'] ?? 0);
+        $mod = produit_image_moderation_after_upload((string) $result['relative_path'], $role, $admin_id);
+        if (!$mod['ok']) {
+            return false;
+        }
+        if (!empty($mod['needs_hold'])) {
+            $GLOBALS['produit_image_moderation_batch_hold'] = true;
+        }
         return (string) $result['relative_path'];
     }
 
@@ -92,10 +119,15 @@ function upload_produit_images_multiples($files, $field_name = 'images_supplemen
             'error' => $files[$field_name]['error'][$i],
             'size' => $files[$field_name]['size'][$i]
         ];
+        if ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            continue;
+        }
         $fake_files = [$field_name => $file];
         $path = upload_produit_image($fake_files, $field_name);
         if ($path) {
             $uploaded[] = $path;
+        } elseif (produit_image_moderation_last_error() !== '') {
+            break;
         }
     }
     return $uploaded;
@@ -333,11 +365,14 @@ function process_add_produit() {
     // Si lié à un article en stock, on utilise son image si pas d'upload
     $image_principale = null;
     $images_supp = [];
+    produit_upload_reset_moderation_batch();
     if (isset($_FILES['images_produit']) && is_array($_FILES['images_produit']['name'])) {
         $uploaded = upload_produit_images_multiples($_FILES, 'images_produit');
         if (!empty($uploaded)) {
             $image_principale = $uploaded[0];
             $images_supp = array_slice($uploaded, 1);
+        } elseif (produit_image_moderation_last_error() !== '') {
+            $errors[] = produit_image_moderation_last_error();
         }
     }
     if (!$image_principale) {
@@ -403,8 +438,21 @@ function process_add_produit() {
                         || (function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()))) {
                     save_produits_sous_categories_for_produit((int) $produit_id, $sous_categorie_ids_for_save);
                 }
+                $all_paths = array_merge([$image_principale], $images_supp);
                 $success = true;
                 $message = 'Produit ajouté avec succès !';
+                if ($role_admin === 'vendeur') {
+                    $hold_info = produit_image_moderation_finalize_vendor_product(
+                        (int) $produit_id,
+                        $owner_admin,
+                        $all_paths,
+                        produit_upload_batch_needs_hold(),
+                        $statut
+                    );
+                    if (!empty($hold_info['held']) && !empty($hold_info['message'])) {
+                        $message .= $hold_info['message'];
+                    }
+                }
                 generer_qrcode_produit($produit_id);
                 generer_barcode_produit_fpl($produit_id);
                 $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? array_values($_POST['variantes_nom']) : [];
@@ -718,8 +766,12 @@ function process_update_produit($produit_id) {
     
     // Upload des images supplémentaires (nouvelles)
     $images_supp = [];
+    produit_upload_reset_moderation_batch();
     if (isset($_FILES['images_supplementaires']) && is_array($_FILES['images_supplementaires']['name'])) {
         $images_supp = upload_produit_images_multiples($_FILES, 'images_supplementaires');
+        if (empty($images_supp) && produit_image_moderation_last_error() !== '') {
+            $errors[] = produit_image_moderation_last_error();
+        }
     }
     
     // Construire le tableau final : images conservées + nouvelles
@@ -782,8 +834,20 @@ function process_update_produit($produit_id) {
                     || (function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()))) {
                 save_produits_sous_categories_for_produit((int) $produit_id, $sous_categorie_ids_for_save);
             }
-            $success = true;
             $message = 'Produit modifié avec succès !';
+            if ($role_admin === 'vendeur' && !empty($images_supp)) {
+                $hold_info = produit_image_moderation_finalize_vendor_product(
+                    (int) $produit_id,
+                    $admin_id_sess,
+                    $images_supp,
+                    produit_upload_batch_needs_hold(),
+                    $statut
+                );
+                if (!empty($hold_info['held']) && !empty($hold_info['message'])) {
+                    $message .= $hold_info['message'];
+                }
+            }
+            $success = true;
             // Supprimer du disque les images retirées par l'utilisateur
             foreach ($removed_images as $old_path) {
                 $full_path = __DIR__ . '/../upload/' . $old_path;

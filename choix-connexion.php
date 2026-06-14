@@ -91,6 +91,8 @@ if (isset($_SESSION['inscription_success'])) {
 login_attempt_unlock_if_expired();
 $login_remaining_seconds = login_attempt_remaining_seconds();
 $login_locked = $login_remaining_seconds > 0;
+$login_show_warning = login_attempt_show_warning();
+$login_remaining_attempts = login_attempt_remaining_before_lock();
 
 $active_login_mode = 'phone';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (string) $_POST['login_mode'] === 'email') {
@@ -157,16 +159,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
 
             <?php if (!empty($login_locked) && $login_remaining_seconds > 0): ?>
                 <?php include __DIR__ . '/includes/login_rate_lock_banner.php'; ?>
-            <?php elseif (isset($result['message']) && $result['message'] !== '' && !$result['success']): ?>
+            <?php else: ?>
+                <?php if (!empty($login_show_warning)): ?>
+                    <?php include __DIR__ . '/includes/login_rate_warning_banner.php'; ?>
+                <?php endif; ?>
+                <?php if (isset($result['message']) && $result['message'] !== '' && !$result['success']): ?>
                 <div class="error-message">
-                    <i class="fas fa-exclamation-circle"></i> <?php echo $result['message']; ?>
+                    <i class="fas fa-exclamation-circle"></i> <?php echo login_safe_html_message($result['message']); ?>
                 </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <?php
             $google_auth_type = 'auto';
             $google_auth_redirect = $redirect_url;
             $google_auth_position = 'top';
+            $google_auth_disabled = $login_locked;
             include __DIR__ . '/includes/google_auth_button.php';
             ?>
 

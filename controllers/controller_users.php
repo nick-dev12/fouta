@@ -28,17 +28,7 @@ function process_unified_login() {
     }
 
     if (login_attempt_is_locked()) {
-        $rem = login_attempt_remaining_seconds();
-        return [
-            'success' => false,
-            'message' => 'Trop de tentatives de connexion. Réessayez dans ' . login_attempt_format_remaining($rem) . '.',
-            'type' => null,
-            'admin' => null,
-            'user' => null,
-            'vendeur_collaborateur' => null,
-            'rate_limited' => true,
-            'remaining_seconds' => $rem,
-        ];
+        return login_attempt_locked_result_array();
     }
 
     $login_mode = isset($_POST['login_mode']) ? trim((string) $_POST['login_mode']) : 'email';
@@ -75,7 +65,7 @@ function process_unified_login() {
     $user = get_user_by_email($email);
     if ($user) {
         if ($user['statut'] !== 'actif') {
-            return login_failure_result_array('Votre compte est désactivé. Contactez le support.');
+            return login_failure_result_array('Email ou mot de passe incorrect.');
         }
         if (!$accepte_conditions) {
             return [
@@ -127,7 +117,7 @@ function process_unified_phone_login() {
         $collab = get_vendeur_compte_acces_by_telephone_for_unified_login($tel);
         if ($collab) {
             if (($collab['statut'] ?? '') !== 'actif') {
-                return login_failure_result_array('Ce compte d’accès est désactivé. Contactez le gérant de la boutique.');
+                return login_failure_result_array('Téléphone ou code incorrect.');
             }
             if (!password_verify($secret, $collab['password'])) {
                 // Laisser tomber vers la vérification client (même téléphone possible en théorie)
@@ -135,7 +125,7 @@ function process_unified_phone_login() {
             } else {
                 $owner = get_admin_by_id((int) ($collab['vendeur_admin_id'] ?? 0));
                 if (!$owner || ($owner['statut'] ?? '') !== 'actif' || normalize_admin_role($owner['role'] ?? '') !== 'vendeur') {
-                    return login_failure_result_array('Boutique indisponible. Contactez la plateforme.');
+                    return login_failure_result_array('Téléphone ou code incorrect.');
                 }
                 login_attempt_clear();
                 update_vendeur_compte_acces_last_login((int) $collab['id']);
@@ -157,7 +147,7 @@ function process_unified_phone_login() {
         return login_failure_result_array('Téléphone ou code incorrect.');
     }
     if (($user['statut'] ?? '') !== 'actif') {
-        return login_failure_result_array('Votre compte est désactivé. Contactez le support.');
+        return login_failure_result_array('Téléphone ou code incorrect.');
     }
     if (!$accepte_conditions) {
         return ['success' => false, 'message' => 'Vous devez accepter les conditions d\'utilisation pour vous connecter.', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];

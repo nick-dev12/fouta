@@ -214,6 +214,18 @@ function firebase_auth_process_callback(array $payload)
         firebase_auth_json_response(false, 'Méthode non autorisée.');
     }
 
+    if (file_exists(__DIR__ . '/login_rate_limit.php')) {
+        require_once __DIR__ . '/login_rate_limit.php';
+        login_attempt_unlock_if_expired();
+        if (login_attempt_is_locked()) {
+            $rem = login_attempt_remaining_seconds();
+            firebase_auth_json_response(
+                false,
+                'Trop de tentatives de connexion incorrectes. Réessayez dans ' . login_attempt_format_remaining($rem) . '.'
+            );
+        }
+    }
+
     $account_type_raw = isset($payload['accountType']) ? trim((string) $payload['accountType']) : 'auto';
     if (!in_array($account_type_raw, ['auto', 'client', 'vendor'], true)) {
         $account_type_raw = 'auto';
@@ -263,6 +275,9 @@ function firebase_auth_process_callback(array $payload)
         firebase_auth_load_models();
         update_admin_last_login((int) $admin['id']);
         firebase_auth_set_admin_session($admin);
+        if (function_exists('login_attempt_clear')) {
+            login_attempt_clear();
+        }
         firebase_auth_json_response(true, '', '/admin/dashboard.php');
     }
 
@@ -271,6 +286,9 @@ function firebase_auth_process_callback(array $payload)
             firebase_auth_json_response(false, 'Votre compte est désactivé. Contactez le support.');
         }
         firebase_auth_set_user_session($user);
+        if (function_exists('login_attempt_clear')) {
+            login_attempt_clear();
+        }
         firebase_auth_json_response(true, '', $redirect);
     }
 

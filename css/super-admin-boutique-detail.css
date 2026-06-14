@@ -316,6 +316,34 @@
   object-fit: cover;
 }
 
+.sa-bd-produit__gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px 0;
+}
+
+.sa-bd-produit__gallery a {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid rgba(53, 100, 166, 0.18);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.sa-bd-produit__gallery a:hover {
+  border-color: var(--bleu-principal, #3564a6);
+  transform: scale(1.04);
+}
+
+.sa-bd-produit__gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .sa-bd-produit__statut {
   position: absolute;
   top: 8px;
