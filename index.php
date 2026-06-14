@@ -32,6 +32,12 @@ $seo_title = site_brand_seo_title_default();
 $seo_description = site_brand_seo_description_default();
 $seo_keywords = site_brand_seo_keywords_default();
 $seo_canonical = $base . '/';
+require_once __DIR__ . '/includes/seo_structured_data.php';
+$seo_json_ld_blocks = [
+    seo_structured_data_organization(),
+    seo_structured_data_website(),
+    seo_structured_data_local_business(),
+];
 ?>
 
 

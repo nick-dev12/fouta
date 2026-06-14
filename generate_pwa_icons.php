@@ -114,7 +114,9 @@ $jobs = [
     ['file' => 'icon-192-maskable.png', 'size' => 192, 'padding' => 0.2],
     ['file' => 'icon-512-maskable.png', 'size' => 512, 'padding' => 0.2],
     ['file' => 'apple-touch-icon.png', 'size' => 180, 'padding' => 0.1],
+    ['file' => 'favicon-16.png', 'size' => 16, 'padding' => 0.06],
     ['file' => 'favicon-32.png', 'size' => 32, 'padding' => 0.08],
+    ['file' => 'favicon-48.png', 'size' => 48, 'padding' => 0.08],
 ];
 
 foreach ($jobs as $job) {
@@ -125,6 +127,13 @@ foreach ($jobs as $job) {
         exit(1);
     }
     echo "Icône créée : {$job['file']} ({$job['size']}x{$job['size']})\n";
+}
+
+$faviconIco = __DIR__ . '/favicon.ico';
+if (!copy($iconsDir . '/favicon-48.png', $faviconIco)) {
+    fwrite(STDERR, "Avertissement : impossible de copier favicon.ico à la racine.\n");
+} else {
+    echo "favicon.ico créé à la racine (copie de favicon-48.png).\n";
 }
 
 imagedestroy($image);

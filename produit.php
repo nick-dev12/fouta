@@ -164,7 +164,11 @@ $seo_keywords = site_brand_seo_keywords_default() . ', ' . $produit['nom'] . ', 
 $seo_canonical = $base . '/produit.php?id=' . (int) $produit['id'];
 $seo_og_type = 'product';
 $img = !empty($produit['image_principale']) ? $produit['image_principale'] : '';
-$seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.png';
+$seo_image = $img ? $base . '/upload/' . ltrim(str_replace('\\', '/', $img), '/') : $base . '/icons/icon-512.png';
+require_once __DIR__ . '/includes/seo_structured_data.php';
+$seo_json_ld_blocks = [
+    seo_structured_data_product($produit, $produit_boutique_nom),
+];
 ?>
 
 <!DOCTYPE html>

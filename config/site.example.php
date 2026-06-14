@@ -10,5 +10,5 @@
 return [
     // URL de base du site (sans slash final)
     // Si vide, l'URL est déduite automatiquement de la requête HTTP
-    'site_url' => 'https://www.colobanes.sn',
+    'site_url' => 'https://colobanes.com',
 ];

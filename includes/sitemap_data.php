@@ -40,7 +40,7 @@ function sitemap_abs_url_image_produit($base, array $p) {
 function build_sitemap_url_rows() {
     $base = get_site_base_url();
     $logo_url = $base . '/image/logo_market.png';
-    $home_image_title = SITE_BRAND_NAME . ' — marketplace Sénégal, boutiques en ligne, tous produits';
+    $home_image_title = SITE_BRAND_NAME . ' — Colobane marketplace Sénégal, marché en ligne Dakar, boutiques & produits';
 
     $rows = [];
 
@@ -54,6 +54,7 @@ function build_sitemap_url_rows() {
         ['loc' => '/politique-confidentialite.php', 'priority' => '0.35', 'changefreq' => 'yearly'],
         ['loc' => '/politique-suppression-compte.php', 'priority' => '0.35', 'changefreq' => 'yearly'],
         ['loc' => '/conditions-utilisation.php', 'priority' => '0.35', 'changefreq' => 'yearly'],
+        ['loc' => '/boutiques-proches.php', 'priority' => '0.7', 'changefreq' => 'weekly'],
         ['loc' => '/choix-inscription.php', 'priority' => '0.5', 'changefreq' => 'monthly'],
         ['loc' => '/choix-connexion.php', 'priority' => '0.45', 'changefreq' => 'monthly'],
     ];

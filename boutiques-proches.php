@@ -13,6 +13,14 @@ require_once __DIR__ . '/includes/marketplace_country_filter.php';
 require_once __DIR__ . '/includes/marketplace_helpers.php';
 require_once __DIR__ . '/includes/asset_version.php';
 require_once __DIR__ . '/includes/image_optimizer.php';
+require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/site_brand.php';
+
+$base = get_site_base_url();
+$seo_title = 'Boutiques proches — ' . SITE_BRAND_NAME . ' (Colobane) | Marketplace Dakar';
+$seo_description = 'Trouvez les boutiques et produits proches de vous sur ' . SITE_BRAND_NAME . ' (Colobane, Dakar). Marketplace Sénégal, achat en ligne, vendeurs locaux autour de vous.';
+$seo_keywords = site_brand_seo_keywords_default() . ', boutiques proches, produits proches, géolocalisation Dakar, Colobane proche';
+$seo_canonical = $base . '/boutiques-proches.php';
 
 $geo_loc = geo_session_get_location();
 $geo_error = !empty($_GET['geo_error']);
@@ -41,7 +49,7 @@ if ($geo_loc !== null) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
-    <title>Boutiques proches de moi - COLObanes</title>
+    <?php include __DIR__ . '/includes/seo_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">

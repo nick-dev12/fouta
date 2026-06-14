@@ -1,24 +1,22 @@
-# Robots.txt pour COLObanes - Pièces poids lourds
+# Robots.txt — COLObanes / Colobane marketplace Sénégal
 # https://www.robotstxt.org/
+# En production, .htaccess redirige vers robots.php (URL sitemap dynamique).
 
 User-agent: *
 Allow: /
 
-# Pages à ne pas indexer (espace utilisateur, admin, panier, commande)
+# Pages à ne pas indexer
 Disallow: /user/
 Disallow: /admin/
+Disallow: /super_admin/
 Disallow: /panier.php
 Disallow: /commande.php
 Disallow: /add-to-panier.php
+Disallow: /stock-info.php
+Disallow: /sign-up.php
+Disallow: /boutique/panier.php
+Disallow: /config/
+Disallow: /vendor/
 
-# Autoriser les pages publiques importantes
-Allow: /index.php
-Allow: /produits.php
-Allow: /produit.php
-Allow: /categorie.php
-Allow: /contact.php
-Allow: /nouveautes.php
-Allow: /promo.php
-
-# Sitemap - Remplacer VOTRE_DOMAINE par votre URL (ex: https://sugar-paper.com)
-# Sitemap: https://sugar-paper.com/sitemap.php
+# Sitemap
+Sitemap: https://colobanes.com/sitemap.xml
