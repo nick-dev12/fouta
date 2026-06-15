@@ -4,14 +4,10 @@
  * Programmation procédurale uniquement
  */
 
+ob_start();
+
 require_once __DIR__ . '/../includes/require_admin_session.php';
-
-
-
 require_once __DIR__ . '/../includes/require_access.php';
-if (file_exists(__DIR__ . '/../includes/admin_route_access.php')) {
-    require_once __DIR__ . '/../includes/admin_route_access.php';
-}
 
 if (empty($_SESSION['admin_csrf'])) {
     $_SESSION['admin_csrf'] = bin2hex(random_bytes(32));
@@ -22,46 +18,92 @@ $__stock_role = function_exists('admin_normalize_role_for_route')
     : 'admin';
 $stock_catalogue_vendeur_seul = ($__stock_role === 'vendeur' && function_exists('get_categories_platform_for_vendeur_stock'));
 
+/**
+ * Redirection sûre après POST (évite page blanche si sortie envoyée avant header).
+ */
+function stock_index_redirect() {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    $url = function_exists('admin_route_build_url')
+        ? admin_route_build_url('stock/index.php')
+        : '/admin/stock/index.php';
+    header('Location: ' . $url, true, 303);
+    exit;
+}
+
+// ---- Traitement POST (avant chargement lourd des modèles / HTML) ----
+$add_produit_error_message = '';
+$add_produit_post_error = false;
+$open_add_modal = isset($_GET['open_add']) && $_GET['open_add'] === '1';
+$open_edit_modal_id = isset($_GET['edit_id']) ? (int) $_GET['edit_id'] : 0;
+$cat_modal_error       = '';
+$cat_modal_open        = false;
+$cat_modal_nom         = '';
+$cat_modal_description = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!empty($_POST['admin_add_produit'])) {
+        require_once __DIR__ . '/../../controllers/controller_produits.php';
+        require_once __DIR__ . '/../../includes/flash_toast.php';
+        try {
+            $add_result = process_add_produit();
+        } catch (Throwable $e) {
+            error_log('[admin/stock/index.php] process_add_produit: ' . $e->getMessage()
+                . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            $add_result = ['success' => false, 'message' => 'Erreur lors de l\'enregistrement du produit.'];
+        }
+        if (!empty($add_result['success'])) {
+            flash_toast_push('success', $add_result['message'] ?? 'Produit enregistré.');
+            stock_index_redirect();
+        }
+        $add_produit_error_message = $add_result['message'] ?? 'Erreur lors de l\'ajout.';
+        $add_produit_post_error = true;
+        flash_toast_push('error', $add_produit_error_message);
+    } elseif (!empty($_POST['admin_edit_produit'])) {
+        $edit_pid = (int) ($_POST['produit_id'] ?? 0);
+        if ($edit_pid > 0) {
+            require_once __DIR__ . '/../../controllers/controller_produits.php';
+            require_once __DIR__ . '/../../includes/flash_toast.php';
+            try {
+                $edit_result = process_update_produit($edit_pid);
+            } catch (Throwable $e) {
+                error_log('[admin/stock/index.php] process_update_produit: ' . $e->getMessage()
+                    . ' @ ' . $e->getFile() . ':' . $e->getLine());
+                $edit_result = ['success' => false, 'message' => 'Erreur lors de la modification du produit.'];
+            }
+            if (!empty($edit_result['success'])) {
+                flash_toast_push('success', $edit_result['message'] ?? 'Produit modifié.');
+                stock_index_redirect();
+            }
+            flash_toast_queue_page('error', $edit_result['message'] ?? 'Erreur lors de la modification.');
+            $open_edit_modal_id = $edit_pid;
+        }
+    } elseif (isset($_POST['stock_add_categorie']) && !$stock_catalogue_vendeur_seul) {
+        $tok = $_POST['csrf_token'] ?? '';
+        if (!hash_equals((string) ($_SESSION['admin_csrf'] ?? ''), (string) $tok)) {
+            $cat_modal_error = 'Session expirée ou formulaire invalide. Veuillez réessayer.';
+            $cat_modal_open  = true;
+        } else {
+            require_once __DIR__ . '/../../controllers/controller_categories.php';
+            require_once __DIR__ . '/../../includes/flash_toast.php';
+            $cat_modal_result = process_add_categorie();
+            if (!empty($cat_modal_result['success'])) {
+                flash_toast_push('success', $cat_modal_result['message'] ?? 'Catégorie créée.');
+                stock_index_redirect();
+            }
+            $cat_modal_error       = $cat_modal_result['message'] ?? 'Une erreur est survenue.';
+            $cat_modal_open        = true;
+            $cat_modal_nom         = isset($_POST['nom']) ? trim((string) $_POST['nom']) : '';
+            $cat_modal_description = isset($_POST['description']) ? trim((string) $_POST['description']) : '';
+        }
+    }
+}
+
 require_once __DIR__ . '/../../models/model_categories.php';
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_genres.php';
 require_once __DIR__ . '/../../includes/image_optimizer.php';
-
-// ---- Modal ajout produit ----
-$add_produit_error_message = '';
-$add_produit_post_error = false;
-$open_add_modal = isset($_GET['open_add']) && $_GET['open_add'] === '1';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_add_produit'])) {
-    require_once __DIR__ . '/../../controllers/controller_produits.php';
-    $add_result = process_add_produit();
-    if (!empty($add_result['success'])) {
-        $_SESSION['success_message'] = $add_result['message'];
-        header('Location: index.php');
-        exit;
-    }
-    $add_produit_error_message = $add_result['message'] ?? 'Erreur lors de l\'ajout.';
-    $add_produit_post_error = true;
-}
-
-// ---- Modal modification produit ----
-$open_edit_modal_id = isset($_GET['edit_id']) ? (int) $_GET['edit_id'] : 0;
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_edit_produit'])) {
-    $edit_pid = (int) ($_POST['produit_id'] ?? 0);
-    if ($edit_pid > 0) {
-        require_once __DIR__ . '/../../controllers/controller_produits.php';
-        require_once __DIR__ . '/../../includes/flash_toast.php';
-        $edit_result = process_update_produit($edit_pid);
-        if (!empty($edit_result['success'])) {
-            $_SESSION['success_message'] = $edit_result['message'];
-            header('Location: index.php');
-            exit;
-        }
-        flash_toast_queue_page('error', $edit_result['message'] ?? 'Erreur lors de la modification.');
-        $open_edit_modal_id = $edit_pid;
-    }
-}
 
 $fap_use_category_hierarchy = categories_hierarchy_enabled() && ($__stock_role === 'vendeur');
 $vcat_prefill_sub = 0;
@@ -69,36 +111,13 @@ $vcat_prefill_generale = 0;
 $vendeur_genre_ids_prefill = [];
 $categorie_id_prefill = 0;
 
-// ---- Modal nouvelle catégorie ----
-$cat_modal_error       = '';
-$cat_modal_open        = false;
-$cat_modal_nom         = '';
-$cat_modal_description = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['stock_add_categorie']) && !$stock_catalogue_vendeur_seul) {
-    $tok = $_POST['csrf_token'] ?? '';
-    if (!hash_equals((string)($_SESSION['admin_csrf'] ?? ''), (string)$tok)) {
-        $cat_modal_error = 'Session expirée ou formulaire invalide. Veuillez réessayer.';
-        $cat_modal_open  = true;
-    } else {
-        require_once __DIR__ . '/../../controllers/controller_categories.php';
-        $cat_modal_result = process_add_categorie();
-        if (!empty($cat_modal_result['success'])) {
-            $_SESSION['success_message'] = $cat_modal_result['message'];
-            header('Location: index.php');
-            exit;
-        }
-        $cat_modal_error       = $cat_modal_result['message'] ?? 'Une erreur est survenue.';
-        $cat_modal_open        = true;
-        $cat_modal_nom         = isset($_POST['nom'])         ? trim((string)$_POST['nom'])         : '';
-        $cat_modal_description = isset($_POST['description']) ? trim((string)$_POST['description']) : '';
-    }
-}
-
 $success_message = '';
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
     unset($_SESSION['success_message']);
+    require_once __DIR__ . '/../../includes/flash_toast.php';
+    flash_toast_push('success', $success_message);
+    $success_message = '';
 }
 
 // ---- Catégories pour le filtre ----
@@ -1433,7 +1452,9 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
     <?php
     $add_produit_modal = true;
-    $add_produit_form_action = 'index.php';
+    $add_produit_form_action = function_exists('admin_route_build_url')
+        ? admin_route_build_url('stock/index.php')
+        : 'index.php';
     $modal_add_should_show = $add_produit_post_error || $open_add_modal;
     $modal_edit_should_show = $open_edit_modal_id > 0;
     ?>

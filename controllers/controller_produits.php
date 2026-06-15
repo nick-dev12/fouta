@@ -428,67 +428,71 @@ function process_add_produit() {
             $produit_id = create_produit($data);
 
             if ($produit_id) {
-                if ($role_admin === 'vendeur' && function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif()) {
-                    save_produits_genres_for_produit((int) $produit_id, $genre_ids_for_save);
-                } elseif ($categorie_generale_id_val !== null && $categorie_generale_id_val > 0 && function_exists('vendeur_align_subcategorie_generale') && $categorie_id_for_db !== null) {
-                    vendeur_align_subcategorie_generale((int) $categorie_id_for_db, $categorie_generale_id_val, $owner_admin);
-                }
-                if ($role_admin === 'vendeur' && produits_sous_categories_table_exists()
-                    && ((function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif())
-                        || (function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()))) {
-                    save_produits_sous_categories_for_produit((int) $produit_id, $sous_categorie_ids_for_save);
-                }
                 $all_paths = array_merge([$image_principale], $images_supp);
                 $success = true;
                 $message = 'Produit ajouté avec succès !';
-                if ($role_admin === 'vendeur') {
-                    $hold_info = produit_image_moderation_finalize_vendor_product(
-                        (int) $produit_id,
-                        $owner_admin,
-                        $all_paths,
-                        produit_upload_batch_needs_hold(),
-                        $statut
-                    );
-                    if (!empty($hold_info['held']) && !empty($hold_info['message'])) {
-                        $message .= $hold_info['message'];
+                try {
+                    if ($role_admin === 'vendeur' && function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif()) {
+                        save_produits_genres_for_produit((int) $produit_id, $genre_ids_for_save);
+                    } elseif ($categorie_generale_id_val !== null && $categorie_generale_id_val > 0 && function_exists('vendeur_align_subcategorie_generale') && $categorie_id_for_db !== null) {
+                        vendeur_align_subcategorie_generale((int) $categorie_id_for_db, $categorie_generale_id_val, $owner_admin);
                     }
-                }
-                generer_qrcode_produit($produit_id);
-                generer_barcode_produit_fpl($produit_id);
-                $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? array_values($_POST['variantes_nom']) : [];
-                $variantes_prix = isset($_POST['variantes_prix']) && is_array($_POST['variantes_prix']) ? array_values($_POST['variantes_prix']) : [];
-                $variantes_prix_promo = isset($_POST['variantes_prix_promo']) && is_array($_POST['variantes_prix_promo']) ? array_values($_POST['variantes_prix_promo']) : [];
-                $variantes_files = (isset($_FILES['variantes_image']) && is_array($_FILES['variantes_image']['name'])) ? $_FILES['variantes_image'] : null;
-                $nb_variantes = count($variantes_nom);
-                for ($i = 0; $i < $nb_variantes; $i++) {
-                    $vn = trim($variantes_nom[$i] ?? '');
-                    $vp = isset($variantes_prix[$i]) && is_numeric($variantes_prix[$i]) ? (float)$variantes_prix[$i] : 0;
-                    if ($vn !== '' && $vp > 0) {
-                        $vimg = null;
-                        if ($variantes_files && isset($variantes_files['name'][$i]) && (int)($variantes_files['error'][$i] ?? 4) === UPLOAD_ERR_OK) {
-                            $f = [
-                                'name' => $variantes_files['name'][$i],
-                                'type' => $variantes_files['type'][$i] ?? '',
-                                'tmp_name' => $variantes_files['tmp_name'][$i] ?? '',
-                                'error' => $variantes_files['error'][$i] ?? 4,
-                                'size' => $variantes_files['size'][$i] ?? 0
-                            ];
-                            $fake = ['image' => $f];
-                            $vimg = upload_produit_image($fake, 'image');
-                        }
-                        $vpromo = isset($variantes_prix_promo[$i]) && is_numeric($variantes_prix_promo[$i]) && (float)$variantes_prix_promo[$i] > 0 ? (float)$variantes_prix_promo[$i] : null;
-                        if ($vpromo !== null && $vpromo >= $vp) {
-                            $vpromo = null;
-                        }
-                        create_variante([
-                            'produit_id' => $produit_id,
-                            'nom' => $vn,
-                            'prix' => $vp,
-                            'prix_promotion' => $vpromo,
-                            'image' => $vimg ?: null,
-                            'ordre' => $i
-                        ]);
+                    if ($role_admin === 'vendeur' && produits_sous_categories_table_exists()
+                        && ((function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif())
+                            || (function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()))) {
+                        save_produits_sous_categories_for_produit((int) $produit_id, $sous_categorie_ids_for_save);
                     }
+                    if ($role_admin === 'vendeur') {
+                        $hold_info = produit_image_moderation_finalize_vendor_product(
+                            (int) $produit_id,
+                            $owner_admin,
+                            $all_paths,
+                            produit_upload_batch_needs_hold(),
+                            $statut
+                        );
+                        if (!empty($hold_info['held']) && !empty($hold_info['message'])) {
+                            $message .= $hold_info['message'];
+                        }
+                    }
+                    generer_qrcode_produit($produit_id);
+                    generer_barcode_produit_fpl($produit_id);
+                    $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? array_values($_POST['variantes_nom']) : [];
+                    $variantes_prix = isset($_POST['variantes_prix']) && is_array($_POST['variantes_prix']) ? array_values($_POST['variantes_prix']) : [];
+                    $variantes_prix_promo = isset($_POST['variantes_prix_promo']) && is_array($_POST['variantes_prix_promo']) ? array_values($_POST['variantes_prix_promo']) : [];
+                    $variantes_files = (isset($_FILES['variantes_image']) && is_array($_FILES['variantes_image']['name'])) ? $_FILES['variantes_image'] : null;
+                    $nb_variantes = count($variantes_nom);
+                    for ($i = 0; $i < $nb_variantes; $i++) {
+                        $vn = trim($variantes_nom[$i] ?? '');
+                        $vp = isset($variantes_prix[$i]) && is_numeric($variantes_prix[$i]) ? (float)$variantes_prix[$i] : 0;
+                        if ($vn !== '' && $vp > 0) {
+                            $vimg = null;
+                            if ($variantes_files && isset($variantes_files['name'][$i]) && (int)($variantes_files['error'][$i] ?? 4) === UPLOAD_ERR_OK) {
+                                $f = [
+                                    'name' => $variantes_files['name'][$i],
+                                    'type' => $variantes_files['type'][$i] ?? '',
+                                    'tmp_name' => $variantes_files['tmp_name'][$i] ?? '',
+                                    'error' => $variantes_files['error'][$i] ?? 4,
+                                    'size' => $variantes_files['size'][$i] ?? 0
+                                ];
+                                $fake = ['image' => $f];
+                                $vimg = upload_produit_image($fake, 'image');
+                            }
+                            $vpromo = isset($variantes_prix_promo[$i]) && is_numeric($variantes_prix_promo[$i]) && (float)$variantes_prix_promo[$i] > 0 ? (float)$variantes_prix_promo[$i] : null;
+                            if ($vpromo !== null && $vpromo >= $vp) {
+                                $vpromo = null;
+                            }
+                            create_variante([
+                                'produit_id' => $produit_id,
+                                'nom' => $vn,
+                                'prix' => $vp,
+                                'prix_promotion' => $vpromo,
+                                'image' => $vimg ?: null,
+                                'ordre' => $i
+                            ]);
+                        }
+                    }
+                } catch (Throwable $e) {
+                    error_log('[process_add_produit] post-create id=' . (int) $produit_id . ': ' . $e->getMessage());
                 }
             } else {
                 $errors[] = 'Une erreur est survenue lors de l\'ajout du produit.';
