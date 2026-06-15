@@ -10,6 +10,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, ValueListenable;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:app_links/app_links.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:collection';
 import 'dart:async';
@@ -417,6 +419,39 @@ class _WebViewScreenState extends State<WebViewScreen>
         return SocialAuthService.signInWithApple();
       },
     );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'shareContent',
+      callback: (args) async {
+        if (args.isEmpty) {
+          return {'success': false, 'error': 'No payload'};
+        }
+        return await _handleShareContent(args[0]);
+      },
+    );
+  }
+
+  // Ouvre la feuille de partage native du système (Android / iOS)
+  Future<Map<String, dynamic>> _handleShareContent(dynamic payload) async {
+    try {
+      final map = (payload is Map) ? payload : <dynamic, dynamic>{};
+      final title = (map['title'] ?? '').toString();
+      final text = (map['text'] ?? '').toString();
+      final url = (map['url'] ?? '').toString();
+
+      final shareBody = [text, url]
+          .where((s) => s.trim().isNotEmpty)
+          .join(text.contains(url) || url.isEmpty ? '' : '\n')
+          .trim();
+
+      await Share.share(
+        shareBody.isNotEmpty ? shareBody : url,
+        subject: title.isNotEmpty ? title : null,
+      );
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
   }
 
   // Gérer la demande de caméra
@@ -673,6 +708,21 @@ class _WebViewScreenState extends State<WebViewScreen>
                     resolve(result);
                   } else {
                     reject(new Error((result && result.error) ? result.error : 'Connexion Apple impossible'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
+          // Partage natif : ouvre la feuille de partage du système (Android / iOS)
+          shareContent: function(payload) {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('shareContent', payload || {})
+                .then(result => {
+                  if (result && result.success) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Share failed'));
                   }
                 })
                 .catch(error => reject(error));
@@ -1021,6 +1071,26 @@ class _WebViewScreenState extends State<WebViewScreen>
                     print('WebView Error: ${error.description}');
                   },
                   shouldOverrideUrlLoading: (controller, navigationAction) async {
+                    final uri = navigationAction.request.url;
+                    if (uri != null) {
+                      final scheme = uri.scheme.toLowerCase();
+                      // Schémas d'apps externes : on les ouvre hors WebView pour
+                      // éviter la page blanche (la WebView ne sait pas les charger).
+                      const externalSchemes = {
+                        'whatsapp', 'tg', 'fb', 'fb-messenger', 'mailto',
+                        'tel', 'sms', 'intent', 'market', 'googlegmail',
+                        'twitter', 'instagram', 'snapchat', 'viber'
+                      };
+                      if (externalSchemes.contains(scheme)) {
+                        try {
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri,
+                                mode: LaunchMode.externalApplication);
+                          }
+                        } catch (_) {}
+                        return NavigationActionPolicy.CANCEL;
+                      }
+                    }
                     return NavigationActionPolicy.ALLOW;
                   },
                 ),

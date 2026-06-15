@@ -69,6 +69,12 @@ dependencies:
   # Deep links : Android App Links + iOS Universal Links
   app_links: ^6.3.2
 
+  # Partage natif (feuille de partage système Android / iOS)
+  share_plus: ^10.0.0
+
+  # Lancement d'apps externes (schémas whatsapp://, tg://, mailto:, etc.)
+  url_launcher: ^6.3.0
+
   # Écran de lancement natif (preserve / remove au démarrage Flutter)
   flutter_native_splash: ^2.3.10
 

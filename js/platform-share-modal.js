@@ -32,6 +32,70 @@
     }
 
     /**
+     * Construit la charge utile commune au partage natif.
+     */
+    function buildSharePayload(opts) {
+        var url = opts.url || '';
+        var title = opts.title || opts.modalTitle || 'Partager';
+        return {
+            title: title,
+            text: opts.message || (title + ' : ' + url),
+            url: url
+        };
+    }
+
+    /**
+     * Partage via le pont natif Flutter (window.ColobanesNative.shareContent).
+     * Disponible uniquement si l'app expose le handler "shareContent".
+     */
+    function nativeShareViaBridge(payload) {
+        var n = window.ColobanesNative;
+        if (n && typeof n.shareContent === 'function') {
+            try {
+                n.shareContent(payload);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Partage via l'API Web standard (feuille native iOS / mobile web).
+     */
+    function nativeShareViaWebApi(payload) {
+        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+            try {
+                var p = navigator.share({
+                    title: payload.title,
+                    text: payload.text,
+                    url: payload.url
+                });
+                if (p && typeof p.catch === 'function') {
+                    p.catch(function () {});
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Sur téléphone / WebView : déclenche la feuille de partage native du système.
+     * Renvoie true si le partage natif a été lancé, false sinon (→ repli sur le modal).
+     */
+    function tryNativeShare(opts) {
+        if (!preferNativeSchemes() || !opts || !opts.url) {
+            return false;
+        }
+        var payload = buildSharePayload(opts);
+        return nativeShareViaBridge(payload) || nativeShareViaWebApi(payload);
+    }
+
+    /**
      * Lien HTTPS de partage par canal.
      * On n'utilise PLUS les schémas natifs (whatsapp://, tg://, fb://, intent://…)
      * car la WebView des apps n'est pas configurée pour les intercepter :
@@ -189,6 +253,12 @@
 
     function openModal(opts) {
         opts = opts || {};
+        // Téléphone / WebView : on ouvre la feuille de partage native du système
+        // (iOS, mobile web, ou app Android une fois le handler natif ajouté)
+        // au lieu d'afficher le modal in-page. Sur ordinateur : modal classique.
+        if (tryNativeShare(opts)) {
+            return;
+        }
         if (!modal) {
             return;
         }
