@@ -1,6 +1,7 @@
 /**
- * Modal partage unifiée — produits + boutique vendeur.
- * WebView Flutter : schémas natifs (whatsapp://, tg://…) au lieu de target="_blank" (page blanche).
+ * Partage unifié — produits + boutique vendeur.
+ * Mobile / tablette / app : feuille de partage native du système.
+ * Ordinateur : modal avec canaux (WhatsApp, Gmail, Facebook, Telegram).
  */
 
 (function () {
@@ -23,12 +24,25 @@
             || /ColobanesApp/i.test(navigator.userAgent || ''));
     }
 
-    function isMobileUa() {
-        return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    /**
+     * Téléphone ou tablette (y compris iPadOS déguisé en Mac, tablettes Android).
+     */
+    function isMobileOrTablet() {
+        var ua = navigator.userAgent || '';
+        if (/Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini|Silk|Kindle/i.test(ua)) {
+            return true;
+        }
+        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) {
+            return true;
+        }
+        if (/Android/i.test(ua) && !/Mobile/i.test(ua)) {
+            return true;
+        }
+        return false;
     }
 
-    function preferNativeSchemes() {
-        return isInNativeApp() || isMobileUa();
+    function shouldUseNativeShare() {
+        return isInNativeApp() || isMobileOrTablet();
     }
 
     /**
@@ -49,6 +63,14 @@
      * Disponible uniquement si l'app expose le handler "shareContent".
      */
     function nativeShareViaBridge(payload) {
+        if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
+            try {
+                window.flutter_inappwebview.callHandler('shareContent', payload || {});
+                return true;
+            } catch (e) {
+                /* pont Flutter indisponible — essai ColobanesNative */
+            }
+        }
         var n = window.ColobanesNative;
         if (n && typeof n.shareContent === 'function') {
             try {
@@ -84,15 +106,26 @@
     }
 
     /**
-     * Sur téléphone / WebView : déclenche la feuille de partage native du système.
-     * Renvoie true si le partage natif a été lancé, false sinon (→ repli sur le modal).
+     * Déclenche la feuille de partage native du système (app Flutter ou navigateur mobile).
      */
     function tryNativeShare(opts) {
-        if (!preferNativeSchemes() || !opts || !opts.url) {
+        if (!opts || !opts.url) {
             return false;
         }
         var payload = buildSharePayload(opts);
         return nativeShareViaBridge(payload) || nativeShareViaWebApi(payload);
+    }
+
+    function showMobileShareFallback(opts) {
+        var url = (opts && opts.url) ? opts.url : '';
+        if (!url) {
+            return;
+        }
+        copyText(url).then(function () {
+            if (window.FlashToast && typeof window.FlashToast.success === 'function') {
+                window.FlashToast.success('Lien copié dans le presse-papiers.');
+            }
+        }).catch(function () {});
     }
 
     /**
@@ -121,18 +154,11 @@
         }
     }
 
-    function canNativeShare() {
-        return typeof navigator !== 'undefined'
-            && typeof navigator.share === 'function';
-    }
-
     function openExternal(href) {
         if (!href) {
             return;
         }
-        // En app/mobile : on charge le lien HTTPS dans la WebView (jamais de page blanche).
-        if (preferNativeSchemes()) {
-            window.location.href = href;
+        if (shouldUseNativeShare()) {
             return;
         }
         var w = window.open(href, '_blank', 'noopener,noreferrer');
@@ -141,35 +167,8 @@
         }
     }
 
-    /**
-     * Partage par canal. En app mobile / WebView, on déclenche la feuille de
-     * partage native du système (navigator.share) — seule méthode fiable sans
-     * configuration native. Sinon, on retombe sur le lien HTTPS du canal.
-     */
+    /** Partage par canal — utilisé uniquement sur ordinateur (modal desktop). */
     function shareViaChannel(channel) {
-        if (preferNativeSchemes() && canNativeShare()) {
-            var payload = {
-                title: state.title || 'Partager',
-                text: state.message || state.url,
-                url: state.url
-            };
-            try {
-                var p = navigator.share(payload);
-                if (p && typeof p.catch === 'function') {
-                    p.catch(function (err) {
-                        // AbortError = l'utilisateur a fermé la feuille : ne rien faire.
-                        if (err && err.name === 'AbortError') {
-                            return;
-                        }
-                        openExternal(channelHttpsUrl(channel));
-                    });
-                }
-                return;
-            } catch (e) {
-                openExternal(channelHttpsUrl(channel));
-                return;
-            }
-        }
         openExternal(channelHttpsUrl(channel));
     }
 
@@ -253,10 +252,12 @@
 
     function openModal(opts) {
         opts = opts || {};
-        // Téléphone / WebView : on ouvre la feuille de partage native du système
-        // (iOS, mobile web, ou app Android une fois le handler natif ajouté)
-        // au lieu d'afficher le modal in-page. Sur ordinateur : modal classique.
-        if (tryNativeShare(opts)) {
+        // Mobile, tablette et app native : feuille de partage système uniquement (pas de modal custom).
+        if (shouldUseNativeShare()) {
+            if (tryNativeShare(opts)) {
+                return;
+            }
+            showMobileShareFallback(opts);
             return;
         }
         if (!modal) {

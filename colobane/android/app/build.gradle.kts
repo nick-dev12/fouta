@@ -88,8 +88,10 @@ android {
         language {
             enableSplit = false
         }
+        // Segmentation par densité : chaque appareil ne télécharge que les images
+        // adaptées à sa densité d'écran (recommandation Google Play Console).
         density {
-            enableSplit = false
+            enableSplit = true
         }
         abi {
             enableSplit = true

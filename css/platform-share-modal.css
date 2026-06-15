@@ -1,6 +1,15 @@
 /**
  * Modal partage unifiée — produits (catalogue) + boutique vendeur (admin)
+ * Sur mobile / tablette : masquée (partage natif via platform-share-modal.js).
  */
+
+@media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+  #platformShareModal {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
 
 .prm-share-modal {
   position: fixed;
