@@ -2,6 +2,7 @@
  * Modal partage unifiée — produits + boutique vendeur.
  * WebView Flutter : schémas natifs (whatsapp://, tg://…) au lieu de target="_blank" (page blanche).
  */
+
 (function () {
     'use strict';
 
