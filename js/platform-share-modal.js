@@ -30,44 +30,42 @@
         return isInNativeApp() || isMobileUa();
     }
 
-    function channelOpenUrl(channel) {
+    /**
+     * Lien HTTPS de partage par canal.
+     * On n'utilise PLUS les schémas natifs (whatsapp://, tg://, fb://, intent://…)
+     * car la WebView des apps n'est pas configurée pour les intercepter :
+     * elle tente de les charger comme une page et affiche une page blanche.
+     * Les liens HTTPS, eux, se chargent toujours (et redirigent vers l'app si installée).
+     */
+    function channelHttpsUrl(channel) {
         var url = state.url;
         var title = state.title;
         var message = state.message || (title + ' : ' + url);
-        var native = preferNativeSchemes();
 
         switch (channel) {
             case 'wa':
-                return native
-                    ? 'whatsapp://send?text=' + enc(message)
-                    : 'https://wa.me/?text=' + enc(message);
+                return 'https://wa.me/?text=' + enc(message);
             case 'gmail':
-                return native
-                    ? 'googlegmail://co?subject=' + enc(title) + '&body=' + enc(message)
-                    : 'https://mail.google.com/mail/?view=cm&fs=1&su=' + enc(title) + '&body=' + enc(message);
+                return 'https://mail.google.com/mail/?view=cm&fs=1&su=' + enc(title) + '&body=' + enc(message);
             case 'fb':
-                if (native && /Android/i.test(navigator.userAgent || '')) {
-                    var fbWeb = 'https://www.facebook.com/sharer/sharer.php?u=' + enc(url);
-                    return 'intent://share/#Intent;package=com.facebook.katana;scheme=https;S.browser_fallback_url='
-                        + enc(fbWeb) + ';end';
-                }
-                if (native) {
-                    return 'fb://facewebmodal/f?href=' + enc(url);
-                }
                 return 'https://www.facebook.com/sharer/sharer.php?u=' + enc(url);
             case 'tg':
-                return native
-                    ? 'tg://msg?text=' + enc(message)
-                    : 'https://t.me/share/url?url=' + enc(url) + '&text=' + enc(title);
+                return 'https://t.me/share/url?url=' + enc(url) + '&text=' + enc(title);
             default:
                 return url;
         }
+    }
+
+    function canNativeShare() {
+        return typeof navigator !== 'undefined'
+            && typeof navigator.share === 'function';
     }
 
     function openExternal(href) {
         if (!href) {
             return;
         }
+        // En app/mobile : on charge le lien HTTPS dans la WebView (jamais de page blanche).
         if (preferNativeSchemes()) {
             window.location.href = href;
             return;
@@ -76,6 +74,38 @@
         if (!w) {
             window.location.href = href;
         }
+    }
+
+    /**
+     * Partage par canal. En app mobile / WebView, on déclenche la feuille de
+     * partage native du système (navigator.share) — seule méthode fiable sans
+     * configuration native. Sinon, on retombe sur le lien HTTPS du canal.
+     */
+    function shareViaChannel(channel) {
+        if (preferNativeSchemes() && canNativeShare()) {
+            var payload = {
+                title: state.title || 'Partager',
+                text: state.message || state.url,
+                url: state.url
+            };
+            try {
+                var p = navigator.share(payload);
+                if (p && typeof p.catch === 'function') {
+                    p.catch(function (err) {
+                        // AbortError = l'utilisateur a fermé la feuille : ne rien faire.
+                        if (err && err.name === 'AbortError') {
+                            return;
+                        }
+                        openExternal(channelHttpsUrl(channel));
+                    });
+                }
+                return;
+            } catch (e) {
+                openExternal(channelHttpsUrl(channel));
+                return;
+            }
+        }
+        openExternal(channelHttpsUrl(channel));
     }
 
     function copyText(text) {
@@ -248,7 +278,7 @@
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 var ch = btn.getAttribute('data-share-channel') || '';
-                openExternal(channelOpenUrl(ch));
+                shareViaChannel(ch);
             });
         });
 

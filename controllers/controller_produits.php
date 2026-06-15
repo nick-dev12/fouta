@@ -429,7 +429,6 @@ function process_add_produit() {
 
             if ($produit_id) {
                 $all_paths = array_merge([$image_principale], $images_supp);
-                $success = true;
                 $message = 'Produit ajouté avec succès !';
                 try {
                     if ($role_admin === 'vendeur' && function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif()) {
@@ -491,8 +490,11 @@ function process_add_produit() {
                             ]);
                         }
                     }
+                    $success = true;
                 } catch (Throwable $e) {
                     error_log('[process_add_produit] post-create id=' . (int) $produit_id . ': ' . $e->getMessage());
+                    $success = false;
+                    $errors[] = 'Le produit a été enregistré mais une erreur est survenue lors de la finalisation (genres, variantes, codes…). Vérifiez la fiche produit.';
                 }
             } else {
                 $errors[] = 'Une erreur est survenue lors de l\'ajout du produit.';
