@@ -143,6 +143,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $boutique_country
             );
             if ($admin_id) {
+                try {
+                    require_once __DIR__ . '/includes/geo_location_service.php';
+                    $geo_lat = geo_parse_coord($_POST['insc_geo_lat'] ?? null);
+                    $geo_lng = geo_parse_coord($_POST['insc_geo_lng'] ?? null);
+                    if (geo_coords_valid($geo_lat, $geo_lng)) {
+                        geo_save_boutique_position_bundle((int) $admin_id, $geo_lat, $geo_lng, 'gps', null);
+                    }
+                } catch (Throwable $e) {
+                    error_log('[auth-google-complete] geo vendeur: ' . $e->getMessage());
+                }
                 $admin = get_admin_by_id((int) $admin_id);
                 google_complete_set_admin_session($admin);
                 unset($_SESSION['firebase_auth_pending'], $_SESSION['google_auth_pending']);
@@ -227,7 +237,7 @@ $page_title = $type === 'vendor' ? 'Compléter ma boutique' : 'Compléter mon co
                         </div>
                     <?php endif; ?>
 
-                    <form method="post" action="auth-google-complete.php?type=<?php echo urlencode($type); ?>" class="auth-inscription-form">
+                    <form method="post" action="auth-google-complete.php?type=<?php echo urlencode($type); ?>" class="auth-inscription-form" id="googleCompleteForm">
                         <?php if ($type === 'vendor'): ?>
                             <div class="form-group">
                                 <label for="identite"><i class="fas fa-id-card"></i> Identité (nom affiché) *</label>
@@ -312,6 +322,12 @@ $page_title = $type === 'vendor' ? 'Compléter ma boutique' : 'Compléter mon co
                         <button type="submit" class="btn-submit">
                             <i class="fas fa-check"></i> Terminer
                         </button>
+                        <?php if ($type === 'vendor'): ?>
+                        <input type="hidden" name="insc_geo_lat" id="insc_geo_lat" value="">
+                        <input type="hidden" name="insc_geo_lng" id="insc_geo_lng" value="">
+                        <input type="hidden" name="insc_geo_precision" id="insc_geo_precision" value="">
+                        <input type="hidden" name="insc_geo_manual" id="insc_geo_manual" value="">
+                        <?php endif; ?>
                     </form>
                 </div>
             </div>
@@ -320,6 +336,10 @@ $page_title = $type === 'vendor' ? 'Compléter ma boutique' : 'Compléter mon co
 
     <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
     <script src="/js/geo-country-region.js" defer></script>
+    <?php if ($type === 'vendor'): ?>
+    <?php include __DIR__ . '/includes/geo_native_bridge_script.php'; ?>
+    <script src="/js/geo-inscription-location.js<?php echo asset_version_query(); ?>" defer></script>
+    <?php endif; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (typeof window.initAuthIntlTel === 'function') {

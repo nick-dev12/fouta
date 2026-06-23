@@ -1,8 +1,14 @@
 /**
  * Indicatif téléphonique international (intl-tel-input) — pages auth.
- * Uniquement aide à la saisie et normalisation E.164 à l'envoi ; la validation reste en PHP.
+ * Pays initial détecté via IP (meta auth-geo-country) ; liste modifiable par l'utilisateur.
  */
 (function () {
+  function getGeoCountryCode() {
+    var meta = document.querySelector('meta[name="auth-geo-country"]');
+    var code = meta ? String(meta.getAttribute('content') || '').trim().toLowerCase() : '';
+    return /^[a-z]{2}$/.test(code) ? code : 'sn';
+  }
+
   function getE164(iti) {
     try {
       if (
@@ -29,9 +35,18 @@
       return null;
     }
 
+    var geoCountry = getGeoCountryCode();
+    var preferred = [geoCountry, 'sn', 'ga', 'ci', 'fr', 'ml', 'tg', 'bf', 'ne', 'cm', 'bj'];
+    var seen = {};
+    preferred = preferred.filter(function (c) {
+      if (seen[c]) return false;
+      seen[c] = true;
+      return true;
+    });
+
     var iti = window.intlTelInput(input, {
-      initialCountry: 'sn',
-      preferredCountries: ['sn', 'ga', 'ci', 'fr', 'ml', 'tg', 'bf', 'ne', 'cm', 'bj'],
+      initialCountry: geoCountry,
+      preferredCountries: preferred,
       nationalMode: false,
       formatOnDisplay: true,
       strictMode: false

@@ -8,10 +8,8 @@ require_once __DIR__ . '/ip_geo_resolver.php';
 
 function marketplace_country_filter_applies(): bool
 {
-    if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
-        return false;
-    }
-    return true;
+    // Filtre pays désactivé : tous les produits publiés visibles partout.
+    return false;
 }
 
 function marketplace_ensure_session_started(): void

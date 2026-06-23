@@ -6,6 +6,11 @@
 
 session_start();
 require_once __DIR__ . '/../includes/google_auth_coop.php';
+require_once __DIR__ . '/../includes/auth_redirect.php';
+
+if (ob_get_level() === 0) {
+    ob_start();
+}
 
 $inscription_redirect_get = isset($_GET['redirect']) ? trim((string) $_GET['redirect']) : '';
 if ($inscription_redirect_get === '' || !preg_match('/^[a-z0-9_-]+$/i', $inscription_redirect_get)) {
@@ -29,8 +34,7 @@ if (isset($result['success']) && $result['success']) {
     if ($inscription_redirect_get !== '') {
         $loc .= '?' . http_build_query(['redirect' => $inscription_redirect_get]);
     }
-    header('Location: ' . $loc);
-    exit;
+    auth_redirect_after_login($loc);
 }
 ?>
 <!DOCTYPE html>

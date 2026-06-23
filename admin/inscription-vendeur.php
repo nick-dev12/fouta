@@ -4,19 +4,22 @@
  */
 session_start();
 require_once __DIR__ . '/../includes/google_auth_coop.php';
+require_once __DIR__ . '/../includes/auth_redirect.php';
+
+if (ob_get_level() === 0) {
+    ob_start();
+}
 
 require_once __DIR__ . '/../controllers/controller_admin.php';
 
 if (isset($_SESSION['admin_id'])) {
-    header('Location: dashboard.php');
-    exit;
+    auth_redirect_after_login('/admin/dashboard.php');
 }
 
 $result = process_inscription_vendeur();
 if (!empty($result['success'])) {
     $_SESSION['inscription_success'] = $result['message'];
-    header('Location: /choix-connexion.php');
-    exit;
+    auth_redirect_after_login('/choix-connexion.php');
 }
 
 $err = (!empty($result['message']) && empty($result['success'])) ? $result['message'] : '';
@@ -120,18 +123,6 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                                 </select>
                                 <i class="fas fa-location-dot" aria-hidden="true"></i>
                             </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="boutique_adresse"><i class="fas fa-location-dot"></i> Adresse de la boutique <span class="form-optional">(facultatif)</span></label>
-                            <div class="input-wrapper">
-                                <textarea id="boutique_adresse" name="boutique_adresse" rows="2" class="auth-textarea"
-                                    placeholder="Ex. : Plan Jaxaay 01 Parcelles Jaxaay Dakar"><?php echo isset($_POST['boutique_adresse']) ? htmlspecialchars((string) $_POST['boutique_adresse']) : ''; ?></textarea>
-                            </div>
-                            <button type="button" id="btn-localiser-boutique" class="btn-submit btn-submit--secondary" style="margin-top:0.5rem;">
-                                <i class="fas fa-location-crosshairs"></i> Localiser ma boutique
-                            </button>
-                            <p id="insc-geo-status" class="auth-hint" style="margin-top:0.5rem;font-size:0.85rem;color:var(--gris-moyen,#737373);"></p>
                         </div>
 
                         <div class="form-group">

@@ -28,7 +28,6 @@ if (auth_user_is_logged_in()) {
 }
 
 require_once __DIR__ . '/controllers/controller_users.php';
-login_attempt_unlock_if_expired();
 
 $result = ['success' => false, 'message' => '', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -88,15 +87,25 @@ if (isset($_SESSION['inscription_success'])) {
     unset($_SESSION['inscription_success']);
 }
 
-login_attempt_unlock_if_expired();
-$login_remaining_seconds = login_attempt_remaining_seconds();
-$login_locked = $login_remaining_seconds > 0;
-$login_show_warning = login_attempt_show_warning();
-$login_remaining_attempts = login_attempt_remaining_before_lock();
+$active_login_mode = 'email';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (string) $_POST['login_mode'] === 'phone') {
+    $active_login_mode = 'phone';
+}
 
-$active_login_mode = 'phone';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (string) $_POST['login_mode'] === 'email') {
-    $active_login_mode = 'email';
+$login_locked = false;
+$login_remaining_seconds = 0;
+$login_show_warning = false;
+$login_remaining_attempts = 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $login_identifier = login_attempt_extract_identifier_from_post();
+    if ($login_identifier !== '') {
+        login_attempt_bind_identifier($login_identifier);
+        login_attempt_unlock_if_expired();
+        $login_locked = login_attempt_is_locked();
+        $login_remaining_seconds = login_attempt_remaining_seconds();
+        $login_show_warning = login_attempt_show_warning();
+        $login_remaining_attempts = login_attempt_remaining_before_lock();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -179,18 +188,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
             ?>
 
             <div class="login-mode-tabs" role="tablist" aria-label="Mode de connexion">
-                <button type="button" role="tab" id="tab-phone" aria-controls="panel-phone"
-                    aria-selected="<?php echo $active_login_mode === 'phone' ? 'true' : 'false'; ?>"
-                    tabindex="<?php echo $active_login_mode === 'phone' ? '0' : '-1'; ?>"
-                    <?php echo $login_locked ? 'disabled' : ''; ?>>
-                    <i class="fas fa-phone" aria-hidden="true"></i> Téléphone
-                </button>
                 <button type="button" role="tab" id="tab-email" aria-controls="panel-email"
                     aria-selected="<?php echo $active_login_mode === 'email' ? 'true' : 'false'; ?>"
                     tabindex="<?php echo $active_login_mode === 'email' ? '0' : '-1'; ?>"
                     <?php echo $login_locked ? 'disabled' : ''; ?>>
                     <i class="fas fa-envelope" aria-hidden="true"></i> Email
                 </button>
+                <button type="button" role="tab" id="tab-phone" aria-controls="panel-phone"
+                    aria-selected="<?php echo $active_login_mode === 'phone' ? 'true' : 'false'; ?>"
+                    tabindex="<?php echo $active_login_mode === 'phone' ? '0' : '-1'; ?>"
+                    <?php echo $login_locked ? 'disabled' : ''; ?>>
+                    <i class="fas fa-phone" aria-hidden="true"></i> Téléphone
+                </button>
+            </div>
+
+            <div id="panel-email" class="login-panel" role="tabpanel" aria-labelledby="tab-email"
+                <?php echo $active_login_mode !== 'email' ? 'hidden' : ''; ?>>
+            <form method="POST" action="choix-connexion.php<?php echo !empty($redirect_after) ? '?' . http_build_query(['redirect' => $redirect_after]) : ''; ?>">
+                <input type="hidden" name="login_mode" value="email">
+                <?php if (!empty($redirect_after)): ?>
+                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
+                <?php endif; ?>
+                <fieldset class="login-fieldset"<?php echo $login_locked ? ' disabled' : ''; ?>>
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email *</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" name="email" placeholder="votre@email.com" autocomplete="email"
+                            value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <div class="input-wrapper password-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password">
+                        <button type="button" class="password-toggle" aria-label="Afficher le mot de passe"
+                            onclick="togglePassword('password', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="forgot-password-link">
+                        <a href="/mot-de-passe-oublie.php">Mot de passe oublié ?</a>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="accepte_conditions" name="accepte_conditions" value="1" <?php echo (isset($_POST['accepte_conditions']) && $_POST['accepte_conditions'] == '1') ? 'checked' : ''; ?>>
+                    <label for="accepte_conditions">
+                        J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>
+                    </label>
+                </div>
+                <button type="submit" class="btn-submit"<?php echo $login_locked ? ' disabled' : ''; ?>>
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+                </fieldset>
+            </form>
             </div>
 
             <div id="panel-phone" class="login-panel" role="tabpanel" aria-labelledby="tab-phone"
@@ -227,51 +280,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_mode']) && (str
                         J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>
                     </label>
                 </div>
-                <button type="submit" class="btn-submit"<?php echo $login_locked ? ' disabled' : ''; ?>>
-                    <i class="fas fa-sign-in-alt"></i> Se connecter
-                </button>
-                </fieldset>
-            </form>
-            </div>
-
-            <div id="panel-email" class="login-panel" role="tabpanel" aria-labelledby="tab-email"
-                <?php echo $active_login_mode !== 'email' ? 'hidden' : ''; ?>>
-            <form method="POST" action="choix-connexion.php<?php echo !empty($redirect_after) ? '?' . http_build_query(['redirect' => $redirect_after]) : ''; ?>">
-                <input type="hidden" name="login_mode" value="email">
-                <?php if (!empty($redirect_after)): ?>
-                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
-                <?php endif; ?>
-                <fieldset class="login-fieldset"<?php echo $login_locked ? ' disabled' : ''; ?>>
-                <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email *</label>
-                    <div class="input-wrapper">
-                        <input type="email" id="email" name="email" placeholder="votre@email.com" autocomplete="email"
-                            value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
-                        <i class="fas fa-envelope"></i>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
-                    <div class="input-wrapper password-wrapper">
-                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password">
-                        <button type="button" class="password-toggle" aria-label="Afficher le mot de passe"
-                            onclick="togglePassword('password', this)">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                    <div class="forgot-password-link">
-                        <a href="/mot-de-passe-oublie.php">Mot de passe oublié ?</a>
-                    </div>
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="accepte_conditions" name="accepte_conditions" value="1" <?php echo (isset($_POST['accepte_conditions']) && $_POST['accepte_conditions'] === '1') ? 'checked' : ''; ?>>
-                    <label for="accepte_conditions">
-                        J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>
-                    </label>
-                </div>
-
                 <button type="submit" class="btn-submit"<?php echo $login_locked ? ' disabled' : ''; ?>>
                     <i class="fas fa-sign-in-alt"></i> Se connecter
                 </button>

@@ -8,10 +8,7 @@ require_once __DIR__ . '/marketplace_country_filter.php';
 
 function marketplace_region_filter_applies(): bool
 {
-    if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
-        return false;
-    }
-    return true;
+    return false;
 }
 
 function marketplace_get_selected_region_code(): ?string

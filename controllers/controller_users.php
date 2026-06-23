@@ -27,8 +27,12 @@ function process_unified_login() {
         return ['success' => false, 'message' => '', 'type' => null, 'admin' => null, 'user' => null, 'vendeur_collaborateur' => null];
     }
 
-    if (login_attempt_is_locked()) {
-        return login_attempt_locked_result_array();
+    $login_identifier = login_attempt_extract_identifier_from_post();
+    if ($login_identifier !== '') {
+        login_attempt_bind_identifier($login_identifier);
+        if (login_attempt_is_locked()) {
+            return login_attempt_locked_result_array();
+        }
     }
 
     $login_mode = isset($_POST['login_mode']) ? trim((string) $_POST['login_mode']) : 'email';
@@ -228,12 +232,16 @@ function process_user_inscription() {
         $user_id = create_user($nom, $prenom, $email_db, $telephone_digits, $password_hash, $creation_err);
         
         if ($user_id) {
-            require_once __DIR__ . '/../includes/geo_location_service.php';
-            $geo_lat = geo_parse_coord($_POST['insc_geo_lat'] ?? null);
-            $geo_lng = geo_parse_coord($_POST['insc_geo_lng'] ?? null);
-            $geo_precision = geo_parse_precision($_POST['insc_geo_precision'] ?? null);
-            if (geo_coords_valid($geo_lat, $geo_lng)) {
-                geo_save_user_last_location((int) $user_id, $geo_lat, $geo_lng, $geo_precision);
+            try {
+                require_once __DIR__ . '/../includes/geo_location_service.php';
+                $geo_lat = geo_parse_coord($_POST['insc_geo_lat'] ?? null);
+                $geo_lng = geo_parse_coord($_POST['insc_geo_lng'] ?? null);
+                $geo_precision = geo_parse_precision($_POST['insc_geo_precision'] ?? null);
+                if (geo_coords_valid($geo_lat, $geo_lng)) {
+                    geo_save_user_last_location((int) $user_id, $geo_lat, $geo_lng, $geo_precision);
+                }
+            } catch (Throwable $e) {
+                error_log('[inscription-client] geo: ' . $e->getMessage());
             }
             $success = true;
             $message = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';

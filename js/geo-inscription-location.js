@@ -55,51 +55,41 @@
         });
     }
 
-    function autoCapture() {
-        var latEl = qs('insc_geo_lat');
-        if (!latEl || latEl.value) return;
-        capturePosition(
-            function (pos) {
-                fillCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-            },
-            function () { /* silencieux */ },
-            { maximumAge: 300000 }
-        );
-    }
+    function bindSubmitCapture() {
+        var forms = [
+            qs('inscriptionVendeurForm'),
+            qs('inscriptionForm'),
+            qs('googleCompleteForm')
+        ].filter(Boolean);
 
-    function bindLocalizeBoutique() {
-        var btn = qs('btn-localiser-boutique');
-        var addr = qs('boutique_adresse');
-        var status = qs('insc-geo-status');
-        if (!btn || !addr) return;
-
-        btn.addEventListener('click', function () {
-            btn.disabled = true;
-            if (status) status.textContent = 'Localisation en cours…';
-            capturePosition(
-                function (pos) {
-                    var lat = pos.coords.latitude;
-                    var lng = pos.coords.longitude;
-                    fillCoords(lat, lng, pos.coords.accuracy);
-                    var flag = qs('insc_geo_manual');
-                    if (flag) flag.value = '1';
-                    reverseGeocodeConcise(lat, lng, function (label) {
-                        if (label) addr.value = label;
-                        if (status) status.textContent = label ? 'Position détectée — vérifiez l\'adresse puis validez.' : 'Coordonnées enregistrées — complétez l\'adresse si besoin.';
-                        btn.disabled = false;
-                    });
-                },
-                function () {
-                    if (status) status.textContent = 'Impossible d\'obtenir la position. Saisissez l\'adresse manuellement.';
-                    btn.disabled = false;
-                },
-                { maximumAge: 0 }
-            );
+        forms.forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                var latEl = qs('insc_geo_lat');
+                if (!latEl || latEl.value) {
+                    return;
+                }
+                e.preventDefault();
+                var done = false;
+                function finish() {
+                    if (done) return;
+                    done = true;
+                    form.submit();
+                }
+                capturePosition(
+                    function (pos) {
+                        fillCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+                        var flag = qs('insc_geo_manual');
+                        if (flag) flag.value = '1';
+                        finish();
+                    },
+                    finish,
+                    { maximumAge: 0, timeout: 8000 }
+                );
+            });
         });
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        autoCapture();
-        bindLocalizeBoutique();
+        bindSubmitCapture();
     });
 })();

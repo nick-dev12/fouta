@@ -471,19 +471,23 @@ function process_inscription_vendeur() {
 
     require_once __DIR__ . '/../includes/geo_location_service.php';
     require_once __DIR__ . '/../includes/geo_geocoder.php';
-    $boutique_adresse = geo_address_concise_normalize((string) ($_POST['boutique_adresse'] ?? ''));
-    $geo_lat = geo_parse_coord($_POST['insc_geo_lat'] ?? null);
-    $geo_lng = geo_parse_coord($_POST['insc_geo_lng'] ?? null);
+    try {
+        $boutique_adresse = geo_address_concise_normalize((string) ($_POST['boutique_adresse'] ?? ''));
+        $geo_lat = geo_parse_coord($_POST['insc_geo_lat'] ?? null);
+        $geo_lng = geo_parse_coord($_POST['insc_geo_lng'] ?? null);
 
-    if ($boutique_adresse !== '') {
-        $geocoded = geo_geocode_address($boutique_adresse, $boutique_country);
-        if ($geocoded !== null) {
-            geo_save_boutique_position_bundle((int) $id, $geocoded['lat'], $geocoded['lng'], 'adresse', $boutique_adresse);
+        if ($boutique_adresse !== '') {
+            $geocoded = geo_geocode_address($boutique_adresse, $boutique_country);
+            if ($geocoded !== null) {
+                geo_save_boutique_position_bundle((int) $id, $geocoded['lat'], $geocoded['lng'], 'adresse', $boutique_adresse);
+            } elseif (geo_coords_valid($geo_lat, $geo_lng)) {
+                geo_save_boutique_position_bundle((int) $id, $geo_lat, $geo_lng, 'gps', $boutique_adresse);
+            }
         } elseif (geo_coords_valid($geo_lat, $geo_lng)) {
-            geo_save_boutique_position_bundle((int) $id, $geo_lat, $geo_lng, 'gps', $boutique_adresse);
+            geo_save_boutique_position_bundle((int) $id, $geo_lat, $geo_lng, 'gps', null);
         }
-    } elseif (geo_coords_valid($geo_lat, $geo_lng)) {
-        geo_save_boutique_position_bundle((int) $id, $geo_lat, $geo_lng, 'gps', null);
+    } catch (Throwable $e) {
+        error_log('[inscription-vendeur] geo: ' . $e->getMessage());
     }
 
     return [

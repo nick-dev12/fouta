@@ -30,7 +30,6 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
 
 // Traiter le formulaire de connexion (admin + user)
 require_once __DIR__ . '/../controllers/controller_users.php';
-login_attempt_unlock_if_expired();
 $result = process_unified_login();
 
 // Connexion admin : session + redirection vers l'espace admin
@@ -85,11 +84,21 @@ if (isset($_SESSION['inscription_success'])) {
     unset($_SESSION['inscription_success']);
 }
 
-login_attempt_unlock_if_expired();
-$login_remaining_seconds = login_attempt_remaining_seconds();
-$login_locked = $login_remaining_seconds > 0;
-$login_show_warning = login_attempt_show_warning();
-$login_remaining_attempts = login_attempt_remaining_before_lock();
+$login_locked = false;
+$login_remaining_seconds = 0;
+$login_show_warning = false;
+$login_remaining_attempts = 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $login_identifier = login_attempt_extract_identifier_from_post();
+    if ($login_identifier !== '') {
+        login_attempt_bind_identifier($login_identifier);
+        login_attempt_unlock_if_expired();
+        $login_locked = login_attempt_is_locked();
+        $login_remaining_seconds = login_attempt_remaining_seconds();
+        $login_show_warning = login_attempt_show_warning();
+        $login_remaining_attempts = login_attempt_remaining_before_lock();
+    }
+}
 
 $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode'] === 'phone') ? 'phone' : 'email';
 ?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Limitation des tentatives de connexion (session + IP en base).
+ * Limitation des tentatives de connexion par identifiant (email ou téléphone).
  * - 1er cycle : 7 échecs → blocage 15 min ; avertissement à partir du 4e échec
  * - Après déblocage : 2 échecs → blocage 30 min, puis 60 min, etc. (durée ×2)
  */
@@ -21,13 +21,74 @@ if (!defined('LOGIN_RATE_MAX_LOCKOUT_LEVEL')) {
     define('LOGIN_RATE_MAX_LOCKOUT_LEVEL', 10);
 }
 
-/**
- * Clé client (empreinte IP) — REMOTE_ADDR uniquement (pas de X-Forwarded-For non fiable).
- */
-function login_attempt_client_key()
+function login_attempt_normalize_identifier($raw)
 {
-    $ip = isset($_SERVER['REMOTE_ADDR']) ? trim((string) $_SERVER['REMOTE_ADDR']) : '0.0.0.0';
-    $salt = 'colobanes_login_rate_v1';
+    $raw = trim((string) $raw);
+    if ($raw === '') {
+        return '';
+    }
+    if (strpos($raw, 'email:') === 0 || strpos($raw, 'phone:') === 0) {
+        return $raw;
+    }
+    if (strpos($raw, '@') !== false) {
+        $email = strtolower($raw);
+        return filter_var($email, FILTER_VALIDATE_EMAIL) ? 'email:' . $email : '';
+    }
+    $digits = preg_replace('/\D/', '', $raw);
+    return $digits !== '' ? 'phone:' . $digits : '';
+}
+
+/**
+ * Identifiant lié à la requête courante (email ou téléphone soumis).
+ */
+function login_attempt_current_identifier()
+{
+    return isset($_SESSION['login_rate_identifier'])
+        ? (string) $_SESSION['login_rate_identifier']
+        : '';
+}
+
+function login_attempt_bind_identifier($identifier)
+{
+    $normalized = login_attempt_normalize_identifier($identifier);
+    if ($normalized === '') {
+        return;
+    }
+    $_SESSION['login_rate_identifier'] = $normalized;
+    login_attempt_load_state_to_session();
+}
+
+/**
+ * Extrait l'identifiant depuis le POST de connexion.
+ */
+function login_attempt_extract_identifier_from_post()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return '';
+    }
+    $mode = isset($_POST['login_mode']) ? trim((string) $_POST['login_mode']) : 'email';
+    if ($mode === 'phone') {
+        $tel = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
+        return login_attempt_normalize_identifier($tel);
+    }
+    $email = isset($_POST['email']) ? trim((string) $_POST['email']) : '';
+    return login_attempt_normalize_identifier($email);
+}
+
+/**
+ * Clé de persistance (empreinte identifiant).
+ */
+function login_attempt_client_key($identifier = null)
+{
+    if ($identifier === null) {
+        $identifier = login_attempt_current_identifier();
+    } else {
+        $identifier = login_attempt_normalize_identifier($identifier);
+    }
+    if ($identifier === '') {
+        return '';
+    }
+    $salt = 'colobanes_login_rate_v2';
     $secret_file = __DIR__ . '/../config/login_rate_secret.php';
     if (is_file($secret_file)) {
         $cfg = require $secret_file;
@@ -35,12 +96,9 @@ function login_attempt_client_key()
             $salt = (string) $cfg['ip_salt'];
         }
     }
-    return hash('sha256', $ip . '|' . $salt);
+    return hash('sha256', $identifier . '|' . $salt);
 }
 
-/**
- * Crée la table de persistance IP si absente.
- */
 function login_attempt_db_ensure_table()
 {
     static $ok = null;
@@ -77,12 +135,14 @@ function login_attempt_db_ensure_table()
 }
 
 /**
- * Charge l'état IP depuis la base.
- *
  * @return array{fail_count:int,lockout_level:int,lock_until:int,lock_duration:int}|null
  */
 function login_attempt_db_load()
 {
+    $key = login_attempt_client_key();
+    if ($key === '') {
+        return null;
+    }
     if (!login_attempt_db_ensure_table()) {
         return null;
     }
@@ -94,7 +154,7 @@ function login_attempt_db_load()
             WHERE client_key = :k
             LIMIT 1
         ');
-        $stmt->execute(['k' => login_attempt_client_key()]);
+        $stmt->execute(['k' => $key]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!is_array($row)) {
             return null;
@@ -110,11 +170,12 @@ function login_attempt_db_load()
     }
 }
 
-/**
- * Persiste l'état session vers la base (anti-contournement nouvelle session).
- */
 function login_attempt_db_save()
 {
+    $key = login_attempt_client_key();
+    if ($key === '') {
+        return false;
+    }
     if (!login_attempt_db_ensure_table()) {
         return false;
     }
@@ -131,7 +192,7 @@ function login_attempt_db_save()
                 updated_at = NOW()
         ');
         return $stmt->execute([
-            'k' => login_attempt_client_key(),
+            'k' => $key,
             'fc' => login_attempt_fail_count_raw(),
             'lv' => (int) ($_SESSION['login_lockout_level'] ?? 0),
             'lu' => (int) ($_SESSION['login_lock_until'] ?? 0),
@@ -142,61 +203,58 @@ function login_attempt_db_save()
     }
 }
 
-/**
- * Supprime l'état IP après connexion réussie.
- */
 function login_attempt_db_clear()
 {
+    $key = login_attempt_client_key();
+    if ($key === '') {
+        return false;
+    }
     if (!login_attempt_db_ensure_table()) {
         return false;
     }
     global $db;
     try {
         $stmt = $db->prepare('DELETE FROM login_rate_limit_ip WHERE client_key = :k');
-        return $stmt->execute(['k' => login_attempt_client_key()]);
+        return $stmt->execute(['k' => $key]);
     } catch (PDOException $e) {
         return false;
     }
 }
 
-/**
- * Fusionne l'état IP (plus restrictif) dans la session.
- */
-function login_attempt_sync_from_db()
+function login_attempt_load_state_to_session()
 {
+    if (login_attempt_current_identifier() === '') {
+        return;
+    }
     $row = login_attempt_db_load();
     if ($row === null) {
+        unset(
+            $_SESSION['login_fail_count'],
+            $_SESSION['login_lock_until'],
+            $_SESSION['login_lockout_level'],
+            $_SESSION['login_lock_duration']
+        );
         return;
     }
     $now = time();
     $db_lock = (int) $row['lock_until'];
-    $sess_lock = (int) ($_SESSION['login_lock_until'] ?? 0);
-
-    if ($db_lock > $now && $db_lock >= $sess_lock) {
+    if ($db_lock > $now) {
         $_SESSION['login_lock_until'] = $db_lock;
         $_SESSION['login_lock_duration'] = (int) $row['lock_duration'];
-        $_SESSION['login_lockout_level'] = max((int) ($_SESSION['login_lockout_level'] ?? 0), (int) $row['lockout_level']);
+        $_SESSION['login_lockout_level'] = (int) $row['lockout_level'];
         $_SESSION['login_fail_count'] = 0;
         return;
     }
-
-    if ($db_lock <= $now) {
-        $_SESSION['login_fail_count'] = max(login_attempt_fail_count_raw(), (int) $row['fail_count']);
-        $_SESSION['login_lockout_level'] = max((int) ($_SESSION['login_lockout_level'] ?? 0), (int) $row['lockout_level']);
-    }
+    unset($_SESSION['login_lock_until'], $_SESSION['login_lock_duration']);
+    $_SESSION['login_fail_count'] = (int) $row['fail_count'];
+    $_SESSION['login_lockout_level'] = (int) $row['lockout_level'];
 }
 
-/**
- * Compteur session brut (sans sync).
- */
 function login_attempt_fail_count_raw()
 {
     return (int) ($_SESSION['login_fail_count'] ?? 0);
 }
 
-/**
- * Durée de blocage (secondes) selon le niveau d'escalade (0 = 15 min, 1 = 30 min, …).
- */
 function login_attempt_lock_duration_for_level($level)
 {
     $level = max(0, min((int) LOGIN_RATE_MAX_LOCKOUT_LEVEL, (int) $level));
@@ -205,30 +263,24 @@ function login_attempt_lock_duration_for_level($level)
     return min($duration, 86400 * 7);
 }
 
-/**
- * Nombre max d'échecs avant blocage (7 au premier cycle, puis 2).
- */
 function login_attempt_max_before_lock()
 {
     $level = (int) ($_SESSION['login_lockout_level'] ?? 0);
     return $level === 0 ? (int) LOGIN_RATE_MAX_ATTEMPTS : (int) LOGIN_RATE_SUBSEQUENT_MAX_ATTEMPTS;
 }
 
-/**
- * Niveau d'escalade actuel (0 = jamais bloqué, 1 = après 1er blocage, …).
- */
 function login_attempt_lockout_level()
 {
     login_attempt_unlock_if_expired();
     return (int) ($_SESSION['login_lockout_level'] ?? 0);
 }
 
-/**
- * Réinitialise le compteur si la période de blocage est expirée.
- */
 function login_attempt_unlock_if_expired()
 {
-    login_attempt_sync_from_db();
+    if (login_attempt_current_identifier() === '') {
+        return;
+    }
+    login_attempt_load_state_to_session();
 
     if (empty($_SESSION['login_lock_until'])) {
         login_attempt_db_save();
@@ -244,11 +296,11 @@ function login_attempt_unlock_if_expired()
     }
 }
 
-/**
- * Indique si la connexion est temporairement bloquée.
- */
 function login_attempt_is_locked()
 {
+    if (login_attempt_current_identifier() === '') {
+        return false;
+    }
     login_attempt_unlock_if_expired();
     if (empty($_SESSION['login_lock_until'])) {
         return false;
@@ -256,11 +308,11 @@ function login_attempt_is_locked()
     return time() < (int) $_SESSION['login_lock_until'];
 }
 
-/**
- * Secondes restantes avant déblocage (0 si non bloqué).
- */
 function login_attempt_remaining_seconds()
 {
+    if (login_attempt_current_identifier() === '') {
+        return 0;
+    }
     login_attempt_unlock_if_expired();
     if (empty($_SESSION['login_lock_until'])) {
         return 0;
@@ -268,18 +320,15 @@ function login_attempt_remaining_seconds()
     return max(0, (int) $_SESSION['login_lock_until'] - time());
 }
 
-/**
- * Nombre d'échecs enregistrés dans le cycle en cours.
- */
 function login_attempt_fail_count()
 {
+    if (login_attempt_current_identifier() === '') {
+        return 0;
+    }
     login_attempt_unlock_if_expired();
     return login_attempt_fail_count_raw();
 }
 
-/**
- * Tentatives restantes avant le prochain blocage.
- */
 function login_attempt_remaining_before_lock()
 {
     if (login_attempt_is_locked()) {
@@ -288,20 +337,17 @@ function login_attempt_remaining_before_lock()
     return max(0, login_attempt_max_before_lock() - login_attempt_fail_count());
 }
 
-/**
- * Afficher l'avertissement (à partir de 4 échecs, hors période de blocage).
- */
 function login_attempt_show_warning()
 {
+    if (login_attempt_current_identifier() === '') {
+        return false;
+    }
     if (login_attempt_is_locked()) {
         return false;
     }
     return login_attempt_fail_count() >= (int) LOGIN_RATE_WARN_AFTER;
 }
 
-/**
- * Durée du blocage en cours (secondes), pour affichage.
- */
 function login_attempt_active_lock_duration_seconds()
 {
     if (!login_attempt_is_locked()) {
@@ -315,9 +361,6 @@ function login_attempt_active_lock_duration_seconds()
     return login_attempt_lock_duration_for_level($level);
 }
 
-/**
- * Après une connexion réussie.
- */
 function login_attempt_clear()
 {
     unset(
@@ -329,11 +372,11 @@ function login_attempt_clear()
     login_attempt_db_clear();
 }
 
-/**
- * Compte un échec d'authentification (identifiants incorrects, compte inactif, etc.).
- */
 function login_attempt_register_failure()
 {
+    if (login_attempt_current_identifier() === '') {
+        return;
+    }
     login_attempt_unlock_if_expired();
     if (login_attempt_is_locked()) {
         return;
@@ -352,9 +395,6 @@ function login_attempt_register_failure()
     login_attempt_db_save();
 }
 
-/**
- * Message lisible pour le temps restant.
- */
 function login_attempt_format_remaining($seconds)
 {
     $seconds = max(0, (int) $seconds);
@@ -369,9 +409,6 @@ function login_attempt_format_remaining($seconds)
     return $m . ' min ' . str_pad((string) $s, 2, '0', STR_PAD_LEFT) . ' s';
 }
 
-/**
- * Message d'avertissement tentatives restantes.
- */
 function login_attempt_warning_message()
 {
     if (!login_attempt_show_warning()) {
@@ -385,9 +422,6 @@ function login_attempt_warning_message()
     return 'Attention : il vous reste ' . $rem . ' ' . $label . ' avant un blocage temporaire de la connexion.';
 }
 
-/**
- * Affichage HTML sûr des messages serveur (autorise uniquement les sauts <br>).
- */
 function login_safe_html_message($message)
 {
     $message = trim((string) $message);
@@ -406,9 +440,6 @@ function login_safe_html_message($message)
     return implode('<br>', $safe);
 }
 
-/**
- * Réponse standard en cas de blocage actif.
- */
 function login_attempt_locked_result_array()
 {
     $rem = login_attempt_remaining_seconds();
@@ -424,12 +455,6 @@ function login_attempt_locked_result_array()
     ];
 }
 
-/**
- * Enregistre un échec et retourne le tableau « échec connexion » (avec blocage si seuil atteint).
- *
- * @param string $message Message affiché si le compte n'est pas encore bloqué
- * @return array Même forme que process_unified_login()
- */
 function login_failure_result_array($message)
 {
     login_attempt_register_failure();
