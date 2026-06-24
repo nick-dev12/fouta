@@ -18,9 +18,12 @@ $social_auth_position = (isset($social_auth_position) && $social_auth_position =
     : ((isset($google_auth_position) && $google_auth_position === 'bottom') ? 'bottom' : 'top');
 $position_class = $social_auth_position === 'top' ? ' social-auth--top' : ' social-auth--bottom';
 $social_auth_disabled = !empty($google_auth_disabled) || !empty($social_auth_disabled);
+$social_auth_variant = isset($social_auth_variant) ? trim((string) $social_auth_variant) : '';
+$is_hub_variant = ($social_auth_variant === 'hub');
+$hub_class = $is_hub_variant ? ' social-auth--hub' : '';
 ?>
-<div class="social-auth<?php echo $position_class; ?><?php echo $social_auth_disabled ? ' social-auth--disabled' : ''; ?>">
-    <?php if ($social_auth_position === 'bottom'): ?>
+<div class="social-auth<?php echo $position_class . $hub_class; ?><?php echo $social_auth_disabled ? ' social-auth--disabled' : ''; ?>">
+    <?php if ($social_auth_position === 'bottom' && !$is_hub_variant): ?>
         <div class="social-auth__divider"><span>ou</span></div>
     <?php endif; ?>
 
@@ -50,7 +53,7 @@ $social_auth_disabled = !empty($google_auth_disabled) || !empty($social_auth_dis
         </button>
     </div>
 
-    <?php if ($social_auth_position === 'top'): ?>
+    <?php if ($social_auth_position === 'top' && !$is_hub_variant): ?>
         <div class="social-auth__divider"><span>ou</span></div>
     <?php endif; ?>
 </div>
