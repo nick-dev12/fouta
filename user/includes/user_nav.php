@@ -48,6 +48,15 @@ $user_nav_items = [
         'dock' => 'primary',
     ],
     [
+        'key' => 'subscriptions',
+        'href' => 'mes-boutiques-abonnees.php',
+        'match' => ['mes-boutiques-abonnees.php'],
+        'fa' => 'fa-store',
+        'class_base' => 'menu-item menu-item--subscriptions',
+        'label' => 'Mes boutiques',
+        'dock' => 'more',
+    ],
+    [
         'key' => 'cancelled',
         'href' => 'commandes-annulees.php',
         'match' => ['commandes-annulees.php'],

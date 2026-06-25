@@ -5,7 +5,7 @@ session_start();
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
 $seo_title = "Conditions d'Utilisation - COLObanes";
-$seo_description = "Conditions générales d'utilisation de COLObanes : services marketplace, comptes, commandes, livraisons, responsabilités, propriété intellectuelle et résolution des litiges.";
+$seo_description = "Conditions générales d'utilisation de COLObanes : marketplace, modération des contenus, protection des utilisateurs, comptes, commandes, livraisons et responsabilités.";
 $seo_canonical = $base . '/conditions-utilisation.php';
 ?>
 <!DOCTYPE html>
@@ -165,6 +165,7 @@ $seo_canonical = $base . '/conditions-utilisation.php';
                 <li><a href="#cgu-4">Description des services et rôle de la plateforme</a></li>
                 <li><a href="#cgu-4b">Application mobile et autorisations système</a></li>
                 <li><a href="#cgu-5">Règles d'utilisation acceptables</a></li>
+                <li><a href="#cgu-5b">Modération des contenus et protection des utilisateurs</a></li>
                 <li><a href="#cgu-6">Offres, prix, disponibilité et erreurs manifestes</a></li>
                 <li><a href="#cgu-7">Commande, validation et preuve</a></li>
                 <li><a href="#cgu-8">Paiement</a></li>
@@ -289,6 +290,93 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         </ul>
         <p>Toute violation pourra donner lieu à des poursuites civiles ou pénales, indépendamment des sanctions contractuelles.</p>
 
+        <h2 id="cgu-5b">5 bis. Modération des contenus utilisateurs et protection de la communauté</h2>
+        <p>
+            COLObanes héberge des <strong>contenus publiés par les Utilisateurs</strong> (notamment les Vendeurs) : textes de fiches produits, descriptions de boutique, photographies, avis le cas échéant, messages adressés au support.
+            Conformément aux exigences des plateformes de distribution d'applications (<strong>Apple App Store</strong>, <strong>Google Play</strong>) et aux standards de protection des personnes, y compris les <strong>mineurs</strong> susceptibles de consulter l'application,
+            COLObanes met en œuvre une politique de modération active décrite ci-dessous.
+        </p>
+
+        <h3>5 bis.1 Contenus interdits</h3>
+        <p>Il est strictement interdit de publier, transmettre ou tenter de publier sur la Plateforme tout contenu :</p>
+        <ul>
+            <li>à caractère <strong>pornographique, sexuellement explicite ou suggestif</strong>, ou mettant en scène des mineurs de manière inappropriée ;</li>
+            <li>incitant à la <strong>violence, à la haine, au harcèlement, à la discrimination</strong> ou à des actes illégaux ;</li>
+            <li>présentant de la <strong>violence graphique, du gore</strong> ou des scènes choquantes sans justification commerciale légitime ;</li>
+            <li>relatif à des <strong>produits ou substances illicites</strong>, contrefaisants, dangereux ou interdits à la vente au Sénégal ;</li>
+            <li>constituant une <strong>atteinte aux droits de tiers</strong> (propriété intellectuelle, vie privée, diffamation) ;</li>
+            <li>de nature <strong>trompeuse, frauduleuse ou spam</strong> ;</li>
+            <li>susceptible de nuire à la <strong>sécurité physique ou morale</strong> d'autrui, en particulier des enfants et adolescents.</li>
+        </ul>
+        <p>
+            En publiant un contenu, vous déclarez qu'il respecte ces règles et que vous disposez des droits nécessaires pour le diffuser.
+        </p>
+
+        <h3>5 bis.2 Vérification et filtrage automatique des publications</h3>
+        <p>
+            COLObanes applique des <strong>contrôles automatiques avant et après publication</strong>, notamment sur les images produits et visuels de boutique :
+        </p>
+        <ul>
+            <li><strong>Contrôles techniques</strong> : validation du format, des dimensions minimales et maximales, détection de fichiers invalides ou non conformes ;</li>
+            <li><strong>Analyse automatique du contenu sensible</strong> : lorsque la fonctionnalité est activée, les images peuvent être analysées par des outils de détection (nudité, contenu choquant, violence, contenu offensant) avec des seuils de rejet configurés par COLObanes ;</li>
+            <li><strong>Liste de blocage</strong> : les empreintes (hash) des images déjà refusées pour non-conformité sont mémorisées afin d'empêcher leur republication ;</li>
+            <li><strong>Mise en attente</strong> : lorsqu'une image est signalée par l'analyse automatique ou qu'un doute subsiste, la publication peut être <strong>suspendue</strong> (« en attente de validation ») et le produit ou la boutique concerné(e) rester invisible ou limité jusqu'à décision humaine ;</li>
+            <li><strong>Rejet immédiat</strong> : les contenus manifestement non conformes sont refusés à l'upload avec un message explicatif à l'Utilisateur.</li>
+        </ul>
+        <p>
+            Les textes (titres, descriptions) font l'objet de contrôles complémentaires (mots-clés, signalements, revue humaine) lorsque COLObanes l'estime nécessaire.
+        </p>
+
+        <h3>5 bis.3 Modération humaine et blocage par la plateforme</h3>
+        <p>
+            Une équipe de modération (super-administration COLObanes) peut :
+        </p>
+        <ul>
+            <li><strong>examiner</strong> les contenus mis en file d'attente après analyse automatique ;</li>
+            <li><strong>approuver ou refuser</strong> une image ou une publication, avec motif de refus lorsque pertinent ;</li>
+            <li><strong>bloquer un produit</strong> ou le retirer du catalogue public sans préavis en cas de violation grave ou répétée ;</li>
+            <li><strong>suspendre ou clôturer</strong> le compte d'un Vendeur ou d'un Utilisateur en cas d'abus, de fraude ou de contenu illicite ;</li>
+            <li><strong>conserver des traces</strong> des décisions de modération dans la limite nécessaire à la sécurité, aux litiges et aux obligations légales.</li>
+        </ul>
+        <p>
+            COLObanes se réserve le droit de retirer tout contenu à tout moment, sans indemnité, lorsqu'il estime qu'il enfreint les présentes CGU, la loi applicable ou les règles des stores (Apple, Google).
+        </p>
+
+        <h3>5 bis.4 Signalement, blocage et protection contre les abus</h3>
+        <p>
+            Tout Utilisateur peut <strong>signaler</strong> un contenu ou un comportement qu'il estime illicite, offensant ou dangereux en contactant :
+        </p>
+        <ul>
+            <li><strong>Courriel</strong> : <a href="mailto:contact@colobanes.com">contact@colobanes.com</a> (objet recommandé : « Signalement contenu » ou « Signalement abus ») ;</li>
+            <li><strong>Support</strong> : via les canaux indiqués sur le site ou dans l'application.</li>
+        </ul>
+        <p>
+            Votre signalement doit inclure, dans la mesure du possible : l'URL ou la référence du produit, du compte ou du message concerné, la nature du problème et toute capture d'écran utile.
+            COLObanes s'efforce d'examiner les signalements <strong>dans un délai raisonnable</strong> (objectif interne : sous 72 heures ouvrées pour les contenus sensibles, sauf volume exceptionnel ou contrainte légale).
+        </p>
+        <p>
+            En cas de harcèlement ou de comportement abusif entre Utilisateurs, COLObanes peut prendre des mesures proportionnées : avertissement, restriction de fonctionnalités, suspension temporaire ou définitive du compte, suppression du contenu litigieux, transmission aux autorités compétentes si la loi l'exige.
+        </p>
+
+        <h3>5 bis.5 Protection des mineurs et contenus inappropriés</h3>
+        <p>
+            COLObanes n'est pas une application destinée aux <strong>enfants de moins de 13 ans</strong> en tant que public principal.
+            Les mineurs doivent utiliser le Service sous la <strong>supervision d'un titulaire de l'autorité parentale</strong>.
+        </p>
+        <p>
+            Nous mettons en œuvre les mesures décrites aux sections 5 bis.2 et 5 bis.3 précisément pour limiter l'exposition à des contenus inappropriés (notamment images à caractère sexuel, violence explicite ou contenu choquant).
+            Si vous êtes parent ou tuteur et pensez qu'un mineur a été exposé à un contenu inadapté sur COLObanes, contactez-nous immédiatement à <a href="mailto:contact@colobanes.com">contact@colobanes.com</a>.
+        </p>
+        <p>
+            Les Vendeurs s'engagent à ne proposer que des produits licites et des visuels adaptés à une marketplace ouverte au grand public, sans contenu pouvant nuire aux mineurs.
+        </p>
+
+        <h3>5 bis.6 Absence d'obligation de surveillance générale</h3>
+        <p>
+            Malgré les dispositifs ci-dessus, COLObanes n'est pas tenue à une obligation générale de surveillance préalable de l'ensemble des contenus publiés par les Utilisateurs.
+            Elle intervient dès qu'elle en a connaissance (signalement, analyse automatique, obligation légale) et met en œuvre les moyens raisonnables pour maintenir un environnement sûr, conformément aux exigences des plateformes de distribution et du droit applicable.
+        </p>
+
         <h2 id="cgu-6">6. Offres, prix, disponibilité et erreurs manifestes</h2>
         <p>
             Les prix sont en principe affichés en <strong>franc CFA (FCFA)</strong>, toutes taxes et frais inclus lorsque la loi l'exige, avec mention distincte des frais de livraison avant validation du paiement.
@@ -408,6 +496,8 @@ $seo_canonical = $base . '/conditions-utilisation.php';
         <div class="legal-cross">
             <strong>Documents associés :</strong>
             <a href="/politique-confidentialite.php">Politique de confidentialité</a>
+            ·
+            <a href="/politique-confidentialite.php#priv-2b">Protection et non-commercialisation des données</a>
         </div>
 
         <a href="javascript:history.back()" class="back-link">

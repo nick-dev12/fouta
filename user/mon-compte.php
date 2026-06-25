@@ -85,6 +85,20 @@ $nb_commandes_recues = count(array_values(array_filter($toutes_commandes, functi
 // Commandes actives (non livrées/annulées)
 $nb_actives = count_commandes_actives_by_user($_SESSION['user_id']);
 
+$prix_neg_recentes = [];
+$prix_neg_toutes = [];
+$prix_neg_model_path = __DIR__ . '/../models/model_prix_negociations.php';
+if (file_exists($prix_neg_model_path)) {
+    require_once $prix_neg_model_path;
+    if (function_exists('prix_negociations_table_exists') && prix_negociations_table_exists()) {
+        $prix_neg_toutes = prix_negociation_list_by_user((int) $_SESSION['user_id'], null, 0);
+        $prix_neg_actives = array_values(array_filter($prix_neg_toutes, function ($n) {
+            return ($n['statut'] ?? '') !== 'commandee';
+        }));
+        $prix_neg_recentes = array_slice($prix_neg_actives, 0, 3);
+    }
+}
+
 $avatar_initial = '?';
 $nom_trim    = trim((string) ($user['nom']    ?? ''));
 $prenom_trim = trim((string) ($user['prenom'] ?? ''));
@@ -150,6 +164,7 @@ function mc_statut_icon($s) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-mon-compte.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/prix-negociation.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== MON COMPTE v2 ===== */
 
@@ -1197,27 +1212,31 @@ function mc_statut_icon($s) {
                 <?php endif; ?>
             </div>
 
-            <!-- Liens rapides -->
+            <!-- Mes négociations -->
             <div class="mc-v2-card">
                 <div class="mc-v2-card__head">
-                    <h2><i class="fas fa-bolt"></i> Acc&egrave;s rapides</h2>
+                    <h2><i class="fas fa-handshake"></i> Mes n&eacute;gociations</h2>
                 </div>
-                <a href="mes-commandes.php" class="mc-quick-link">
-                    <div class="mc-quick-link__icon"><i class="fas fa-bag-shopping"></i></div>
-                    <div class="mc-quick-link__text">
-                        <div class="mc-quick-link__label">Mes commandes</div>
-                        <div class="mc-quick-link__sub"><?php echo $nb_commandes; ?> commande<?php echo $nb_commandes > 1 ? 's' : ''; ?> pass&eacute;e<?php echo $nb_commandes > 1 ? 's' : ''; ?></div>
+                <?php if (empty($prix_neg_recentes)): ?>
+                    <div class="prix-neg-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucune n&eacute;gociation en cours.<br>Proposez un prix sur une fiche produit vendeur.</p>
                     </div>
-                    <i class="fas fa-chevron-right mc-quick-link__arrow"></i>
-                </a>
-                <a href="/panier.php" class="mc-quick-link">
-                    <div class="mc-quick-link__icon"><i class="fas fa-cart-shopping"></i></div>
-                    <div class="mc-quick-link__text">
-                        <div class="mc-quick-link__label">Mon panier</div>
-                        <div class="mc-quick-link__sub"><?php echo $nb_panier; ?> article<?php echo $nb_panier > 1 ? 's' : ''; ?></div>
+                <?php else: ?>
+                    <div class="prix-neg-card__list prix-neg-card__list--client">
+                        <?php foreach ($prix_neg_recentes as $neg):
+                            include __DIR__ . '/../includes/partials/prix_negociation_client_card.php';
+                        endforeach; ?>
                     </div>
-                    <i class="fas fa-chevron-right mc-quick-link__arrow"></i>
-                </a>
+                <?php endif; ?>
+                <?php if (!empty($prix_neg_toutes)): ?>
+                <div class="prix-neg-card__footer">
+                    <button type="button" class="prix-neg-btn prix-neg-btn--ghost prix-neg-card__more"
+                        data-prix-neg-full-open="prixNegClientFullscreen">
+                        <i class="fas fa-expand"></i> Voir plus
+                    </button>
+                </div>
+                <?php endif; ?>
             </div>
 
         </div><!-- /.mc-v2-mid -->
@@ -1277,5 +1296,69 @@ function mc_statut_icon($s) {
         </div>
 
     </div><!-- /.mc-v2-page -->
+
+    <?php if (!empty($prix_neg_recentes) || !empty($prix_neg_toutes)): ?>
+    <?php if (!empty($prix_neg_toutes)): ?>
+    <div class="prix-neg-fullscreen" id="prixNegClientFullscreen" aria-hidden="true" hidden>
+        <header class="prix-neg-fullscreen__head">
+            <h2><i class="fas fa-handshake"></i> Toutes mes n&eacute;gociations</h2>
+            <button type="button" class="prix-neg-modal__close" data-prix-neg-full-close aria-label="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+        </header>
+        <div class="prix-neg-fullscreen__body">
+            <div class="prix-neg-card__list prix-neg-card__list--client">
+                <?php foreach ($prix_neg_toutes as $neg):
+                    include __DIR__ . '/../includes/partials/prix_negociation_client_card.php';
+                endforeach; ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="prix-neg-modal prix-neg-modal--propose" id="prixNegClientModal" role="dialog" aria-modal="true"
+        aria-labelledby="prixNegClientModalTitle" aria-hidden="true" hidden>
+        <div class="prix-neg-modal__backdrop" data-prix-neg-client-close tabindex="-1"></div>
+        <div class="prix-neg-modal__panel prix-neg-modal__panel--propose" role="document">
+            <div class="prix-neg-modal__head">
+                <h2 class="prix-neg-modal__title" id="prixNegClientModalTitle">Proposer un nouveau prix</h2>
+                <button type="button" class="prix-neg-modal__close" data-prix-neg-client-close aria-label="Fermer">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="prix-neg-modal__product-row">
+                <div class="prix-neg-modal__thumb" id="prixNegClientModalThumb" hidden>
+                    <img src="" alt="" id="prixNegClientModalImg" width="88" height="88">
+                </div>
+                <div class="prix-neg-modal__product-info">
+                    <p class="prix-neg-modal__product" id="prixNegClientModalProduct"></p>
+                    <p class="prix-neg-modal__ref">Prix catalogue : <strong id="prixNegClientModalRef"></strong></p>
+                </div>
+            </div>
+            <p class="prix-neg-modal__question">Quel prix souhaitez-vous proposer ?</p>
+            <form method="POST" action="/user/prix-negociation-action.php" id="prix-neg-client-form">
+                <input type="hidden" name="action" value="propose">
+                <input type="hidden" name="produit_id" id="prixNegClientProduitId" value="">
+                <input type="hidden" name="prix_reference" id="prixNegClientRefInput" value="">
+                <input type="hidden" name="redirect" value="/user/mon-compte.php">
+                <input type="hidden" name="option_variante_id" id="prixNegClientVarId" value="">
+                <input type="hidden" name="option_couleur" id="prixNegClientCouleur" value="">
+                <input type="hidden" name="option_poids" id="prixNegClientPoids" value="">
+                <input type="hidden" name="option_taille" id="prixNegClientTaille" value="">
+                <input type="hidden" name="option_variante_nom" id="prixNegClientVarNom" value="">
+                <input type="hidden" name="option_variante_image" id="prixNegClientVarImg" value="">
+                <input type="hidden" name="option_surcout_poids" id="prixNegClientSurPoids" value="">
+                <input type="hidden" name="option_surcout_taille" id="prixNegClientSurTaille" value="">
+                <input type="number" name="prix_propose" id="prixNegClientPropose" class="prix-neg-modal__input"
+                    min="1" step="1" required placeholder="Votre nouveau prix en FCFA" inputmode="numeric">
+                <div class="prix-neg-modal__actions">
+                    <button type="button" class="prix-neg-modal__btn prix-neg-modal__btn--cancel" data-prix-neg-client-close">Annuler</button>
+                    <button type="submit" class="prix-neg-modal__btn prix-neg-modal__btn--submit">Envoyer mon offre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="/js/prix-negociation-modal.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
 
     <?php include 'includes/user_footer.php'; ?>

@@ -31,6 +31,37 @@ function produits_has_column(string $name): bool {
 }
 
 /**
+ * Indique si le produit accepte la négociation de prix (défaut : oui si colonne absente)
+ *
+ * @param array<string, mixed>|null $produit
+ */
+function produit_prix_negociable($produit): bool
+{
+    if (!is_array($produit)) {
+        return false;
+    }
+    if (!produits_has_column('prix_negociable')) {
+        return true;
+    }
+    return (int) ($produit['prix_negociable'] ?? 1) === 1;
+}
+
+/**
+ * Lit prix_negociable depuis POST (1 = oui par défaut)
+ */
+function produit_prix_negociable_from_post(int $default = 1): int
+{
+    if (!produits_has_column('prix_negociable')) {
+        return $default;
+    }
+    if (!isset($_POST['prix_negociable'])) {
+        return $default;
+    }
+    $v = (string) $_POST['prix_negociable'];
+    return ($v === '0' || $v === 'non') ? 0 : 1;
+}
+
+/**
  * Statuts produit visibles et commandables côté client (catalogue + fiche produit).
  */
 function produit_statuts_catalogue_client(): array
@@ -1578,6 +1609,11 @@ function create_produit(array $data): int|false
             $vals .= ", :mesure";
             $params['mesure'] = isset($data['mesure']) && (string) $data['mesure'] !== '' ? trim((string) $data['mesure']) : null;
         }
+        if (produits_has_column('prix_negociable')) {
+            $cols .= ", prix_negociable";
+            $vals .= ", :prix_negociable";
+            $params['prix_negociable'] = isset($data['prix_negociable']) ? (int) $data['prix_negociable'] : 1;
+        }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {
             $cols .= ", couleurs, taille";
@@ -1652,6 +1688,10 @@ function update_produit(int $id, array $data): bool
         if (produits_has_column('mesure') && array_key_exists('mesure', $data)) {
             $sets .= ", mesure = :mesure";
             $params['mesure'] = isset($data['mesure']) && (string) $data['mesure'] !== '' ? trim((string) $data['mesure']) : null;
+        }
+        if (produits_has_column('prix_negociable') && array_key_exists('prix_negociable', $data)) {
+            $sets .= ", prix_negociable = :prix_negociable";
+            $params['prix_negociable'] = (int) $data['prix_negociable'] ? 1 : 0;
         }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {

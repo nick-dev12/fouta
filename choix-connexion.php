@@ -129,11 +129,18 @@ if (preg_match('/^[a-z0-9_-]+$/i', $rq)) {
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/auth-connexion.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/auth-choix-connexion-hub.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/mc-v2-shop-promo.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body class="auth-page page-choix-connexion auth-hub auth-page--<?php echo $active_login_mode === 'phone' ? 'phone' : 'email'; ?><?php echo $show_auth_form ? ' auth-hub--form' : ' auth-hub--landing'; ?>">
+
+    <div class="auth-hub-shell">
+        <?php
+        $mc_v2_shop_promo_id = 'auth-shop-promo-title';
+        include __DIR__ . '/includes/mc_v2_shop_promo.php';
+        ?>
 
     <div class="auth-hub" id="authHub">
         <main class="auth-hub__main">
@@ -310,6 +317,7 @@ if (preg_match('/^[a-z0-9_-]+$/i', $rq)) {
                 </p>
             </div>
         </main>
+    </div>
     </div>
 
     <script>

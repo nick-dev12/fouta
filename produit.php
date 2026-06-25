@@ -146,6 +146,17 @@ if (file_exists(__DIR__ . '/models/model_vendeur_certification.php') && !empty($
     $produit_boutique_cert_niveau = vendeur_certification_get_niveau_actif((int) $produit['admin_id']);
 }
 
+$produit_boutique_admin_id = (int) ($produit['admin_id'] ?? 0);
+$produit_boutique_abonne = false;
+$produit_boutique_peut_abonner = ($produit_boutique_admin_id > 0 && $produit_boutique_slug !== '');
+if ($produit_boutique_peut_abonner && !empty($_SESSION['user_id'])) {
+    require_once __DIR__ . '/models/model_boutique_abonnements.php';
+    $produit_boutique_abonne = boutique_abonnement_is_subscribed((int) $_SESSION['user_id'], $produit_boutique_admin_id);
+}
+$produit_abonnement_redirect = '/produit.php?id=' . (int) $produit_id;
+$produit_peut_negocier = ($produit_boutique_admin_id > 0 && produit_prix_negociable($produit));
+$produit_negociation_redirect = '/produit.php?id=' . (int) $produit_id;
+
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     require_once __DIR__ . '/controllers/controller_commerce_users.php';
@@ -195,6 +206,7 @@ $seo_json_ld_blocks = [
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/vendor-cert-ribbon.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/prix-negociation.css<?php echo asset_version_query(); ?>">
     <style>
         /* Styles pour la page produit - Palette gourmande */
         body {
@@ -391,10 +403,15 @@ $seo_json_ld_blocks = [
         .produit-boutique-rail__text {
             min-width: 0;
             text-align: left;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 2px;
         }
 
         .produit-boutique-rail__eyebrow {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             letter-spacing: 0.12em;
             text-transform: uppercase;
@@ -434,7 +451,7 @@ $seo_json_ld_blocks = [
 
         .produit-boutique-rail__nom {
             font-family: var(--font-titres);
-            font-size: 1.05rem;
+            font-size: 1.12rem;
             font-weight: 700;
             color: var(--titres);
             line-height: 1.35;
@@ -474,11 +491,11 @@ $seo_json_ld_blocks = [
             width: auto;
             flex: 0 0 auto;
             flex-shrink: 0;
-            padding: 13px 20px;
+            padding: 8px 20px;
             margin-top: 0;
             margin-left: auto;
             white-space: nowrap;
-            font-size: 0.9rem;
+            font-size: 1rem;
             font-weight: 600;
             font-family: var(--font-corps);
             color: var(--texte-clair);
@@ -504,12 +521,86 @@ $seo_json_ld_blocks = [
         }
 
         .produit-boutique-rail__cta i {
-            font-size: 0.88rem;
+            font-size: 1.08rem;
             opacity: 0.95;
+            flex-shrink: 0;
         }
 
         .produit-boutique-rail__cta-label-short {
             display: none;
+        }
+
+        .produit-boutique-rail__actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
+        .produit-boutique-rail__subscribe-form {
+            margin: 0;
+            flex: 0 0 auto;
+        }
+
+        .produit-boutique-rail__subscribe {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            padding: 8px 18px;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: var(--font-corps);
+            text-decoration: none;
+            cursor: pointer;
+            border: 1.5px solid var(--orange);
+            background: var(--orange);
+            color: var(--texte-clair);
+            box-shadow: 0 4px 14px rgba(255, 107, 53, 0.28);
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.28s ease, filter 0.2s ease, background 0.2s ease;
+            white-space: nowrap;
+            box-sizing: border-box;
+            line-height: 1.2;
+        }
+
+        .produit-boutique-rail__subscribe i {
+            font-size: 1.12rem;
+            flex-shrink: 0;
+        }
+
+        .produit-boutique-rail__subscribe:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.04);
+            box-shadow: 0 8px 22px rgba(255, 107, 53, 0.35);
+        }
+
+        .produit-boutique-rail__subscribe--subscribed {
+            background: transparent;
+            color: var(--orange);
+            box-shadow: none;
+        }
+
+        .produit-boutique-rail__subscribe--subscribed:hover {
+            background: var(--orange-pale);
+        }
+
+        .produit-boutique-rail__subscribe--login {
+            background: var(--orange);
+            color: var(--texte-clair);
+            border-color: var(--orange);
+            box-shadow: 0 4px 14px rgba(255, 107, 53, 0.28);
+        }
+
+        .produit-boutique-rail__subscribe--login:hover {
+            background: var(--orange-fonce);
+            border-color: var(--orange-fonce);
+            filter: brightness(1.04);
+            box-shadow: 0 8px 22px rgba(255, 107, 53, 0.35);
         }
 
         @media (max-width: 768px) {
@@ -519,13 +610,52 @@ $seo_json_ld_blocks = [
             }
 
             .produit-boutique-rail__inner {
+                flex-direction: column;
+                align-items: stretch;
                 gap: 10px;
             }
 
             .produit-boutique-rail__left {
-                flex: 1 1 auto;
+                width: 100%;
+                flex: 0 0 auto;
+                flex-wrap: nowrap;
                 gap: 10px;
                 min-width: 0;
+            }
+
+            .produit-boutique-rail__text {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: center;
+                gap: 2px;
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+
+            .produit-boutique-rail__eyebrow {
+                font-size: 12px;
+                flex-shrink: 0;
+                line-height: 1.2;
+            }
+
+            .produit-boutique-rail__nom {
+                font-size: 1rem;
+                line-height: 1.25;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin: 0;
+                max-width: 100%;
+            }
+
+            .produit-boutique-rail__cert {
+                margin-left: 0;
+                flex-shrink: 0;
+            }
+
+            .produit-boutique-rail__divider {
+                display: none;
             }
 
             .produit-boutique-rail__icon {
@@ -536,29 +666,66 @@ $seo_json_ld_blocks = [
                 flex-shrink: 0;
             }
 
-            .produit-boutique-rail__nom {
-                font-size: 0.88rem;
+            .produit-boutique-rail__actions {
+                width: 100%;
+                margin-left: 0;
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                align-items: stretch;
+                justify-content: flex-start;
+                gap: 10px;
             }
 
-            .produit-boutique-rail__eyebrow {
-                font-size: 10px;
+            .produit-boutique-rail__subscribe-form {
+                flex: 0 0 auto;
+                min-width: 0;
+                display: flex;
+                align-items: stretch;
+            }
+
+            .produit-boutique-rail__subscribe {
+                width: auto;
+                max-width: none;
+                min-height: 36px;
+                height: auto;
+                padding: 6px 14px;
+                font-size: 0.96rem;
+                gap: 8px;
+                border-radius: 12px;
+            }
+
+            .produit-boutique-rail__subscribe i {
+                font-size: 1.12rem;
             }
 
             .produit-boutique-rail__cta {
-                flex: 0 0 auto;
-                padding: 8px 12px;
-                font-size: 0.76rem;
-                gap: 6px;
+                flex: 0 1 auto;
+                min-width: 0;
+                max-width: calc(100% - 6.5rem);
+                width: auto;
+                min-height: 36px;
+                padding: 6px 14px;
+                font-size: 0.96rem;
+                gap: 8px;
                 border-radius: 12px;
-                margin-left: auto;
+                margin-left: 0;
+                white-space: nowrap;
+                box-sizing: border-box;
             }
 
             .produit-boutique-rail__cta i {
-                font-size: 0.75rem;
+                font-size: 1.06rem;
+                flex-shrink: 0;
+            }
+
+            .produit-boutique-rail__cta .produit-boutique-rail__cta-label-long {
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
         }
 
-        @media (max-width: 380px) {
+        @media (max-width: 480px) {
             .produit-boutique-rail__cta .produit-boutique-rail__cta-label-long {
                 display: none;
             }
@@ -825,11 +992,13 @@ $seo_json_ld_blocks = [
 
         .quantite-controls {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            align-items: stretch;
+            gap: clamp(8px, 2vw, 12px);
             margin-bottom: 15px;
             width: 100%;
             max-width: 100%;
+            flex-wrap: nowrap;
+            min-width: 0;
         }
 
         .quantite-input-wrapper {
@@ -838,7 +1007,9 @@ $seo_json_ld_blocks = [
             border: 2px solid var(--border-input);
             border-radius: 12px;
             overflow: hidden;
-            flex-shrink: 0;
+            flex: 0 1 auto;
+            min-width: 0;
+            height: 48px;
         }
 
         .quantite-btn {
@@ -1723,16 +1894,49 @@ $seo_json_ld_blocks = [
                     <?php endif; ?>
                 </div>
                 <span class="produit-boutique-rail__divider" aria-hidden="true"></span>
-                <a href="<?php echo htmlspecialchars($produit_boutique_url); ?>"
-                    class="produit-boutique-rail__cta">
-                    <?php if ($produit_boutique_slug !== ''): ?>
-                    <span class="produit-boutique-rail__cta-label-long">Voir la boutique du vendeur</span>
-                    <span class="produit-boutique-rail__cta-label-short" aria-hidden="true">Voir la boutique</span>
-                    <?php else: ?>
-                    <span>Voir le catalogue</span>
+                <div class="produit-boutique-rail__actions">
+                    <?php if ($produit_boutique_peut_abonner): ?>
+                        <?php if (!empty($_SESSION['user_id'])): ?>
+                        <form class="produit-boutique-rail__subscribe-form" method="post"
+                            action="/user/boutique-abonnement-action.php">
+                            <input type="hidden" name="admin_id" value="<?php echo (int) $produit_boutique_admin_id; ?>">
+                            <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($produit_abonnement_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+                            <?php if ($produit_boutique_abonne): ?>
+                            <input type="hidden" name="action" value="unsubscribe">
+                            <button type="submit" class="produit-boutique-rail__subscribe produit-boutique-rail__subscribe--subscribed"
+                                aria-label="Ne plus suivre <?php echo htmlspecialchars($produit_boutique_nom, ENT_QUOTES, 'UTF-8'); ?>">
+                                <i class="fas fa-check" aria-hidden="true"></i>
+                                <span>Suivi</span>
+                            </button>
+                            <?php else: ?>
+                            <input type="hidden" name="action" value="subscribe">
+                            <button type="submit" class="produit-boutique-rail__subscribe"
+                                aria-label="Suivre <?php echo htmlspecialchars($produit_boutique_nom, ENT_QUOTES, 'UTF-8'); ?>">
+                                <i class="fas fa-plus" aria-hidden="true"></i>
+                                <span>Suivre</span>
+                            </button>
+                            <?php endif; ?>
+                        </form>
+                        <?php else: ?>
+                        <a href="/choix-connexion.php?redirect=<?php echo rawurlencode($produit_abonnement_redirect); ?>"
+                            class="produit-boutique-rail__subscribe produit-boutique-rail__subscribe--login"
+                            aria-label="Se connecter pour suivre <?php echo htmlspecialchars($produit_boutique_nom, ENT_QUOTES, 'UTF-8'); ?>">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>Suivre</span>
+                        </a>
+                        <?php endif; ?>
                     <?php endif; ?>
-                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                </a>
+                    <a href="<?php echo htmlspecialchars($produit_boutique_url); ?>"
+                        class="produit-boutique-rail__cta">
+                        <?php if ($produit_boutique_slug !== ''): ?>
+                        <span class="produit-boutique-rail__cta-label-long">Visiter la boutique du vendeur</span>
+                        <span class="produit-boutique-rail__cta-label-short" aria-hidden="true">Voir la boutique</span>
+                        <?php else: ?>
+                        <span>Voir le catalogue</span>
+                        <?php endif; ?>
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
             </div>
         </aside>
 
@@ -2062,6 +2266,22 @@ $seo_json_ld_blocks = [
                                     min="1" required>
                                 <button type="button" class="quantite-btn" id="increase-qty">+</button>
                             </div>
+                            <?php if ($produit_peut_negocier): ?>
+                                <?php if (!empty($_SESSION['user_id'])): ?>
+                                <button type="button" class="btn-negocier-prix" data-prix-neg-open
+                                    aria-haspopup="dialog" aria-controls="prixNegModal">
+                                    <i class="fas fa-handshake" aria-hidden="true"></i>
+                                    <span>Négocier le prix</span>
+                                </button>
+                                <?php else: ?>
+                                <button type="button" class="btn-negocier-prix" data-prix-neg-login-open
+                                    data-login-redirect="<?php echo htmlspecialchars($produit_negociation_redirect, ENT_QUOTES, 'UTF-8'); ?>"
+                                    aria-haspopup="dialog" aria-controls="prixNegLoginModal">
+                                    <i class="fas fa-handshake" aria-hidden="true"></i>
+                                    <span>Négocier le prix</span>
+                                </button>
+                                <?php endif; ?>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -2121,6 +2341,75 @@ $seo_json_ld_blocks = [
             </section>
         <?php endif; ?>
     </div>
+
+    <?php
+    $prix_neg_modal_img = !empty($produit['image_principale'])
+        ? upload_image_url($produit['image_principale'], 'md')
+        : '';
+    ?>
+    <?php if ($produit_peut_negocier && empty($_SESSION['user_id'])): ?>
+    <div class="prix-neg-modal prix-neg-modal--login" id="prixNegLoginModal" role="dialog" aria-modal="true"
+        aria-labelledby="prixNegLoginTitle" aria-hidden="true" hidden>
+        <div class="prix-neg-modal__backdrop" data-prix-neg-close tabindex="-1"></div>
+        <div class="prix-neg-modal__panel prix-neg-modal__panel--login" role="document">
+            <div class="prix-neg-modal__hero prix-neg-modal__hero--login">
+                <span class="prix-neg-modal__hero-icon" aria-hidden="true"><i class="fas fa-user-circle"></i></span>
+            </div>
+            <div class="prix-neg-modal__head">
+                <h2 class="prix-neg-modal__title" id="prixNegLoginTitle">Connexion requise</h2>
+                <button type="button" class="prix-neg-modal__close" data-prix-neg-close aria-label="Fermer">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <p class="prix-neg-modal__lead">Pour n&eacute;gocier le prix de ce produit, connectez-vous &agrave; votre compte client.</p>
+            <div class="prix-neg-modal__actions prix-neg-modal__actions--stack">
+                <a href="/choix-connexion.php?redirect=<?php echo rawurlencode($produit_negociation_redirect); ?>"
+                    class="prix-neg-modal__btn prix-neg-modal__btn--submit" id="prixNegLoginBtn">Se connecter</a>
+                <button type="button" class="prix-neg-modal__btn prix-neg-modal__btn--cancel" data-prix-neg-close">Annuler</button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($produit_peut_negocier && !empty($_SESSION['user_id'])): ?>
+    <div class="prix-neg-modal prix-neg-modal--propose" id="prixNegModal" role="dialog" aria-modal="true"
+        aria-labelledby="prixNegModalTitle" aria-hidden="true" hidden>
+        <div class="prix-neg-modal__backdrop" data-prix-neg-close tabindex="-1"></div>
+        <div class="prix-neg-modal__panel prix-neg-modal__panel--propose" role="document">
+            <div class="prix-neg-modal__head">
+                <h2 class="prix-neg-modal__title" id="prixNegModalTitle">N&eacute;gocier le prix</h2>
+                <button type="button" class="prix-neg-modal__close" data-prix-neg-close aria-label="Fermer">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="prix-neg-modal__product-row">
+                <?php if ($prix_neg_modal_img !== ''): ?>
+                <div class="prix-neg-modal__thumb">
+                    <img src="<?php echo htmlspecialchars($prix_neg_modal_img, ENT_QUOTES, 'UTF-8'); ?>"
+                        alt="<?php echo htmlspecialchars($produit['nom'], ENT_QUOTES, 'UTF-8'); ?>" width="88" height="88">
+                </div>
+                <?php endif; ?>
+                <div class="prix-neg-modal__product-info">
+                    <p class="prix-neg-modal__product"><?php echo htmlspecialchars($produit['nom'], ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="prix-neg-modal__ref">Prix affich&eacute; : <strong id="prix-neg-ref-display"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</strong></p>
+                </div>
+            </div>
+            <p class="prix-neg-modal__question">Combien proposez-vous pour ce produit ?</p>
+            <form method="POST" action="/user/prix-negociation-action.php" id="prix-neg-form">
+                <input type="hidden" name="action" value="propose">
+                <input type="hidden" name="produit_id" value="<?php echo (int) $produit_id; ?>">
+                <input type="hidden" name="prix_reference" id="prix-neg-ref-input" value="<?php echo (float) $prix_affichage; ?>">
+                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($produit_negociation_redirect, ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="number" name="prix_propose" id="prix-neg-propose" class="prix-neg-modal__input"
+                    min="1" step="1" required placeholder="Votre prix en FCFA" inputmode="numeric">
+                <div class="prix-neg-modal__actions">
+                    <button type="button" class="prix-neg-modal__btn prix-neg-modal__btn--cancel" data-prix-neg-close">Annuler</button>
+                    <button type="submit" class="prix-neg-modal__btn prix-neg-modal__btn--submit">Envoyer mon offre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <?php include('footer.php') ?>
 
@@ -2395,6 +2684,9 @@ $seo_json_ld_blocks = [
             updatePrixTotal();
         }
     </script>
+    <?php if ($produit_peut_negocier): ?>
+    <script src="/js/prix-negociation-modal.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
 
 </body>
 

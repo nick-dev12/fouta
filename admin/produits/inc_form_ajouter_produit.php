@@ -69,6 +69,13 @@ if (function_exists('get_categorie_generale_attributs_map_for_js')) {
 $fap_attr_conditional = !empty($fap_use_category_hierarchy);
 $pm_unite = isset($PM['unite']) ? (string) $PM['unite'] : 'unité';
 $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
+$pm_prix_negociable = 1;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['prix_negociable'])) {
+    $pm_prix_negociable = ((string) $_POST['prix_negociable'] === '0') ? 0 : 1;
+} elseif ($fap_is_edit && $fap_edit_produit && function_exists('produits_has_column') && produits_has_column('prix_negociable')) {
+    $pm_prix_negociable = (int) ($fap_edit_produit['prix_negociable'] ?? 1) ? 1 : 0;
+}
+$fap_attrs_card_hidden = $fap_use_category_hierarchy && (int) $vcat_prefill_generale <= 0;
 ?>
 <form method="POST" action="<?php echo htmlspecialchars($add_produit_form_action); ?>"
     enctype="multipart/form-data"
@@ -165,9 +172,16 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                             value="<?php echo isset($PM['stock']) ? htmlspecialchars($PM['stock']) : '0'; ?>">
                     </div>
                 </div>
+                <div class="fap-field">
+                    <label for="prix_negociable">Prix n&eacute;gociable</label>
+                    <select id="prix_negociable" name="prix_negociable">
+                        <option value="1" <?php echo $pm_prix_negociable === 1 ? 'selected' : ''; ?>>Oui</option>
+                        <option value="0" <?php echo $pm_prix_negociable === 0 ? 'selected' : ''; ?>>Non</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="fap-card">
+            <div class="fap-card" id="fap-attrs-card"<?php echo $fap_attrs_card_hidden ? ' hidden' : ''; ?>>
                 <div class="fap-card-head">
                     <i class="fas fa-sliders-h"></i>
                     <h3>Poids, taille, mesures &amp; couleurs</h3>
@@ -1098,6 +1112,12 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
     (function () {
         var map = <?php echo json_encode($fap_cg_attr_map, JSON_UNESCAPED_UNICODE); ?>;
         var sel = document.getElementById('categorie_generale_id');
+        var attrsCard = document.getElementById('fap-attrs-card');
+        function syncAttrsCardVisibility() {
+            if (!attrsCard || !sel) return;
+            var id = parseInt(sel.value, 10) || 0;
+            attrsCard.hidden = id <= 0;
+        }
         function syncFapAttrs() {
             var els = document.querySelectorAll('[data-fap-attr]');
             if (!sel) {
@@ -1117,8 +1137,12 @@ $pm_mesure = isset($PM['mesure']) ? (string) $PM['mesure'] : '';
                 el.style.display = show ? '' : 'none';
             }
         }
-        if (sel) sel.addEventListener('change', syncFapAttrs);
-        syncFapAttrs();
+        function syncCategoryAttrs() {
+            syncAttrsCardVisibility();
+            syncFapAttrs();
+        }
+        if (sel) sel.addEventListener('change', syncCategoryAttrs);
+        syncCategoryAttrs();
     })();
     <?php endif; ?>
 

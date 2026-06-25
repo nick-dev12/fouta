@@ -47,13 +47,11 @@ if (function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif())
         </option>
         <?php endforeach; ?>
     </select>
-    <small class="fap-hint">Rayon défini par la plateforme (super administrateur).</small>
 </div>
 
 <div id="fap-genres-wrap" class="fap-field fap-field-genres fap-field-cat-vendeur-only"<?php echo $genres_wrap_hidden ? ' hidden' : ''; ?>>
     <fieldset class="fap-fieldset-genres">
         <legend>Genres <span class="required" id="fap-genres-legend-required" hidden aria-hidden="true">*</span></legend>
-        <p class="fap-hint">Uniquement si des genres sont associés à la catégorie principale choisie (configuration super administrateur).</p>
         <?php if (empty($genres_liste)): ?>
             <p class="fap-hint fap-hint--warn">Aucun genre n’est encore configuré. Contactez le super administrateur.</p>
         <?php else: ?>
@@ -87,7 +85,6 @@ if (function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif())
 <div id="fap-souscats-wrap" class="fap-field fap-field-souscats fap-field-cat-vendeur-only" hidden>
     <fieldset class="fap-fieldset-genres fap-fieldset-souscats">
         <legend>Sous-catégories <span class="required" id="fap-souscats-legend-required" hidden aria-hidden="true">*</span></legend>
-        <p class="fap-hint">Cochez une ou plusieurs rubriques proposées pour le rayon choisi (configuration super administrateur).</p>
         <div class="fap-genres-grid" role="group" aria-label="Sous-catégories du produit" id="fap-souscats-grid-inner">
             <?php foreach ($vendeur_subcats_for_form as $srow):
                 $sid = (int) ($srow['id'] ?? 0);
@@ -221,7 +218,6 @@ $afficher_rayon = !empty($rayons_liste);
         </option>
         <?php endforeach; ?>
     </select>
-    <small class="fap-hint">Rayon défini par la plateforme (super administrateur).</small>
 </div>
 <?php endif; ?>
 

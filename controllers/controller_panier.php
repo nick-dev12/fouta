@@ -10,6 +10,92 @@ require_once __DIR__ . '/../models/model_variantes.php';
 require_once __DIR__ . '/../includes/panier_invite.php';
 
 /**
+ * Ajoute au panier un produit au prix convenu via une négociation validée
+ *
+ * @param int $negotiation_id
+ * @param int $user_id
+ * @return array{success:bool, message?:string}
+ */
+function process_add_to_panier_from_negociation($negotiation_id, $user_id)
+{
+    $negotiation_id = (int) $negotiation_id;
+    $user_id = (int) $user_id;
+
+    if ($negotiation_id <= 0 || $user_id <= 0) {
+        return ['success' => false, 'message' => 'Négociation invalide.'];
+    }
+
+    require_once __DIR__ . '/../models/model_prix_negociations.php';
+    if (!prix_negociations_table_exists()) {
+        return ['success' => false, 'message' => 'Négociation indisponible.'];
+    }
+
+    $neg = prix_negociation_get_by_id($negotiation_id);
+    if (!$neg || (int) ($neg['user_id'] ?? 0) !== $user_id) {
+        return ['success' => false, 'message' => 'Négociation introuvable.'];
+    }
+
+    if (!prix_negociation_peut_commander($neg)) {
+        return ['success' => false, 'message' => 'Aucun prix convenu pour cette négociation.'];
+    }
+
+    $prix_convenu = prix_negociation_prix_convenu_effectif($neg);
+    if ($prix_convenu === null || $prix_convenu <= 0) {
+        return ['success' => false, 'message' => 'Prix convenu invalide.'];
+    }
+
+    $produit_id = (int) ($neg['produit_id'] ?? 0);
+    $produit = get_produit_by_id($produit_id);
+    if (!$produit || !produit_est_visible_client($produit['statut'] ?? '')) {
+        return ['success' => false, 'message' => 'Ce produit n\'est plus disponible.'];
+    }
+
+    $opts = prix_negociation_options_json_decode($neg['options_json'] ?? null);
+    $variante_id = (int) ($neg['variante_id'] ?? 0);
+    if ($variante_id <= 0 && !empty($opts['variante_id'])) {
+        $variante_id = (int) $opts['variante_id'];
+    }
+
+    $variante = null;
+    if ($variante_id > 0) {
+        $v = get_variante_by_id($variante_id);
+        if ($v && (int) $v['produit_id'] === $produit_id) {
+            $variante = $v;
+        }
+    }
+
+    $couleur = trim((string) ($opts['couleur'] ?? ''));
+    $poids = trim((string) ($opts['poids'] ?? ''));
+    $taille = trim((string) ($opts['taille'] ?? ''));
+    $surcout_poids = (float) ($opts['surcout_poids'] ?? 0);
+    $surcout_taille = (float) ($opts['surcout_taille'] ?? 0);
+    $variante_nom = $variante ? (string) ($variante['nom'] ?? '') : trim((string) ($opts['variante_nom'] ?? ''));
+    $variante_image = $variante ? (string) ($variante['image'] ?? '') : trim((string) ($opts['variante_image'] ?? ''));
+    $vendeur_id = !empty($produit['admin_id']) ? (int) $produit['admin_id'] : null;
+
+    if (add_to_panier(
+        $user_id,
+        $produit_id,
+        1,
+        $couleur !== '' ? $couleur : null,
+        $poids !== '' ? $poids : null,
+        $taille !== '' ? $taille : null,
+        $variante ? (int) $variante['id'] : ($variante_id > 0 ? $variante_id : null),
+        $variante_nom !== '' ? $variante_nom : null,
+        $variante_image !== '' ? $variante_image : null,
+        $surcout_poids,
+        $surcout_taille,
+        $prix_convenu,
+        $vendeur_id
+    )) {
+        prix_negociation_mark_commandee($negotiation_id, $user_id);
+        return ['success' => true, 'message' => 'Produit ajouté au panier au prix convenu.'];
+    }
+
+    return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];
+}
+
+/**
  * Traite l'ajout d'un produit au panier
  * @return array Tableau avec 'success' (bool) et 'message' (string)
  */

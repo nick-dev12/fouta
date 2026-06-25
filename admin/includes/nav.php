@@ -20,6 +20,7 @@ $is_caisse_encaisser = $is_caisse && ($current_page === 'encaisser-ticket.php');
 $is_caisse_historique = $is_caisse && ($current_page === 'historique-encaissements.php');
 $is_devis = strpos($current_dir, '/devis') !== false;
 $is_users = strpos($current_dir, '/users') !== false;
+$is_abonnes = strpos($current_dir, '/abonnes') !== false;
 $is_contacts = strpos($current_dir, '/contacts') !== false;
 $is_zones_livraison = strpos($current_dir, '/zones-livraison') !== false;
 $is_comptes = strpos($current_dir, '/comptes') !== false;
@@ -78,7 +79,7 @@ if ($is_vendeur_menu && !empty($_SESSION['admin_id']) && file_exists(dirname(__D
     }
 }
 
-if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres || $is_commandes || $is_caisse || $is_devis || $is_users || $is_contacts || $is_zones_livraison || $is_comptes || $is_commercial_hub || $is_comptabilite_hub) {
+if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres || $is_commandes || $is_caisse || $is_devis || $is_users || $is_abonnes || $is_contacts || $is_zones_livraison || $is_comptes || $is_commercial_hub || $is_comptabilite_hub) {
     $base_path = '../';
 } else {
     $base_path = '';
@@ -193,11 +194,19 @@ if ($is_vendeur_menu) {
                 <span class="menu-item__text">Contacts</span>
             </a>
             <?php endif; ?>
+            <?php if ($is_vendeur_menu): ?>
+            <a href="<?php echo $base_path; ?>abonnes/index.php"
+                class="menu-item <?php echo $is_abonnes ? 'active' : ''; ?>">
+                <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-user-check"></i></span>
+                <span class="menu-item__text">Abonnés</span>
+            </a>
+            <?php else: ?>
             <a href="<?php echo $base_path; ?>users/index.php"
                 class="menu-item <?php echo $is_users ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-store"></i></span>
                 <span class="menu-item__text">Clients</span>
             </a>
+            <?php endif; ?>
             <?php if ($is_vendeur_menu): ?>
             <a href="<?php echo $base_path; ?>parametres/certification.php"
                 class="menu-item<?php echo $is_certification ? ' active' : ''; ?>">

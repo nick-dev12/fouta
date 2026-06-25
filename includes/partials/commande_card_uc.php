@@ -98,12 +98,7 @@ if ($card_detail_url === '' && $cmd_id > 0) {
                 $card_has_geo = geo_coords_valid($card_geo_lat, $card_geo_lng);
                 $card_addr = trim((string) ($commande['adresse_livraison'] ?? ''));
                 ?>
-                <?php if (commande_is_retrait($commande) && $card_addr !== ''): ?>
-                <p class="uc-v2-card__pickup" title="<?php echo htmlspecialchars($card_addr, ENT_QUOTES, 'UTF-8'); ?>">
-                    <i class="fas fa-store"></i>
-                    <?php echo htmlspecialchars(mb_strlen($card_addr) > 72 ? mb_substr($card_addr, 0, 69) . '…' : $card_addr, ENT_QUOTES, 'UTF-8'); ?>
-                </p>
-                <?php elseif ($card_has_geo || $card_addr !== ''): ?>
+                <?php if (!commande_is_retrait($commande) && ($card_has_geo || $card_addr !== '')): ?>
                 <button type="button"
                     class="uc-v2-card__pos-btn js-cmd-voir-position"
                     data-cmd-id="<?php echo $cmd_id; ?>"

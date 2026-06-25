@@ -16,6 +16,17 @@ class FCMService {
   static String? _serverUrl;
   static Function(String)? _onNotificationTap;
 
+  /// Extrait l'URL de navigation depuis le payload FCM (web: link, legacy: redirect_url/url)
+  static String? notificationUrlFromData(Map<String, dynamic> data) {
+    for (final key in ['redirect_url', 'url', 'link']) {
+      final value = data[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
   /// Initialiser les notifications locales (Android + iOS)
   static Future<void> initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings(
@@ -259,7 +270,7 @@ class FCMService {
     final title = message.notification?.title ?? 'COLObanes';
     final body = message.notification?.body ?? '';
     final url =
-        message.data['redirect_url'] ?? message.data['url'] ?? _serverUrl ?? '';
+        notificationUrlFromData(message.data) ?? _serverUrl ?? '';
 
     print('🔔 Titre: $title');
     print('🔔 Corps: $body');
@@ -341,12 +352,11 @@ class FCMService {
 
   /// Gérer la navigation depuis une notification
   static void _handleNotificationNavigation(Map<String, dynamic> data) {
-    // Si vous avez une URL de redirection dans les données
-    if (data.containsKey('redirect_url') || data.containsKey('url')) {
-      final url = data['redirect_url'] ?? data['url'];
-      if (url != null && url is String) {
-        print('🔗 Navigation vers: $url');
-        // Ici, vous pouvez utiliser un callback pour naviguer dans la WebView
+    final url = notificationUrlFromData(data);
+    if (url != null && url.isNotEmpty) {
+      print('🔗 Navigation vers: $url');
+      if (_onNotificationTap != null) {
+        _onNotificationTap!(url);
       }
     }
   }
@@ -391,7 +401,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   final title = message.notification?.title ?? 'COLObanes';
   final body = message.notification?.body ?? '';
-  final url = message.data['redirect_url'] ?? message.data['url'] ?? '';
+  final url = FCMService.notificationUrlFromData(message.data) ?? '';
 
   const androidDetails = AndroidNotificationDetails(
     'colobanes_channel',

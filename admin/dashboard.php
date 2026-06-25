@@ -68,6 +68,27 @@ $firebase_notify_type = 'admin';
 
 $vf_dash = admin_vendeur_filter_id();
 require_once __DIR__ . '/includes/vendeur_share_boutique.php';
+
+$prix_neg_recentes = [];
+$prix_neg_toutes = [];
+$prix_neg_par_produit = [];
+$prix_neg_produits_apercu = [];
+if ($__role_dash === 'vendeur') {
+    $prix_neg_model_path = __DIR__ . '/../models/model_prix_negociations.php';
+    if (file_exists($prix_neg_model_path)) {
+        require_once $prix_neg_model_path;
+        if (function_exists('prix_negociations_table_exists') && prix_negociations_table_exists()) {
+            $prix_neg_toutes = prix_negociation_list_by_admin((int) $_SESSION['admin_id'], null, 0);
+            if (function_exists('prix_negociation_group_by_produit')) {
+                $prix_neg_par_produit = prix_negociation_group_by_produit($prix_neg_toutes);
+                $prix_neg_produits_apercu = array_values(array_filter($prix_neg_par_produit, function ($g) {
+                    return ((int) ($g['pending_count'] ?? 0)) > 0;
+                }));
+            }
+        }
+    }
+}
+
 $produits_all = get_all_produits(null, $vf_dash);
 
 require_once __DIR__ . '/../includes/image_optimizer.php';
@@ -109,6 +130,7 @@ if (count($dash_promo_images) < 4) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-vendeur-share.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/prix-negociation.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== DASHBOARD VENDEUR v2 ===== */
 
@@ -1357,6 +1379,26 @@ if (count($dash_promo_images) < 4) {
         <!-- ===== COMMANDES RÉCENTES + ACCÈS RAPIDES ===== -->
         <div class="dash-v2-mid">
 
+            <?php if ($__role_dash === 'vendeur'): ?>
+            <div class="dash-v2-card">
+                <div class="dash-v2-card__head">
+                    <h3><i class="fas fa-handshake"></i> Produits &agrave; n&eacute;gocier les prix</h3>
+                </div>
+                <?php if (empty($prix_neg_produits_apercu)): ?>
+                    <div class="prix-neg-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucune offre en attente pour le moment.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="prix-neg-produit-list">
+                        <?php foreach ($prix_neg_produits_apercu as $prix_neg_groupe):
+                            include __DIR__ . '/../includes/partials/prix_negociation_vendor_product.php';
+                        endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+
             <!-- Commandes récentes -->
             <div class="dash-v2-card">
                 <div class="dash-v2-card__head">
@@ -1401,7 +1443,7 @@ if (count($dash_promo_images) < 4) {
                 <?php endif; ?>
             </div>
 
-            <!-- Accès rapides -->
+            <?php if ($__role_dash !== 'vendeur'): ?>
             <div class="dash-v2-card">
                 <div class="dash-v2-card__head">
                     <h3><i class="fas fa-bolt"></i> Acc&egrave;s rapides</h3>
@@ -1431,6 +1473,7 @@ if (count($dash_promo_images) < 4) {
                     <i class="fas fa-chevron-right dash-quick-item__arrow"></i>
                 </a>
             </div>
+            <?php endif; ?>
 
         </div><!-- /.dash-v2-mid -->
 
@@ -1547,6 +1590,47 @@ if (count($dash_promo_images) < 4) {
             }
         });
     </script>
+    <?php
+    if ($__role_dash === 'vendeur' && !empty($prix_neg_par_produit)):
+        foreach ($prix_neg_par_produit as $prix_neg_groupe):
+            $pn_prod_id = (int) ($prix_neg_groupe['produit_id'] ?? 0);
+            if ($pn_prod_id <= 0) {
+                continue;
+            }
+            $pn_modal_id = 'prixNegOffersProd' . $pn_prod_id;
+            $pn_prod_nom = (string) ($prix_neg_groupe['produit_nom'] ?? 'Produit');
+            $pn_prod_img = trim((string) ($prix_neg_groupe['produit_image'] ?? ''));
+            $pn_img_url = $pn_prod_img !== '' ? upload_image_url($pn_prod_img, 'sm') : '';
+    ?>
+    <div class="prix-neg-fullscreen prix-neg-fullscreen--offers" id="<?php echo htmlspecialchars($pn_modal_id, ENT_QUOTES, 'UTF-8'); ?>" aria-hidden="true" hidden>
+        <header class="prix-neg-fullscreen__head">
+            <div class="prix-neg-fullscreen__head-main">
+                <?php if ($pn_img_url !== ''): ?>
+                <img class="prix-neg-fullscreen__head-img" src="<?php echo htmlspecialchars($pn_img_url, ENT_QUOTES, 'UTF-8'); ?>" alt="" width="48" height="48">
+                <?php endif; ?>
+                <div>
+                    <h2><?php echo htmlspecialchars($pn_prod_nom, ENT_QUOTES, 'UTF-8'); ?></h2>
+                    <p class="prix-neg-fullscreen__sub">Offres re&ccedil;ues des clients</p>
+                </div>
+            </div>
+            <button type="button" class="prix-neg-modal__close" data-prix-neg-offers-close aria-label="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+        </header>
+        <div class="prix-neg-fullscreen__body">
+            <div class="prix-neg-card__list">
+                <?php foreach ($prix_neg_groupe['offres'] as $neg):
+                    $prix_neg_side = 'vendor';
+                    include __DIR__ . '/../includes/partials/prix_negociation_row.php';
+                endforeach; ?>
+            </div>
+        </div>
+    </div>
+    <?php
+        endforeach;
+    ?>
+    <script src="/js/prix-negociation-modal.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
     <?php
     if (vendeur_share_boutique_is_available()) {
         include dirname(__DIR__) . '/includes/partials/platform_share_modal.php';

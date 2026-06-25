@@ -271,6 +271,10 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                     </div>
                 </div>
                 <?php if ($admin_contact_in_live):
+                    if (!function_exists('commande_is_retrait')) {
+                        require_once __DIR__ . '/commande_mode_helpers.php';
+                    }
+                    $cmd_suivi_is_retrait = commande_is_retrait($commande);
                     $cnom = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''));
                     if ($cnom === '') {
                         $cnom = '—';
@@ -286,11 +290,16 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                             <span class="cc-live-admin-contact__val"><?php echo htmlspecialchars($cnom, ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                         <div class="cc-live-admin-contact__cell">
+                            <?php if ($cmd_suivi_is_retrait): ?>
+                            <span class="cc-live-admin-contact__lab"><i class="fas fa-store" aria-hidden="true"></i> Retrait</span>
+                            <span class="cc-live-admin-contact__val">Récupérer sur site</span>
+                            <?php else: ?>
                             <span class="cc-live-admin-contact__lab"><i class="fas fa-location-dot" aria-hidden="true"></i> Adresse livraison</span>
                             <span class="cc-live-admin-contact__val"><?php echo $adresse_liv !== '' ? htmlspecialchars($adresse_liv, ENT_QUOTES, 'UTF-8') : '—'; ?></span>
+                            <?php endif; ?>
                         </div>
                         <div class="cc-live-admin-contact__cell">
-                            <span class="cc-live-admin-contact__lab"><i class="fas fa-headset" aria-hidden="true"></i> Tél. livraison</span>
+                            <span class="cc-live-admin-contact__lab"><i class="fas fa-headset" aria-hidden="true"></i> <?php echo $cmd_suivi_is_retrait ? 'Tél. contact' : 'Tél. livraison'; ?></span>
                             <span class="cc-live-admin-contact__val"><?php echo $ctel_liv !== '' ? htmlspecialchars($ctel_liv, ENT_QUOTES, 'UTF-8') : '—'; ?></span>
                         </div>
                         <div class="cc-live-admin-contact__cell">

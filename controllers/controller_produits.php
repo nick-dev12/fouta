@@ -154,6 +154,7 @@ function process_add_produit() {
     $stock = isset($_POST['stock']) ? intval($_POST['stock']) : 0;
     $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
+    $prix_negociable = produit_prix_negociable_from_post(1);
     $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
     $couleurs = null;
     if (isset($_POST['couleurs']) && trim($_POST['couleurs']) !== '') {
@@ -424,6 +425,9 @@ function process_add_produit() {
             if (produits_has_column('mesure')) {
                 $data['mesure'] = $mesure;
             }
+            if (produits_has_column('prix_negociable')) {
+                $data['prix_negociable'] = $prix_negociable;
+            }
 
             $produit_id = create_produit($data);
 
@@ -441,6 +445,7 @@ function process_add_produit() {
                             || (function_exists('categories_hierarchy_enabled') && categories_hierarchy_enabled()))) {
                         save_produits_sous_categories_for_produit((int) $produit_id, $sous_categorie_ids_for_save);
                     }
+                    $hold_info = ['held' => false];
                     if ($role_admin === 'vendeur') {
                         $hold_info = produit_image_moderation_finalize_vendor_product(
                             (int) $produit_id,
@@ -451,6 +456,12 @@ function process_add_produit() {
                         );
                         if (!empty($hold_info['held']) && !empty($hold_info['message'])) {
                             $message .= $hold_info['message'];
+                        }
+                    }
+                    if ($owner_admin > 0 && empty($hold_info['held'])) {
+                        require_once __DIR__ . '/../services/send_boutique_abonnement_notification.php';
+                        if (boutique_abonnement_produit_visible_catalogue($data['statut'] ?? '')) {
+                            boutique_abonnement_try_notify($owner_admin, 'nouveau_produit', $nom, (int) $produit_id);
                         }
                     }
                     generer_qrcode_produit($produit_id);
@@ -546,6 +557,7 @@ function process_update_produit($produit_id) {
     $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
     $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
+    $prix_negociable = produit_prix_negociable_from_post(1);
     $couleurs = null;
     if (isset($_POST['couleurs']) && trim($_POST['couleurs']) !== '') {
         $raw = trim($_POST['couleurs']);
@@ -828,6 +840,9 @@ function process_update_produit($produit_id) {
         if (produits_has_column('mesure')) {
             $data['mesure'] = $mesure;
         }
+        if (produits_has_column('prix_negociable')) {
+            $data['prix_negociable'] = $prix_negociable;
+        }
 
         if (update_produit($produit_id, $data)) {
             if ($role_admin === 'vendeur' && function_exists('vendeur_genres_mode_actif') && vendeur_genres_mode_actif()) {
@@ -854,6 +869,27 @@ function process_update_produit($produit_id) {
                 }
             }
             $success = true;
+
+            $notify_admin_id = (int) ($produit['admin_id'] ?? 0);
+            if ($notify_admin_id <= 0 && $role_admin === 'vendeur') {
+                $notify_admin_id = (int) ($admin_id_sess ?? 0);
+            }
+            if ($notify_admin_id > 0 && ($produit['statut'] ?? '') !== 'bloque') {
+                require_once __DIR__ . '/../services/send_boutique_abonnement_notification.php';
+                if (boutique_abonnement_produit_visible_catalogue($data['statut'] ?? '')) {
+                    $new_promo_val = ($prix_promotion !== null && (float) $prix_promotion > 0) ? (float) $prix_promotion : null;
+                    $notify_event = null;
+                    if (boutique_abonnement_promo_a_change($produit, $new_promo_val)) {
+                        $notify_event = 'promotion';
+                    } elseif (boutique_abonnement_modification_significative($produit, $data)) {
+                        $notify_event = 'modification';
+                    }
+                    if ($notify_event !== null) {
+                        boutique_abonnement_try_notify($notify_admin_id, $notify_event, $nom, (int) $produit_id);
+                    }
+                }
+            }
+
             // Supprimer du disque les images retirées par l'utilisateur
             foreach ($removed_images as $old_path) {
                 $full_path = __DIR__ . '/../upload/' . $old_path;

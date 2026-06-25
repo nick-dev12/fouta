@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/site_url.php';
 require_once __DIR__ . '/includes/site_brand.php';
 $base = get_site_base_url();
 $seo_title = 'Politique de Confidentialité - COLObanes';
-$seo_description = 'Politique de confidentialité COLObanes : base légale, catégories de données, sécurité, appareils, cookies, durées de conservation, droits des personnes et sous-traitants.';
+$seo_description = 'Politique de confidentialité COLObanes : protection des données, sécurité, intégrité, non-commercialisation, droits des personnes et sous-traitants.';
 $seo_canonical = $base . '/politique-confidentialite.php';
 ?>
 <!DOCTYPE html>
@@ -186,6 +186,7 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             <strong>collecte</strong>, <strong>utilise</strong>, <strong>conserve</strong>, <strong>partage</strong> et <strong>protège</strong> les informations relatives aux personnes physiques qui utilisent le site, l'application mobile ou les services associés
             (visiteurs, clients, vendeurs partenaires et, le cas échéant, leurs représentants).
             Nous nous engageons à traiter les données de manière <strong>loyale</strong>, <strong>transparente</strong> et <strong>sécurisée</strong>, et à limiter la collecte au strict nécessaire aux finalités décrites ci-dessous.
+            <strong>Nous ne commercialisons pas vos données personnelles</strong> et ne les vendons pas à des tiers (voir section <a href="#priv-2b">2 bis</a> et <a href="#priv-6-nocom">6.5</a>).
         </p>
         <p>
             L'utilisation du Service implique la prise de connaissance de cette politique ainsi que des
@@ -199,6 +200,7 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             <ol>
                 <li><a href="#priv-1">Responsable du traitement et contact</a></li>
                 <li><a href="#priv-2">Principes et engagements</a></li>
+                <li><a href="#priv-2b">Priorité aux données, intégrité et non-commercialisation</a></li>
                 <li><a href="#priv-3">Données collectées et origine</a></li>
                 <li><a href="#priv-4">Finalités et bases légales du traitement</a></li>
                 <li><a href="#priv-5">Décisions automatisées et profilage</a></li>
@@ -240,6 +242,57 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             <li><strong>Intégrité et confidentialité</strong> : mesures techniques et organisationnelles appropriées contre tout accès non autorisé, perte ou altération (section 8).</li>
             <li><strong>Responsabilisation</strong> : documentation interne, contrôles d'accès, clauses de confidentialité avec les prestataires et sensibilisation des équipes habilitées.</li>
         </ul>
+
+        <h2 id="priv-2b">2 bis. Priorité aux données personnelles, intégrité et non-commercialisation</h2>
+        <p>
+            La protection de vos données personnelles est une <strong>priorité opérationnelle</strong> pour COLObanes, et non un simple accessoire technique.
+            Cette section complète les principes généraux et répond aux exigences de transparence des plateformes <strong>Apple</strong> et <strong>Google</strong> en matière de confidentialité et de traitement des informations utilisateur.
+        </p>
+
+        <h3>2 bis.1 Aucune vente ni commercialisation de vos données</h3>
+        <p>
+            COLObanes <strong>ne vend pas</strong>, <strong>ne loue pas</strong> et <strong>ne cède pas</strong> vos données personnelles à des tiers à des fins de marketing, de profilage publicitaire ou de monétisation de dossiers utilisateurs.
+            Nous <strong>ne partageons pas</strong> vos coordonnées, votre historique d'achat ou vos données de localisation avec des courtiers en données, des réseaux publicitaires tiers ou des plateformes d'enrichissement de bases de données à des fins commerciales indépendantes de COLObanes.
+        </p>
+        <p>
+            Les seuls partages autorisés sont ceux strictement nécessaires à l'exécution du Service (vendeur, livreur, prestataire technique contractuel) ou imposés par la loi, comme détaillé à la section 6.
+        </p>
+
+        <h3>2 bis.2 Finalité limitée et usage loyal</h3>
+        <p>
+            Chaque donnée collectée sert une <strong>finalité déterminée, explicite et légitime</strong> (compte, commande, livraison, sécurité, support, obligations légales).
+            Nous ne réutilisons pas vos données à des fins incompatibles avec celles pour lesquelles elles ont été collectées, sauf avec votre consentement lorsque la loi l'exige ou dans les cas prévus par la loi (par exemple statistiques agrégées et anonymisées ne permettant plus de vous identifier).
+        </p>
+
+        <h3>2 bis.3 Intégrité, exactitude et sécurité des données</h3>
+        <p>
+            Nous nous engageons à préserver l'<strong>intégrité</strong> et la <strong>confidentialité</strong> des données que vous nous confiez :
+        </p>
+        <ul>
+            <li><strong>Exactitude</strong> : vous pouvez mettre à jour vos informations depuis votre espace compte ; nous corrigeons les erreurs manifestes signalées ;</li>
+            <li><strong>Protection contre l'altération</strong> : contrôles d'accès, journaux d'administration, sauvegardes régulières et procédures de restauration ;</li>
+            <li><strong>Protection contre la perte</strong> : copies de secours sur environnements distincts, avec accès restreint ;</li>
+            <li><strong>Protection contre l'accès non autorisé</strong> : chiffrement en transit (HTTPS/TLS), mots de passe hachés, moindre privilège pour les comptes internes ;</li>
+            <li><strong>Traçabilité</strong> : journalisation des accès sensibles aux back-offices lorsque la stack technique le permet ;</li>
+            <li><strong>Notification</strong> : en cas de violation de données susceptible d'affecter vos droits, COLObanes s'efforce d'informer les personnes concernées et, le cas échéant, l'autorité compétente, conformément au droit applicable.</li>
+        </ul>
+
+        <h3>2 bis.4 Données des mineurs</h3>
+        <p>
+            COLObanes ne collecte pas sciemment de données personnelles auprès d'enfants de moins de <strong>13 ans</strong> à des fins commerciales directes.
+            Si nous apprenons qu'un enfant a fourni des données sans consentement parental valable, nous prendrons des mesures pour <strong>supprimer</strong> ces informations dans les meilleurs délais.
+            Les mineurs doivent utiliser le Service sous la supervision d'un adulte responsable (voir aussi section 12).
+        </p>
+
+        <h3>2 bis.5 Vos données restent sous votre contrôle</h3>
+        <p>
+            Vous conservez le contrôle sur les informations que vous choisissez de fournir (profil, adresse, préférences de notification).
+            Vous pouvez à tout moment : modifier vos données, refuser certaines autorisations (caméra, localisation, notifications) dans les réglages de votre appareil, vous opposer au marketing direct, demander la suppression de votre compte conformément à notre
+            <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>, et exercer l'ensemble de vos droits (section 13).
+        </p>
+        <p>
+            COLObanes ne conditionne pas l'accès au catalogue à l'acceptation de traitements non essentiels (publicité ciblée tierce, revente de données) — de tels traitements ne sont pas pratiqués sur la Plateforme.
+        </p>
 
         <h2 id="priv-3">3. Données collectées et origine</h2>
         <h3>3.1 Données d'identification et de compte</h3>
@@ -360,6 +413,11 @@ $seo_canonical = $base . '/politique-confidentialite.php';
                         <td>Consentement préalable lorsque requis par la loi ; intérêt légitime pour clients professionnels sous réserve de droit d'opposition</td>
                     </tr>
                     <tr>
+                        <td>Modération des contenus (images, signalements)</td>
+                        <td>Empreintes d'images, scores d'analyse, décisions de validation, journaux de signalement</td>
+                        <td>Intérêt légitime (sécurité des utilisateurs, conformité stores) ; obligation légale le cas échéant</td>
+                    </tr>
+                    <tr>
                         <td>Notifications push (application mobile)</td>
                         <td>Jeton d'appareil FCM/APNs, préférences de notification</td>
                         <td>Consentement explicite dans l'application ou les réglages système</td>
@@ -404,6 +462,19 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         <h3>6.4 Autorités publiques</h3>
         <p>
             Nous pouvons communiquer des données lorsque la loi l'exige (réquisition judiciaire, réponse à une administration compétente) ou pour protéger nos droits et la sécurité des utilisateurs, dans le strict cadre légal.
+        </p>
+
+        <h3 id="priv-6-nocom">6.5 Ce que nous ne faisons pas avec vos données</h3>
+        <p>Pour éviter toute ambiguïté, COLObanes s'engage à <strong>ne pas</strong> :</p>
+        <ul>
+            <li>vendre, louer ou échanger vos données personnelles à des annonceurs ou data brokers ;</li>
+            <li>créer de profils publicitaires comportementaux vendus à des tiers ;</li>
+            <li>fusionner vos données COLObanes avec des bases de données acquises sur le marché sans base légale et information préalable ;</li>
+            <li>utiliser vos coordonnées GPS ou vos photos à des fins publicitaires tierces ;</li>
+            <li>transmettre vos données de paiement complètes (numéro de carte, cryptogramme) à des partenaires non habilités au traitement sécurisé.</li>
+        </ul>
+        <p>
+            Les prestataires techniques (hébergement, envoi d'e-mails, notifications push Firebase, analyse d'images pour modération le cas échéant) agissent en qualité de <strong>sous-traitants</strong> ou de responsables conjoints limités à leur mission, liés par des obligations contractuelles de confidentialité et de sécurité.
         </p>
 
         <h2 id="priv-7">7. Durées de conservation</h2>
@@ -464,6 +535,16 @@ $seo_canonical = $base . '/politique-confidentialite.php';
         </ul>
         <p>
             Malgré ces mesures, <strong>aucune transmission sur Internet ne peut être garantie à 100&nbsp;% inviolable</strong>. Nous vous invitons à protéger vos terminaux (code de déverrouillage, antivirus à jour, méfiance vis-à-vis des liens suspects prétendant provenir de COLObanes).
+        </p>
+        <h3>8.1 Intégrité et disponibilité</h3>
+        <p>
+            Au-delà de la confidentialité, nous veillons à l'<strong>intégrité</strong> des données (qu'elles ne soient ni altérées ni corrompues de manière non autorisée) et à leur <strong>disponibilité</strong> raisonnable pour l'exécution des commandes et la continuité du Service.
+            Les opérations sensibles (modification de mot de passe, changement d'adresse de livraison, validation de commande) transitent par des canaux sécurisés ; les sessions administratives font l'objet de contrôles d'accès renforcés.
+        </p>
+        <h3>8.2 Modération et données associées aux contenus</h3>
+        <p>
+            Les images et contenus soumis à modération (voir <a href="/conditions-utilisation.php#cgu-5b">CGU — section modération</a>) peuvent faire l'objet de traitements techniques (empreinte de fichier, scores d'analyse automatique, décisions d'approbation ou de refus).
+            Ces données de modération sont conservées le temps nécessaire à la sécurité de la Plateforme et à la preuve en cas de litige ou de signalement, puis supprimées ou anonymisées selon les durées internes.
         </p>
 
         <h2 id="priv-9">9. Appareils, journaux techniques et application mobile</h2>
@@ -631,6 +712,8 @@ $seo_canonical = $base . '/politique-confidentialite.php';
             <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>
             ·
             <a href="/conditions-utilisation.php">Conditions générales d'utilisation</a>
+            ·
+            <a href="/conditions-utilisation.php#cgu-5b">Modération des contenus (CGU)</a>
         </div>
 
         <a href="javascript:history.back()" class="back-link">

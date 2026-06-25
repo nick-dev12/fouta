@@ -45,12 +45,27 @@
   animation: none !important;
 }
 
+.auth-hub-shell {
+  width: 100%;
+  max-width: var(--auth-hub-card-max-w);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 2vw, 0.75rem);
+  box-sizing: border-box;
+}
+
+.auth-hub-shell .mc-v2-shop-promo {
+  flex-shrink: 0;
+  width: 100%;
+}
+
 /* Carte #authHub — bordure uniquement sur ce conteneur (pas le body) */
 #authHub {
   position: relative;
   box-sizing: border-box;
   width: 100%;
-  max-width: var(--auth-hub-card-max-w);
+  max-width: 100%;
   min-height: var(--auth-hub-card-min-h);
   margin: 0 auto;
   display: flex;

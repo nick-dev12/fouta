@@ -1,6 +1,5 @@
 # Configuration PHP pour l'upload de fichiers volumineux
 # Ces valeurs surchargent les valeurs du php.ini si nécessaire
-
 # ---------------------------------------------------------------
 # Deep Links : autoriser l'accès au dossier .well-known
 # Requis pour Android App Links (assetlinks.json)
