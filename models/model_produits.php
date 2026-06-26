@@ -983,7 +983,10 @@ function produits_recherche_normalize(string $recherche): string
     if ($t === '') {
         return '';
     }
-    return mb_strtolower($t, 'UTF-8');
+    if (function_exists('mb_strtolower')) {
+        return mb_strtolower($t, 'UTF-8');
+    }
+    return strtolower($t);
 }
 
 /**
@@ -996,9 +999,11 @@ function produits_recherche_like_pattern(string $recherche): string
 }
 
 /**
- * Condition SQL LIKE insensible à la casse (nom, description, identifiant, catégorie).
+ * Condition SQL LIKE insensible à la casse (paramètres nommés uniques pour PDO natif).
+ *
+ * @return array{sql: string, param_keys: array<int, string>}
  */
-function produits_sql_recherche_like_condition(string $alias = 'p', bool $include_categorie = false): string
+function produits_sql_recherche_like_condition(string $alias = 'p', bool $include_categorie = false): array
 {
     $prefix = '';
     if ($alias !== '') {
@@ -1008,17 +1013,49 @@ function produits_sql_recherche_like_condition(string $alias = 'p', bool $includ
         }
         $prefix = $a . '.';
     }
+    $param_keys = ['term_nom', 'term_desc'];
     $parts = [
-        'LOWER(' . $prefix . 'nom) LIKE :term',
-        'LOWER(' . $prefix . 'description) LIKE :term',
+        'LOWER(' . $prefix . 'nom) LIKE :term_nom',
+        'LOWER(' . $prefix . 'description) LIKE :term_desc',
     ];
     if (produits_has_column('identifiant_interne')) {
-        $parts[] = 'LOWER(' . $prefix . 'identifiant_interne) LIKE :term';
+        $param_keys[] = 'term_ident';
+        $parts[] = 'LOWER(' . $prefix . 'identifiant_interne) LIKE :term_ident';
     }
     if ($include_categorie) {
-        $parts[] = 'LOWER(c.nom) LIKE :term';
+        $param_keys[] = 'term_cat';
+        $parts[] = 'LOWER(c.nom) LIKE :term_cat';
     }
-    return '(' . implode(' OR ', $parts) . ')';
+    return [
+        'sql' => '(' . implode(' OR ', $parts) . ')',
+        'param_keys' => $param_keys,
+    ];
+}
+
+/**
+ * Paramètres LIKE (même motif pour chaque colonne).
+ *
+ * @param array<int, string> $param_keys
+ * @return array<string, string>
+ */
+function produits_recherche_like_params_for_keys(string $recherche, array $param_keys): array
+{
+    $pattern = produits_recherche_like_pattern($recherche);
+    $params = [];
+    foreach ($param_keys as $key) {
+        $params[$key] = $pattern;
+    }
+    return $params;
+}
+
+/**
+ * Lie les paramètres LIKE sur un PDOStatement.
+ */
+function produits_bind_recherche_like_stmt(PDOStatement $stmt, string $recherche, array $param_keys): void
+{
+    foreach (produits_recherche_like_params_for_keys($recherche, $param_keys) as $key => $pattern) {
+        $stmt->bindValue(':' . $key, $pattern, PDO::PARAM_STR);
+    }
 }
 
 /**
@@ -1033,8 +1070,8 @@ function produits_sql_recherche_relevance_order(string $alias = 'p', string $fal
     return 'CASE
             WHEN LOWER(' . $a . '.nom) = :rel_exact THEN 0
             WHEN LOWER(' . $a . '.nom) LIKE :rel_start THEN 1
-            WHEN LOWER(' . $a . '.nom) LIKE :rel_contains THEN 2
-            WHEN LOWER(' . $a . '.description) LIKE :rel_contains THEN 3
+            WHEN LOWER(' . $a . '.nom) LIKE :rel_contains_nom THEN 2
+            WHEN LOWER(' . $a . '.description) LIKE :rel_contains_desc THEN 3
             ELSE 4
         END ASC,
         CHAR_LENGTH(' . $a . '.nom) ASC,
@@ -1047,9 +1084,19 @@ function produits_sql_recherche_relevance_order(string $alias = 'p', string $fal
 function produits_bind_recherche_relevance_stmt(PDOStatement $stmt, string $recherche): void
 {
     $t = produits_recherche_normalize($recherche);
+    $contains = '%' . $t . '%';
     $stmt->bindValue(':rel_exact', $t, PDO::PARAM_STR);
     $stmt->bindValue(':rel_start', $t . '%', PDO::PARAM_STR);
-    $stmt->bindValue(':rel_contains', '%' . $t . '%', PDO::PARAM_STR);
+    $stmt->bindValue(':rel_contains_nom', $contains, PDO::PARAM_STR);
+    $stmt->bindValue(':rel_contains_desc', $contains, PDO::PARAM_STR);
+}
+
+/**
+ * Journalise une erreur SQL recherche (prod : PDO natif sans emulate).
+ */
+function produits_log_recherche_sql_error(PDOException $e, string $context): void
+{
+    error_log('[recherche produits][' . $context . '] ' . $e->getMessage());
 }
 
 /**
@@ -1087,9 +1134,8 @@ function search_produits(string $recherche, int $offset = 0, int $limit = 20, in
     }
 
     try {
-        $term = produits_recherche_like_pattern($recherche);
-        $like_sql = produits_sql_recherche_like_condition('p', true);
-        $where = "p.statut IN ('actif', 'rupture_stock') AND $like_sql";
+        $like = produits_sql_recherche_like_condition('p', true);
+        $where = "p.statut IN ('actif', 'rupture_stock') AND " . $like['sql'];
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
@@ -1107,7 +1153,7 @@ function search_produits(string $recherche, int $offset = 0, int $limit = 20, in
             ORDER BY $order
             LIMIT :limit OFFSET :offset
         ");
-        $stmt->bindValue(':term', $term, PDO::PARAM_STR);
+        produits_bind_recherche_like_stmt($stmt, $recherche, $like['param_keys']);
         produits_bind_recherche_relevance_stmt($stmt, $recherche);
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
@@ -1120,6 +1166,7 @@ function search_produits(string $recherche, int $offset = 0, int $limit = 20, in
 
         return $produits ? $produits : [];
     } catch (PDOException $e) {
+        produits_log_recherche_sql_error($e, 'search_produits');
         return [];
     }
 }
@@ -1157,10 +1204,9 @@ function count_search_produits(string $recherche, int|string|null $boutique_admi
     }
 
     try {
-        $term = produits_recherche_like_pattern($recherche);
-        $like_sql = produits_sql_recherche_like_condition('', false);
-        $where = "statut IN ('actif', 'rupture_stock') AND $like_sql";
-        $params = ['term' => $term];
+        $like = produits_sql_recherche_like_condition('', false);
+        $where = "statut IN ('actif', 'rupture_stock') AND " . $like['sql'];
+        $params = produits_recherche_like_params_for_keys($recherche, $like['param_keys']);
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND admin_id = :boutique_admin_id';
             $params['boutique_admin_id'] = (int) $boutique_admin_id;
@@ -1172,6 +1218,7 @@ function count_search_produits(string $recherche, int|string|null $boutique_admi
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
+        produits_log_recherche_sql_error($e, 'count_search_produits');
         return 0;
     }
 }
@@ -1214,8 +1261,12 @@ function search_produits_with_filters(string $recherche = '', float|int|string|n
                 $conditions[] = 'UPPER(TRIM(p.identifiant_interne)) = :ident_exact';
                 $params['ident_exact'] = strtoupper($tr);
             } else {
-                $conditions[] = produits_sql_recherche_like_condition('p', true);
-                $params['term'] = produits_recherche_like_pattern($tr);
+                $like = produits_sql_recherche_like_condition('p', true);
+                $conditions[] = $like['sql'];
+                $params = array_merge(
+                    $params,
+                    produits_recherche_like_params_for_keys($tr, $like['param_keys'])
+                );
             }
         }
 
@@ -1290,6 +1341,7 @@ function search_produits_with_filters(string $recherche = '', float|int|string|n
 
         return $produits ?: [];
     } catch (PDOException $e) {
+        produits_log_recherche_sql_error($e, 'search_produits_with_filters');
         return [];
     }
 }
@@ -1324,8 +1376,12 @@ function count_search_produits_with_filters(string $recherche = '', float|int|st
                 $conditions[] = 'UPPER(TRIM(identifiant_interne)) = :ident_exact';
                 $params['ident_exact'] = strtoupper($tr);
             } else {
-                $conditions[] = produits_sql_recherche_like_condition('', false);
-                $params['term'] = produits_recherche_like_pattern($tr);
+                $like = produits_sql_recherche_like_condition('', false);
+                $conditions[] = $like['sql'];
+                $params = array_merge(
+                    $params,
+                    produits_recherche_like_params_for_keys($tr, $like['param_keys'])
+                );
             }
         }
 
@@ -1365,6 +1421,7 @@ function count_search_produits_with_filters(string $recherche = '', float|int|st
         $stmt->execute();
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
+        produits_log_recherche_sql_error($e, 'count_search_produits_with_filters');
         return 0;
     }
 }
