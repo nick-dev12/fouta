@@ -517,12 +517,10 @@ function mc_statut_icon($s) {
 
         /* ---- Disposition 2 colonnes ---- */
         .mc-v2-mid {
-            display: grid;
-            grid-template-columns: 1fr 300px;
+            display: flex;
+            flex-direction: column;
             gap: 18px;
         }
-
-        @media (max-width: 820px) { .mc-v2-mid { grid-template-columns: 1fr; } }
 
         /* ---- Card générique ---- */
         .mc-v2-card {
@@ -1031,10 +1029,137 @@ function mc_statut_icon($s) {
                 white-space: normal;
                 line-height: 1.2;
             }
+
+            .mc-v2-card__head {
+                padding: 15px 18px 12px;
+            }
+
+            .mc-commande-row {
+                flex-wrap: wrap;
+            }
+
+            .mc-commande-row__right {
+                width: 100%;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .mc-v2-delivered__head h2 {
+                font-size: 0.95rem;
+            }
+
+            .mc-quick-link {
+                padding: 12px 18px;
+            }
+
+            .mc-quick-link__label {
+                font-size: 0.82rem;
+            }
+
+            .prix-neg-card__list--client .prix-neg-row {
+                padding-left: 0;
+                padding-right: 0;
+            }
         }
 
         @media (max-width: 580px) {
+            .mc-v2-page {
+                padding: 12px 10px 72px;
+                gap: 14px;
+            }
+
+            .mc-v2-shop-promo {
+                height: auto;
+                min-height: 88px;
+                max-height: none;
+            }
+
+            .mc-v2-shop-promo__content {
+                flex-direction: column;
+                align-items: stretch;
+                max-height: none;
+                padding: 10px 12px;
+            }
+
+            .mc-v2-shop-promo__cta {
+                width: 100%;
+                max-width: none;
+            }
+
+            .mc-v2-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .mc-v2-card__head {
+                padding: 14px 16px 11px;
+            }
+
+            .mc-v2-card__head h2 {
+                font-size: 0.86rem;
+            }
+
+            .mc-v2-card__head h2 i {
+                width: 26px;
+                height: 26px;
+                font-size: 0.74rem;
+            }
+
+            .mc-commande-row {
+                padding: 11px 16px;
+                gap: 9px;
+            }
+
+            .mc-commande-row__amount {
+                font-size: 0.82rem;
+            }
+
+            .mc-v2-delivered__head {
+                padding: 14px 16px 12px;
+            }
+
+            .mc-v2-delivered__head h2 {
+                font-size: 0.92rem;
+            }
+
+            .mc-v2-alert {
+                padding: 12px 14px;
+                gap: 8px;
+            }
+
+            .mc-v2-alert__text {
+                font-size: 0.8rem;
+            }
+
+            .prix-neg-card__list--client {
+                padding: 0 12px 12px;
+            }
+
             .mc-v2-products-grid { grid-template-columns: 1fr 1fr; padding: 14px; }
+        }
+
+        @media (max-width: 420px) {
+            .mc-v2-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .mc-v2-hero__name {
+                font-size: 0.98rem;
+            }
+
+            .mc-commande-row__right {
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 4px;
+            }
+
+            .mc-v2-products-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mc-v2-shop-promo__title {
+                font-size: 0.72rem;
+            }
         }
     </style>
 </head>

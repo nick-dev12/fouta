@@ -112,6 +112,18 @@
             addrEl.style.display = meta.adresse ? '' : 'none';
         }
 
+        var waBtn = qs('cmd-pos-btn-whatsapp');
+        if (waBtn && typeof window.geoBuildNavApps === 'function') {
+            var apps = window.geoBuildNavApps(lat, lng, currentLabel);
+            var waApp = apps.filter(function (a) { return a.cls === 'whatsapp'; })[0];
+            if (waApp && waApp.url) {
+                waBtn.href = waApp.url;
+                waBtn.hidden = false;
+            } else {
+                waBtn.hidden = true;
+            }
+        }
+
         var noGeo = qs('cmd-pos-no-geo');
         var body = qs('cmd-pos-modal-body');
         if (noGeo) noGeo.style.display = 'none';

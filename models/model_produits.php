@@ -975,6 +975,84 @@ function get_all_produits_paginated(int $offset = 0, int $limit = 20, int|string
 }
 
 /**
+ * Terme de recherche normalisé (minuscules, espaces).
+ */
+function produits_recherche_normalize(string $recherche): string
+{
+    $t = trim(preg_replace('/\s+/u', ' ', $recherche));
+    if ($t === '') {
+        return '';
+    }
+    return mb_strtolower($t, 'UTF-8');
+}
+
+/**
+ * Motif LIKE insensible à la casse (%terme%).
+ */
+function produits_recherche_like_pattern(string $recherche): string
+{
+    $t = produits_recherche_normalize($recherche);
+    return $t === '' ? '' : '%' . $t . '%';
+}
+
+/**
+ * Condition SQL LIKE insensible à la casse (nom, description, identifiant, catégorie).
+ */
+function produits_sql_recherche_like_condition(string $alias = 'p', bool $include_categorie = false): string
+{
+    $prefix = '';
+    if ($alias !== '') {
+        $a = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $alias);
+        if ($a === '') {
+            $a = 'p';
+        }
+        $prefix = $a . '.';
+    }
+    $parts = [
+        'LOWER(' . $prefix . 'nom) LIKE :term',
+        'LOWER(' . $prefix . 'description) LIKE :term',
+    ];
+    if (produits_has_column('identifiant_interne')) {
+        $parts[] = 'LOWER(' . $prefix . 'identifiant_interne) LIKE :term';
+    }
+    if ($include_categorie) {
+        $parts[] = 'LOWER(c.nom) LIKE :term';
+    }
+    return '(' . implode(' OR ', $parts) . ')';
+}
+
+/**
+ * Tri par pertinence (correspondance exacte > début de nom > contenu > description).
+ */
+function produits_sql_recherche_relevance_order(string $alias = 'p', string $fallback_order = 'p.date_creation DESC'): string
+{
+    $a = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $alias);
+    if ($a === '') {
+        $a = 'p';
+    }
+    return 'CASE
+            WHEN LOWER(' . $a . '.nom) = :rel_exact THEN 0
+            WHEN LOWER(' . $a . '.nom) LIKE :rel_start THEN 1
+            WHEN LOWER(' . $a . '.nom) LIKE :rel_contains THEN 2
+            WHEN LOWER(' . $a . '.description) LIKE :rel_contains THEN 3
+            ELSE 4
+        END ASC,
+        CHAR_LENGTH(' . $a . '.nom) ASC,
+        ' . $fallback_order;
+}
+
+/**
+ * Lie les paramètres de pertinence sur un PDOStatement.
+ */
+function produits_bind_recherche_relevance_stmt(PDOStatement $stmt, string $recherche): void
+{
+    $t = produits_recherche_normalize($recherche);
+    $stmt->bindValue(':rel_exact', $t, PDO::PARAM_STR);
+    $stmt->bindValue(':rel_start', $t . '%', PDO::PARAM_STR);
+    $stmt->bindValue(':rel_contains', '%' . $t . '%', PDO::PARAM_STR);
+}
+
+/**
  * Recherche des produits par nom ou description
  * @param string $recherche Terme de recherche
  * @param int $offset Décalage pour pagination
@@ -1009,14 +1087,16 @@ function search_produits(string $recherche, int $offset = 0, int $limit = 20, in
     }
 
     try {
-        $term = '%' . trim($recherche) . '%';
-        $where = "p.statut IN ('actif', 'rupture_stock') AND (p.nom LIKE :term OR p.description LIKE :term)";
+        $term = produits_recherche_like_pattern($recherche);
+        $like_sql = produits_sql_recherche_like_condition('p', true);
+        $where = "p.statut IN ('actif', 'rupture_stock') AND $like_sql";
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND p.admin_id = :boutique_admin_id';
         }
         $where .= produits_region_sql_with_alias($boutique_admin_id)['sql'];
         $vj = produits_sql_vendeur_fragment();
         $rj = produits_sql_rayon_categorie_nom_fragment();
+        $order = produits_sql_recherche_relevance_order('p', 'p.date_creation DESC');
         $stmt = $db->prepare("
             SELECT p.*, " . $rj['categorie_nom_sql'] . " as categorie_nom " . $vj['select'] . "
             FROM produits p 
@@ -1024,10 +1104,11 @@ function search_produits(string $recherche, int $offset = 0, int $limit = 20, in
             " . $rj['join'] . "
             " . $vj['join'] . "
             WHERE $where
-            ORDER BY p.date_creation DESC
+            ORDER BY $order
             LIMIT :limit OFFSET :offset
         ");
         $stmt->bindValue(':term', $term, PDO::PARAM_STR);
+        produits_bind_recherche_relevance_stmt($stmt, $recherche);
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $stmt->bindValue(':boutique_admin_id', (int) $boutique_admin_id, PDO::PARAM_INT);
         }
@@ -1076,8 +1157,9 @@ function count_search_produits(string $recherche, int|string|null $boutique_admi
     }
 
     try {
-        $term = '%' . trim($recherche) . '%';
-        $where = "statut IN ('actif', 'rupture_stock') AND (nom LIKE :term OR description LIKE :term)";
+        $term = produits_recherche_like_pattern($recherche);
+        $like_sql = produits_sql_recherche_like_condition('', false);
+        $where = "statut IN ('actif', 'rupture_stock') AND $like_sql";
         $params = ['term' => $term];
         if ($boutique_admin_id !== null && $boutique_admin_id !== '' && produits_has_column('admin_id')) {
             $where .= ' AND admin_id = :boutique_admin_id';
@@ -1132,8 +1214,8 @@ function search_produits_with_filters(string $recherche = '', float|int|string|n
                 $conditions[] = 'UPPER(TRIM(p.identifiant_interne)) = :ident_exact';
                 $params['ident_exact'] = strtoupper($tr);
             } else {
-                $conditions[] = '(p.nom LIKE :term OR p.description LIKE :term)';
-                $params['term'] = '%' . $tr . '%';
+                $conditions[] = produits_sql_recherche_like_condition('p', true);
+                $params['term'] = produits_recherche_like_pattern($tr);
             }
         }
 
@@ -1165,6 +1247,7 @@ function search_produits_with_filters(string $recherche = '', float|int|string|n
             }
         }
 
+        $recherche_texte = !empty(trim($recherche)) ? trim($recherche) : '';
         $order = "p.date_creation DESC";
         if ($tri === 'prix_asc') {
             $order = "(CASE WHEN p.prix_promotion IS NOT NULL AND p.prix_promotion > 0 AND p.prix_promotion < p.prix THEN p.prix_promotion ELSE p.prix END) ASC";
@@ -1172,6 +1255,8 @@ function search_produits_with_filters(string $recherche = '', float|int|string|n
             $order = "(CASE WHEN p.prix_promotion IS NOT NULL AND p.prix_promotion > 0 AND p.prix_promotion < p.prix THEN p.prix_promotion ELSE p.prix END) DESC";
         } elseif ($tri === 'nom') {
             $order = "p.nom ASC";
+        } elseif ($recherche_texte !== '' && $tri === 'date') {
+            $order = produits_sql_recherche_relevance_order('p', 'p.date_creation DESC');
         }
 
         $where = implode(' AND ', $conditions);
@@ -1196,6 +1281,9 @@ function search_produits_with_filters(string $recherche = '', float|int|string|n
             } else {
                 $stmt->bindValue(':' . $k, $v);
             }
+        }
+        if ($recherche_texte !== '' && $tri === 'date') {
+            produits_bind_recherche_relevance_stmt($stmt, $recherche_texte);
         }
         $stmt->execute();
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1236,8 +1324,8 @@ function count_search_produits_with_filters(string $recherche = '', float|int|st
                 $conditions[] = 'UPPER(TRIM(identifiant_interne)) = :ident_exact';
                 $params['ident_exact'] = strtoupper($tr);
             } else {
-                $conditions[] = '(nom LIKE :term OR description LIKE :term)';
-                $params['term'] = '%' . $tr . '%';
+                $conditions[] = produits_sql_recherche_like_condition('', false);
+                $params['term'] = produits_recherche_like_pattern($tr);
             }
         }
 

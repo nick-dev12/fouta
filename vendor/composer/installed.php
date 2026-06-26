@@ -3,7 +3,7 @@
         'name' => 'sugarpaper/site-gateau',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '3e75a1b7138b161502496d744247947f74b3009c',
+        'reference' => '58b6f03b674b62f827ce3d44497644c635a1c529',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -397,7 +397,7 @@
         'sugarpaper/site-gateau' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '3e75a1b7138b161502496d744247947f74b3009c',
+            'reference' => '58b6f03b674b62f827ce3d44497644c635a1c529',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

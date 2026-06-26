@@ -364,18 +364,36 @@
 
 .prix-neg-produit-card {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 12px;
+  gap: 10px 12px;
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(53, 100, 166, 0.08);
+  border: 1.5px solid rgba(53, 100, 166, 0.18);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(53, 100, 166, 0.08);
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+}
+
+.prix-neg-produit-card:hover {
+  border-color: rgba(53, 100, 166, 0.32);
+  box-shadow: 0 6px 18px rgba(53, 100, 166, 0.12);
+  transform: translateY(-1px);
+}
+
+.prix-neg-produit-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring, rgba(53, 100, 166, 0.2));
 }
 
 .prix-neg-produit-card:last-child {
-  border-bottom: none;
+  border-bottom: 1.5px solid rgba(53, 100, 166, 0.18);
 }
 
 .prix-neg-produit-card__media {
+  grid-row: 1 / span 2;
   position: relative;
   width: 72px;
   height: 72px;
@@ -440,22 +458,22 @@
 }
 
 .prix-neg-btn--view-offers {
+  grid-column: 1 / -1;
+  width: 100%;
+  justify-content: center;
   background: var(--couleur-dominante);
   color: #fff;
   border-radius: 12px;
   padding: 10px 12px;
-  font-size: clamp(11px, 1.6vw, 0.78rem);
-  white-space: nowrap;
+  font-size: clamp(11px, 2.8vw, 0.82rem);
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  pointer-events: none;
 }
 
 .prix-neg-btn--view-offers span {
-  display: none;
-}
-
-@media (min-width: 480px) {
-  .prix-neg-btn--view-offers span {
-    display: inline;
-  }
+  display: inline;
 }
 
 /* ---- Carte client ---- */

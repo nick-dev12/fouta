@@ -524,13 +524,7 @@ $seo_json_ld_blocks = [
             }
 
             .mp-hero .mp-hero-slider-wrap .owl-dots {
-                position: absolute;
-                left: 0;
-                right: 0;
-                bottom: 8px;
-                margin: 0 !important;
-                padding: 0;
-                z-index: 2;
+                display: none !important;
             }
         }
 
@@ -579,14 +573,7 @@ $seo_json_ld_blocks = [
             }
 
             .mp-hero .mp-hero-slider-wrap .owl-dots {
-                position: absolute;
-                left: 0;
-                right: 0;
-                bottom: 8px;
-                margin: 0 !important;
-                padding: 0;
-                z-index: 2;
-                line-height: 1;
+                display: none !important;
             }
         }
 
@@ -596,6 +583,7 @@ $seo_json_ld_blocks = [
         (max-width: 768px),
         (max-width: 600px),
         (max-width: 500px) {
+
             .mp-hero .mp-hero-slider-wrap .slider-area,
             .mp-hero .mp-hero-slider-wrap .slider-area .slider-item {
                 height: auto !important;
@@ -610,9 +598,7 @@ $seo_json_ld_blocks = [
         }
 
         .mp-hero .mp-hero-slider-wrap .owl-dots {
-            margin: 6px 0 0;
-            padding: 0;
-            line-height: 1;
+            display: none !important;
         }
 
         .mp-hero .mp-hero-slider-wrap .owl-nav {
@@ -746,13 +732,33 @@ $seo_json_ld_blocks = [
             box-shadow: 0 6px 22px rgba(53, 100, 166, 0.16);
         }
 
-        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 1) .mp-pop-cat-icon i { color: var(--nav-soft-fg-1); }
-        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 2) .mp-pop-cat-icon i { color: var(--nav-soft-fg-2); }
-        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 3) .mp-pop-cat-icon i { color: var(--nav-soft-fg-3); }
-        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 4) .mp-pop-cat-icon i { color: var(--nav-soft-fg-4); }
-        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 5) .mp-pop-cat-icon i { color: var(--nav-soft-fg-5); }
-        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 6) .mp-pop-cat-icon i { color: var(--nav-soft-fg-6); }
-        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 7) .mp-pop-cat-icon i { color: var(--nav-soft-fg-7); }
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 1) .mp-pop-cat-icon i {
+            color: var(--nav-soft-fg-1);
+        }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 2) .mp-pop-cat-icon i {
+            color: var(--nav-soft-fg-2);
+        }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 3) .mp-pop-cat-icon i {
+            color: var(--nav-soft-fg-3);
+        }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 4) .mp-pop-cat-icon i {
+            color: var(--nav-soft-fg-4);
+        }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 5) .mp-pop-cat-icon i {
+            color: var(--nav-soft-fg-5);
+        }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 6) .mp-pop-cat-icon i {
+            color: var(--nav-soft-fg-6);
+        }
+
+        .mp-pop-cat-item:not(.mp-pop-cat-item--all):nth-child(7n + 7) .mp-pop-cat-icon i {
+            color: var(--nav-soft-fg-7);
+        }
 
         .mp-pop-cat-item:not(.mp-pop-cat-item--all):hover .mp-pop-cat-icon {
             transform: scale(1.04);
@@ -2464,62 +2470,61 @@ $seo_json_ld_blocks = [
         </section>
 
         <?php if (!empty($mp_popular_cats)): ?>
-        <section class="mp-popular-categories" aria-label="Catégories populaires">
-            <div class="mp-popular-categories-inner">
-                <div class="mp-popular-categories-track" role="list">
-                    <?php foreach ($mp_popular_cats as $prow): ?>
-                        <?php
-                        $plabel = trim((string) ($prow['nom'] ?? ''));
-                        if ($plabel === '') {
-                            continue;
-                        }
-                        $pic_class = function_exists('categorie_fa_icon_class')
-                            ? categorie_fa_icon_class($prow)
-                            : 'fa-solid fa-layer-group';
-                        $pop_img = function_exists('categorie_image_public_path')
-                            ? categorie_image_public_path($prow)
-                            : null;
-                        $has_pop_img = is_string($pop_img) && $pop_img !== '';
-                        $pid = (int) ($prow['id'] ?? 0);
-                        if ($mp_nav_is_generale) {
-                            $phref = $pid > 0 && function_exists('nav_categorie_generale_href')
-                                ? nav_categorie_generale_href($pid)
-                                : ('produits.php?recherche=' . rawurlencode($plabel));
-                        } else {
-                            $phref = $pid > 0 && function_exists('nav_categorie_href')
-                                ? nav_categorie_href($pid)
-                                : 'produits.php';
-                        }
-                        ?>
-                        <a class="mp-pop-cat-item" role="listitem"
-                            href="<?php echo htmlspecialchars($phref, ENT_QUOTES, 'UTF-8'); ?>"
-                            title="<?php echo htmlspecialchars($plabel, ENT_QUOTES, 'UTF-8'); ?>">
-                            <span class="mp-pop-cat-icon<?php echo $has_pop_img ? ' mp-pop-cat-icon--photo' : ''; ?>" aria-hidden="true">
-                                <?php if ($has_pop_img): ?>
-                                    <img src="<?php echo htmlspecialchars(upload_image_url_from_src($pop_img, 'sm'), ENT_QUOTES, 'UTF-8'); ?>"
-                                        alt=""
-                                        loading="lazy"
-                                        decoding="async">
-                                <?php else: ?>
-                                    <i class="<?php echo htmlspecialchars($pic_class, ENT_QUOTES, 'UTF-8'); ?>"></i>
-                                <?php endif; ?>
+            <section class="mp-popular-categories" aria-label="Catégories populaires">
+                <div class="mp-popular-categories-inner">
+                    <div class="mp-popular-categories-track" role="list">
+                        <?php foreach ($mp_popular_cats as $prow): ?>
+                            <?php
+                            $plabel = trim((string) ($prow['nom'] ?? ''));
+                            if ($plabel === '') {
+                                continue;
+                            }
+                            $pic_class = function_exists('categorie_fa_icon_class')
+                                ? categorie_fa_icon_class($prow)
+                                : 'fa-solid fa-layer-group';
+                            $pop_img = function_exists('categorie_image_public_path')
+                                ? categorie_image_public_path($prow)
+                                : null;
+                            $has_pop_img = is_string($pop_img) && $pop_img !== '';
+                            $pid = (int) ($prow['id'] ?? 0);
+                            if ($mp_nav_is_generale) {
+                                $phref = $pid > 0 && function_exists('nav_categorie_generale_href')
+                                    ? nav_categorie_generale_href($pid)
+                                    : ('produits.php?recherche=' . rawurlencode($plabel));
+                            } else {
+                                $phref = $pid > 0 && function_exists('nav_categorie_href')
+                                    ? nav_categorie_href($pid)
+                                    : 'produits.php';
+                            }
+                            ?>
+                            <a class="mp-pop-cat-item" role="listitem"
+                                href="<?php echo htmlspecialchars($phref, ENT_QUOTES, 'UTF-8'); ?>"
+                                title="<?php echo htmlspecialchars($plabel, ENT_QUOTES, 'UTF-8'); ?>">
+                                <span class="mp-pop-cat-icon<?php echo $has_pop_img ? ' mp-pop-cat-icon--photo' : ''; ?>"
+                                    aria-hidden="true">
+                                    <?php if ($has_pop_img): ?>
+                                        <img src="<?php echo htmlspecialchars(upload_image_url_from_src($pop_img, 'sm'), ENT_QUOTES, 'UTF-8'); ?>"
+                                            alt="" loading="lazy" decoding="async">
+                                    <?php else: ?>
+                                        <i class="<?php echo htmlspecialchars($pic_class, ENT_QUOTES, 'UTF-8'); ?>"></i>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="mp-pop-cat-label"><?php echo htmlspecialchars($plabel); ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                        <button type="button" class="mp-pop-cat-item mp-pop-cat-item--all" role="listitem"
+                            title="Voir toutes les catégories"
+                            onclick="if(typeof window.openBoutiqueNavSidebar==='function'){window.openBoutiqueNavSidebar();}">
+                            <span class="mp-pop-cat-icon" aria-hidden="true">
+                                <span class="mp-pop-grid-dots">
+                                    <span></span><span></span><span></span><span></span>
+                                </span>
                             </span>
-                            <span class="mp-pop-cat-label"><?php echo htmlspecialchars($plabel); ?></span>
-                        </a>
-                    <?php endforeach; ?>
-                    <button type="button" class="mp-pop-cat-item mp-pop-cat-item--all" role="listitem"
-                        title="Voir toutes les catégories"
-                        onclick="if(typeof window.openBoutiqueNavSidebar==='function'){window.openBoutiqueNavSidebar();}">
-                        <span class="mp-pop-cat-icon" aria-hidden="true">
-                            <span class="mp-pop-grid-dots">
-                                <span></span><span></span><span></span><span></span>
-                            </span>
-                        </span>
-                        <span class="mp-pop-cat-label">Voir tout</span>
-                    </button>
+                            <span class="mp-pop-cat-label">Voir tout</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
         <?php endif; ?>
 
         <div class="mp-shell">
@@ -2558,7 +2563,8 @@ $seo_json_ld_blocks = [
                                         <span class="mp-trend-label">Recherché</span>
                                         <a class="mp-trend-img-link" href="produit.php?id=<?php echo $tid; ?>">
                                             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
-                                                alt="<?php echo htmlspecialchars($tnom); ?>" loading="lazy" onerror="this.src='/image/produit1.jpg'">
+                                                alt="<?php echo htmlspecialchars($tnom); ?>" loading="lazy"
+                                                onerror="this.src='/image/produit1.jpg'">
                                         </a>
                                         <span class="mp-trend-sub"><?php echo htmlspecialchars($tnom); ?></span>
                                         <?php if (!empty($produit['avis_count'])): ?>
@@ -2582,29 +2588,31 @@ $seo_json_ld_blocks = [
                         </div>
                         <div class="mp-sp-visual" id="mpSpotlightVisual">
                             <?php if (!empty($spotlight_slides)): ?>
-                            <div class="mp-sp-slides-stack" id="mpSpotlightSlides" data-spotlight-interval="60000" role="region" aria-label="Produits mis en avant" aria-live="polite">
-                                <?php foreach ($spotlight_slides as $sidx => $slide_products): ?>
-                                <div class="mp-sp-slide<?php echo (int) $sidx === 0 ? ' is-active' : ''; ?>"
-                                    data-spotlight-slide="<?php echo (int) $sidx; ?>"
-                                    <?php if ((int) $sidx !== 0): ?>aria-hidden="true"<?php else: ?>aria-hidden="false"<?php endif; ?>>
-                                    <div class="mp-sp-grid<?php echo count($slide_products) < 2 ? ' mp-sp-grid--single' : ''; ?>" role="list">
-                                        <?php foreach ($slide_products as $sp):
-                                            $spid = (int) ($sp['id'] ?? 0);
-                                            if ($spid <= 0) {
-                                                continue;
-                                            }
-                                            ?>
-                                        <a class="mp-sp-tile" role="listitem" href="produit.php?id=<?php echo $spid; ?>">
-                                            <img src="<?php echo htmlspecialchars(upload_image_url($sp['image_principale'] ?? '', 'sm')); ?>"
-                                                alt="<?php echo htmlspecialchars($sp['nom'] ?? 'Produit'); ?>"
-                                                loading="<?php echo (int) $sidx === 0 ? 'eager' : 'lazy'; ?>"
-                                                onerror="this.src='/image/produit1.jpg'">
-                                        </a>
-                                        <?php endforeach; ?>
-                                    </div>
+                                <div class="mp-sp-slides-stack" id="mpSpotlightSlides" data-spotlight-interval="60000"
+                                    role="region" aria-label="Produits mis en avant" aria-live="polite">
+                                    <?php foreach ($spotlight_slides as $sidx => $slide_products): ?>
+                                        <div class="mp-sp-slide<?php echo (int) $sidx === 0 ? ' is-active' : ''; ?>"
+                                            data-spotlight-slide="<?php echo (int) $sidx; ?>" <?php if ((int) $sidx !== 0): ?>aria-hidden="true" <?php else: ?>aria-hidden="false" <?php endif; ?>>
+                                            <div class="mp-sp-grid<?php echo count($slide_products) < 2 ? ' mp-sp-grid--single' : ''; ?>"
+                                                role="list">
+                                                <?php foreach ($slide_products as $sp):
+                                                    $spid = (int) ($sp['id'] ?? 0);
+                                                    if ($spid <= 0) {
+                                                        continue;
+                                                    }
+                                                    ?>
+                                                    <a class="mp-sp-tile" role="listitem"
+                                                        href="produit.php?id=<?php echo $spid; ?>">
+                                                        <img src="<?php echo htmlspecialchars(upload_image_url($sp['image_principale'] ?? '', 'sm')); ?>"
+                                                            alt="<?php echo htmlspecialchars($sp['nom'] ?? 'Produit'); ?>"
+                                                            loading="<?php echo (int) $sidx === 0 ? 'eager' : 'lazy'; ?>"
+                                                            onerror="this.src='/image/produit1.jpg'">
+                                                    </a>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
-                                <?php endforeach; ?>
-                            </div>
                             <?php elseif ($mp_spotlight_img): ?>
                                 <img src="<?php echo htmlspecialchars($mp_spotlight_img, ENT_QUOTES, 'UTF-8'); ?>"
                                     alt="Aperçu de la sélection" onerror="this.style.display='none'">
@@ -2615,50 +2623,61 @@ $seo_json_ld_blocks = [
                         <a class="mp-sp-cta" href="produits.php"><span>En savoir plus</span><i
                                 class="fas fa-arrow-right" aria-hidden="true"></i></a>
                         <?php if (!empty($spotlight_slides) && count($spotlight_slides) > 1): ?>
-                        <div class="mp-sp-dots" id="mpSpotlightDots" role="group" aria-label="Navigation des sélections de produits">
-                            <?php foreach ($spotlight_slides as $didx => $_s): ?>
-                            <button type="button" class="mp-sp-dot<?php echo (int) $didx === 0 ? ' is-active' : ''; ?>"
-                                id="mpSpotlightDot<?php echo (int) $didx; ?>"
-                                data-slide-to="<?php echo (int) $didx; ?>"
-                                aria-selected="<?php echo (int) $didx === 0 ? 'true' : 'false'; ?>"
-                                aria-label="Sélection <?php echo (int) $didx + 1; ?> sur <?php echo (int) count($spotlight_slides); ?>"></button>
-                            <?php endforeach; ?>
-                        </div>
+                            <div class="mp-sp-dots" id="mpSpotlightDots" role="group"
+                                aria-label="Navigation des sélections de produits">
+                                <?php foreach ($spotlight_slides as $didx => $_s): ?>
+                                    <button type="button" class="mp-sp-dot<?php echo (int) $didx === 0 ? ' is-active' : ''; ?>"
+                                        id="mpSpotlightDot<?php echo (int) $didx; ?>" data-slide-to="<?php echo (int) $didx; ?>"
+                                        aria-selected="<?php echo (int) $didx === 0 ? 'true' : 'false'; ?>"
+                                        aria-label="Sélection <?php echo (int) $didx + 1; ?> sur <?php echo (int) count($spotlight_slides); ?>"></button>
+                                <?php endforeach; ?>
+                            </div>
                         <?php endif; ?>
-                    <?php if (!empty($spotlight_slides) && count($spotlight_slides) > 1): ?>
-                    <script>
-                    (function () {
-                        var stack = document.getElementById('mpSpotlightSlides');
-                        if (!stack) { return; }
-                        var ms = parseInt(stack.getAttribute('data-spotlight-interval') || '60000', 10);
-                        if (isNaN(ms) || ms < 5000) { ms = 60000; }
-                        var slides = stack.querySelectorAll('.mp-sp-slide');
-                        var dots = document.querySelectorAll('#mpSpotlightDots .mp-sp-dot');
-                        if (slides.length < 2) { return; }
-                        var n = slides.length;
-                        var cur = 0;
-                        function go(i) {
-                            i = ((i % n) + n) % n;
-                            cur = i;
-                            for (var j = 0; j < n; j++) {
-                                var on = (j === i);
-                                slides[j].classList.toggle('is-active', on);
-                                slides[j].setAttribute('aria-hidden', on ? 'false' : 'true');
-                                if (dots[j]) {
-                                    dots[j].classList.toggle('is-active', on);
-                                    dots[j].setAttribute('aria-selected', on ? 'true' : 'false');
-                                }
-                            }
-                        }
-                        setInterval(function () { go(cur + 1); }, ms);
-                        for (var d = 0; d < dots.length; d++) {
-                            (function (idx) {
-                                dots[idx].addEventListener('click', function () { go(idx); });
-                            })(d);
-                        }
-                    })();
-                    </script>
-                    <?php endif; ?>
+                        <?php if (!empty($spotlight_slides) && count($spotlight_slides) > 1): ?>
+                            <script>
+                                (function () {
+                                    var stack = document.getElementById('mpSpotlightSlides');
+                                    if (!stack) {
+                                        return;
+                                    }
+                                    var ms = parseInt(stack.getAttribute('data-spotlight-interval') || '60000', 10);
+                                    if (isNaN(ms) || ms < 5000) {
+                                        ms = 60000;
+                                    }
+                                    var slides = stack.querySelectorAll('.mp-sp-slide');
+                                    var dots = document.querySelectorAll('#mpSpotlightDots .mp-sp-dot');
+                                    if (slides.length < 2) {
+                                        return;
+                                    }
+                                    var n = slides.length;
+                                    var cur = 0;
+
+                                    function go(i) {
+                                        i = ((i % n) + n) % n;
+                                        cur = i;
+                                        for (var j = 0; j < n; j++) {
+                                            var on = (j === i);
+                                            slides[j].classList.toggle('is-active', on);
+                                            slides[j].setAttribute('aria-hidden', on ? 'false' : 'true');
+                                            if (dots[j]) {
+                                                dots[j].classList.toggle('is-active', on);
+                                                dots[j].setAttribute('aria-selected', on ? 'true' : 'false');
+                                            }
+                                        }
+                                    }
+                                    setInterval(function () {
+                                        go(cur + 1);
+                                    }, ms);
+                                    for (var d = 0; d < dots.length; d++) {
+                                        (function (idx) {
+                                            dots[idx].addEventListener('click', function () {
+                                                go(idx);
+                                            });
+                                        })(d);
+                                    }
+                                })();
+                            </script>
+                        <?php endif; ?>
                     </aside>
                 </div>
             </section>
@@ -2671,8 +2690,10 @@ $seo_json_ld_blocks = [
                         <span class="mp-promo-ico" aria-hidden="true"><i class="fas fa-trophy"></i></span>
                         <h2 id="mp-b2b-title">Top des ventes</h2>
                         <ul class="mp-promo-list">
-                            <li><i class="fas fa-check" aria-hidden="true"></i> Articles les plus commandés sur la marketplace (volumes réels de vente)</li>
-                            <li><i class="fas fa-check" aria-hidden="true"></i> Découvrez ce que les professionnels et particuliers achètent le plus</li>
+                            <li><i class="fas fa-check" aria-hidden="true"></i> Articles les plus commandés sur la
+                                marketplace (volumes réels de vente)</li>
+                            <li><i class="fas fa-check" aria-hidden="true"></i> Découvrez ce que les professionnels et
+                                particuliers achètent le plus</li>
                         </ul>
                         <a class="mp-promo-cta" href="produits.php">Découvrir dès maintenant</a>
                     </div>
@@ -2690,7 +2711,8 @@ $seo_json_ld_blocks = [
                             <a class="mp-strip-card" href="produit.php?id=<?php echo $sid; ?>">
                                 <div class="mp-strip-card-img">
                                     <img src="<?php echo htmlspecialchars(upload_image_url($sproduit['image_principale'] ?? '', 'sm')); ?>"
-                                        alt="<?php echo htmlspecialchars($snom); ?>" loading="lazy" onerror="this.src='/image/produit1.jpg'">
+                                        alt="<?php echo htmlspecialchars($snom); ?>" loading="lazy"
+                                        onerror="this.src='/image/produit1.jpg'">
                                 </div>
                                 <div class="mp-strip-body">
                                     <p class="mp-strip-title"><?php echo htmlspecialchars($snom); ?></p>
@@ -2797,6 +2819,7 @@ $seo_json_ld_blocks = [
                 </div>
             </section>
 
+
             <section class="mp-block" aria-labelledby="mp-all-heading">
                 <header class="mp-block-head">
                     <h2 id="mp-all-heading">Tous les produits sur la plateforme</h2>
@@ -2845,8 +2868,8 @@ $seo_json_ld_blocks = [
                     once: true,
                     offset: 24,
                     disable: function () {
-                        if (window.__COLOBANES_NATIVE_APP === true
-                            || document.documentElement.classList.contains('is-native-app')) {
+                        if (window.__COLOBANES_NATIVE_APP === true ||
+                            document.documentElement.classList.contains('is-native-app')) {
                             return true;
                         }
                         return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2872,12 +2895,18 @@ $seo_json_ld_blocks = [
             var step = 220;
             if (prev) {
                 prev.addEventListener('click', function () {
-                    el.scrollBy({ left: -step, behavior: 'smooth' });
+                    el.scrollBy({
+                        left: -step,
+                        behavior: 'smooth'
+                    });
                 });
             }
             if (next) {
                 next.addEventListener('click', function () {
-                    el.scrollBy({ left: step, behavior: 'smooth' });
+                    el.scrollBy({
+                        left: step,
+                        behavior: 'smooth'
+                    });
                 });
             }
         });
@@ -2894,235 +2923,236 @@ $seo_json_ld_blocks = [
             }
             window.jQuery(function ($) {
 
-            $('.slider1').owlCarousel({
-                items: 2,
-                loop: true,
-                dots: true,
-                autoplay: true,
-                autoplayTimeout: 4000,
-                animateOut: 'slideOutDown',
-                animateIn: 'flipInX',
-                smartSpeed: 400,
-                stagePadding: 0,
-                nav: true,
-                navText: ['<i class="fa-solid fa-chevron-left"></i>',
-                    '<i class="fa-solid fa-chevron-right"></i>'
-                ]
-            });
-            var carousel2 = $('.slider1').owlCarousel();
-            $('.owl-next2').click(function () {
-                carousel2.trigger('next.owl.carousel');
-            })
-            $('.owl-prev2').click(function () {
-                carousel2.trigger('prev.owl.carousel');
-            })
-
-            // Nouveaux produits et Produits populaires : Owl désactivé, toujours en mode flex-wrap
-
-            if ($('.mp-hero-slider-wrap .slider-area').length && $('.mp-hero-slider-wrap .slider-item').length) {
-                var $mpHeroSlider = $('.mp-hero-slider-wrap .slider-area');
-                var mpHeroSlideCount = $mpHeroSlider.children('.slider-item').length;
-                var mpHeroUsesAutoHeight = function () {
-                    return window.matchMedia('(max-width: 992px)').matches;
-                };
-                var mpHeroCarouselEnabled = mpHeroSlideCount > 1;
-
-                $mpHeroSlider.owlCarousel({
-                    items: 1,
-                    slideBy: 1,
-                    loop: mpHeroCarouselEnabled,
-                    dots: mpHeroCarouselEnabled,
-                    nav: false,
-                    autoplay: mpHeroCarouselEnabled,
-                    autoplayTimeout: 5000,
-                    autoplayHoverPause: true,
-                    autoplaySpeed: 450,
-                    smartSpeed: 450,
+                $('.slider1').owlCarousel({
+                    items: 2,
+                    loop: true,
+                    dots: true,
+                    autoplay: true,
+                    autoplayTimeout: 4000,
+                    animateOut: 'slideOutDown',
+                    animateIn: 'flipInX',
+                    smartSpeed: 400,
                     stagePadding: 0,
-                    autoHeight: mpHeroUsesAutoHeight(),
+                    nav: true,
                     navText: ['<i class="fa-solid fa-chevron-left"></i>',
                         '<i class="fa-solid fa-chevron-right"></i>'
                     ]
                 });
+                var carousel2 = $('.slider1').owlCarousel();
+                $('.owl-next2').click(function () {
+                    carousel2.trigger('next.owl.carousel');
+                })
+                $('.owl-prev2').click(function () {
+                    carousel2.trigger('prev.owl.carousel');
+                })
 
-                var refreshMpHeroSlider = function () {
-                    $mpHeroSlider.trigger('refresh.owl.carousel');
-                };
-                var mpHeroResizeTimer;
-                $(window).on('resize', function () {
-                    clearTimeout(mpHeroResizeTimer);
-                    mpHeroResizeTimer = setTimeout(refreshMpHeroSlider, 150);
-                });
-                $('.mp-hero-slider-wrap .slider-item img').each(function () {
-                    if (this.complete) {
-                        refreshMpHeroSlider();
-                    } else {
-                        $(this).on('load', refreshMpHeroSlider);
-                    }
-                });
+                // Nouveaux produits et Produits populaires : Owl désactivé, toujours en mode flex-wrap
 
-                if (mpHeroCarouselEnabled) {
-                    $mpHeroSlider.trigger('play.owl.autoplay', [5000]);
-                }
-            }
-            var carousel2 = $('.carousel2').owlCarousel();
-            $('.owl-next2').click(function () {
-                carousel2.trigger('next.owl.carousel');
-            })
-            $('.owl-prev2').click(function () {
-                carousel2.trigger('prev.owl.carousel');
-            })
+                if ($('.mp-hero-slider-wrap .slider-area').length && $('.mp-hero-slider-wrap .slider-item')
+                    .length) {
+                    var $mpHeroSlider = $('.mp-hero-slider-wrap .slider-area');
+                    var mpHeroSlideCount = $mpHeroSlider.children('.slider-item').length;
+                    var mpHeroUsesAutoHeight = function () {
+                        return window.matchMedia('(max-width: 992px)').matches;
+                    };
+                    var mpHeroCarouselEnabled = mpHeroSlideCount > 1;
 
-
-            // Carrousel des catégories
-            if ($('.marques-owl').length && $('.marques-owl .marque-item').length) {
-                var marquesCarousel = $('.marques-owl').owlCarousel({
-                    items: 4,
-                    loop: true,
-                    dots: false,
-                    nav: false,
-                    margin: 28,
-                    stagePadding: 15,
-                    autoplay: true,
-                    autoplayTimeout: 3000,
-                    autoplayHoverPause: true,
-                    smartSpeed: 500,
-                    responsive: {
-                        0: {
-                            items: 2,
-                            margin: 16
-                        },
-                        480: {
-                            items: 3,
-                            margin: 20
-                        },
-                        768: {
-                            items: 4,
-                            margin: 28
-                        },
-                        992: {
-                            items: 5,
-                            margin: 28
-                        }
-                    }
-                });
-                $('.marques-nav-prev').on('click', function () {
-                    marquesCarousel.trigger('prev.owl.carousel');
-                });
-                $('.marques-nav-next').on('click', function () {
-                    marquesCarousel.trigger('next.owl.carousel');
-                });
-            }
-
-            // Carrousel des logos partenaires
-            if ($('.logos-owl').length && $('.logos-owl .marque-item').length) {
-                var logosCarousel = $('.logos-owl').owlCarousel({
-                    items: 4,
-                    loop: true,
-                    dots: false,
-                    nav: false,
-                    margin: 28,
-                    stagePadding: 15,
-                    autoplay: true,
-                    autoplayTimeout: 3000,
-                    autoplayHoverPause: true,
-                    smartSpeed: 500,
-                    responsive: {
-                        0: {
-                            items: 2,
-                            margin: 16
-                        },
-                        480: {
-                            items: 3,
-                            margin: 20
-                        },
-                        768: {
-                            items: 4,
-                            margin: 28
-                        },
-                        992: {
-                            items: 5,
-                            margin: 28
-                        }
-                    }
-                });
-                $('.logos-nav-prev').on('click', function () {
-                    logosCarousel.trigger('prev.owl.carousel');
-                });
-                $('.logos-nav-next').on('click', function () {
-                    logosCarousel.trigger('next.owl.carousel');
-                });
-            }
-
-            // Carrousel catégories : 1 item < 350px, 2 items >= 350px sur mobile
-            $('.categorie').owlCarousel({
-                items: 5,
-                loop: true,
-                dots: true,
-                autoplay: true,
-                autoplayTimeout: 2000,
-                autoplaySpeed: 3000,
-                animateOut: 'slideOutDown',
-                animateIn: 'flipInX',
-                smartSpeed: 1200,
-                stagePadding: 20,
-                margin: 15,
-                nav: true,
-                navText: ['<i class="fa-solid fa-chevron-left"></i>',
-                    '<i class="fa-solid fa-chevron-right"></i>'
-                ],
-                responsive: {
-                    0: {
+                    $mpHeroSlider.owlCarousel({
                         items: 1,
-                        stagePadding: 10,
-                        margin: 10,
-                        nav: true,
-                        dots: true
-                    },
-                    350: {
-                        items: 2,
-                        stagePadding: 10,
-                        margin: 12,
-                        nav: true,
-                        dots: true
-                    },
-                    576: {
-                        items: 2,
-                        stagePadding: 15,
-                        margin: 15,
-                        nav: true,
-                        dots: true
-                    },
-                    768: {
-                        items: 3,
-                        stagePadding: 15,
-                        margin: 15,
-                        nav: true,
-                        dots: true
-                    },
-                    992: {
-                        items: 4,
-                        stagePadding: 20,
-                        margin: 15,
-                        nav: true,
-                        dots: true
-                    },
-                    1200: {
-                        items: 4,
-                        stagePadding: 20,
-                        margin: 15,
-                        nav: true,
-                        dots: true
+                        slideBy: 1,
+                        loop: mpHeroCarouselEnabled,
+                        dots: false,
+                        nav: false,
+                        autoplay: mpHeroCarouselEnabled,
+                        autoplayTimeout: 5000,
+                        autoplayHoverPause: true,
+                        autoplaySpeed: 450,
+                        smartSpeed: 450,
+                        stagePadding: 0,
+                        autoHeight: mpHeroUsesAutoHeight(),
+                        navText: ['<i class="fa-solid fa-chevron-left"></i>',
+                            '<i class="fa-solid fa-chevron-right"></i>'
+                        ]
+                    });
+
+                    var refreshMpHeroSlider = function () {
+                        $mpHeroSlider.trigger('refresh.owl.carousel');
+                    };
+                    var mpHeroResizeTimer;
+                    $(window).on('resize', function () {
+                        clearTimeout(mpHeroResizeTimer);
+                        mpHeroResizeTimer = setTimeout(refreshMpHeroSlider, 150);
+                    });
+                    $('.mp-hero-slider-wrap .slider-item img').each(function () {
+                        if (this.complete) {
+                            refreshMpHeroSlider();
+                        } else {
+                            $(this).on('load', refreshMpHeroSlider);
+                        }
+                    });
+
+                    if (mpHeroCarouselEnabled) {
+                        $mpHeroSlider.trigger('play.owl.autoplay', [5000]);
                     }
                 }
-            });
-            var carousel2 = $('.carousel2').owlCarousel();
-            $('.owl-next2').click(function () {
-                carousel2.trigger('next.owl.carousel');
-            })
-            $('.owl-prev2').click(function () {
-                carousel2.trigger('prev.owl.carousel');
-            })
+                var carousel2 = $('.carousel2').owlCarousel();
+                $('.owl-next2').click(function () {
+                    carousel2.trigger('next.owl.carousel');
+                })
+                $('.owl-prev2').click(function () {
+                    carousel2.trigger('prev.owl.carousel');
+                })
+
+
+                // Carrousel des catégories
+                if ($('.marques-owl').length && $('.marques-owl .marque-item').length) {
+                    var marquesCarousel = $('.marques-owl').owlCarousel({
+                        items: 4,
+                        loop: true,
+                        dots: false,
+                        nav: false,
+                        margin: 28,
+                        stagePadding: 15,
+                        autoplay: true,
+                        autoplayTimeout: 3000,
+                        autoplayHoverPause: true,
+                        smartSpeed: 500,
+                        responsive: {
+                            0: {
+                                items: 2,
+                                margin: 16
+                            },
+                            480: {
+                                items: 3,
+                                margin: 20
+                            },
+                            768: {
+                                items: 4,
+                                margin: 28
+                            },
+                            992: {
+                                items: 5,
+                                margin: 28
+                            }
+                        }
+                    });
+                    $('.marques-nav-prev').on('click', function () {
+                        marquesCarousel.trigger('prev.owl.carousel');
+                    });
+                    $('.marques-nav-next').on('click', function () {
+                        marquesCarousel.trigger('next.owl.carousel');
+                    });
+                }
+
+                // Carrousel des logos partenaires
+                if ($('.logos-owl').length && $('.logos-owl .marque-item').length) {
+                    var logosCarousel = $('.logos-owl').owlCarousel({
+                        items: 4,
+                        loop: true,
+                        dots: false,
+                        nav: false,
+                        margin: 28,
+                        stagePadding: 15,
+                        autoplay: true,
+                        autoplayTimeout: 3000,
+                        autoplayHoverPause: true,
+                        smartSpeed: 500,
+                        responsive: {
+                            0: {
+                                items: 2,
+                                margin: 16
+                            },
+                            480: {
+                                items: 3,
+                                margin: 20
+                            },
+                            768: {
+                                items: 4,
+                                margin: 28
+                            },
+                            992: {
+                                items: 5,
+                                margin: 28
+                            }
+                        }
+                    });
+                    $('.logos-nav-prev').on('click', function () {
+                        logosCarousel.trigger('prev.owl.carousel');
+                    });
+                    $('.logos-nav-next').on('click', function () {
+                        logosCarousel.trigger('next.owl.carousel');
+                    });
+                }
+
+                // Carrousel catégories : 1 item < 350px, 2 items >= 350px sur mobile
+                $('.categorie').owlCarousel({
+                    items: 5,
+                    loop: true,
+                    dots: true,
+                    autoplay: true,
+                    autoplayTimeout: 2000,
+                    autoplaySpeed: 3000,
+                    animateOut: 'slideOutDown',
+                    animateIn: 'flipInX',
+                    smartSpeed: 1200,
+                    stagePadding: 20,
+                    margin: 15,
+                    nav: true,
+                    navText: ['<i class="fa-solid fa-chevron-left"></i>',
+                        '<i class="fa-solid fa-chevron-right"></i>'
+                    ],
+                    responsive: {
+                        0: {
+                            items: 1,
+                            stagePadding: 10,
+                            margin: 10,
+                            nav: true,
+                            dots: true
+                        },
+                        350: {
+                            items: 2,
+                            stagePadding: 10,
+                            margin: 12,
+                            nav: true,
+                            dots: true
+                        },
+                        576: {
+                            items: 2,
+                            stagePadding: 15,
+                            margin: 15,
+                            nav: true,
+                            dots: true
+                        },
+                        768: {
+                            items: 3,
+                            stagePadding: 15,
+                            margin: 15,
+                            nav: true,
+                            dots: true
+                        },
+                        992: {
+                            items: 4,
+                            stagePadding: 20,
+                            margin: 15,
+                            nav: true,
+                            dots: true
+                        },
+                        1200: {
+                            items: 4,
+                            stagePadding: 20,
+                            margin: 15,
+                            nav: true,
+                            dots: true
+                        }
+                    }
+                });
+                var carousel2 = $('.carousel2').owlCarousel();
+                $('.owl-next2').click(function () {
+                    carousel2.trigger('next.owl.carousel');
+                })
+                $('.owl-prev2').click(function () {
+                    carousel2.trigger('prev.owl.carousel');
+                })
 
 
             });

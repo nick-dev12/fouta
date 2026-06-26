@@ -90,3 +90,18 @@
         font-size: 12px;
     }
 }
+
+/* Fiche produit — bouton sur l'image principale */
+.produit-gallery-main > .pshare {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 15;
+}
+
+@media (max-width: 640px) {
+    .produit-gallery-main > .pshare {
+        top: 10px;
+        right: 10px;
+    }
+}

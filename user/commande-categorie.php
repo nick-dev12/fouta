@@ -144,6 +144,19 @@ if ($suivi_confirm_error) {
             .liste-categorie-page .produits-grid {
                 grid-template-columns: 1fr;
             }
+            .content-header--cc-suivi { padding: 12px 14px; gap: 10px; }
+            .content-header--cc-suivi h1 { font-size: 1.15rem; }
+            .cc-header-btn-products { font-size: 0.82rem; padding: 10px 12px; }
+            .commande-categorie-suivi .cc-live-card { padding: 12px; }
+            .commande-categorie-suivi .cc-progress-card { padding: 12px; }
+            .cc-products-sheet { width: min(100%, 420px); margin: 0 auto; }
+            .cc-products-sheet-hd { padding: 12px 14px; }
+            .cc-products-scroll { padding: 10px 12px; }
+        }
+        @media (max-width: 480px) {
+            .categorie-section { padding: 16px 12px; }
+            .content-header--cc-suivi .content-header__suivi-actions { flex-direction: column; width: 100%; }
+            .cc-header-btn-products { width: 100%; }
         }
         .produit-card-commande {
             background: rgba(255, 255, 255, 0.95);

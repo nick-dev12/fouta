@@ -295,9 +295,40 @@ function statut_class_cmd($s) {
 
         .cmd-v2-hero__right {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
+            flex-direction: row;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
             gap: 10px;
+        }
+
+        .cmd-v2-hero__cta--outline {
+            background: transparent;
+            border: 1.5px solid rgba(255,255,255,0.35);
+        }
+
+        .cmd-v2-hero__cta--outline:hover {
+            background: rgba(255,255,255,0.12);
+        }
+
+        /* ---- Raccourcis Livrées / Annulées (ex-onglets) ---- */
+        .cmd-v2-quick-links {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .cmd-v2-quick-links .cmd-v2-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        @media (min-width: 640px) {
+            .cmd-v2-quick-links {
+                grid-template-columns: repeat(2, minmax(160px, auto));
+                justify-content: flex-start;
+            }
+            .cmd-v2-quick-links .cmd-v2-btn { width: auto; }
         }
 
         .cmd-v2-hero__cta {
@@ -899,9 +930,15 @@ function statut_class_cmd($s) {
             margin-bottom: 12px;
         }
         @media (max-width: 480px) {
-            #cmd-pos-map { height: 130px; }
-            .cmd-pos-modal__panel { width: 100%; }
-            .cmd-pos-modal__body { padding: 12px 14px 16px; }
+            #cmd-pos-map { height: 120px; }
+            .cmd-pos-modal { padding: 8px; align-items: flex-end; }
+            .cmd-pos-modal__panel { width: 100%; max-height: 88vh; border-radius: 14px 14px 0 0; }
+            .cmd-pos-modal__head { padding: 12px 14px; }
+            .cmd-pos-modal__head h2 { font-size: 0.88rem; }
+            .cmd-pos-modal__body { padding: 10px 12px 14px; }
+            .cmd-pos-modal__addr { font-size: 0.74rem; }
+            .cmd-pos-btn-livreur,
+            .cmd-pos-btn-whatsapp { flex: 1 1 calc(50% - 4px); font-size: 0.72rem; padding: 7px 8px; }
         }
         .cmd-pos-modal__actions {
             display: flex;
@@ -927,6 +964,21 @@ function statut_class_cmd($s) {
             cursor: pointer;
         }
         .cmd-pos-btn-livreur:hover { filter: brightness(1.05); }
+        .cmd-pos-btn-whatsapp {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
+            min-height: 36px;
+            border-radius: 8px;
+            background: #25D366;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-decoration: none;
+        }
+        .cmd-pos-btn-whatsapp:hover { filter: brightness(1.05); }
         .cmd-pos-loading {
             display: none;
             align-items: center;
@@ -1027,15 +1079,6 @@ function statut_class_cmd($s) {
                 <h1 class="cmd-v2-header__title">Mes Commandes</h1>
             </div>
             <div class="cmd-v2-header__actions">
-                <a href="historique-ventes.php" class="cmd-v2-btn cmd-v2-btn--outline">
-                    <i class="fas fa-chart-line"></i> Historique
-                </a>
-                <a href="livrees.php" class="cmd-v2-btn cmd-v2-btn--outline">
-                    <i class="fas fa-check-circle"></i> Livr&eacute;es
-                </a>
-                <a href="annulees.php" class="cmd-v2-btn cmd-v2-btn--danger">
-                    <i class="fas fa-ban"></i> Annul&eacute;es
-                </a>
             </div>
         </header>
 
@@ -1057,6 +1100,10 @@ function statut_class_cmd($s) {
                     </div>
                 </div>
                 <div class="cmd-v2-hero__right">
+                    <a href="historique-ventes.php" class="cmd-v2-hero__cta cmd-v2-hero__cta--outline">
+                        <i class="fas fa-chart-line"></i>
+                        Historique
+                    </a>
                     <button type="button" class="cmd-v2-hero__cta" id="btn-commande-manuelle-hero">
                         <i class="fas fa-plus-circle"></i>
                         Cr&eacute;er une commande
@@ -1095,60 +1142,16 @@ function statut_class_cmd($s) {
                     <span class="cmd-v2-stat__value"><?php echo $nb_livraison; ?></span>
                 </div>
             </a>
-            <a href="livrees.php" class="cmd-v2-stat cmd-v2-stat--ok">
-                <div class="cmd-v2-stat__icon"><i class="fas fa-circle-check"></i></div>
-                <div class="cmd-v2-stat__content">
-                    <span class="cmd-v2-stat__label">Livr&eacute;es</span>
-                    <span class="cmd-v2-stat__value"><?php echo $nb_livrees; ?></span>
-                </div>
-            </a>
-            <a href="annulees.php" class="cmd-v2-stat cmd-v2-stat--annulee">
-                <div class="cmd-v2-stat__icon"><i class="fas fa-ban"></i></div>
-                <div class="cmd-v2-stat__content">
-                    <span class="cmd-v2-stat__label">Annul&eacute;es</span>
-                    <span class="cmd-v2-stat__value"><?php echo $nb_annulees; ?></span>
-                </div>
-            </a>
         </div>
 
-        <!-- ===== ONGLETS + TITRE SECTION ===== -->
-        <div class="cmd-v2-tabs-row">
-            <div class="cmd-v2-tabs" role="tablist">
-                <a href="?statut=actives"
-                    class="cmd-v2-tab <?php echo $tab_actif === 'actives' ? 'active' : ''; ?>"
-                    role="tab">
-                    <i class="fas fa-list-check"></i>
-                    Toutes actives
-                    <span class="cmd-v2-tab__count"><?php echo count($commandes_actives); ?></span>
-                </a>
-                <a href="?statut=en_attente"
-                    class="cmd-v2-tab cmd-v2-tab--warn <?php echo $tab_actif === 'en_attente' ? 'active' : ''; ?>"
-                    role="tab">
-                    <i class="fas fa-clock"></i>
-                    En attente
-                    <span class="cmd-v2-tab__count"><?php echo $nb_en_attente; ?></span>
-                </a>
-                <a href="?statut=prise_en_charge"
-                    class="cmd-v2-tab <?php echo $tab_actif === 'prise_en_charge' ? 'active' : ''; ?>"
-                    role="tab">
-                    <i class="fas fa-box-open"></i>
-                    Pris en charge
-                    <span class="cmd-v2-tab__count"><?php echo $nb_prise; ?></span>
-                </a>
-                <a href="?statut=livraison_en_cours"
-                    class="cmd-v2-tab <?php echo $tab_actif === 'livraison_en_cours' ? 'active' : ''; ?>"
-                    role="tab">
-                    <i class="fas fa-truck"></i>
-                    En livraison
-                    <span class="cmd-v2-tab__count"><?php echo $nb_livraison; ?></span>
-                </a>
-            </div>
-            <div class="cmd-v2-tabs-actions">
-                <button type="button" class="cmd-v2-btn cmd-v2-btn--primary" id="btn-commande-manuelle-tab"
-                    style="font-size:.8rem; padding:8px 15px;">
-                    <i class="fas fa-plus"></i> Nouvelle
-                </button>
-            </div>
+        <!-- ===== Raccourcis Livrées / Annulées ===== -->
+        <div class="cmd-v2-quick-links">
+            <a href="livrees.php" class="cmd-v2-btn cmd-v2-btn--outline">
+                <i class="fas fa-check-circle"></i> Livr&eacute;es
+            </a>
+            <a href="annulees.php" class="cmd-v2-btn cmd-v2-btn--danger">
+                <i class="fas fa-ban"></i> Annul&eacute;es
+            </a>
         </div>
 
         <!-- ===== GRILLE DES COMMANDES ===== -->
@@ -1193,6 +1196,9 @@ function statut_class_cmd($s) {
                     <button type="button" class="cmd-pos-btn-livreur" id="cmd-pos-btn-livreur">
                         <i class="fas fa-motorcycle"></i> Commander un livreur
                     </button>
+                    <a href="#" class="cmd-pos-btn-whatsapp" id="cmd-pos-btn-whatsapp" target="_blank" rel="noopener noreferrer" hidden>
+                        <i class="fab fa-whatsapp"></i> Partager sur WhatsApp
+                    </a>
                 </div>
             </div>
         </div>
@@ -1392,8 +1398,7 @@ function statut_class_cmd($s) {
         var backdrop = modal ? modal.querySelector('.modal-commande-manuelle-backdrop') : null;
         var btnsOpen = [
             document.getElementById('btn-commande-manuelle'),
-            document.getElementById('btn-commande-manuelle-hero'),
-            document.getElementById('btn-commande-manuelle-tab')
+            document.getElementById('btn-commande-manuelle-hero')
         ];
         var btnClose  = document.getElementById('modal-commande-manuelle-close');
         var btnCancel = document.getElementById('modal-commande-manuelle-cancel');
@@ -1694,6 +1699,8 @@ function statut_class_cmd($s) {
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-commande-position-modal.js<?php echo asset_version_query(); ?>"></script>
+    <?php require __DIR__ . '/../../includes/partials/uc_gallery_lightbox.php'; ?>
+    <script src="/js/uc-gallery-lightbox.js<?php echo asset_version_query(); ?>"></script>
 
 </body>
 </html>

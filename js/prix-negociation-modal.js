@@ -227,12 +227,24 @@
   }
 
   function initVendorOffersPanels() {
-    document.querySelectorAll('[data-prix-neg-offers-open]').forEach(function (btn) {
-      var targetId = btn.getAttribute('data-prix-neg-offers-open');
+    function openOffersPanel(targetId) {
       var panel = targetId ? document.getElementById(targetId) : null;
-      if (!panel) return;
-      btn.addEventListener('click', function () {
-        openModalEl(panel);
+      if (panel) openModalEl(panel);
+    }
+
+    document.querySelectorAll('.prix-neg-produit-card[data-prix-neg-offers-open]').forEach(function (card) {
+      var targetId = card.getAttribute('data-prix-neg-offers-open');
+      if (!targetId || !document.getElementById(targetId)) return;
+
+      card.addEventListener('click', function () {
+        openOffersPanel(targetId);
+      });
+
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openOffersPanel(targetId);
+        }
       });
     });
 

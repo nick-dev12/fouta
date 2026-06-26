@@ -1411,9 +1411,25 @@
 .geo-nav-app--yassir { background: #6316db; }
 .geo-nav-app--whatsapp { background: #25d366; }
 
+@media (max-width: 768px) {
+  .cmd-detail-page { padding: 12px 10px; }
+  .cmd-detail-hero { padding: 14px 12px; border-radius: 14px; }
+  .cmd-detail-hero__title { font-size: 1.05rem; }
+  .cmd-detail-hero__actions { flex-wrap: wrap; gap: 8px; }
+  .cmd-detail-hero__actions .btn-primary,
+  .cmd-detail-hero__actions .btn-back { font-size: 0.78rem; padding: 8px 12px; }
+  .cmd-detail-page .cmd-suivi-admin-embed .cc-live-card { padding: 12px; }
+  .cmd-detail-page .cmd-suivi-admin-embed .cc-progress-card { padding: 12px; }
+  .cmd-products-section__head { padding: 12px 14px; }
+  .cmd-products-list .cpd-row { padding: 10px 12px; }
+  .geo-nav-apps { gap: 8px; }
+  .geo-nav-app { font-size: 0.78rem; padding: 8px 12px; }
+}
+
 @media (max-width: 480px) {
   .geo-nav-apps { flex-direction: column; }
   .geo-nav-app { width: 100%; justify-content: center; }
+  .cmd-detail-meta { font-size: 0.78rem; }
 }
 
 .cmd-retrait-section .cmd-retrait-badge {

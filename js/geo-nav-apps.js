@@ -15,7 +15,6 @@
         return [
             { name: 'Google Maps', icon: 'fab fa-google', cls: 'gmaps', url: gmaps },
             { name: 'Yango', icon: 'fas fa-car', cls: 'yango', url: yango },
-            { name: 'Yassir', icon: 'fas fa-taxi', cls: 'yassir', url: yassir },
             { name: 'Partager sur WhatsApp', icon: 'fab fa-whatsapp', cls: 'whatsapp', url: wa }
         ];
     };

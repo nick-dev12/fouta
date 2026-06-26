@@ -207,6 +207,7 @@ $seo_json_ld_blocks = [
     <link rel="stylesheet" href="/css/vendor-cert-ribbon.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/prix-negociation.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/product-share.css<?php echo asset_version_query(); ?>">
     <style>
         /* Styles pour la page produit - Palette gourmande */
         body {
@@ -250,6 +251,34 @@ $seo_json_ld_blocks = [
             width: 100%;
             max-width: 100%;
             overflow: hidden;
+        }
+
+        .produit-gallery-main > .pshare {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 12;
+        }
+
+        .produit-gallery-main > .pshare .pshare__toggle {
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 4px 14px rgba(13, 13, 13, 0.18);
+        }
+
+        @media (max-width: 640px) {
+            .produit-gallery-main > .pshare {
+                top: 10px;
+                right: 10px;
+            }
+
+            .produit-gallery-main > .pshare .pshare__toggle {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
         }
 
         .produit-gallery-thumbs {
@@ -1955,6 +1984,7 @@ $seo_json_ld_blocks = [
                 }
                 ?>
                 <div class="produit-gallery-main">
+                    <?php require __DIR__ . '/includes/partials/product_share_button.php'; ?>
                     <img src="<?php echo htmlspecialchars(upload_image_url($galerie_images[0] ?? $produit['image_principale'] ?? '', 'original')); ?>"
                         alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-image-main"
                         id="produit-image-main" onerror="this.src='/image/produit1.jpg'">

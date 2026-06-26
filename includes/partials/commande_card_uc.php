@@ -51,6 +51,16 @@ if ($card_track_url === '' && $cmd_id > 0) {
 if ($card_detail_url === '' && $cmd_id > 0) {
     $card_detail_url = $card_track_url;
 }
+
+$card_galerie_nom = $card_title;
+$card_galerie_urls = [];
+$card_galerie_thumb = '/image/produit1.jpg';
+if ($cmd_id > 0) {
+    $galerie_pack = commande_carte_galerie_urls($cmd_id, $card_title);
+    $card_galerie_urls = $galerie_pack['urls'];
+    $card_galerie_nom = $galerie_pack['nom'];
+    $card_galerie_thumb = $galerie_pack['thumb_url'];
+}
 ?>
 <article class="uc-v2-card">
     <div class="uc-v2-card__top">
@@ -77,6 +87,23 @@ if ($card_detail_url === '' && $cmd_id > 0) {
     </div>
 
     <div class="uc-v2-card__body">
+        <?php if (!empty($card_galerie_urls)): ?>
+            <button type="button"
+                class="uc-v2-card__thumb uc-btn-open-gallery"
+                data-gallery="<?php echo htmlspecialchars(json_encode($card_galerie_urls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>"
+                data-gallery-title="<?php echo htmlspecialchars($card_galerie_nom, ENT_QUOTES, 'UTF-8'); ?>"
+                aria-label="Voir les photos du produit <?php echo htmlspecialchars($card_galerie_nom, ENT_QUOTES, 'UTF-8'); ?>">
+                <img src="<?php echo htmlspecialchars($card_galerie_thumb, ENT_QUOTES, 'UTF-8'); ?>"
+                    alt="<?php echo htmlspecialchars($card_galerie_nom, ENT_QUOTES, 'UTF-8'); ?>"
+                    loading="lazy"
+                    onerror="this.src='/image/produit1.jpg'">
+                <?php if (count($card_galerie_urls) > 1): ?>
+                    <span class="uc-v2-card__thumb-count">+<?php echo count($card_galerie_urls) - 1; ?></span>
+                <?php endif; ?>
+                <span class="uc-v2-card__thumb-zoom" aria-hidden="true"><i class="fas fa-expand"></i></span>
+            </button>
+        <?php endif; ?>
+        <div class="uc-v2-card__body-inner">
         <div class="uc-v2-card__info">
             <div class="uc-v2-card__amount">
                 <?php echo number_format((float) ($commande['montant_total'] ?? 0), 0, ',', ' '); ?><small>FCFA</small>
@@ -124,6 +151,7 @@ if ($card_detail_url === '' && $cmd_id > 0) {
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+        </div>
     </div>
 
     <div class="uc-v2-card__meta-bar">

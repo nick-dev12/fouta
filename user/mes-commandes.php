@@ -15,8 +15,8 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_admin.php';
 require_once __DIR__ . '/../includes/flash_toast.php';
-require_once __DIR__ . '/../includes/commande_mode_helpers.php';
 require_once __DIR__ . '/../includes/boutique_vendeur_display.php';
+require_once __DIR__ . '/../includes/commande_card_helpers.php';
 
 $success_message = '';
 $error_message   = '';
@@ -275,17 +275,33 @@ function cmd_timeline_steps($statut) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-mes-commandes.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-card-uc.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== MES COMMANDES v2 ===== */
 
         .uc-v2-page {
-            max-width: 900px;
+            width: 100%;
+            max-width: min(900px, 100%);
+            min-width: 0;
             margin: 0 auto;
-            padding: clamp(16px, 4vw, 36px) clamp(14px, 4vw, 24px) 90px;
+            padding: clamp(10px, 2.5vw, 36px) clamp(8px, 2.5vw, 24px) 80px;
             display: flex;
             flex-direction: column;
-            gap: 22px;
+            gap: clamp(10px, 2.5vw, 22px);
             font-family: var(--font-corps);
+            box-sizing: border-box;
+        }
+
+        body.user-page-mes-commandes .user-content {
+            padding: clamp(0.5rem, 2vw, 1.5rem);
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        body.user-page-mes-commandes .user-container,
+        body.user-page-mes-commandes main#userContent {
+            min-width: 0;
+            max-width: 100%;
         }
 
         /* ---- Header ---- */
@@ -397,27 +413,6 @@ function cmd_timeline_steps($statut) {
             letter-spacing: -0.03em;
         }
 
-        .uc-v2-hero__pills {
-            margin-top: 16px;
-            display: flex; gap: 10px; flex-wrap: wrap;
-        }
-
-        .uc-v2-hero__pill {
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 50px;
-            padding: 7px 16px;
-            display: flex; align-items: center; gap: 7px;
-            color: #fff;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .uc-v2-hero__pill i { opacity: 0.8; }
-        .uc-v2-hero__pill strong { font-size: 1.06em; }
-        .uc-v2-hero__pill--warn { background: rgba(255,193,7,0.2); border-color: rgba(255,193,7,0.3); }
-        .uc-v2-hero__pill--ok   { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.28); }
-
         .uc-v2-hero__cta {
             display: inline-flex; align-items: center; gap: 7px;
             padding: 10px 20px;
@@ -486,8 +481,14 @@ function cmd_timeline_steps($statut) {
         .uc-v2-tab--warn.active              { color: #c8960f; }
         .uc-v2-tab--warn.active .uc-v2-tab__count { background: #c8960f; }
 
-        /* ---- Cards commandes ---- */
-        .uc-v2-list { display: flex; flex-direction: column; gap: 14px; }
+        .uc-v2-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
 
         .uc-v2-card {
             background: #fff;
@@ -583,8 +584,216 @@ function cmd_timeline_steps($statut) {
             padding: 16px 20px 10px;
             display: flex;
             align-items: flex-start;
-            gap: 20px;
+            gap: clamp(10px, 2.5vw, 16px);
+            flex-wrap: nowrap;
+        }
+
+        .uc-v2-card__body-inner {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: clamp(10px, 2.5vw, 20px);
             flex-wrap: wrap;
+        }
+
+        .uc-v2-card__thumb {
+            flex-shrink: 0;
+            position: relative;
+            width: clamp(72px, 20vw, 92px);
+            height: clamp(72px, 20vw, 92px);
+            padding: 0;
+            border: 1px solid rgba(53, 100, 166, 0.14);
+            border-radius: 14px;
+            overflow: hidden;
+            background: var(--blanc-neige, #f5f5f5);
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(53, 100, 166, 0.1);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .uc-v2-card__thumb:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 18px rgba(53, 100, 166, 0.16);
+        }
+
+        .uc-v2-card__thumb:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring, rgba(53, 100, 166, 0.2));
+        }
+
+        .uc-v2-card__thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .uc-v2-card__thumb-zoom {
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+            width: 22px;
+            height: 22px;
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--couleur-dominante, #3564a6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.62rem;
+            pointer-events: none;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+        }
+
+        .uc-v2-card__thumb-count {
+            position: absolute;
+            left: 5px;
+            top: 5px;
+            padding: 2px 6px;
+            border-radius: 50px;
+            background: rgba(13, 13, 13, 0.72);
+            color: #fff;
+            font-size: 0.58rem;
+            font-weight: 700;
+            pointer-events: none;
+        }
+
+        /* Lightbox galerie produit */
+        .uc-gallery-lb {
+            position: fixed;
+            inset: 0;
+            z-index: 7000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(8px, 3vw, 20px);
+        }
+
+        .uc-gallery-lb[hidden] { display: none !important; }
+
+        .uc-gallery-lb__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(13, 13, 13, 0.88);
+            backdrop-filter: blur(4px);
+        }
+
+        .uc-gallery-lb__panel {
+            position: relative;
+            z-index: 1;
+            width: min(100%, 720px);
+            max-height: min(92vh, 820px);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .uc-gallery-lb__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: #fff;
+            padding: 0 4px;
+        }
+
+        .uc-gallery-lb__title {
+            margin: 0;
+            font-size: clamp(0.78rem, 2.5vw, 0.92rem);
+            font-weight: 700;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .uc-gallery-lb__close {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .uc-gallery-lb__close:hover { background: rgba(255, 255, 255, 0.22); }
+
+        .uc-gallery-lb__stage {
+            position: relative;
+            flex: 1;
+            min-height: min(52vh, 420px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .uc-gallery-lb__img {
+            max-width: 100%;
+            max-height: min(72vh, 640px);
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        .uc-gallery-lb__nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--titres, #0d0d0d);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .uc-gallery-lb__nav--prev { left: 10px; }
+        .uc-gallery-lb__nav--next { right: 10px; }
+        .uc-gallery-lb__nav[disabled] { opacity: 0.35; cursor: default; }
+
+        .uc-gallery-lb__thumbs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 2px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .uc-gallery-lb__thumbs button {
+            flex-shrink: 0;
+            width: 52px;
+            height: 52px;
+            padding: 0;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .uc-gallery-lb__thumbs button.is-active {
+            border-color: #fff;
+        }
+
+        .uc-gallery-lb__thumbs img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         .uc-v2-card__meta-bar {
@@ -593,7 +802,7 @@ function cmd_timeline_steps($statut) {
         }
 
         /* Infos montant + adresse */
-        .uc-v2-card__info { flex: 1; min-width: 180px; }
+        .uc-v2-card__info { flex: 1; min-width: 0; }
 
         .uc-v2-card__amount {
             font-size: 1.45rem;
@@ -778,25 +987,36 @@ function cmd_timeline_steps($statut) {
         /* Footer actions */
         .uc-v2-card__footer {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            align-items: stretch;
+            gap: 8px;
             padding: 12px 20px;
             background: rgba(53,100,166,0.025);
             border-top: 1px solid rgba(53,100,166,0.06);
             flex-wrap: wrap;
         }
 
+        .uc-v2-card__footer form {
+            display: inline-flex;
+            margin: 0;
+        }
+
         .uc-card-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
             border-radius: 9px;
-            font-size: 0.79rem;
+            font-size: clamp(0.72rem, 2.2vw, 0.79rem);
             font-weight: 700;
             border: none;
             cursor: pointer;
             text-decoration: none;
             font-family: var(--font-corps);
             transition: all 0.18s;
+            line-height: 1.25;
+            text-align: center;
+            box-sizing: border-box;
         }
 
         .uc-card-btn--track    { background: rgba(53,100,166,0.1); color: var(--couleur-dominante, #3564a6); }
@@ -887,16 +1107,54 @@ function cmd_timeline_steps($statut) {
         .uc-v2-empty p  { font-size: 0.86rem; max-width: 340px; margin: 0 auto 20px; }
 
         /* Responsive */
-        @media (max-width: 600px) {
-            .uc-v2-card__top { padding: 12px 14px 10px; }
-            .uc-v2-card__boutique { font-size: 0.84rem; }
-            .uc-v2-card__meta-line { font-size: 0.68rem; gap: 5px; }
-            .uc-v2-card__body { flex-direction: column; gap: 14px; padding: 12px 14px 8px; }
-            .uc-v2-card__meta-bar { padding: 0 14px 12px; }
-            .uc-v2-card__amount { font-size: 1.25rem; }
-            .uc-v2-timeline { display: none; }
-            .uc-v2-tabs { gap: 3px; }
-            .uc-v2-tab { padding: 7px 11px; font-size: 0.75rem; }
+        @media (max-width: 992px) {
+            .uc-v2-page { gap: 18px; }
+            .uc-v2-card { border-radius: 16px; }
+        }
+
+        @media (max-width: 768px) {
+            .uc-v2-page { padding: 8px 6px 72px; gap: 10px; }
+            .uc-v2-header__eyebrow { font-size: 0.58rem; }
+            .uc-v2-header__title { font-size: 1.05rem; }
+            .uc-v2-hero { padding: 10px 12px; border-radius: 14px; }
+            .uc-v2-hero__title { font-size: 1.1rem; }
+            .uc-v2-hero__label { font-size: 0.56rem; }
+            .uc-v2-hero__cta { font-size: 0.66rem; padding: 6px 10px; }
+            .uc-v2-tabs-row { overflow: visible; width: 100%; }
+            .uc-v2-tabs {
+                width: 100%;
+                min-width: 0;
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 4px;
+                padding: 4px;
+            }
+            .uc-v2-tab {
+                justify-content: center;
+                padding: 6px 4px;
+                font-size: 0.62rem;
+                white-space: normal;
+                text-align: center;
+                line-height: 1.2;
+            }
+            .uc-v2-tab__count { font-size: 0.58rem; padding: 0 5px; }
+            .uc-v2-card { border-radius: 14px; }
+            .uc-v2-card__top { padding: 8px 10px 6px; }
+            .uc-v2-card__body { padding: 8px 10px 6px; }
+            .uc-v2-card__meta-bar { padding: 0 10px 8px; }
+            .uc-v2-card__footer { padding: 8px 10px; }
+            .uc-v2-card__boutique { font-size: 0.76rem; }
+            .uc-v2-card__amount { font-size: 1.05rem; }
+            .uc-v2-card__tel { font-size: 0.64rem; }
+            .uc-badge { font-size: 0.58rem; padding: 2px 7px; }
+            .uc-v2-empty { padding: 36px 16px; border-radius: 14px; }
+        }
+
+        @media (max-width: 380px) {
+            .uc-v2-hero__top { flex-direction: column; align-items: stretch; gap: 8px; }
+            .uc-v2-hero__cta { width: 100%; justify-content: center; }
+            .uc-v2-header__title { font-size: 0.98rem; }
+            .uc-v2-tab { font-size: 0.58rem; padding: 5px 3px; }
         }
     </style>
 </head>
@@ -924,22 +1182,6 @@ function cmd_timeline_steps($statut) {
                 <a href="/produits.php" class="uc-v2-hero__cta">
                     <i class="fas fa-shopping-basket"></i> Commander &agrave; nouveau
                 </a>
-            </div>
-            <div class="uc-v2-hero__pills">
-                <div class="uc-v2-hero__pill <?php echo $nb_actives > 0 ? 'uc-v2-hero__pill--warn' : ''; ?>">
-                    <i class="fas fa-clock"></i>
-                    <span><strong><?php echo $nb_actives; ?></strong> en cours</span>
-                </div>
-                <div class="uc-v2-hero__pill uc-v2-hero__pill--ok">
-                    <i class="fas fa-circle-check"></i>
-                    <span><strong><?php echo $nb_livrees; ?></strong> livr&eacute;e<?php echo $nb_livrees > 1 ? 's' : ''; ?></span>
-                </div>
-                <?php if ($nb_annulees > 0): ?>
-                    <div class="uc-v2-hero__pill">
-                        <i class="fas fa-ban"></i>
-                        <span><strong><?php echo $nb_annulees; ?></strong> annul&eacute;e<?php echo $nb_annulees > 1 ? 's' : ''; ?></span>
-                    </div>
-                <?php endif; ?>
             </div>
         </div>
 
@@ -1018,19 +1260,22 @@ function cmd_timeline_steps($statut) {
                     $can_noter = in_array($st, ['livree', 'paye'], true)
                         && $cmd_id > 0
                         && !empty($commandes_noter_pending[$cmd_id]);
-                    $is_retrait_cmd = commande_is_retrait($commande);
-                    $pickup_maps_url = '';
-                    $pickup_wa_url = '';
-                    if ($is_retrait_cmd) {
-                        $vendeur_pickup_id = (int) ($commande['vendeur_id'] ?? 0);
-                        $adm_pickup = ($vendeur_pickup_id > 0) ? get_admin_by_id($vendeur_pickup_id) : null;
-                        $pickup_info = boutique_pickup_info_from_admin(
-                            $adm_pickup && is_array($adm_pickup) ? $adm_pickup : null,
+                    $boutique_maps_url = '';
+                    $boutique_wa_url = '';
+                    $vendeur_boutique_id = (int) ($commande['vendeur_id'] ?? 0);
+                    if ($vendeur_boutique_id > 0) {
+                        $adm_boutique = get_admin_by_id($vendeur_boutique_id);
+                        $boutique_geo = boutique_pickup_info_from_admin(
+                            $adm_boutique && is_array($adm_boutique) ? $adm_boutique : null,
                             $boutique_nom
                         );
-                        $pickup_maps_url = trim((string) ($pickup_info['maps_url'] ?? ''));
-                        $pickup_wa_url = trim((string) ($pickup_info['whatsapp_url'] ?? ''));
+                        $boutique_maps_url = trim((string) ($boutique_geo['maps_url'] ?? ''));
+                        $boutique_wa_url = trim((string) ($boutique_geo['whatsapp_url'] ?? ''));
                     }
+                    $galerie_pack = commande_carte_galerie_urls($cmd_id, $boutique_nom);
+                    $cmd_galerie_urls = $galerie_pack['urls'];
+                    $cmd_galerie_nom = $galerie_pack['nom'];
+                    $cmd_thumb_src = $galerie_pack['thumb_url'];
                 ?>
                     <article class="uc-v2-card">
 
@@ -1041,16 +1286,6 @@ function cmd_timeline_steps($statut) {
                                     <?php if ($is_urgent): ?><span class="uc-urgence" title="Action possible"></span><?php endif; ?>
                                     <span class="uc-v2-card__boutique"><?php echo htmlspecialchars($boutique_nom); ?></span>
                                 </div>
-                                <?php if (!empty($cmd_avis['count'])): ?>
-                                    <div class="uc-v2-card__rating">
-                                        <?php
-                                        $note = (float) ($cmd_avis['moyenne'] ?? 0);
-                                        $count = (int) ($cmd_avis['count'] ?? 0);
-                                        $size = 'sm';
-                                        require __DIR__ . '/../includes/partials/product_rating_stars.php';
-                                        ?>
-                                    </div>
-                                <?php endif; ?>
                             </div>
                             <span class="uc-badge <?php echo cmd_user_badge($st); ?>">
                                 <i class="fas <?php echo cmd_user_icon($st); ?>" style="font-size:.7em;margin-right:3px;"></i>
@@ -1060,33 +1295,51 @@ function cmd_timeline_steps($statut) {
 
                         <!-- Body -->
                         <div class="uc-v2-card__body">
-                            <!-- Montant + infos -->
-                            <div class="uc-v2-card__info">
-                                <div class="uc-v2-card__amount">
-                                    <?php echo number_format((float) $commande['montant_total'], 0, ',', ' '); ?><small>FCFA</small>
+                            <?php if (!empty($cmd_galerie_urls)): ?>
+                                <button type="button"
+                                    class="uc-v2-card__thumb uc-btn-open-gallery"
+                                    data-gallery="<?php echo htmlspecialchars(json_encode($cmd_galerie_urls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-gallery-title="<?php echo htmlspecialchars($cmd_galerie_nom, ENT_QUOTES, 'UTF-8'); ?>"
+                                    aria-label="Voir les photos du produit <?php echo htmlspecialchars($cmd_galerie_nom, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <img src="<?php echo htmlspecialchars($cmd_thumb_src, ENT_QUOTES, 'UTF-8'); ?>"
+                                        alt="<?php echo htmlspecialchars($cmd_galerie_nom, ENT_QUOTES, 'UTF-8'); ?>"
+                                        loading="lazy"
+                                        onerror="this.src='/image/produit1.jpg'">
+                                    <?php if (count($cmd_galerie_urls) > 1): ?>
+                                        <span class="uc-v2-card__thumb-count">+<?php echo count($cmd_galerie_urls) - 1; ?></span>
+                                    <?php endif; ?>
+                                    <span class="uc-v2-card__thumb-zoom" aria-hidden="true"><i class="fas fa-expand"></i></span>
+                                </button>
+                            <?php endif; ?>
+                            <div class="uc-v2-card__body-inner">
+                                <!-- Montant + infos -->
+                                <div class="uc-v2-card__info">
+                                    <div class="uc-v2-card__amount">
+                                        <?php echo number_format((float) $commande['montant_total'], 0, ',', ' '); ?><small>FCFA</small>
+                                    </div>
+                                    <?php if ($boutique_tel !== ''): ?>
+                                        <a href="tel:<?php echo htmlspecialchars(preg_replace('/\s+/', '', $boutique_tel)); ?>"
+                                            class="uc-v2-card__tel uc-v2-card__tel--boutique">
+                                            <i class="fas fa-store"></i>
+                                            <?php echo htmlspecialchars($boutique_tel); ?>
+                                        </a>
+                                    <?php endif; ?>
                                 </div>
-                                <?php if ($boutique_tel !== ''): ?>
-                                    <a href="tel:<?php echo htmlspecialchars(preg_replace('/\s+/', '', $boutique_tel)); ?>"
-                                        class="uc-v2-card__tel uc-v2-card__tel--boutique">
-                                        <i class="fas fa-store"></i>
-                                        <?php echo htmlspecialchars($boutique_tel); ?>
-                                    </a>
+
+                                <!-- Timeline -->
+                                <?php if ($timeline !== null): ?>
+                                    <div class="uc-v2-timeline" aria-label="Avancement de la commande">
+                                        <?php foreach ($timeline as $step): ?>
+                                            <div class="uc-tl-step uc-tl-step--<?php echo $step['state']; ?>">
+                                                <div class="uc-tl-dot">
+                                                    <i class="fas <?php echo $step['icon']; ?>"></i>
+                                                </div>
+                                                <span class="uc-tl-label"><?php echo $step['label']; ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
                                 <?php endif; ?>
                             </div>
-
-                            <!-- Timeline -->
-                            <?php if ($timeline !== null): ?>
-                                <div class="uc-v2-timeline" aria-label="Avancement de la commande">
-                                    <?php foreach ($timeline as $step): ?>
-                                        <div class="uc-tl-step uc-tl-step--<?php echo $step['state']; ?>">
-                                            <div class="uc-tl-dot">
-                                                <i class="fas <?php echo $step['icon']; ?>"></i>
-                                            </div>
-                                            <span class="uc-tl-label"><?php echo $step['label']; ?></span>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
                         </div>
 
                         <div class="uc-v2-card__meta-bar">
@@ -1099,24 +1352,24 @@ function cmd_timeline_steps($statut) {
 
                         <!-- Footer actions -->
                         <div class="uc-v2-card__footer">
-                            <?php if ($is_retrait_cmd && $pickup_maps_url !== ''): ?>
-                                <a href="<?php echo htmlspecialchars($pickup_maps_url, ENT_QUOTES, 'UTF-8'); ?>"
+                            <?php if ($boutique_maps_url !== ''): ?>
+                                <a href="<?php echo htmlspecialchars($boutique_maps_url, ENT_QUOTES, 'UTF-8'); ?>"
                                     class="uc-card-btn uc-card-btn--gmaps" target="_blank" rel="noopener noreferrer"
-                                    title="Ouvrir la localisation de la boutique sur Google Maps">
-                                    <i class="fab fa-google" aria-hidden="true"></i> Localisation
+                                    title="Ouvrir avec Google Maps">
+                                    <i class="fab fa-google" aria-hidden="true"></i> Ouvrir avec Google Maps
                                 </a>
                             <?php endif; ?>
-                            <?php if ($is_retrait_cmd && $pickup_wa_url !== ''): ?>
-                                <a href="<?php echo htmlspecialchars($pickup_wa_url, ENT_QUOTES, 'UTF-8'); ?>"
+                            <?php if ($boutique_wa_url !== ''): ?>
+                                <a href="<?php echo htmlspecialchars($boutique_wa_url, ENT_QUOTES, 'UTF-8'); ?>"
                                     class="uc-card-btn uc-card-btn--wa-share" target="_blank" rel="noopener noreferrer"
-                                    title="Partager la localisation de la boutique sur WhatsApp">
-                                    <i class="fab fa-whatsapp" aria-hidden="true"></i> Partager
+                                    title="Partager la position de la boutique">
+                                    <i class="fab fa-whatsapp" aria-hidden="true"></i> Partager la position de la boutique
                                 </a>
                             <?php endif; ?>
 
                             <a href="commande-categorie.php?commande_id=<?php echo (int) $commande['id']; ?>"
                                 class="uc-card-btn uc-card-btn--track">
-                                <i class="fas fa-route"></i> Suivre
+                                <i class="fas fa-route"></i> Suivre ma commande
                             </a>
 
                             <?php if ($can_noter): ?>
@@ -1165,6 +1418,8 @@ function cmd_timeline_steps($statut) {
         <?php endif; ?>
 
     </div><!-- /.uc-v2-page -->
+
+    <?php require __DIR__ . '/../includes/partials/uc_gallery_lightbox.php'; ?>
 
     <div id="ucCancelModal" class="uc-cancel-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ucCancelModalTitle">
         <div class="uc-cancel-modal__backdrop" id="ucCancelModalBackdrop"></div>
@@ -1237,5 +1492,6 @@ function cmd_timeline_steps($statut) {
         });
     })();
     </script>
+    <script src="/js/uc-gallery-lightbox.js<?php echo asset_version_query(); ?>"></script>
 
     <?php include 'includes/user_footer.php'; ?>

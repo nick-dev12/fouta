@@ -36,16 +36,18 @@ body.commande-suivi-shell section.content-section.commande-categorie-suivi {
   box-sizing: border-box;
 }
 
-/* En-tête page suivi : titre + bouton « Voir les produits » */
+/* En-tête page suivi : titre puis bouton « Voir les produits » en dessous */
 .content-header.content-header--cc-suivi {
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 1rem 1.25rem;
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
 }
 
 .content-header__intro {
-  flex: 1;
-  min-width: min(100%, 220px);
+  flex: none;
+  width: 100%;
+  min-width: 0;
 }
 
 .content-header__intro h1 {
@@ -57,8 +59,49 @@ body.commande-suivi-shell section.content-section.commande-categorie-suivi {
 }
 
 .content-header__suivi-actions {
-  flex-shrink: 0;
-  margin-left: auto;
+  flex: none;
+  width: 100%;
+  margin-left: 0;
+}
+
+.cc-header-btn-products {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 992px) {
+  body.commande-suivi-shell main.user-content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .commande-suivi-detail {
+    gap: 1rem;
+  }
+
+  .cc-live-card {
+    padding: 1rem 1.05rem;
+  }
+
+  .cc-live-ring-wrap {
+    width: 78px;
+    height: 78px;
+  }
+
+  .cc-live-icon-disk {
+    width: 52px;
+    height: 52px;
+    font-size: 1.2rem;
+  }
+
+  .cc-progress-card {
+    padding: 1rem 0.95rem 1.1rem;
+  }
+
+  .cc-progress-title {
+    font-size: 0.98rem;
+    margin-bottom: 0.85rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -108,6 +151,27 @@ body.commande-suivi-shell section.content-section.commande-categorie-suivi {
     border-radius: 10px;
     white-space: normal;
     text-align: center;
+  }
+
+  .commande-categorie-suivi.liste-categorie-page {
+    padding: 14px 12px;
+  }
+
+  .cc-step {
+    padding-bottom: 1rem;
+    gap: 0.75rem;
+  }
+
+  .cc-step-label {
+    font-size: 0.88rem;
+  }
+
+  .cc-step-desc {
+    font-size: 0.78rem;
+  }
+
+  .cc-status-embed-shell .cmd-status-embed-bd {
+    padding: 10px 12px;
   }
 }
 

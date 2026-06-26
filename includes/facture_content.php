@@ -68,17 +68,39 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Poppins', Arial, Helvetica, sans-serif;
             color: #444;
             background: #f5f5f5;
-            padding: 20px;
+            padding: 16px;
+            font-size: 9pt;
+            line-height: 1.45;
+        }
+
+        .facture-scale-viewport {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            display: flex;
+            justify-content: center;
+            padding: 8px 0 24px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .facture-scale-inner {
+            transform-origin: top center;
+            flex-shrink: 0;
         }
 
         .facture-container {
-            max-width: 918px;
+            width: 148mm;
+            min-height: 210mm;
+            max-width: none;
             margin: 0 auto;
             background: #fff;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
         }
 
         .facture-banner-top {
@@ -92,7 +114,7 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
             justify-content: space-between;
             align-items: flex-start;
             flex-direction: row;
-            padding: 18px 32px 16px;
+            padding: 14px 18px 12px;
             border-bottom: 1px solid #eee;
         }
 
@@ -103,8 +125,8 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-logo {
-            width: 100px;
-            height: 100px;
+            width: 72px;
+            height: 72px;
             border: 2px solid var(--facture-primary);
             border-radius: 50%;
             overflow: hidden;
@@ -118,16 +140,16 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-entreprise-info h1 {
-            font-size: 28px;
+            font-size: 18pt;
             font-weight: 700;
             color: #000;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .facture-entreprise-info p {
-            font-size: 12px;
+            font-size: 9pt;
             color: #666;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .facture-entreprise-info a {
@@ -144,15 +166,15 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-meta .label {
-            font-size: 11px;
+            font-size: 10pt;
             font-weight: 700;
             color: #888;
             text-transform: uppercase;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .facture-meta .value {
-            font-size: 18px;
+            font-size: 11pt;
             font-weight: 700;
             color: #000;
         }
@@ -166,13 +188,13 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-meta-kv .label {
-            font-size: 9px;
+            font-size: 9pt;
             margin-bottom: 2px;
         }
 
         .facture-meta-kv .value {
-            font-size: 13px;
-            line-height: 1.25;
+            font-size: 10pt;
+            line-height: 1.35;
         }
 
         .facture-meta-kv .value.facture-meta-bl-statut {
@@ -191,7 +213,7 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-billing {
-            padding: 14px 32px;
+            padding: 10px 18px;
             border-bottom: 1px solid #eee;
         }
 
@@ -236,11 +258,12 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         .facture-table th {
             background: var(--facture-primary);
             color: #fff;
-            font-size: 11px;
+            font-size: 9pt;
             font-weight: 700;
             text-transform: uppercase;
-            padding: 6px 10px;
+            padding: 5px 8px;
             text-align: left;
+            line-height: 1.35;
         }
 
         .facture-table th:last-child,
@@ -254,8 +277,9 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-table td {
-            padding: 6px 10px;
-            font-size: 13px;
+            padding: 5px 8px;
+            font-size: 9pt;
+            line-height: 1.55;
             border-bottom: 1px solid #f0f0f0;
         }
 
@@ -348,8 +372,77 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
 
         .facture-banner-bottom {
             height: 20px;
+            margin-top: auto;
+            flex-shrink: 0;
             background: linear-gradient(135deg, color-mix(in srgb, var(--facture-primary) 30%, white) 0%, color-mix(in srgb, var(--facture-primary) 20%, white) 50%, color-mix(in srgb, var(--facture-primary) 25%, white) 100%);
             background-image: repeating-linear-gradient(-45deg, transparent, transparent 10px, color-mix(in srgb, var(--facture-primary) 20%, transparent) 10px, color-mix(in srgb, var(--facture-primary) 20%, transparent) 20px);
+        }
+
+        .facture-invoice-title {
+            font-size: 20pt;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: #000;
+            margin: 0 0 4px;
+        }
+
+        .facture-invoice-no {
+            font-size: 11pt;
+            font-weight: 700;
+            color: var(--facture-accent);
+        }
+
+        .facture-customer-box {
+            border: 1px solid #ddd;
+            padding: 12px 14px;
+            margin-top: 8px;
+            background: #fafafa;
+        }
+
+        .facture-customer-box__title {
+            font-size: 10pt;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .facture-thankyou {
+            padding: 10px 18px 14px;
+            text-align: center;
+            font-size: 8pt;
+            font-weight: 600;
+            color: #555;
+            border-top: 1px solid #eee;
+        }
+
+        @media screen and (max-width: 620px) {
+            .facture-scale-inner {
+                transform: scale(0.92);
+                margin-bottom: calc(-8% * 1);
+            }
+        }
+
+        @media screen and (max-width: 520px) {
+            .facture-scale-inner {
+                transform: scale(0.82);
+                margin-bottom: calc(-18% * 1);
+            }
+        }
+
+        @media screen and (max-width: 420px) {
+            body { padding: 8px; }
+            .facture-scale-inner {
+                transform: scale(0.72);
+                margin-bottom: calc(-28% * 1);
+            }
+        }
+
+        @media screen and (max-width: 360px) {
+            .facture-scale-inner {
+                transform: scale(0.64);
+                margin-bottom: calc(-36% * 1);
+            }
         }
 
         .facture-actions {
@@ -421,10 +514,17 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
 
             .facture-container {
                 max-width: 100% !important;
-                width: 100% !important;
+                width: 148mm !important;
+                min-height: 210mm !important;
                 box-shadow: none !important;
-                margin: 0 !important;
+                margin: 0 auto !important;
                 overflow: visible !important;
+                transform: none !important;
+            }
+
+            .facture-scale-inner {
+                transform: none !important;
+                margin-bottom: 0 !important;
             }
 
             .facture-table-wrapper {
@@ -702,6 +802,8 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         </div>
     <?php endif; ?>
 
+    <div class="facture-scale-viewport">
+    <div class="facture-scale-inner">
     <div class="facture-container">
         <div class="facture-banner-top"></div>
 
@@ -719,9 +821,6 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
                     <?php endif; ?>
                     <?php if (!empty($entreprise_ninea)): ?>
                     <p>N.I.N.E.A : <?php echo htmlspecialchars($entreprise_ninea); ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($entreprise_adresse)): ?>
-                    <p><?php echo nl2br(htmlspecialchars($entreprise_adresse)); ?></p>
                     <?php endif; ?>
                     <?php if (!empty($entreprise_tel1)): ?>
                     <div class="tel">
@@ -746,60 +845,59 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
                 </div>
             </div>
             <div class="facture-meta">
-                <div class="facture-meta-kv">
-                    <div class="label">FACTURE</div>
-                    <div class="value"><?php echo htmlspecialchars($facture['numero_facture']); ?></div>
-                </div>
+                <p class="facture-invoice-title">RE&Ccedil;U</p>
+                <p class="facture-invoice-no">N&deg; : <?php echo htmlspecialchars($facture['numero_facture']); ?></p>
                 <div class="facture-meta-kv">
                     <div class="label">DATE</div>
                     <div class="value"><?php echo htmlspecialchars($date_facture_aff); ?></div>
                 </div>
+                <?php if (!empty($commande['numero_commande'])): ?>
+                <div class="facture-meta-kv">
+                    <div class="label">COMMANDE</div>
+                    <div class="value">#<?php echo htmlspecialchars($commande['numero_commande']); ?></div>
+                </div>
+                <?php endif; ?>
                 <?php if ($facture_bl_statut_libelle !== ''): ?>
                 <div class="facture-meta-kv">
                     <div class="label">STATUT DU BL</div>
                     <div class="value facture-meta-bl-statut" style="color:<?php echo htmlspecialchars($facture_bl_meta_color); ?>;"><?php echo htmlspecialchars($facture_bl_statut_libelle); ?></div>
                 </div>
                 <?php endif; ?>
-                <div class="facture-meta-kv facture-meta-kv--total">
-                    <div class="label">SOLDE DÛ</div>
-                    <div class="solde">XOF <?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</div>
-                </div>
             </div>
         </div>
 
         <div class="facture-billing">
-            <div class="label">ADRESSE DE FACTURATION</div>
-            <div class="client-name"><?php echo htmlspecialchars($client_nom); ?></div>
-            <div class="client-tel"><i class="fas fa-phone"
-                    style="font-size:11px; margin-right:4px;"></i><?php echo htmlspecialchars($client_telephone); ?>
-            </div>
-            <?php if (!empty($adresse_livraison)): ?>
-                <div class="adresse-livraison"><i class="fas fa-map-marker-alt"
-                        style="font-size:11px; margin-right:4px;"></i><?php echo nl2br(htmlspecialchars($adresse_livraison)); ?>
+            <div class="facture-customer-box">
+                <div class="facture-customer-box__title">INFORMATIONS CLIENT</div>
+                <div class="client-name"><?php echo htmlspecialchars($client_nom); ?></div>
+                <?php if ($client_telephone !== ''): ?>
+                <div class="client-tel"><i class="fas fa-phone"
+                        style="font-size:11px; margin-right:4px;"></i><?php echo htmlspecialchars($client_telephone); ?>
                 </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
 
         <div class="facture-table-wrapper">
             <table class="facture-table">
                 <thead>
                     <tr>
-                        <th>ARTICLE</th>
-                        <th>PRIX</th>
                         <th>QTÉ</th>
+                        <th>DESCRIPTION</th>
+                        <th>PRIX</th>
                         <th>MONTANT</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($produits as $p): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($p['produit_nom'] ?? $p['nom'] ?? ''); ?></td>
-                            <td><?php echo number_format((float) ($p['prix_unitaire'] ?? 0), 2, ',', ' '); ?> CFA</td>
                             <td><?php
                             $qte_ent = (int) round((float) ($p['quantite'] ?? 0));
                             echo number_format($qte_ent, 0, ',', ' ');
                             ?></td>
-                            <td><?php echo number_format((float) ($p['prix_total'] ?? 0), 2, ',', ' '); ?> CFA</td>
+                            <td><?php echo htmlspecialchars($p['produit_nom'] ?? $p['nom'] ?? ''); ?></td>
+                            <td><?php echo number_format((float) ($p['prix_unitaire'] ?? 0), 0, ',', ' '); ?> FCFA</td>
+                            <td><?php echo number_format((float) ($p['prix_total'] ?? 0), 0, ',', ' '); ?> FCFA</td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -830,13 +928,9 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
                     <span><?php echo number_format($frais_livraison, 2, ',', ' '); ?> CFA</span>
                 </div>
                 <?php endif; ?>
-                <div class="row">
+                <div class="row total">
                     <span>TOTAL</span>
-                    <span><?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</span>
-                </div>
-                <div class="row solde-row">
-                    <span>SOLDE DÛ</span>
-                    <span>XOF <?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</span>
+                    <span><?php echo number_format($facture['montant_total'], 0, ',', ' '); ?> FCFA</span>
                 </div>
                 <?php if ($facture_bl_statut_libelle !== '' && in_array($facture_bl_statut_code, ['valide', 'paye'], true)): ?>
                 <div class="facture-reglement-row facture-reglement-row--paye">
@@ -853,7 +947,11 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         </div>
         <?php endif; ?>
 
+        <p class="facture-thankyou">Merci ! &mdash; Nous appr&eacute;cions votre confiance.</p>
+
         <div class="facture-banner-bottom"></div>
+    </div>
+    </div>
     </div>
 </body>
 

@@ -5,6 +5,7 @@
  * Accepte FormData ou JSON (application/json) pour l'app mobile
  */
 
+
 require_once __DIR__ . '/../includes/session_user.php';
 session_start();
 header('Content-Type: application/json; charset=utf-8');

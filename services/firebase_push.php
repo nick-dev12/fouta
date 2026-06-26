@@ -142,16 +142,38 @@ function _firebase_configure_ssl() {
 }
 
 /**
+ * Vérifie que les dépendances Composer requises par kreait/firebase-php sont présentes.
+ * Évite les warnings PHP (psr/cache manquant) qui cassent les redirections HTTP.
+ */
+function _firebase_library_dependencies_ready() {
+    $root = __DIR__ . '/../vendor';
+    $autoload = $root . '/autoload.php';
+    if (!is_file($autoload)) {
+        return false;
+    }
+    $required = [
+        $root . '/psr/cache/src/CacheItemPoolInterface.php',
+        $root . '/kreait/firebase-php/src/Firebase/Factory.php',
+    ];
+    foreach ($required as $path) {
+        if (!is_file($path)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * Envoie une notification push FCM via kreait/firebase-php (si installé)
  * Retourne null en cas d'erreur de dépendances (ex: PSR Cache) pour déclencher le fallback natif
  */
 function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $data) {
     _firebase_configure_ssl();
-    $autoload = __DIR__ . '/../vendor/autoload.php';
-    if (!file_exists($autoload)) {
+    if (!_firebase_library_dependencies_ready()) {
         return null;
     }
 
+    $autoload = __DIR__ . '/../vendor/autoload.php';
     try {
         require_once $autoload;
     } catch (\Throwable $e) {

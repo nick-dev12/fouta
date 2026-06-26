@@ -7,6 +7,7 @@ require_once __DIR__ . '/includes/produit_boutique_line.php';
 require_once __DIR__ . '/includes/catalogue_shuffle.php';
 require_once __DIR__ . '/includes/image_optimizer.php';
 
+
 // Récupérer les produits (recherche + filtres ou tous)
 $produits_tous = [];
 $total_produits = 0;
@@ -79,19 +80,49 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
     <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <style>
         @keyframes produitsFadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         #produits-container {
             animation: produitsFadeIn 0.25s ease-out both;
         }
-        .mp-card { animation: produitsFadeIn 0.22s ease-out both; }
-        .mp-card:nth-child(1)  { animation-delay: 0.00s; }
-        .mp-card:nth-child(2)  { animation-delay: 0.03s; }
-        .mp-card:nth-child(3)  { animation-delay: 0.06s; }
-        .mp-card:nth-child(4)  { animation-delay: 0.09s; }
-        .mp-card:nth-child(n+5){ animation-delay: 0.00s; }
-        .mp-card--loading-anim { animation: produitsFadeIn 0.22s ease-out both; }
+
+        .mp-card {
+            animation: produitsFadeIn 0.22s ease-out both;
+        }
+
+        .mp-card:nth-child(1) {
+            animation-delay: 0.00s;
+        }
+
+        .mp-card:nth-child(2) {
+            animation-delay: 0.03s;
+        }
+
+        .mp-card:nth-child(3) {
+            animation-delay: 0.06s;
+        }
+
+        .mp-card:nth-child(4) {
+            animation-delay: 0.09s;
+        }
+
+        .mp-card:nth-child(n+5) {
+            animation-delay: 0.00s;
+        }
+
+        .mp-card--loading-anim {
+            animation: produitsFadeIn 0.22s ease-out both;
+        }
+
         .produits-page-header {
             background: var(--couleur-dominante);
             padding: 40px 20px;
@@ -207,17 +238,21 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
                 padding: 28px 16px;
                 margin-bottom: 24px;
             }
+
             .produits-page-header h1 {
                 font-size: 22px;
                 margin-bottom: 8px;
             }
+
             .produits-page-header p {
                 font-size: 13px;
             }
+
             .filtres-actifs {
                 gap: 8px;
                 font-size: 12px;
             }
+
             .filtres-actifs span {
                 padding: 4px 10px;
                 font-size: 12px;
@@ -229,21 +264,26 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
                 padding: 18px 12px;
                 margin-bottom: 16px;
             }
+
             .produits-page-header h1 {
                 font-size: 16px;
                 margin-bottom: 6px;
                 line-height: 1.3;
             }
+
             .produits-page-header h1 i {
                 font-size: 14px;
             }
+
             .produits-page-header p {
                 font-size: 11px;
             }
+
             .filtres-actifs {
                 gap: 6px;
                 margin-top: 8px;
             }
+
             .filtres-actifs span {
                 padding: 3px 8px;
                 font-size: 11px;
@@ -291,7 +331,8 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
             <section class="produit_vedetes">
                 <div class="mp-grid" id="produits-container" style="padding: 0 12px;">
                     <?php if (empty($produits_tous)): ?>
-                        <div style="text-align: center; padding: 40px; color: var(--gris-moyen); width: 100%; grid-column: 1/-1;">
+                        <div
+                            style="text-align: center; padding: 40px; color: var(--gris-moyen); width: 100%; grid-column: 1/-1;">
                             <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
                             <p style="font-size: 16px;">Aucun produit publié pour le moment.</p>
                         </div>
@@ -306,12 +347,17 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
                 </div>
 
                 <?php if (!empty($produits_tous) && $total_produits > 20): ?>
-                    <div id="infinite-sentinel" style="height:1px;"></div>
-                    <div id="loading-indicator" style="display:none;text-align:center;padding:24px;">
+                    <div style="text-align:center;padding:8px 12px 24px;">
+                        <button type="button" class="btn-voir-plus" id="btn-voir-plus-produits">
+                            <i class="fas fa-chevron-down"></i> Voir plus
+                        </button>
+                    </div>
+                    <div id="loading-indicator" style="display:none;text-align:center;padding:12px;">
                         <i class="fas fa-spinner fa-spin" style="font-size:1.6rem;color:var(--couleur-dominante);"></i>
                     </div>
                     <p id="produits-count" class="produits-count">
-                        Affichés : <span id="count-actuel">20</span> / <?php echo $total_produits; ?> produits
+                        Affichés : <span id="count-actuel"><?php echo min(20, count($produits_tous)); ?></span> /
+                        <?php echo $total_produits; ?> produits
                     </p>
                 <?php endif; ?>
             </section>
@@ -326,18 +372,22 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
             const limit = 20;
             const totalProduits = <?php echo $total_produits; ?>;
             let loading = false;
-            const container   = document.getElementById('produits-container');
-            const sentinel    = document.getElementById('infinite-sentinel');
-            const loader      = document.getElementById('loading-indicator');
-            const countEl     = document.getElementById('count-actuel');
+            const container = document.getElementById('produits-container');
+            const btnVoirPlus = document.getElementById('btn-voir-plus-produits');
+            const loader = document.getElementById('loading-indicator');
+            const countEl = document.getElementById('count-actuel');
 
             const apiBaseParams = '<?php
             $p = ['offset' => 0, 'limit' => 20];
             if ($has_filters) {
-                if (!empty($recherche_actuelle)) $p['recherche'] = $recherche_actuelle;
-                if ($prix_min !== null)           $p['prix_min']  = $prix_min;
-                if ($prix_max !== null)           $p['prix_max']  = $prix_max;
-                if ($categorie_id !== null)       $p['categorie'] = $categorie_id;
+                if (!empty($recherche_actuelle))
+                    $p['recherche'] = $recherche_actuelle;
+                if ($prix_min !== null)
+                    $p['prix_min'] = $prix_min;
+                if ($prix_max !== null)
+                    $p['prix_max'] = $prix_max;
+                if ($categorie_id !== null)
+                    $p['categorie'] = $categorie_id;
                 $p['tri'] = $tri;
             } elseif ($catalogue_seed !== null) {
                 $p['seed'] = (int) $catalogue_seed;
@@ -345,51 +395,51 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
             echo http_build_query($p);
             ?>';
 
-            function getApiUrl() {
-                const params = new URLSearchParams(apiBaseParams);
-                params.set('offset', offsetActuel);
-                return 'api/get_produits.php?' + params.toString();
-            }
+        function getApiUrl() {
+            const params = new URLSearchParams(apiBaseParams);
+            params.set('offset', offsetActuel);
+            return '/api/get_produits.php?' + params.toString();
+        }
 
-            function formatNumber(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0'); }
+        function formatNumber(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0'); }
 
-            function escapeHtml(t) {
-                const d = document.createElement('div');
-                d.textContent = t == null ? '' : t;
-                return d.innerHTML;
-            }
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.textContent = t == null ? '' : t;
+            return d.innerHTML;
+        }
 
-            function buildStarsHTML(produit) {
-                const count = parseInt(produit.avis_count, 10) || 0;
-                const note = parseFloat(produit.avis_moyenne) || 0;
-                if (count <= 0 && note <= 0) return '';
-                const pct = Math.max(0, Math.min(100, (note / 5) * 100));
-                const noteStr = note.toFixed(1).replace('.', ',');
-                const label = noteStr + ' sur 5' + (count > 0 ? ' (' + count + ' avis)' : '');
-                const countHTML = count > 0 ? `<span class="pr-stars__count">${noteStr}</span>` : '';
-                const stars = '<i class="fa-solid fa-star"></i>'.repeat(5);
-                return `<span class="pr-stars pr-stars--readonly pr-stars--sm" style="--pr-rating: ${pct};" role="img" aria-label="${escapeHtml(label)}">` +
-                    `<span class="pr-stars__track" aria-hidden="true">` +
-                    `<span class="pr-stars__empty">${stars}</span>` +
-                    `<span class="pr-stars__fill">${stars}</span>` +
-                    `</span>${countHTML}</span>`;
-            }
+        function buildStarsHTML(produit) {
+            const count = parseInt(produit.avis_count, 10) || 0;
+            const note = parseFloat(produit.avis_moyenne) || 0;
+            if (count <= 0 && note <= 0) return '';
+            const pct = Math.max(0, Math.min(100, (note / 5) * 100));
+            const noteStr = note.toFixed(1).replace('.', ',');
+            const label = noteStr + ' sur 5' + (count > 0 ? ' (' + count + ' avis)' : '');
+            const countHTML = count > 0 ? `<span class="pr-stars__count">${noteStr}</span>` : '';
+            const stars = '<i class="fa-solid fa-star"></i>'.repeat(5);
+            return `<span class="pr-stars pr-stars--readonly pr-stars--sm" style="--pr-rating: ${pct};" role="img" aria-label="${escapeHtml(label)}">` +
+                `<span class="pr-stars__track" aria-hidden="true">` +
+                `<span class="pr-stars__empty">${stars}</span>` +
+                `<span class="pr-stars__fill">${stars}</span>` +
+                `</span>${countHTML}</span>`;
+        }
 
-            function buildCard(produit) {
-                const article = document.createElement('article');
-                article.className = 'mp-card mp-card--loading-anim';
-                article.setAttribute('data-produit-id', produit.id);
-                const starsHTML = buildStarsHTML(produit);
-                let prixHTML = produit.has_promotion
-                    ? `<span class="mp-card-price-old">${formatNumber(produit.prix)} FCFA</span><span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`
-                    : `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`;
-                const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-                const shareUrl = window.location.origin + '/produit.php?id=' + produit.id;
-                const shareText = 'Découvrez « ' + (produit.nom || 'Produit') + ' » à ' + formatNumber(produit.prix_affichage) + ' FCFA sur Colobanes :\n' + shareUrl;
-                const shareHtml = (typeof window.buildProductShareHtml === 'function')
-                    ? window.buildProductShareHtml({ url: shareUrl, text: shareText, title: produit.nom || 'Produit' })
-                    : '';
-                article.innerHTML = `
+        function buildCard(produit) {
+            const article = document.createElement('article');
+            article.className = 'mp-card mp-card--loading-anim';
+            article.setAttribute('data-produit-id', produit.id);
+            const starsHTML = buildStarsHTML(produit);
+            let prixHTML = produit.has_promotion
+                ? `<span class="mp-card-price-old">${formatNumber(produit.prix)} FCFA</span><span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`
+                : `<span class="mp-card-price">${formatNumber(produit.prix_affichage)} FCFA</span>`;
+            const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            const shareUrl = window.location.origin + '/produit.php?id=' + produit.id;
+            const shareText = 'Découvrez « ' + (produit.nom || 'Produit') + ' » à ' + formatNumber(produit.prix_affichage) + ' FCFA sur Colobanes :\n' + shareUrl;
+            const shareHtml = (typeof window.buildProductShareHtml === 'function')
+                ? window.buildProductShareHtml({ url: shareUrl, text: shareText, title: produit.nom || 'Produit' })
+                : '';
+            article.innerHTML = `
                     ${shareHtml}
                     <a href="produit.php?id=${produit.id}" class="mp-card-link">
                         <div class="mp-card-img"><img src="${escapeHtml(produit.image_url || ('/upload/' + (produit.image_principale || 'produit1.jpg')))}" alt="${escapeHtml(produit.nom)}" loading="lazy" onerror="this.src='/image/produit1.jpg'"></div>
@@ -401,38 +451,41 @@ $card_partial = __DIR__ . '/includes/partials/home_mp_product_card.php';
                         <input type="hidden" name="return_url" value="${returnUrl}">
                         <button type="submit" class="mp-card-btn"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Ajouter</button>
                     </form>`;
-                return article;
-            }
+            return article;
+        }
 
-            function charger() {
-                if (loading || offsetActuel >= totalProduits || !sentinel) return;
-                loading = true;
-                if (loader) loader.style.display = 'block';
+        function charger() {
+            if (loading || offsetActuel >= totalProduits) return;
+            loading = true;
+            if (btnVoirPlus) btnVoirPlus.disabled = true;
+            if (loader) loader.style.display = 'block';
 
-                fetch(getApiUrl())
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success && data.produits.length > 0) {
-                            data.produits.forEach(p => container.appendChild(buildCard(p)));
-                            offsetActuel += data.produits.length;
-                            if (countEl) countEl.textContent = offsetActuel;
-                        }
-                        if (offsetActuel >= totalProduits && sentinel) sentinel.remove();
-                    })
-                    .catch(() => {})
-                    .finally(() => {
-                        loading = false;
-                        if (loader) loader.style.display = 'none';
-                    });
-            }
+            fetch(getApiUrl())
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.produits.length > 0) {
+                        data.produits.forEach(p => container.appendChild(buildCard(p)));
+                        offsetActuel += data.produits.length;
+                        if (countEl) countEl.textContent = offsetActuel;
+                    }
+                    if (offsetActuel >= totalProduits && btnVoirPlus) {
+                        btnVoirPlus.style.display = 'none';
+                    }
+                })
+                .catch(() => { })
+                .finally(() => {
+                    loading = false;
+                    if (loader) loader.style.display = 'none';
+                    if (btnVoirPlus && offsetActuel < totalProduits) {
+                        btnVoirPlus.disabled = false;
+                    }
+                });
+        }
 
-            if (sentinel && 'IntersectionObserver' in window) {
-                const obs = new IntersectionObserver(entries => {
-                    if (entries[0].isIntersecting) charger();
-                }, { rootMargin: '200px' });
-                obs.observe(sentinel);
-            }
-        })();
+        if (btnVoirPlus) {
+            btnVoirPlus.addEventListener('click', charger);
+        }
+        }) ();
     </script>
 </body>
 

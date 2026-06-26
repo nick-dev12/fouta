@@ -13,6 +13,10 @@ $u_nouveautes = $GLOBALS['nav_nouveautes'] ?? '/nouveautes.php';
 $u_promo = $GLOBALS['nav_promo'] ?? '/promo.php';
 $u_contact = $GLOBALS['nav_contact'] ?? '/contact.php';
 $nav_show_country_filter = false;
+$__nav_req_path = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
+if (strpos($__nav_req_path, '/admin/') !== 0 && strpos($__nav_req_path, '/super_admin/') !== 0) {
+    $nav_show_country_filter = true;
+}
 $nav_show_region_filter = false;
 $nav_needs_country_welcome = false;
 $nav_suggested_country = 'SN';
@@ -207,6 +211,12 @@ if (file_exists($nav_annonces_model)) {
                 $nav_annonces_show = true;
             }
         }
+    } elseif (isset($_SESSION['user_id'])) {
+        $nav_annonces_href = '/user/annonces.php';
+        $nav_annonces_show = true;
+    } elseif (isset($_SESSION['admin_id']) && (string) ($_SESSION['admin_role'] ?? '') === 'vendeur') {
+        $nav_annonces_href = '/admin/annonces.php';
+        $nav_annonces_show = true;
     }
 }
 
@@ -649,6 +659,98 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
 
 .nav-search-input:focus {
     border-color: var(--couleur-dominante);
+}
+
+.nav-search-suggestions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 11010;
+    background: #fff;
+    border: 1px solid rgba(53, 100, 166, 0.16);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(53, 100, 166, 0.18);
+    max-height: min(360px, 52vh);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.nav-search-suggestions[hidden] {
+    display: none !important;
+}
+
+.nav-search-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-bottom: 1px solid rgba(53, 100, 166, 0.08);
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.nav-search-suggestion:last-child {
+    border-bottom: none;
+}
+
+.nav-search-suggestion:hover,
+.nav-search-suggestion.is-active {
+    background: rgba(53, 100, 166, 0.08);
+}
+
+.nav-search-suggestion__img {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--blanc-neige, #f5f5f5);
+}
+
+.nav-search-suggestion__body {
+    min-width: 0;
+    flex: 1;
+}
+
+.nav-search-suggestion__name {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--titres, #0d0d0d);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-search-suggestion__price {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--couleur-dominante, #3564a6);
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+.nav-search-suggestion__all {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: rgba(53, 100, 166, 0.06);
+    color: var(--couleur-dominante, #3564a6);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 0 0 14px 14px;
+}
+
+.nav-search-suggestion__all:hover {
+    background: rgba(53, 100, 166, 0.12);
 }
 
 /* Bouton Mon compte / Se connecter */
@@ -1289,45 +1391,6 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             </div>
         </div>
         <?php endif; ?>
-        <?php if ($nav_show_country_filter): ?>
-        <div class="nav-country-wrap nav-country-wrap--top" id="navCountryWrapTop">
-            <button type="button" class="nav-btn-country nav-btn-country--top" id="navCountryToggleTop"
-                aria-expanded="false" aria-haspopup="listbox" aria-controls="navCountryMenuTop" title="Choisir un pays">
-                <?php if ($nav_country_flag_url !== ''): ?>
-                <span class="nav-btn-country__flag" aria-hidden="true">
-                    <img class="nav-btn-country__flag-img mp-country-flag-img"
-                        src="<?php echo htmlspecialchars($nav_country_flag_url, ENT_QUOTES, 'UTF-8'); ?>"
-                        data-fallback="<?php echo htmlspecialchars($nav_country_flag_url_alt, ENT_QUOTES, 'UTF-8'); ?>"
-                        alt="" width="20" height="14" loading="eager" decoding="async" referrerpolicy="no-referrer">
-                </span>
-                <?php endif; ?>
-                <span
-                    class="nav-btn-country__label"><?php echo htmlspecialchars($nav_country_selected_label, ENT_QUOTES, 'UTF-8'); ?></span>
-                <i class="fa-solid fa-chevron-down nav-btn-country__chev" aria-hidden="true"></i>
-            </button>
-            <div class="nav-country-menu nav-country-menu--top" id="navCountryMenuTop" role="listbox" hidden>
-                <form method="post" action="/set-country.php" class="nav-country-form">
-                    <input type="hidden" name="redirect"
-                        value="<?php echo htmlspecialchars($nav_geo_redirect, ENT_QUOTES, 'UTF-8'); ?>">
-                    <?php foreach (marketplace_countries_nav_list() as $code => $meta): ?>
-                    <button type="submit" name="country"
-                        value="<?php echo htmlspecialchars($code, ENT_QUOTES, 'UTF-8'); ?>"
-                        class="nav-country-item<?php echo $nav_country_selected === $code ? ' is-active' : ''; ?>">
-                        <span class="nav-country-item__flag" aria-hidden="true">
-                            <img class="nav-country-item__flag-img mp-country-flag-img"
-                                src="<?php echo htmlspecialchars(marketplace_country_flag_url($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
-                                data-fallback="<?php echo htmlspecialchars(marketplace_country_flag_url_alt($code, 40), ENT_QUOTES, 'UTF-8'); ?>"
-                                alt="" width="24" height="18" loading="lazy" decoding="async"
-                                referrerpolicy="no-referrer">
-                        </span>
-                        <span
-                            class="nav-country-item__label"><?php echo htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8'); ?></span>
-                    </button>
-                    <?php endforeach; ?>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
         <?php if ($nav_annonces_show): ?>
         <a href="<?php echo htmlspecialchars($nav_annonces_href, ENT_QUOTES, 'UTF-8'); ?>"
             class="nav-annonces-link nav-annonces-link--tablet-slot" title="<?php echo (int) $nav_annonces_count > 0
@@ -1401,6 +1464,7 @@ if (defined('BOUTIQUE_ADMIN_ID') && (int) BOUTIQUE_ADMIN_ID > 0) {
             <input type="hidden" name="tri" id="nav-tri"
                 value="<?php echo isset($_GET['tri']) ? htmlspecialchars($_GET['tri']) : ''; ?>">
         </form>
+        <div class="nav-search-suggestions" id="nav-search-suggestions" hidden role="listbox" aria-label="Suggestions de recherche"></div>
         <div class="nav-language-switcher" id="navLangSwitcher">
             <button type="button" class="nav-lang-trigger" id="navLangTrigger" aria-expanded="false"
                 aria-haspopup="listbox" aria-controls="navLangPanel" title="Changer la langue">
@@ -2081,8 +2145,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function closeAllRegionMenus() {
         [
             ['navRegionWrap', 'navRegionToggle', 'navRegionMenu'],
-            ['navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop'],
-            ['navCountryWrapTop', 'navCountryToggleTop', 'navCountryMenuTop']
+            ['navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop']
         ].forEach(function(ids) {
             var wrap = document.getElementById(ids[0]);
             var toggle = document.getElementById(ids[1]);
@@ -2112,10 +2175,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initRegionDropdown('navRegionWrap', 'navRegionToggle', 'navRegionMenu');
     initRegionDropdown('navRegionWrapTop', 'navRegionToggleTop', 'navRegionMenuTop');
-    initRegionDropdown('navCountryWrapTop', 'navCountryToggleTop', 'navCountryMenuTop');
 
     document.addEventListener('click', function(e) {
-        var inRegion = e.target.closest('#navRegionWrap, #navRegionWrapTop, #navCountryWrapTop');
+        var inRegion = e.target.closest('#navRegionWrap, #navRegionWrapTop');
         if (!inRegion) {
             closeAllRegionMenus();
         }
@@ -2137,6 +2199,130 @@ document.addEventListener('DOMContentLoaded', function() {
             once: true
         });
     });
+
+    (function initNavSearchSuggestions() {
+        var input = document.getElementById('nav-search');
+        var panel = document.getElementById('nav-search-suggestions');
+        var form = document.getElementById('nav-search-form');
+        if (!input || !panel || !form) {
+            return;
+        }
+
+        var debounceTimer = null;
+        var activeIndex = -1;
+        var lastQuery = '';
+        var boutiqueParam = '';
+        var hiddenBoutique = form.querySelector('input[name="boutique"]');
+        if (hiddenBoutique && hiddenBoutique.value) {
+            boutiqueParam = '&boutique=' + encodeURIComponent(hiddenBoutique.value);
+        }
+
+        function hidePanel() {
+            panel.hidden = true;
+            panel.innerHTML = '';
+            activeIndex = -1;
+        }
+
+        function formatPrice(n) {
+            return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') + ' FCFA';
+        }
+
+        function escapeHtml(t) {
+            var d = document.createElement('div');
+            d.textContent = t == null ? '' : t;
+            return d.innerHTML;
+        }
+
+        function setActive(index) {
+            var items = panel.querySelectorAll('.nav-search-suggestion');
+            activeIndex = index;
+            items.forEach(function(el, i) {
+                el.classList.toggle('is-active', i === activeIndex);
+            });
+        }
+
+        function renderSuggestions(items, query) {
+            if (!items || !items.length) {
+                hidePanel();
+                return;
+            }
+            var html = items.map(function(item, idx) {
+                return '<a href="' + escapeHtml(item.url) + '" class="nav-search-suggestion" role="option" data-index="' + idx + '">' +
+                    '<img class="nav-search-suggestion__img" src="' + escapeHtml(item.image_url || '/image/produit1.jpg') + '" alt="" loading="lazy" onerror="this.src=\'/image/produit1.jpg\'">' +
+                    '<span class="nav-search-suggestion__body">' +
+                    '<span class="nav-search-suggestion__name">' + escapeHtml(item.nom) + '</span>' +
+                    '<span class="nav-search-suggestion__price">' + formatPrice(item.prix || 0) + '</span>' +
+                    '</span></a>';
+            }).join('');
+            html += '<button type="button" class="nav-search-suggestion__all">Voir tous les résultats pour « ' + escapeHtml(query) + ' »</button>';
+            panel.innerHTML = html;
+            panel.hidden = false;
+            activeIndex = -1;
+
+            panel.querySelector('.nav-search-suggestion__all').addEventListener('click', function() {
+                form.submit();
+            });
+        }
+
+        function fetchSuggestions(q) {
+            fetch('/api/search_suggestions.php?q=' + encodeURIComponent(q) + boutiqueParam)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (input.value.trim() !== q) {
+                        return;
+                    }
+                    if (data && data.success) {
+                        renderSuggestions(data.suggestions || [], q);
+                    } else {
+                        hidePanel();
+                    }
+                })
+                .catch(function() {
+                    hidePanel();
+                });
+        }
+
+        input.addEventListener('input', function() {
+            var q = input.value.trim();
+            clearTimeout(debounceTimer);
+            if (q.length < 2) {
+                hidePanel();
+                return;
+            }
+            debounceTimer = setTimeout(function() {
+                if (q === lastQuery && !panel.hidden) {
+                    return;
+                }
+                lastQuery = q;
+                fetchSuggestions(q);
+            }, 280);
+        });
+
+        input.addEventListener('keydown', function(e) {
+            var items = panel.querySelectorAll('.nav-search-suggestion');
+            if (panel.hidden || !items.length) {
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setActive(Math.min(activeIndex + 1, items.length - 1));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setActive(Math.max(activeIndex - 1, 0));
+            } else if (e.key === 'Enter' && activeIndex >= 0) {
+                e.preventDefault();
+                items[activeIndex].click();
+            } else if (e.key === 'Escape') {
+                hidePanel();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-search-wrapper')) {
+                hidePanel();
+            }
+        });
+    })();
 });
 </script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>

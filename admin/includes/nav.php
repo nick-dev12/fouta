@@ -29,6 +29,7 @@ $is_comptabilite_hub = strpos($current_dir, '/comptabilite') !== false;
 $is_certification = $is_parametres && in_array($current_page, ['certification.php', 'certification-demande.php', 'certification-suivi.php'], true);
 $admin_role = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
 $is_vendeur_menu = ($admin_role === 'vendeur');
+$nav_vendeur_caisse_enabled = false;
 $nav_parametres_active = (
     $current_page == 'parametres.php' ||
     $current_page == 'parametres-boutique-vendeur.php' ||
@@ -172,11 +173,13 @@ if ($is_vendeur_menu) {
                 <span class="menu-item__badge" title="<?php echo (int) $nav_commandes_en_traitement; ?> commande<?php echo $nav_commandes_en_traitement > 1 ? 's' : ''; ?> en cours de traitement" aria-label="<?php echo (int) $nav_commandes_en_traitement; ?> commande<?php echo $nav_commandes_en_traitement > 1 ? 's' : ''; ?> en cours de traitement"><?php echo (int) $nav_commandes_en_traitement; ?></span>
                 <?php endif; ?>
             </a>
+            <?php if (!$is_vendeur_menu || $nav_vendeur_caisse_enabled): ?>
             <a href="<?php echo $base_path; ?>caisse/index.php"
                 class="menu-item <?php echo ($is_caisse && !$is_caisse_encaisser) ? 'active' : ''; ?>">
                 <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
                 <span class="menu-item__text">Caisse</span>
             </a>
+            <?php endif; ?>
             <?php if (!$is_vendeur_menu): ?>
             <a href="<?php echo $base_path; ?>caisse/encaisser-ticket.php"
                 class="menu-item <?php echo $is_caisse_encaisser ? 'active' : ''; ?>">
@@ -416,11 +419,18 @@ if ($is_vendeur_menu) {
                     <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-palette"></i></span>
                     <span class="menu-item__text">Apparence boutique</span>
                 </a>
+                <a href="<?php echo $base_path; ?>abonnes/index.php"
+                    class="menu-item menu-item--dock-sheet-row<?php echo $is_abonnes ? ' active' : ''; ?>">
+                    <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-user-check"></i></span>
+                    <span class="menu-item__text">Abonnés</span>
+                </a>
+                <?php if ($nav_vendeur_caisse_enabled): ?>
                 <a href="<?php echo $base_path; ?>caisse/index.php"
                     class="menu-item menu-item--dock-sheet-row<?php echo $vd_caisse_dock_act ? ' active' : ''; ?>">
                     <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-cash-register"></i></span>
                     <span class="menu-item__text">Caisse</span>
                 </a>
+                <?php endif; ?>
                 <a href="<?php echo $base_path; ?>parametres/certification.php"
                     class="menu-item menu-item--dock-sheet-row<?php echo $vd_cert_dock_act ? ' active' : ''; ?>">
                     <span class="menu-item__icon" aria-hidden="true"><i class="fas fa-certificate"></i></span>
