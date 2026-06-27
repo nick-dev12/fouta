@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['admin_add_produit'])) {
         require_once __DIR__ . '/../../controllers/controller_produits.php';
         require_once __DIR__ . '/../../includes/flash_toast.php';
+        define('PRODUIT_DEFER_POST_CREATE_EXTERNAL', true);
         try {
             $add_result = process_add_produit();
         } catch (Throwable $e) {
@@ -55,7 +56,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if (!empty($add_result['success'])) {
             flash_toast_push('success', $add_result['message'] ?? 'Produit enregistré.');
-            stock_index_redirect();
+            require_once __DIR__ . '/../../includes/produit_post_create_deferred.php';
+            $redirect_url = function_exists('admin_route_build_url')
+                ? admin_route_build_url('stock/index.php')
+                : '/admin/stock/index.php';
+            $deferred_id = (int) ($add_result['produit_id'] ?? 0);
+            $deferred_owner = (int) ($add_result['owner_admin'] ?? 0);
+            $deferred_nom = (string) ($add_result['produit_nom'] ?? '');
+            $deferred_statut = (string) ($add_result['produit_statut'] ?? 'actif');
+            admin_redirect_then(function () use ($deferred_id, $deferred_owner, $deferred_nom, $deferred_statut) {
+                produit_run_deferred_post_create($deferred_id, $deferred_owner, $deferred_nom, $deferred_statut);
+            }, $redirect_url);
         }
         $add_produit_error_message = $add_result['message'] ?? 'Erreur lors de l\'ajout.';
         $add_produit_post_error = true;
@@ -644,6 +655,101 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         .js-open-add-produit,
         .js-open-edit-produit { cursor: pointer; }
+
+        /* ---- Overlay enregistrement produit ---- */
+        .stk-save-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 12050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(13, 13, 13, 0.55);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+        .stk-save-overlay.is-visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .stk-save-overlay__card {
+            width: min(100%, 380px);
+            padding: clamp(22px, 5vw, 30px) clamp(18px, 4vw, 26px);
+            border-radius: 20px;
+            background: linear-gradient(165deg, #ffffff 0%, #f8fbff 55%, rgba(53, 100, 166, 0.06) 100%);
+            border: 1px solid rgba(53, 100, 166, 0.14);
+            box-shadow: 0 24px 60px rgba(53, 100, 166, 0.22);
+            text-align: center;
+            animation: stkSavePop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes stkSavePop {
+            from { opacity: 0; transform: scale(0.92) translateY(12px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .stk-save-overlay__icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--couleur-dominante, #3564a6), var(--bleu-clair, #4a7ab8));
+            color: #fff;
+            font-size: 1.35rem;
+            box-shadow: 0 8px 24px rgba(53, 100, 166, 0.35);
+        }
+        .stk-save-overlay__icon i {
+            animation: stkSaveSpin 1.1s linear infinite;
+        }
+        @keyframes stkSaveSpin {
+            to { transform: rotate(360deg); }
+        }
+        .stk-save-overlay__title {
+            margin: 0 0 6px;
+            font-size: clamp(1rem, 3.2vw, 1.12rem);
+            font-weight: 700;
+            color: var(--titres, #0d0d0d);
+        }
+        .stk-save-overlay__subtitle {
+            margin: 0 0 18px;
+            font-size: clamp(0.78rem, 2.5vw, 0.88rem);
+            color: var(--gris-moyen, #737373);
+            line-height: 1.45;
+        }
+        .stk-save-overlay__track {
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(53, 100, 166, 0.12);
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .stk-save-overlay__bar {
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--couleur-dominante, #3564a6), var(--orange, #ff6b35));
+            transition: width 0.35s ease;
+            box-shadow: 0 0 12px rgba(53, 100, 166, 0.35);
+        }
+        .stk-save-overlay__pct {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--couleur-dominante, #3564a6);
+            letter-spacing: 0.04em;
+        }
+        .btn-fap-submit:disabled,
+        .btn-fap-submit.is-busy {
+            opacity: 0.65;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
 
         /* ---- Grille produits ---- */
         .stk-section-head {
@@ -1546,6 +1652,18 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
     </div>
     <?php endif; ?>
 
+    <div id="stkSaveOverlay" class="stk-save-overlay" hidden aria-hidden="true" role="alertdialog" aria-live="polite" aria-labelledby="stkSaveOverlayTitle" aria-describedby="stkSaveOverlayDesc">
+        <div class="stk-save-overlay__card">
+            <div class="stk-save-overlay__icon" aria-hidden="true"><i class="fas fa-circle-notch"></i></div>
+            <h3 class="stk-save-overlay__title" id="stkSaveOverlayTitle">Enregistrement en cours</h3>
+            <p class="stk-save-overlay__subtitle" id="stkSaveOverlayDesc">Veuillez patienter pendant le traitement de votre produit&hellip;</p>
+            <div class="stk-save-overlay__track" aria-hidden="true">
+                <div class="stk-save-overlay__bar" id="stkSaveOverlayBar"></div>
+            </div>
+            <div class="stk-save-overlay__pct" id="stkSaveOverlayPct">0&nbsp;%</div>
+        </div>
+    </div>
+
     <script>
     (function () {
         /* ---- Filtres compacts (tablette / mobile) ---- */
@@ -1617,6 +1735,73 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         if (modalAdd) {
             modalAdd.addEventListener('click', function (ev) {
                 if (ev.target === modalAdd) closeAddModal();
+            });
+        }
+
+        /* ---- Overlay enregistrement (anti double envoi) ---- */
+        var saveOverlay = document.getElementById('stkSaveOverlay');
+        var saveBar = document.getElementById('stkSaveOverlayBar');
+        var savePct = document.getElementById('stkSaveOverlayPct');
+        var addForm = document.getElementById('form-add-produit-modal');
+        var saveProgressTimer = null;
+        var saveProgressValue = 0;
+        var formSubmitLocked = false;
+
+        function showSaveOverlay() {
+            if (!saveOverlay) return;
+            saveOverlay.removeAttribute('hidden');
+            saveOverlay.classList.add('is-visible');
+            saveOverlay.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('stk-save-busy');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function updateSaveProgress(value) {
+            saveProgressValue = Math.max(saveProgressValue, Math.min(98, value));
+            if (saveBar) saveBar.style.width = saveProgressValue + '%';
+            if (savePct) savePct.textContent = Math.round(saveProgressValue) + '\u00a0%';
+        }
+
+        function startSaveProgress() {
+            saveProgressValue = 0;
+            updateSaveProgress(8);
+            if (saveProgressTimer) clearInterval(saveProgressTimer);
+            saveProgressTimer = setInterval(function () {
+                if (saveProgressValue >= 92) return;
+                var step = saveProgressValue < 40 ? 4 + Math.random() * 5
+                    : saveProgressValue < 75 ? 2 + Math.random() * 3
+                    : 0.4 + Math.random() * 1.2;
+                updateSaveProgress(saveProgressValue + step);
+            }, 420);
+        }
+
+        function lockAddFormSubmit(btn) {
+            formSubmitLocked = true;
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('is-busy');
+                btn.setAttribute('aria-busy', 'true');
+            }
+            if (addForm) {
+                addForm.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (el) {
+                    el.disabled = true;
+                });
+            }
+            showSaveOverlay();
+            startSaveProgress();
+        }
+
+        if (addForm) {
+            addForm.addEventListener('submit', function (e) {
+                if (formSubmitLocked) {
+                    e.preventDefault();
+                    return;
+                }
+                if (!addForm.checkValidity()) {
+                    return;
+                }
+                var submitBtn = addForm.querySelector('.btn-fap-submit[type="submit"]');
+                lockAddFormSubmit(submitBtn);
             });
         }
 

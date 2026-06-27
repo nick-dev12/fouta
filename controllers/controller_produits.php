@@ -459,13 +459,8 @@ function process_add_produit() {
                         }
                     }
                     if ($owner_admin > 0 && empty($hold_info['held'])) {
-                        require_once __DIR__ . '/../services/send_boutique_abonnement_notification.php';
-                        if (boutique_abonnement_produit_visible_catalogue($data['statut'] ?? '')) {
-                            boutique_abonnement_try_notify($owner_admin, 'nouveau_produit', $nom, (int) $produit_id);
-                        }
+                        // Notification push : voir produit_schedule_deferred_post_create().
                     }
-                    generer_qrcode_produit($produit_id);
-                    generer_barcode_produit_fpl($produit_id);
                     $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? array_values($_POST['variantes_nom']) : [];
                     $variantes_prix = isset($_POST['variantes_prix']) && is_array($_POST['variantes_prix']) ? array_values($_POST['variantes_prix']) : [];
                     $variantes_prix_promo = isset($_POST['variantes_prix_promo']) && is_array($_POST['variantes_prix_promo']) ? array_values($_POST['variantes_prix_promo']) : [];
@@ -501,6 +496,13 @@ function process_add_produit() {
                             ]);
                         }
                     }
+                    require_once __DIR__ . '/../includes/produit_post_create_deferred.php';
+                    produit_schedule_deferred_post_create(
+                        (int) $produit_id,
+                        (int) $owner_admin,
+                        (string) $nom,
+                        (string) ($data['statut'] ?? 'actif')
+                    );
                     $success = true;
                 } catch (Throwable $e) {
                     error_log('[process_add_produit] post-create id=' . (int) $produit_id . ': ' . $e->getMessage());
@@ -514,7 +516,14 @@ function process_add_produit() {
     }
     
     if ($success) {
-        return ['success' => true, 'message' => $message];
+        return [
+            'success' => true,
+            'message' => $message,
+            'produit_id' => isset($produit_id) ? (int) $produit_id : 0,
+            'owner_admin' => isset($owner_admin) ? (int) $owner_admin : 0,
+            'produit_nom' => isset($nom) ? (string) $nom : '',
+            'produit_statut' => isset($data['statut']) ? (string) $data['statut'] : 'actif',
+        ];
     } else {
         $message = !empty($errors) ? implode('<br>', $errors) : 'Une erreur est survenue.';
         return ['success' => false, 'message' => $message];
