@@ -683,6 +683,21 @@
     line-height: 1.25;
 }
 
+.uc-v2-card__neg-ref s {
+    text-decoration: line-through;
+    color: var(--gris-clair, #a3a3a3);
+}
+
+.uc-v2-card__neg-offer strong {
+    font-weight: 700;
+    color: var(--titres, #0D0D0D);
+}
+
+.uc-v2-card--nav-suivi .uc-v2-card__body,
+.uc-v2-card--nav-suivi .uc-v2-card__meta-bar {
+    cursor: pointer;
+}
+
 .uc-v2-card--prix-neg .prix-neg-statut {
     font-size: 0.62rem;
     padding: 4px 8px;

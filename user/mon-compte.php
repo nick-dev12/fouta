@@ -70,6 +70,12 @@ $commandes_en_cours = array_values(array_filter($toutes_commandes, function ($cm
 }));
 $commandes_recentes = array_slice($commandes_en_cours, 0, 2);
 
+/** Contexte cartes commande sur le tableau de bord mon-compte (sans footer, clic → suivi). */
+$mc_dashboard_cmd_ctx = [
+    'show_footer' => false,
+    'link_to_tracking' => true,
+];
+
 // Produits livrés — 3 dernières commandes reçues (livree + paye)
 $commandes_recues_recentes = array_slice(
     array_values(array_filter($toutes_commandes, function ($c) {
@@ -1297,7 +1303,7 @@ function mc_statut_icon($s) {
                     <?php
                     require_once __DIR__ . '/../includes/commande_client_card_ui.php';
                     foreach ($commandes_recentes as $cmd) {
-                        client_commande_card_render($cmd);
+                        client_commande_card_render($cmd, $mc_dashboard_cmd_ctx);
                     }
                     ?>
                 </div>
@@ -1363,7 +1369,7 @@ function mc_statut_icon($s) {
                     <?php
                     require_once __DIR__ . '/../includes/commande_client_card_ui.php';
                     foreach ($commandes_recues_recentes as $cmd) {
-                        client_commande_card_render($cmd);
+                        client_commande_card_render($cmd, $mc_dashboard_cmd_ctx);
                     }
                     ?>
                 </div>
@@ -1440,5 +1446,24 @@ function mc_statut_icon($s) {
     <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/uc-gallery-lightbox.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
+
+    <script>
+    (function () {
+        document.addEventListener('click', function (e) {
+            var zone = e.target.closest('.uc-v2-card--nav-suivi .uc-v2-card__body, .uc-v2-card--nav-suivi .uc-v2-card__meta-bar');
+            if (!zone) {
+                return;
+            }
+            if (e.target.closest('a, button, .uc-btn-open-gallery, input, form, select, textarea')) {
+                return;
+            }
+            var card = zone.closest('.uc-v2-card--nav-suivi');
+            var href = card && card.getAttribute('data-suivi-href');
+            if (href) {
+                window.location.href = href;
+            }
+        });
+    })();
+    </script>
 
     <?php include 'includes/user_footer.php'; ?>

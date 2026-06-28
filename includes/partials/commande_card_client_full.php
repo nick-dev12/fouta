@@ -7,7 +7,10 @@ if (empty($commande) || !is_array($commande)) {
     return;
 }
 ?>
-<article class="uc-v2-card">
+<article class="uc-v2-card<?php echo $link_to_tracking ? ' uc-v2-card--nav-suivi' : ''; ?>"
+    <?php if ($suivi_href !== ''): ?>
+        data-suivi-href="<?php echo htmlspecialchars($suivi_href, ENT_QUOTES, 'UTF-8'); ?>"
+    <?php endif; ?>>
     <div class="uc-v2-card__top">
         <div class="uc-v2-card__ref">
             <div class="uc-v2-card__ref-head">
@@ -75,6 +78,7 @@ if (empty($commande) || !is_array($commande)) {
         </span>
     </div>
 
+    <?php if ($show_footer): ?>
     <div class="uc-v2-card__footer">
         <?php if ($boutique_maps_url !== '' || $boutique_geo_share_url !== ''): ?>
             <button type="button"
@@ -146,4 +150,5 @@ if (empty($commande) || !is_array($commande)) {
             </form>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 </article>

@@ -344,7 +344,34 @@
             + '<i class="fa-solid fa-share-nodes" aria-hidden="true"></i></button></div>';
     };
 
+    function bindPshareToggleHandler() {
+        /* Capture : avant stopPropagation sur cartes cliquables (ex. stock admin). */
+        document.addEventListener('click', function (e) {
+            var toggle = e.target.closest('.pshare__toggle');
+            if (!toggle) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            var url = toggle.getAttribute('data-share-url') || '';
+            var text = toggle.getAttribute('data-share-text') || '';
+            var title = toggle.getAttribute('data-share-title') || 'Produit';
+            if (!url) {
+                return;
+            }
+            openModal({
+                modalTitle: 'Partager ce produit',
+                title: title,
+                url: url,
+                message: text || title,
+                hint: 'Partagez ce lien pour que vos contacts voient la fiche produit.'
+            });
+        }, true);
+    }
+
     function init() {
+        bindPshareToggleHandler();
+
         modal = document.getElementById('platformShareModal');
         if (!modal) {
             return;
@@ -376,28 +403,6 @@
                 e.preventDefault();
                 var ch = btn.getAttribute('data-share-channel') || '';
                 shareViaChannel(ch);
-            });
-        });
-
-        document.addEventListener('click', function (e) {
-            var toggle = e.target.closest('.pshare__toggle');
-            if (!toggle) {
-                return;
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            var url = toggle.getAttribute('data-share-url') || '';
-            var text = toggle.getAttribute('data-share-text') || '';
-            var title = toggle.getAttribute('data-share-title') || 'Produit';
-            if (!url) {
-                return;
-            }
-            openModal({
-                modalTitle: 'Partager ce produit',
-                title: title,
-                url: url,
-                message: text || title,
-                hint: 'Partagez ce lien pour que vos contacts voient la fiche produit.'
             });
         });
     }

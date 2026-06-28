@@ -3,6 +3,8 @@
  * Partial — carte négociation client (design uc-v2-card)
  * Variables : $neg (array)
  */
+
+
 if (!isset($neg) || !is_array($neg)) {
     return;
 }
@@ -44,18 +46,19 @@ $prix_affiche = $prix_contre > 0 && in_array($statut, ['contre_proposee', 'accep
     <div class="uc-v2-card__top">
         <div class="uc-v2-card__ref">
             <div class="uc-v2-card__ref-head">
-                <span class="uc-v2-card__boutique"><?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span
+                    class="uc-v2-card__boutique"><?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
         </div>
-        <span class="prix-neg-statut <?php echo htmlspecialchars($statut_class, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($statut_label, ENT_QUOTES, 'UTF-8'); ?></span>
+        <span
+            class="prix-neg-statut <?php echo htmlspecialchars($statut_class, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($statut_label, ENT_QUOTES, 'UTF-8'); ?></span>
     </div>
 
     <div class="uc-v2-card__body">
         <?php if ($img_url !== ''): ?>
             <div class="uc-v2-card__thumb uc-v2-card__thumb--static" aria-hidden="true">
                 <img src="<?php echo htmlspecialchars($img_url, ENT_QUOTES, 'UTF-8'); ?>"
-                    alt="<?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?>"
-                    loading="lazy"
+                    alt="<?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?>" loading="lazy"
                     onerror="this.src='/image/produit1.jpg'">
             </div>
         <?php endif; ?>
@@ -65,8 +68,10 @@ $prix_affiche = $prix_contre > 0 && in_array($statut, ['contre_proposee', 'accep
                     <?php echo number_format($prix_affiche, 0, ',', ' '); ?><small>FCFA</small>
                 </div>
                 <div class="uc-v2-card__neg-meta">
-                    <span class="uc-v2-card__neg-ref">Catalogue : <?php echo number_format($prix_ref, 0, ',', ' '); ?> FCFA</span>
-                    <span class="uc-v2-card__neg-offer">Votre offre : <?php echo number_format($prix_propose, 0, ',', ' '); ?> FCFA</span>
+                    <span class="uc-v2-card__neg-ref">Prix du vendeur :
+                        <s><?php echo number_format($prix_ref, 0, ',', ' '); ?> FCFA</s></span>
+                    <span class="uc-v2-card__neg-offer"><strong>Votre offre :
+                        <?php echo number_format($prix_propose, 0, ',', ' '); ?> FCFA</strong></span>
                 </div>
                 <span class="uc-v2-card__tel uc-v2-card__tel--boutique">
                     <i class="fas fa-store"></i>
@@ -96,8 +101,7 @@ $prix_affiche = $prix_contre > 0 && in_array($statut, ['contre_proposee', 'accep
             </form>
         <?php endif; ?>
         <?php if ($can_repropose): ?>
-            <button type="button" class="uc-card-btn uc-card-btn--track"
-                data-prix-neg-client-open
+            <button type="button" class="uc-card-btn uc-card-btn--track" data-prix-neg-client-open
                 data-produit-id="<?php echo $produit_id; ?>"
                 data-produit-nom="<?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?>"
                 data-produit-image="<?php echo htmlspecialchars($img_url, ENT_QUOTES, 'UTF-8'); ?>"

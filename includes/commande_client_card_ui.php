@@ -122,6 +122,8 @@ if (!function_exists('client_commande_card_render')) {
             'form_action' => '',
             'commandes_avis_stats' => [],
             'commandes_noter_pending' => [],
+            'show_footer' => true,
+            'link_to_tracking' => false,
         ], $ctx);
 
         $st = $commande['statut'] ?? 'en_attente';
@@ -174,6 +176,11 @@ if (!function_exists('client_commande_card_render')) {
         $cmd_galerie_nom = $galerie_pack['nom'];
         $cmd_thumb_src = $galerie_pack['thumb_url'];
         $card_form_action = (string) $ctx['form_action'];
+        $show_footer = !empty($ctx['show_footer']);
+        $link_to_tracking = !empty($ctx['link_to_tracking']) && $cmd_id > 0;
+        $suivi_href = $link_to_tracking
+            ? 'commande-categorie.php?commande_id=' . $cmd_id
+            : '';
 
         include __DIR__ . '/partials/commande_card_client_full.php';
     }

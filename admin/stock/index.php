@@ -1488,8 +1488,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                                 aria-label="Partager <?php echo htmlspecialchars($stk_share_nom, ENT_QUOTES, 'UTF-8'); ?>"
                                 data-share-url="<?php echo htmlspecialchars($stk_share_url, ENT_QUOTES, 'UTF-8'); ?>"
                                 data-share-title="<?php echo htmlspecialchars($stk_share_nom, ENT_QUOTES, 'UTF-8'); ?>"
-                                data-share-text="<?php echo htmlspecialchars($stk_share_text, ENT_QUOTES, 'UTF-8'); ?>"
-                                onclick="event.stopPropagation();">
+                                data-share-text="<?php echo htmlspecialchars($stk_share_text, ENT_QUOTES, 'UTF-8'); ?>">
                                 <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
                             </button>
                             <?php endif; ?>
@@ -1881,6 +1880,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         document.querySelectorAll('.js-open-edit-produit').forEach(function (el) {
             el.addEventListener('click', function (e) {
                 if (e.target.closest('.stk-card-btn--delete')) return;
+                if (e.target.closest('.pshare__toggle, .stk-card__share')) return;
                 e.preventDefault();
                 e.stopPropagation();
                 var id = el.getAttribute('data-produit-id');
