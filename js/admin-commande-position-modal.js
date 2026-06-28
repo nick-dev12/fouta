@@ -1,5 +1,5 @@
 /**
- * Modal position client + ouverture apps livraison (admin commandes).
+ * Modal position client + navigation native + partage localisation (admin commandes).
  */
 (function () {
     'use strict';
@@ -28,37 +28,6 @@
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
         }
-        closeAppsPanel();
-    }
-
-    function closeAppsPanel() {
-        var panel = qs('cmd-pos-apps-panel');
-        if (panel) panel.classList.remove('is-open');
-    }
-
-    function openAppsPanel() {
-        if (currentLat === null || currentLng === null) return;
-        var panel = qs('cmd-pos-apps-panel');
-        if (!panel) return;
-
-        var apps = typeof window.geoBuildNavApps === 'function'
-            ? window.geoBuildNavApps(currentLat, currentLng, currentLabel)
-            : [];
-
-        var list = qs('cmd-pos-apps-list');
-        if (!list) return;
-        list.innerHTML = '';
-        apps.forEach(function (app) {
-            var a = document.createElement('a');
-            a.className = 'cmd-pos-app-link cmd-pos-app-link--' + app.cls;
-            a.href = app.url;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.innerHTML = '<i class="' + app.icon + '"></i><span>' + app.name + '</span><i class="fas fa-external-link-alt cmd-pos-app-ext"></i>';
-            list.appendChild(a);
-        });
-
-        panel.classList.add('is-open');
     }
 
     function ensureMap(lat, lng) {
@@ -92,6 +61,19 @@
             });
     }
 
+    function updateShareButton(lat, lng, label) {
+        var shareBtn = qs('cmd-pos-btn-whatsapp');
+        if (!shareBtn) return;
+        var mapsUrl = 'https://maps.google.com/?q=' + lat + ',' + lng;
+        shareBtn.setAttribute('data-lat', String(lat));
+        shareBtn.setAttribute('data-lng', String(lng));
+        shareBtn.setAttribute('data-label', label);
+        shareBtn.setAttribute('data-share-title', label);
+        shareBtn.setAttribute('data-share-url', mapsUrl);
+        shareBtn.setAttribute('data-share-text', label + ' : ' + mapsUrl);
+        shareBtn.hidden = false;
+    }
+
     function showPosition(lat, lng, meta) {
         currentLat = lat;
         currentLng = lng;
@@ -112,17 +94,7 @@
             addrEl.style.display = meta.adresse ? '' : 'none';
         }
 
-        var waBtn = qs('cmd-pos-btn-whatsapp');
-        if (waBtn && typeof window.geoBuildNavApps === 'function') {
-            var apps = window.geoBuildNavApps(lat, lng, currentLabel);
-            var waApp = apps.filter(function (a) { return a.cls === 'whatsapp'; })[0];
-            if (waApp && waApp.url) {
-                waBtn.href = waApp.url;
-                waBtn.hidden = false;
-            } else {
-                waBtn.hidden = true;
-            }
-        }
+        updateShareButton(lat, lng, currentLabel);
 
         var noGeo = qs('cmd-pos-no-geo');
         var body = qs('cmd-pos-modal-body');
@@ -139,6 +111,8 @@
         if (loading) loading.style.display = 'none';
         var noGeo = qs('cmd-pos-no-geo');
         var body = qs('cmd-pos-modal-body');
+        var shareBtn = qs('cmd-pos-btn-whatsapp');
+        if (shareBtn) shareBtn.hidden = true;
         if (noGeo) {
             noGeo.style.display = '';
             var p = noGeo.querySelector('p');
@@ -196,18 +170,15 @@
         var btnLivreur = qs('cmd-pos-btn-livreur');
         if (btnLivreur) {
             btnLivreur.addEventListener('click', function () {
-                if (currentLat !== null) openAppsPanel();
+                if (currentLat === null || currentLng === null) return;
+                if (typeof window.geoOpenNativeNavigation === 'function') {
+                    window.geoOpenNativeNavigation(currentLat, currentLng, currentLabel);
+                }
             });
         }
 
-        var appsClose = qs('cmd-pos-apps-close');
-        var appsBackdrop = qs('cmd-pos-apps-backdrop');
-        if (appsClose) appsClose.addEventListener('click', closeAppsPanel);
-        if (appsBackdrop) appsBackdrop.addEventListener('click', closeAppsPanel);
-
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                closeAppsPanel();
                 closeModal();
             }
         });

@@ -94,6 +94,7 @@ function statut_class_cmd($s) {
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-commandes-index.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-card-uc.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <style>
@@ -972,13 +973,17 @@ function statut_class_cmd($s) {
             padding: 8px 14px;
             min-height: 36px;
             border-radius: 8px;
+            border: none;
             background: #25D366;
             color: #fff;
             font-weight: 700;
             font-size: 0.8rem;
             text-decoration: none;
+            cursor: pointer;
+            font-family: inherit;
         }
         .cmd-pos-btn-whatsapp:hover { filter: brightness(1.05); }
+        .cmd-pos-btn-whatsapp[hidden] { display: none !important; }
         .cmd-pos-loading {
             display: none;
             align-items: center;
@@ -992,68 +997,6 @@ function statut_class_cmd($s) {
             text-align: center;
             color: var(--gris-moyen);
         }
-        .cmd-pos-apps {
-            position: fixed;
-            inset: 0;
-            z-index: 10060;
-            display: none;
-            align-items: flex-end;
-            justify-content: center;
-        }
-        .cmd-pos-apps.is-open { display: flex; }
-        .cmd-pos-apps__backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(13,13,13,0.4);
-        }
-        .cmd-pos-apps__sheet {
-            position: relative;
-            z-index: 1;
-            width: min(420px, 100%);
-            background: #fff;
-            border-radius: 20px 20px 0 0;
-            padding: 20px 16px 28px;
-            max-height: 70vh;
-            overflow: auto;
-        }
-        .cmd-pos-apps__head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 14px;
-        }
-        .cmd-pos-apps__head h3 {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 800;
-        }
-        .cmd-pos-app-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            border-radius: 12px;
-            text-decoration: none;
-            color: #fff;
-            border: none;
-            margin-bottom: 8px;
-            font-weight: 700;
-            font-size: 0.88rem;
-            transition: filter 0.15s, transform 0.12s;
-        }
-        .cmd-pos-app-link:hover { filter: brightness(1.06); transform: translateY(-1px); }
-        .cmd-pos-app-link i:first-child {
-            width: 26px;
-            text-align: center;
-            font-size: 1.15rem;
-        }
-        .cmd-pos-app-link--gmaps {
-            background: linear-gradient(135deg, #4285F4 0%, #34A853 50%, #FBBC05 75%, #EA4335 100%);
-        }
-        .cmd-pos-app-link--yango { background: #FF0000; }
-        .cmd-pos-app-link--yassir { background: #6316DB; }
-        .cmd-pos-app-link--whatsapp { background: #25D366; }
-        .cmd-pos-app-ext { margin-left: auto; font-size: 0.72rem; opacity: 0.85; color: inherit; }
     </style>
 </head>
 
@@ -1196,25 +1139,13 @@ function statut_class_cmd($s) {
                     <button type="button" class="cmd-pos-btn-livreur" id="cmd-pos-btn-livreur">
                         <i class="fas fa-motorcycle"></i> Commander un livreur
                     </button>
-                    <a href="#" class="cmd-pos-btn-whatsapp" id="cmd-pos-btn-whatsapp" target="_blank" rel="noopener noreferrer" hidden>
-                        <i class="fab fa-whatsapp"></i> Partager sur WhatsApp
-                    </a>
+                    <button type="button" class="cmd-pos-btn-whatsapp js-geo-share-location" id="cmd-pos-btn-whatsapp" hidden
+                        data-share-modal-title="Partager la localisation du client"
+                        data-share-hint="Partagez le point GPS du client avec votre livreur ou vos contacts.">
+                        <i class="fab fa-whatsapp"></i> Partager la localisation du client
+                    </button>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Feuille apps livraison / VTC -->
-    <div id="cmd-pos-apps-panel" class="cmd-pos-apps" aria-hidden="true">
-        <div class="cmd-pos-apps__backdrop" id="cmd-pos-apps-backdrop"></div>
-        <div class="cmd-pos-apps__sheet">
-            <div class="cmd-pos-apps__head">
-                <h3><i class="fas fa-route"></i> Ouvrir avec…</h3>
-                <button type="button" class="cmd-pos-modal__close" id="cmd-pos-apps-close" aria-label="Fermer">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="cmd-pos-apps-list"></div>
         </div>
     </div>
 
@@ -1697,6 +1628,8 @@ function statut_class_cmd($s) {
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <?php require __DIR__ . '/../../includes/partials/platform_share_modal.php'; ?>
+    <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-commande-position-modal.js<?php echo asset_version_query(); ?>"></script>
     <?php require __DIR__ . '/../../includes/partials/uc_gallery_lightbox.php'; ?>

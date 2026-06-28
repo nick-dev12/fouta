@@ -276,6 +276,7 @@ function cmd_timeline_steps($statut) {
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-mes-commandes.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-card-uc.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== MES COMMANDES v2 ===== */
 
@@ -1262,6 +1263,10 @@ function cmd_timeline_steps($statut) {
                         && !empty($commandes_noter_pending[$cmd_id]);
                     $boutique_maps_url = '';
                     $boutique_wa_url = '';
+                    $boutique_geo_lat = null;
+                    $boutique_geo_lng = null;
+                    $boutique_geo_label = '';
+                    $boutique_geo_share_url = '';
                     $vendeur_boutique_id = (int) ($commande['vendeur_id'] ?? 0);
                     if ($vendeur_boutique_id > 0) {
                         $adm_boutique = get_admin_by_id($vendeur_boutique_id);
@@ -1271,6 +1276,14 @@ function cmd_timeline_steps($statut) {
                         );
                         $boutique_maps_url = trim((string) ($boutique_geo['maps_url'] ?? ''));
                         $boutique_wa_url = trim((string) ($boutique_geo['whatsapp_url'] ?? ''));
+                        $boutique_geo_lat = $boutique_geo['lat'] ?? null;
+                        $boutique_geo_lng = $boutique_geo['lng'] ?? null;
+                        $boutique_geo_label = 'Point de retrait — ' . $boutique_nom;
+                        if ($boutique_geo_lat !== null && $boutique_geo_lng !== null) {
+                            $boutique_geo_share_url = 'https://maps.google.com/?q=' . $boutique_geo_lat . ',' . $boutique_geo_lng;
+                        } elseif ($boutique_maps_url !== '') {
+                            $boutique_geo_share_url = $boutique_maps_url;
+                        }
                     }
                     $galerie_pack = commande_carte_galerie_urls($cmd_id, $boutique_nom);
                     $cmd_galerie_urls = $galerie_pack['urls'];
@@ -1352,19 +1365,31 @@ function cmd_timeline_steps($statut) {
 
                         <!-- Footer actions -->
                         <div class="uc-v2-card__footer">
-                            <?php if ($boutique_maps_url !== ''): ?>
-                                <a href="<?php echo htmlspecialchars($boutique_maps_url, ENT_QUOTES, 'UTF-8'); ?>"
-                                    class="uc-card-btn uc-card-btn--gmaps" target="_blank" rel="noopener noreferrer"
-                                    title="Ouvrir avec Google Maps">
+                            <?php if ($boutique_maps_url !== '' || $boutique_geo_share_url !== ''): ?>
+                                <button type="button"
+                                    class="uc-card-btn uc-card-btn--gmaps js-geo-open-maps"
+                                    title="Ouvrir avec une application de navigation"
+                                    data-lat="<?php echo $boutique_geo_lat !== null ? htmlspecialchars((string) $boutique_geo_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                    data-lng="<?php echo $boutique_geo_lng !== null ? htmlspecialchars((string) $boutique_geo_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                    data-label="<?php echo htmlspecialchars($boutique_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-maps-url="<?php echo htmlspecialchars($boutique_maps_url, ENT_QUOTES, 'UTF-8'); ?>">
                                     <i class="fab fa-google" aria-hidden="true"></i> Ouvrir avec Google Maps
-                                </a>
+                                </button>
                             <?php endif; ?>
-                            <?php if ($boutique_wa_url !== ''): ?>
-                                <a href="<?php echo htmlspecialchars($boutique_wa_url, ENT_QUOTES, 'UTF-8'); ?>"
-                                    class="uc-card-btn uc-card-btn--wa-share" target="_blank" rel="noopener noreferrer"
-                                    title="Partager la position de la boutique">
+                            <?php if ($boutique_geo_share_url !== ''): ?>
+                                <button type="button"
+                                    class="uc-card-btn uc-card-btn--wa-share js-geo-share-location"
+                                    title="Partager la position de la boutique"
+                                    data-lat="<?php echo $boutique_geo_lat !== null ? htmlspecialchars((string) $boutique_geo_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                    data-lng="<?php echo $boutique_geo_lng !== null ? htmlspecialchars((string) $boutique_geo_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                    data-label="<?php echo htmlspecialchars($boutique_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-share-title="<?php echo htmlspecialchars($boutique_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-share-url="<?php echo htmlspecialchars($boutique_geo_share_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-share-text="<?php echo htmlspecialchars($boutique_geo_label . ' : ' . $boutique_geo_share_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-share-modal-title="Partager la position de la boutique"
+                                    data-share-hint="Partagez le point de retrait de la boutique avec vos proches.">
                                     <i class="fab fa-whatsapp" aria-hidden="true"></i> Partager la position de la boutique
-                                </a>
+                                </button>
                             <?php endif; ?>
 
                             <a href="commande-categorie.php?commande_id=<?php echo (int) $commande['id']; ?>"
@@ -1492,6 +1517,9 @@ function cmd_timeline_steps($statut) {
         });
     })();
     </script>
+    <?php require __DIR__ . '/../includes/partials/platform_share_modal.php'; ?>
+    <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/uc-gallery-lightbox.js<?php echo asset_version_query(); ?>"></script>
 
     <?php include 'includes/user_footer.php'; ?>
