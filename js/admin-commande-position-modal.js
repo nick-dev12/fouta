@@ -70,7 +70,7 @@
         shareBtn.setAttribute('data-label', label);
         shareBtn.setAttribute('data-share-title', label);
         shareBtn.setAttribute('data-share-url', mapsUrl);
-        shareBtn.setAttribute('data-share-text', label + ' : ' + mapsUrl);
+        shareBtn.setAttribute('data-share-text', label);
         shareBtn.hidden = false;
     }
 
@@ -172,7 +172,9 @@
             btnLivreur.addEventListener('click', function () {
                 if (currentLat === null || currentLng === null) return;
                 if (typeof window.geoOpenNativeNavigation === 'function') {
-                    window.geoOpenNativeNavigation(currentLat, currentLng, currentLabel);
+                    var mapsDir = 'https://www.google.com/maps/dir/?api=1&destination='
+                        + currentLat + ',' + currentLng + '&travelmode=driving';
+                    window.geoOpenNativeNavigation(currentLat, currentLng, currentLabel, mapsDir);
                 }
             });
         }

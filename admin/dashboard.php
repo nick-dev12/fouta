@@ -131,6 +131,7 @@ if (count($dash_promo_images) < 4) {
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-vendeur-share.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/prix-negociation.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-card-uc.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== DASHBOARD VENDEUR v2 ===== */
 
@@ -1618,7 +1619,7 @@ if (count($dash_promo_images) < 4) {
             </button>
         </header>
         <div class="prix-neg-fullscreen__body">
-            <div class="prix-neg-card__list">
+            <div class="prix-neg-card__list uc-v2-list">
                 <?php foreach ($prix_neg_groupe['offres'] as $neg):
                     $prix_neg_side = 'vendor';
                     include __DIR__ . '/../includes/partials/prix_negociation_row.php';

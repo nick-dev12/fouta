@@ -587,6 +587,31 @@
 
 .uc-v2-card__footer--vendor {
     padding: 14px 20px 16px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.uc-v2-card__footer--vendor-has-pos {
+    grid-template-columns: 1fr 1fr;
+}
+
+.uc-v2-card__footer--vendor-has-pos .uc-v2-card__pos-btn {
+    margin-top: 0;
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    border-radius: 12px;
+}
+
+.uc-v2-card__footer--vendor-has-pos .uc-card-btn--vendor-detail {
+    min-height: 44px;
+}
+
+@media (max-width: 520px) {
+    .uc-v2-card__footer--vendor-has-pos {
+        grid-template-columns: 1fr;
+    }
 }
 
 .uc-card-btn--vendor-detail {
@@ -639,6 +664,63 @@
     50% { opacity: 0.6; transform: scale(0.8); }
 }
 
+.uc-v2-card--prix-neg .uc-v2-card__thumb--static {
+    cursor: default;
+    pointer-events: none;
+}
+
+.uc-v2-card--prix-neg .uc-v2-card__neg-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.uc-v2-card__neg-ref,
+.uc-v2-card__neg-offer {
+    font-size: 0.72rem;
+    color: var(--gris-moyen, #737373);
+    line-height: 1.25;
+}
+
+.uc-v2-card--prix-neg .prix-neg-statut {
+    font-size: 0.62rem;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.prix-neg-card__list.uc-v2-list,
+.mc-v2-mid--orders .uc-v2-list,
+.mc-v2-delivered .uc-v2-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.mc-v2-more-link {
+    margin: 10px 0 0;
+    text-align: center;
+}
+
+.mc-v2-more-link a {
+    color: var(--couleur-dominante, #3564a6);
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-decoration: none;
+}
+
+.mc-v2-more-link a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 799px) {
+    .uc-v2-timeline {
+        display: none !important;
+    }
+}
+
 @media (max-width: 768px) {
     .uc-v2-card__top { padding: 10px 12px 8px; }
     .uc-v2-card__boutique { font-size: 0.78rem; }
@@ -654,7 +736,6 @@
         border-radius: 10px;
     }
     .uc-badge { font-size: 0.62rem; padding: 3px 8px; }
-    .uc-v2-timeline { display: none; }
     .uc-v2-card__footer {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -686,7 +767,27 @@
     .uc-v2-card__body-inner { flex-direction: column; gap: 8px; }
     .uc-v2-card__meta-bar { padding: 0 14px 12px; }
     .uc-v2-card__amount { font-size: 1.15rem; }
-    .uc-v2-timeline { display: none; }
+}
+
+@media (max-width: 799px) {
+    .uc-v2-card__footer--vendor-has-pos {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .uc-v2-card__footer--vendor-has-pos .uc-v2-card__pos-btn,
+    .uc-v2-card__footer--vendor-has-pos .uc-card-btn--vendor-detail {
+        min-height: 38px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        font-size: 0.72rem;
+        line-height: 1.2;
+    }
+
+    .uc-v2-card__footer--vendor-has-pos .uc-v2-card__pos-btn i,
+    .uc-v2-card__footer--vendor-has-pos .uc-card-btn--vendor-detail i {
+        font-size: 0.72rem;
+    }
 }
 
 @media (max-width: 380px) {

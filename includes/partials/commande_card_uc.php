@@ -39,6 +39,22 @@ $card_show_urgent = !empty($card_show_urgent) || ($card_context === 'vendor' && 
 $card_rating_html = isset($card_rating_html) ? (string) $card_rating_html : '';
 $card_footer_html = isset($card_footer_html) ? (string) $card_footer_html : '';
 
+$card_geo_lat = null;
+$card_geo_lng = null;
+$card_has_geo = false;
+$card_addr = '';
+$card_show_pos_btn = false;
+if ($card_context === 'vendor') {
+    if (!function_exists('geo_parse_coord')) {
+        require_once __DIR__ . '/../geo_location_service.php';
+    }
+    $card_geo_lat = geo_parse_coord($commande['delivery_latitude'] ?? null);
+    $card_geo_lng = geo_parse_coord($commande['delivery_longitude'] ?? null);
+    $card_has_geo = geo_coords_valid($card_geo_lat, $card_geo_lng);
+    $card_addr = trim((string) ($commande['adresse_livraison'] ?? ''));
+    $card_show_pos_btn = !commande_is_retrait($commande) && ($card_has_geo || $card_addr !== '');
+}
+
 $date_cmd = !empty($commande['date_commande'])
     ? date('d/m/Y', strtotime((string) $commande['date_commande']))
     : '&mdash;';
@@ -115,28 +131,6 @@ if ($cmd_id > 0) {
                     <?php echo htmlspecialchars($card_phone, ENT_QUOTES, 'UTF-8'); ?>
                 </a>
             <?php endif; ?>
-            <?php if ($card_context === 'vendor'): ?>
-                <?php
-                if (!function_exists('geo_parse_coord')) {
-                    require_once __DIR__ . '/../geo_location_service.php';
-                }
-                $card_geo_lat = geo_parse_coord($commande['delivery_latitude'] ?? null);
-                $card_geo_lng = geo_parse_coord($commande['delivery_longitude'] ?? null);
-                $card_has_geo = geo_coords_valid($card_geo_lat, $card_geo_lng);
-                $card_addr = trim((string) ($commande['adresse_livraison'] ?? ''));
-                ?>
-                <?php if (!commande_is_retrait($commande) && ($card_has_geo || $card_addr !== '')): ?>
-                <button type="button"
-                    class="uc-v2-card__pos-btn js-cmd-voir-position"
-                    data-cmd-id="<?php echo $cmd_id; ?>"
-                    data-numero="<?php echo htmlspecialchars((string) ($commande['numero_commande'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                    data-lat="<?php echo $card_has_geo ? htmlspecialchars((string) $card_geo_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
-                    data-lng="<?php echo $card_has_geo ? htmlspecialchars((string) $card_geo_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
-                    data-adresse="<?php echo htmlspecialchars($card_addr, ENT_QUOTES, 'UTF-8'); ?>">
-                    <i class="fas fa-map-location-dot"></i> Voir la position du client
-                </button>
-                <?php endif; ?>
-            <?php endif; ?>
         </div>
 
         <?php if ($timeline !== null): ?>
@@ -162,10 +156,21 @@ if ($cmd_id > 0) {
         </span>
     </div>
 
-    <div class="uc-v2-card__footer<?php echo $card_context === 'vendor' ? ' uc-v2-card__footer--vendor' : ''; ?>">
+    <div class="uc-v2-card__footer<?php echo $card_context === 'vendor' ? ' uc-v2-card__footer--vendor' . ($card_show_pos_btn ? ' uc-v2-card__footer--vendor-has-pos' : '') : ''; ?>">
         <?php if ($card_footer_html !== ''): ?>
             <?php echo $card_footer_html; ?>
         <?php elseif ($card_context === 'vendor'): ?>
+            <?php if ($card_show_pos_btn): ?>
+            <button type="button"
+                class="uc-v2-card__pos-btn js-cmd-voir-position"
+                data-cmd-id="<?php echo $cmd_id; ?>"
+                data-numero="<?php echo htmlspecialchars((string) ($commande['numero_commande'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                data-lat="<?php echo $card_has_geo ? htmlspecialchars((string) $card_geo_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                data-lng="<?php echo $card_has_geo ? htmlspecialchars((string) $card_geo_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                data-adresse="<?php echo htmlspecialchars($card_addr, ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="fas fa-map-location-dot"></i> Voir la position du client
+            </button>
+            <?php endif; ?>
             <a href="<?php echo htmlspecialchars($card_detail_url, ENT_QUOTES, 'UTF-8'); ?>" class="uc-card-btn uc-card-btn--vendor-detail">
                 <span>Voir la commande</span>
                 <i class="fas fa-arrow-right" aria-hidden="true"></i>

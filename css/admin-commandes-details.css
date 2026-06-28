@@ -1394,10 +1394,13 @@
   gap: 0.45rem;
   padding: 0.55rem 0.85rem;
   border-radius: 8px;
+  border: none;
   text-decoration: none;
   color: #fff;
   font-weight: 700;
   font-size: 0.78rem;
+  font-family: var(--font-corps, 'Poppins', sans-serif);
+  cursor: pointer;
   transition: filter 0.15s;
 }
 

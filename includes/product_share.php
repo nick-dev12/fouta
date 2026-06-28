@@ -26,6 +26,18 @@ if (!function_exists('product_share_price_label')) {
     }
 }
 
+if (!function_exists('product_share_text_short')) {
+    function product_share_text_short(array $produit): string
+    {
+        if (!defined('SITE_BRAND_NAME')) {
+            require_once __DIR__ . '/site_brand.php';
+        }
+        $nom = trim((string) ($produit['nom'] ?? 'Produit'));
+        $prix = product_share_price_label($produit);
+        return 'Découvrez « ' . $nom . ' » à ' . $prix . ' sur ' . SITE_BRAND_NAME;
+    }
+}
+
 if (!function_exists('product_share_message')) {
     function product_share_message(array $produit): string
     {

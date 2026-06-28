@@ -1,13 +1,17 @@
 <?php
 /**
- * Partial — ligne négociation (vendeur ou client)
- * Variables : $neg (array), $prix_neg_side ('vendor'|'client'), $prix_neg_compact (bool, optional)
+ * Partial — ligne négociation vendeur (design uc-v2-card)
+ * Variables : $neg (array), $prix_neg_side, $prix_neg_compact
  */
 if (!isset($neg) || !is_array($neg)) {
     return;
 }
 $prix_neg_side = ($prix_neg_side ?? '') === 'client' ? 'client' : 'vendor';
-$prix_neg_compact = !empty($prix_neg_compact);
+if ($prix_neg_side !== 'vendor') {
+    include __DIR__ . '/prix_negociation_client_card.php';
+    return;
+}
+
 $neg_id = (int) ($neg['id'] ?? 0);
 $statut = (string) ($neg['statut'] ?? '');
 $statut_label = function_exists('prix_negociation_statut_label')
@@ -17,82 +21,75 @@ $statut_class = function_exists('prix_negociation_statut_css_class')
     ? prix_negociation_statut_css_class($statut)
     : 'prix-neg-statut--attente';
 $date_fmt = !empty($neg['date_maj']) ? date('d/m/Y H:i', strtotime($neg['date_maj'])) : '';
-$prix_propose = number_format((float) ($neg['prix_propose_client'] ?? 0), 0, ',', ' ');
-$prix_ref = number_format((float) ($neg['prix_reference'] ?? 0), 0, ',', ' ');
+$prix_propose = (float) ($neg['prix_propose_client'] ?? 0);
+$prix_ref = (float) ($neg['prix_reference'] ?? 0);
+$client_nom = trim(($neg['user_prenom'] ?? '') . ' ' . ($neg['user_nom'] ?? ''));
+$produit_nom = (string) ($neg['produit_nom'] ?? 'Produit');
 $reject_overlay_id = 'prixNegReject' . $neg_id;
+
+if (!function_exists('upload_image_url')) {
+    require_once dirname(__DIR__) . '/image_optimizer.php';
+}
+$produit_img = trim((string) ($neg['produit_image'] ?? ''));
+$img_url = $produit_img !== '' ? upload_image_url($produit_img, 'sm') : '';
 ?>
-<div class="prix-neg-row prix-neg-row--<?php echo htmlspecialchars($prix_neg_side, ENT_QUOTES, 'UTF-8'); ?>" data-neg-id="<?php echo $neg_id; ?>">
-    <div class="prix-neg-row__top">
-        <div>
-            <?php if ($prix_neg_side === 'vendor'): ?>
-            <p class="prix-neg-row__title"><?php echo htmlspecialchars(trim(($neg['user_prenom'] ?? '') . ' ' . ($neg['user_nom'] ?? '')), ENT_QUOTES, 'UTF-8'); ?></p>
-            <p class="prix-neg-row__meta"><?php echo htmlspecialchars($neg['produit_nom'] ?? 'Produit', ENT_QUOTES, 'UTF-8'); ?> &middot; <?php echo $date_fmt; ?></p>
-            <?php else: ?>
-            <p class="prix-neg-row__title"><?php echo htmlspecialchars($neg['produit_nom'] ?? 'Produit', ENT_QUOTES, 'UTF-8'); ?></p>
-            <p class="prix-neg-row__meta"><?php echo htmlspecialchars($neg['vendeur_boutique_nom'] ?? 'Boutique', ENT_QUOTES, 'UTF-8'); ?> &middot; <?php echo $date_fmt; ?></p>
-            <?php endif; ?>
+<article class="uc-v2-card uc-v2-card--prix-neg uc-v2-card--prix-neg-vendor" data-neg-id="<?php echo $neg_id; ?>">
+    <div class="uc-v2-card__top">
+        <div class="uc-v2-card__ref">
+            <div class="uc-v2-card__ref-head">
+                <span class="uc-v2-card__boutique"><?php echo htmlspecialchars($client_nom !== '' ? $client_nom : 'Client', ENT_QUOTES, 'UTF-8'); ?></span>
+            </div>
         </div>
         <span class="prix-neg-statut <?php echo htmlspecialchars($statut_class, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($statut_label, ENT_QUOTES, 'UTF-8'); ?></span>
     </div>
 
-    <?php if ($prix_neg_side === 'vendor'): ?>
-    <div class="prix-neg-row__prices prix-neg-row__prices--grid">
-        <div class="prix-neg-row-price">
-            <span class="prix-neg-row-price__label">Prix de base</span>
-            <span class="prix-neg-row-price__value prix-neg-row-price__value--strike"><?php echo $prix_ref; ?> FCFA</span>
-        </div>
-        <div class="prix-neg-row-price">
-            <span class="prix-neg-row-price__label">Offre du client</span>
-            <span class="prix-neg-row-price__value prix-neg-row-price__value--client"><?php echo $prix_propose; ?> FCFA</span>
-        </div>
-        <?php if (!empty($neg['prix_contre_vendeur'])): ?>
-        <div class="prix-neg-row-price">
-            <span class="prix-neg-row-price__label">Votre proposition</span>
-            <span class="prix-neg-row-price__value"><?php echo number_format((float) $neg['prix_contre_vendeur'], 0, ',', ' '); ?> FCFA</span>
-        </div>
+    <div class="uc-v2-card__body">
+        <?php if ($img_url !== ''): ?>
+            <div class="uc-v2-card__thumb uc-v2-card__thumb--static" aria-hidden="true">
+                <img src="<?php echo htmlspecialchars($img_url, ENT_QUOTES, 'UTF-8'); ?>" alt="" loading="lazy" onerror="this.src='/image/produit1.jpg'">
+            </div>
         <?php endif; ?>
+        <div class="uc-v2-card__body-inner">
+            <div class="uc-v2-card__info">
+                <div class="uc-v2-card__amount uc-v2-card__amount--neg">
+                    <?php echo number_format($prix_propose, 0, ',', ' '); ?><small>FCFA</small>
+                </div>
+                <div class="uc-v2-card__neg-meta">
+                    <span class="uc-v2-card__neg-ref"><?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?></span>
+                    <span class="uc-v2-card__neg-offer">Prix base : <?php echo number_format($prix_ref, 0, ',', ' '); ?> FCFA</span>
+                </div>
+            </div>
+        </div>
     </div>
-    <?php else: ?>
-    <p class="prix-neg-row__prices">
-        Prix affich&eacute; : <strong><?php echo $prix_ref; ?> FCFA</strong>
-        &middot; Offre : <strong><?php echo $prix_propose; ?> FCFA</strong>
-        <?php if (!empty($neg['prix_contre_vendeur'])): ?>
-        &middot; Contre-offre : <strong><?php echo number_format((float) $neg['prix_contre_vendeur'], 0, ',', ' '); ?> FCFA</strong>
-        <?php endif; ?>
-    </p>
-    <?php endif; ?>
 
-    <div class="prix-neg-row__actions">
-        <?php if ($prix_neg_side === 'vendor' && $statut === 'en_attente'): ?>
-        <form method="POST" action="/admin/prix-negociation-action.php" class="prix-neg-row__form-inline">
+    <div class="uc-v2-card__meta-bar">
+        <span class="uc-v2-card__meta-line">
+            <span class="uc-v2-card__ref-num">#NEG-<?php echo $neg_id; ?></span>
+            <span class="uc-v2-card__sep" aria-hidden="true">&middot;</span>
+            <span class="uc-v2-card__date"><?php echo htmlspecialchars($date_fmt, ENT_QUOTES, 'UTF-8'); ?></span>
+        </span>
+    </div>
+
+    <?php if ($statut === 'en_attente'): ?>
+    <div class="uc-v2-card__footer uc-v2-card__footer--vendor uc-v2-card__footer--vendor-has-pos">
+        <form method="POST" action="/admin/prix-negociation-action.php" style="display:contents;">
             <input type="hidden" name="action" value="accept">
             <input type="hidden" name="negotiation_id" value="<?php echo $neg_id; ?>">
             <input type="hidden" name="redirect" value="/admin/dashboard.php">
-            <button type="submit" class="prix-neg-btn prix-neg-btn--accept"><i class="fas fa-check"></i> Valider l'offre</button>
+            <button type="submit" class="uc-v2-card__pos-btn">
+                <i class="fas fa-check"></i> Valider l'offre
+            </button>
         </form>
-        <button type="button" class="prix-neg-btn prix-neg-btn--reject"
+        <button type="button" class="uc-card-btn uc-card-btn--vendor-detail"
             data-prix-neg-reject-open="<?php echo htmlspecialchars($reject_overlay_id, ENT_QUOTES, 'UTF-8'); ?>">
-            <i class="fas fa-times"></i> Rejeter l'offre
+            <span>Rejeter l'offre</span>
+            <i class="fas fa-times" aria-hidden="true"></i>
         </button>
-        <?php elseif ($prix_neg_side === 'client'): ?>
-            <?php if (function_exists('prix_negociation_peut_commander') && prix_negociation_peut_commander($neg)): ?>
-            <form method="POST" action="/user/prix-negociation-action.php" class="prix-neg-row__form-inline">
-                <input type="hidden" name="action" value="commander">
-                <input type="hidden" name="negotiation_id" value="<?php echo $neg_id; ?>">
-                <input type="hidden" name="redirect" value="/user/mon-compte.php">
-                <button type="submit" class="prix-neg-btn prix-neg-btn--order"><i class="fas fa-cart-shopping"></i> Commander maintenant</button>
-            </form>
-            <?php endif; ?>
-            <?php if (in_array($statut, ['contre_proposee', 'refusee_finale'], true)): ?>
-            <a href="/produit.php?id=<?php echo (int) ($neg['produit_id'] ?? 0); ?>" class="prix-neg-btn prix-neg-btn--ghost">
-                <i class="fas fa-handshake"></i> Proposer un nouveau prix
-            </a>
-            <?php endif; ?>
-        <?php endif; ?>
     </div>
-</div>
+    <?php endif; ?>
+</article>
 
-<?php if ($prix_neg_side === 'vendor' && $statut === 'en_attente'): ?>
+<?php if ($statut === 'en_attente'): ?>
 <div class="prix-neg-reject-overlay" id="<?php echo htmlspecialchars($reject_overlay_id, ENT_QUOTES, 'UTF-8'); ?>" aria-hidden="true" hidden>
     <div class="prix-neg-reject-overlay__backdrop" data-prix-neg-reject-close tabindex="-1"></div>
     <div class="prix-neg-reject-panel" role="dialog" aria-modal="true">

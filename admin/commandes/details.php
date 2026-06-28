@@ -131,6 +131,7 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-suivi-page.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-commandes-details.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body>
@@ -474,5 +475,9 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
     </section>
 
     </div>
+
+    <?php require __DIR__ . '/../../includes/partials/platform_share_modal.php'; ?>
+    <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
 
     <?php include '../includes/footer.php'; ?>

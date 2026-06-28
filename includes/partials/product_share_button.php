@@ -14,7 +14,7 @@ if (!function_exists('product_share_abs_url')) {
     require_once __DIR__ . '/../product_share.php';
 }
 $share_url = product_share_abs_url($pid);
-$share_msg = product_share_message($produit);
+$share_msg = product_share_text_short($produit);
 $share_nom = htmlspecialchars((string) ($produit['nom'] ?? 'Produit'), ENT_QUOTES, 'UTF-8');
 ?>
 <div class="pshare" data-pshare>

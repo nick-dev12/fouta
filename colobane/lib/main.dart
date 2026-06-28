@@ -429,6 +429,29 @@ class _WebViewScreenState extends State<WebViewScreen>
         return await _handleShareContent(args[0]);
       },
     );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'openExternalUrl',
+      callback: (args) async {
+        if (args.isEmpty) {
+          return {'success': false, 'error': 'No url'};
+        }
+        return await _handleOpenExternalUrl(args[0].toString());
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> _handleOpenExternalUrl(String url) async {
+    try {
+      final uri = Uri.parse(url.trim());
+      if (!await canLaunchUrl(uri)) {
+        return {'success': false, 'error': 'Cannot launch url'};
+      }
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
   }
 
   // Ouvre la feuille de partage native du système (Android / iOS)
@@ -439,13 +462,18 @@ class _WebViewScreenState extends State<WebViewScreen>
       final text = (map['text'] ?? '').toString();
       final url = (map['url'] ?? '').toString();
 
-      final shareBody = [text, url]
+      var shareText = text.trim();
+      if (url.isNotEmpty && shareText.contains(url)) {
+        shareText = shareText.replaceAll(url, '').replaceAll(RegExp(r'\s*:\s*$'), '').trim();
+      }
+
+      final shareBody = [shareText, url]
           .where((s) => s.trim().isNotEmpty)
-          .join(text.contains(url) || url.isEmpty ? '' : '\n')
+          .join(shareText.contains(url) || url.isEmpty ? '' : '\n')
           .trim();
 
       await Share.share(
-        shareBody.isNotEmpty ? shareBody : url,
+        url.isNotEmpty ? url : (shareBody.isNotEmpty ? shareBody : title),
         subject: title.isNotEmpty ? title : null,
       );
       return {'success': true};
@@ -723,6 +751,20 @@ class _WebViewScreenState extends State<WebViewScreen>
                     resolve(result);
                   } else {
                     reject(new Error((result && result.error) ? result.error : 'Share failed'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
+          openExternalUrl: function(url) {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('openExternalUrl', url || '')
+                .then(result => {
+                  if (result && result.success) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Open url failed'));
                   }
                 })
                 .catch(error => reject(error));
@@ -1079,7 +1121,8 @@ class _WebViewScreenState extends State<WebViewScreen>
                       const externalSchemes = {
                         'whatsapp', 'tg', 'fb', 'fb-messenger', 'mailto',
                         'tel', 'sms', 'intent', 'market', 'googlegmail',
-                        'twitter', 'instagram', 'snapchat', 'viber'
+                        'twitter', 'instagram', 'snapchat', 'viber',
+                        'geo', 'maps', 'comgooglemaps'
                       };
                       if (externalSchemes.contains(scheme)) {
                         try {
@@ -1089,6 +1132,21 @@ class _WebViewScreenState extends State<WebViewScreen>
                           }
                         } catch (_) {}
                         return NavigationActionPolicy.CANCEL;
+                      }
+                      if (scheme == 'https' || scheme == 'http') {
+                        final host = uri.host.toLowerCase();
+                        final path = uri.path.toLowerCase();
+                        final isGoogleMaps = host.contains('google.com')
+                            && (path.contains('maps') || uri.query.contains('destination'));
+                        if (isGoogleMaps || host == 'maps.google.com') {
+                          try {
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri,
+                                  mode: LaunchMode.externalApplication);
+                            }
+                          } catch (_) {}
+                          return NavigationActionPolicy.CANCEL;
+                        }
                       }
                     }
                     return NavigationActionPolicy.ALLOW;

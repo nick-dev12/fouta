@@ -164,6 +164,8 @@ function mc_statut_icon($s) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-mon-compte.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-card-uc.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/prix-negociation.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== MON COMPTE v2 ===== */
@@ -1280,62 +1282,29 @@ function mc_statut_icon($s) {
             </div>
         <?php endif; ?>
 
-        <!-- ===== COMMANDES RÉCENTES + ACCÈS RAPIDES ===== -->
-        <div class="mc-v2-mid">
-
-            <!-- Commandes récentes -->
-            <div class="mc-v2-card">
-                <div class="mc-v2-card__head">
-                    <h2><i class="fas fa-list-alt"></i> Commandes en cours</h2>
-                    <a href="mes-commandes.php" class="mc-v2-card__link">
-                        Tout voir <i class="fas fa-chevron-right"></i>
+        <!-- ===== COMMANDES RÉCENTES ===== -->
+        <div class="mc-v2-mid mc-v2-mid--orders">
+            <?php if (empty($commandes_recentes)): ?>
+                <div class="mc-v2-empty">
+                    <i class="fas fa-bag-shopping"></i>
+                    <p>Aucune commande en cours de traitement.</p>
+                    <a href="mes-commandes.php" class="mc-v2-cta-link">
+                        <i class="fas fa-list"></i> Voir mes commandes
                     </a>
                 </div>
-                <?php if (empty($commandes_recentes)): ?>
-                    <div class="mc-v2-empty">
-                        <i class="fas fa-bag-shopping"></i>
-                        <p>Aucune commande en cours de traitement.</p>
-                        <a href="mes-commandes.php" class="mc-v2-cta-link">
-                            <i class="fas fa-list"></i> Voir mes commandes
-                        </a>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($commandes_recentes as $cmd):
-                        $st = $cmd['statut'] ?? 'en_attente';
-                        $icon_css = match($st) {
-                            'en_attente'        => 'mc-commande-row__icon--wait',
-                            'prise_en_charge'   => 'mc-commande-row__icon--confirm',
-                            'livraison_en_cours' => 'mc-commande-row__icon--delivery',
-                            'livree', 'paye'    => 'mc-commande-row__icon--done',
-                            'annulee'           => 'mc-commande-row__icon--cancel',
-                            default             => 'mc-commande-row__icon--wait',
-                        };
-                        $date_fmt = isset($cmd['date_commande'])
-                            ? date('d/m/Y', strtotime($cmd['date_commande']))
-                            : '&mdash;';
+            <?php else: ?>
+                <div class="uc-v2-list">
+                    <?php
+                    require_once __DIR__ . '/../includes/commande_client_card_ui.php';
+                    foreach ($commandes_recentes as $cmd) {
+                        client_commande_card_render($cmd);
+                    }
                     ?>
-                        <a href="commande-categorie.php?commande_id=<?php echo (int) $cmd['id']; ?>" class="mc-commande-row">
-                            <div class="mc-commande-row__icon <?php echo $icon_css; ?>">
-                                <i class="fas <?php echo mc_statut_icon($st); ?>"></i>
-                            </div>
-                            <div class="mc-commande-row__body">
-                                <div class="mc-commande-row__num">
-                                    <?php echo htmlspecialchars($cmd['numero_commande'] ?? ('#' . $cmd['id'])); ?>
-                                </div>
-                                <div class="mc-commande-row__meta"><?php echo $date_fmt; ?></div>
-                            </div>
-                            <div class="mc-commande-row__right">
-                                <span class="mc-commande-row__amount">
-                                    <?php echo number_format((float) ($cmd['montant_total'] ?? 0), 0, ',', ' '); ?> <small style="font-size:.65em;font-weight:500;color:var(--gris-moyen);">FCFA</small>
-                                </span>
-                                <span class="mc-badge <?php echo mc_statut_css($st); ?>">
-                                    <?php echo mc_statut_label($st); ?>
-                                </span>
-                            </div>
-                        </a>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+                </div>
+                <p class="mc-v2-more-link">
+                    <a href="mes-commandes.php"><i class="fas fa-arrow-right"></i> Voir toutes mes commandes</a>
+                </p>
+            <?php endif; ?>
 
             <!-- Mes négociations -->
             <div class="mc-v2-card">
@@ -1348,7 +1317,7 @@ function mc_statut_icon($s) {
                         <p>Aucune n&eacute;gociation en cours.<br>Proposez un prix sur une fiche produit vendeur.</p>
                     </div>
                 <?php else: ?>
-                    <div class="prix-neg-card__list prix-neg-card__list--client">
+                    <div class="uc-v2-list prix-neg-card__list prix-neg-card__list--client">
                         <?php foreach ($prix_neg_recentes as $neg):
                             include __DIR__ . '/../includes/partials/prix_negociation_client_card.php';
                         endforeach; ?>
@@ -1390,33 +1359,14 @@ function mc_statut_icon($s) {
                     </a>
                 </div>
             <?php else: ?>
-                <?php foreach ($commandes_recues_recentes as $cmd):
-                    $st = $cmd['statut'] ?? 'livree';
-                    $date_fmt = isset($cmd['date_commande'])
-                        ? date('d/m/Y', strtotime($cmd['date_commande']))
-                        : '&mdash;';
-                ?>
-                    <a href="commande-categorie.php?commande_id=<?php echo (int) $cmd['id']; ?>" class="mc-commande-row">
-                        <div class="mc-commande-row__icon mc-commande-row__icon--done">
-                            <i class="fas <?php echo mc_statut_icon($st); ?>"></i>
-                        </div>
-                        <div class="mc-commande-row__body">
-                            <div class="mc-commande-row__num">
-                                <?php echo htmlspecialchars($cmd['numero_commande'] ?? ('#' . $cmd['id'])); ?>
-                            </div>
-                            <div class="mc-commande-row__meta"><?php echo $date_fmt; ?></div>
-                        </div>
-                        <div class="mc-commande-row__right">
-                            <span class="mc-commande-row__amount">
-                                <?php echo number_format((float) ($cmd['montant_total'] ?? 0), 0, ',', ' '); ?>
-                                <small style="font-size:.65em;font-weight:500;color:var(--gris-moyen);">FCFA</small>
-                            </span>
-                            <span class="mc-badge mc-badge--done">
-                                <?php echo mc_statut_label($st); ?>
-                            </span>
-                        </div>
-                    </a>
-                <?php endforeach; ?>
+                <div class="uc-v2-list">
+                    <?php
+                    require_once __DIR__ . '/../includes/commande_client_card_ui.php';
+                    foreach ($commandes_recues_recentes as $cmd) {
+                        client_commande_card_render($cmd);
+                    }
+                    ?>
+                </div>
             <?php endif; ?>
         </div>
 
@@ -1432,7 +1382,7 @@ function mc_statut_icon($s) {
             </button>
         </header>
         <div class="prix-neg-fullscreen__body">
-            <div class="prix-neg-card__list prix-neg-card__list--client">
+            <div class="prix-neg-card__list prix-neg-card__list--client uc-v2-list">
                 <?php foreach ($prix_neg_toutes as $neg):
                     include __DIR__ . '/../includes/partials/prix_negociation_client_card.php';
                 endforeach; ?>
@@ -1484,6 +1434,11 @@ function mc_statut_icon($s) {
         </div>
     </div>
     <script src="/js/prix-negociation-modal.js<?php echo asset_version_query(); ?>"></script>
+    <?php require __DIR__ . '/../includes/partials/platform_share_modal.php'; ?>
+    <?php require __DIR__ . '/../includes/partials/uc_gallery_lightbox.php'; ?>
+    <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/uc-gallery-lightbox.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
 
     <?php include 'includes/user_footer.php'; ?>

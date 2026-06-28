@@ -214,6 +214,7 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== STOCK INDEX v2 ===== */
         .stk-page {
@@ -790,6 +791,34 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         /* Image */
         .stk-card__img-wrap {
             position: relative; aspect-ratio: 4/3; overflow: hidden; background: #f1f5f9;
+        }
+
+        .stk-card__share {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 3;
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--couleur-dominante, #3564a6);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .stk-card__share:hover {
+            transform: scale(1.06);
+            background: #fff;
+        }
+
+        .stk-card__share i {
+            font-size: 0.85rem;
         }
 
         .stk-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
@@ -1420,6 +1449,8 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
 
         <?php else: ?>
 
+            <?php require_once __DIR__ . '/../../includes/product_share.php'; ?>
+
             <h2 class="stk-section-title">Produits (<?php echo $nb_total_filtres; ?>)</h2>
 
             <div class="stk-grid">
@@ -1445,6 +1476,23 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
                         tabindex="0">
 
                         <div class="stk-card__img-wrap">
+                            <?php
+                            $stk_pid = (int) ($produit['id'] ?? 0);
+                            $stk_share_url = product_share_abs_url($stk_pid);
+                            $stk_share_text = product_share_text_short($produit);
+                            $stk_share_nom = (string) ($produit['nom'] ?? 'Produit');
+                            ?>
+                            <?php if ($stk_share_url !== ''): ?>
+                            <button type="button"
+                                class="stk-card__share pshare__toggle"
+                                aria-label="Partager <?php echo htmlspecialchars($stk_share_nom, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-share-url="<?php echo htmlspecialchars($stk_share_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-share-title="<?php echo htmlspecialchars($stk_share_nom, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-share-text="<?php echo htmlspecialchars($stk_share_text, ENT_QUOTES, 'UTF-8'); ?>"
+                                onclick="event.stopPropagation();">
+                                <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+                            </button>
+                            <?php endif; ?>
                             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom'] ?? ''); ?>"
                                 class="stk-card__img"
@@ -1899,6 +1947,9 @@ function stock_pag_url(int $pg, string $search, int $cat, string $statut): strin
         });
     })();
     </script>
+
+    <?php require __DIR__ . '/../../includes/partials/platform_share_modal.php'; ?>
+    <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
 
     <?php include '../includes/footer.php'; ?>
 </body>

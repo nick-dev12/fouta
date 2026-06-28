@@ -1,6 +1,6 @@
 <?php
 /**
- * Partial — carte négociation client (mon compte)
+ * Partial — carte négociation client (design uc-v2-card)
  * Variables : $neg (array)
  */
 if (!isset($neg) || !is_array($neg)) {
@@ -30,62 +30,73 @@ $produit_id = (int) ($neg['produit_id'] ?? 0);
 $produit_nom = (string) ($neg['produit_nom'] ?? 'Produit');
 $produit_img = trim((string) ($neg['produit_image'] ?? ''));
 $img_url = $produit_img !== '' ? upload_image_url($produit_img, 'sm') : '';
+$shop = (string) ($neg['vendeur_boutique_nom'] ?? 'Boutique');
 $opts = function_exists('prix_negociation_options_json_decode')
     ? prix_negociation_options_json_decode($neg['options_json'] ?? null)
     : [];
 $can_repropose = in_array($statut, ['contre_proposee', 'refusee_finale'], true);
 $can_order = function_exists('prix_negociation_peut_commander') && prix_negociation_peut_commander($neg);
+$prix_affiche = $prix_contre > 0 && in_array($statut, ['contre_proposee', 'acceptee', 'commandee'], true)
+    ? $prix_contre
+    : ($prix_convenu !== null && $statut === 'acceptee' ? (float) $prix_convenu : $prix_propose);
 ?>
-<article class="prix-neg-client-card" data-neg-id="<?php echo $neg_id; ?>">
-    <div class="prix-neg-client-card__media">
-        <?php if ($img_url !== ''): ?>
-        <img src="<?php echo htmlspecialchars($img_url, ENT_QUOTES, 'UTF-8'); ?>"
-            alt="<?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?>"
-            loading="lazy" width="80" height="80">
-        <?php else: ?>
-        <span class="prix-neg-client-card__placeholder" aria-hidden="true"><i class="fas fa-box"></i></span>
-        <?php endif; ?>
+<article class="uc-v2-card uc-v2-card--prix-neg" data-neg-id="<?php echo $neg_id; ?>">
+    <div class="uc-v2-card__top">
+        <div class="uc-v2-card__ref">
+            <div class="uc-v2-card__ref-head">
+                <span class="uc-v2-card__boutique"><?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?></span>
+            </div>
+        </div>
+        <span class="prix-neg-statut <?php echo htmlspecialchars($statut_class, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($statut_label, ENT_QUOTES, 'UTF-8'); ?></span>
     </div>
-    <div class="prix-neg-client-card__content">
-        <div class="prix-neg-client-card__head">
-            <div>
-                <h4 class="prix-neg-client-card__title"><?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?></h4>
-                <p class="prix-neg-client-card__shop"><?php echo htmlspecialchars($neg['vendeur_boutique_nom'] ?? 'Boutique', ENT_QUOTES, 'UTF-8'); ?> &middot; <?php echo $date_fmt; ?></p>
+
+    <div class="uc-v2-card__body">
+        <?php if ($img_url !== ''): ?>
+            <div class="uc-v2-card__thumb uc-v2-card__thumb--static" aria-hidden="true">
+                <img src="<?php echo htmlspecialchars($img_url, ENT_QUOTES, 'UTF-8'); ?>"
+                    alt="<?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?>"
+                    loading="lazy"
+                    onerror="this.src='/image/produit1.jpg'">
             </div>
-            <span class="prix-neg-statut <?php echo htmlspecialchars($statut_class, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($statut_label, ENT_QUOTES, 'UTF-8'); ?></span>
-        </div>
-        <div class="prix-neg-client-card__prices">
-            <div class="prix-neg-price-block prix-neg-price-block--ref">
-                <span class="prix-neg-price-block__label">Prix catalogue</span>
-                <span class="prix-neg-price-block__value prix-neg-price-block__value--strike"><?php echo number_format($prix_ref, 0, ',', ' '); ?> FCFA</span>
-            </div>
-            <?php if ($prix_contre > 0 && in_array($statut, ['contre_proposee', 'acceptee', 'commandee'], true)): ?>
-            <div class="prix-neg-price-block prix-neg-price-block--vendor">
-                <span class="prix-neg-price-block__label">Prix du vendeur</span>
-                <span class="prix-neg-price-block__value prix-neg-price-block__value--accent"><?php echo number_format($prix_contre, 0, ',', ' '); ?> FCFA</span>
-            </div>
-            <?php elseif ($prix_convenu !== null && $statut === 'acceptee'): ?>
-            <div class="prix-neg-price-block prix-neg-price-block--vendor">
-                <span class="prix-neg-price-block__label">Prix accept&eacute;</span>
-                <span class="prix-neg-price-block__value prix-neg-price-block__value--accent"><?php echo number_format($prix_convenu, 0, ',', ' '); ?> FCFA</span>
-            </div>
-            <?php endif; ?>
-            <div class="prix-neg-price-block prix-neg-price-block--mine">
-                <span class="prix-neg-price-block__label">Votre offre</span>
-                <span class="prix-neg-price-block__value"><?php echo number_format($prix_propose, 0, ',', ' '); ?> FCFA</span>
+        <?php endif; ?>
+        <div class="uc-v2-card__body-inner">
+            <div class="uc-v2-card__info">
+                <div class="uc-v2-card__amount uc-v2-card__amount--neg">
+                    <?php echo number_format($prix_affiche, 0, ',', ' '); ?><small>FCFA</small>
+                </div>
+                <div class="uc-v2-card__neg-meta">
+                    <span class="uc-v2-card__neg-ref">Catalogue : <?php echo number_format($prix_ref, 0, ',', ' '); ?> FCFA</span>
+                    <span class="uc-v2-card__neg-offer">Votre offre : <?php echo number_format($prix_propose, 0, ',', ' '); ?> FCFA</span>
+                </div>
+                <span class="uc-v2-card__tel uc-v2-card__tel--boutique">
+                    <i class="fas fa-store"></i>
+                    <?php echo htmlspecialchars($shop, ENT_QUOTES, 'UTF-8'); ?>
+                </span>
             </div>
         </div>
-        <div class="prix-neg-client-card__actions">
-            <?php if ($can_order): ?>
-            <form method="POST" action="/user/prix-negociation-action.php" class="prix-neg-client-card__form-inline">
+    </div>
+
+    <div class="uc-v2-card__meta-bar">
+        <span class="uc-v2-card__meta-line">
+            <span class="uc-v2-card__ref-num">#NEG-<?php echo $neg_id; ?></span>
+            <span class="uc-v2-card__sep" aria-hidden="true">&middot;</span>
+            <span class="uc-v2-card__date"><?php echo htmlspecialchars($date_fmt, ENT_QUOTES, 'UTF-8'); ?></span>
+        </span>
+    </div>
+
+    <div class="uc-v2-card__footer">
+        <?php if ($can_order): ?>
+            <form method="POST" action="/user/prix-negociation-action.php" style="display:contents;">
                 <input type="hidden" name="action" value="commander">
                 <input type="hidden" name="negotiation_id" value="<?php echo $neg_id; ?>">
                 <input type="hidden" name="redirect" value="/user/mon-compte.php">
-                <button type="submit" class="prix-neg-btn prix-neg-btn--order"><i class="fas fa-cart-shopping"></i> Commander maintenant</button>
+                <button type="submit" class="uc-card-btn uc-card-btn--confirm">
+                    <i class="fas fa-cart-shopping"></i> Commander
+                </button>
             </form>
-            <?php endif; ?>
-            <?php if ($can_repropose): ?>
-            <button type="button" class="prix-neg-btn prix-neg-btn--ghost"
+        <?php endif; ?>
+        <?php if ($can_repropose): ?>
+            <button type="button" class="uc-card-btn uc-card-btn--track"
                 data-prix-neg-client-open
                 data-produit-id="<?php echo $produit_id; ?>"
                 data-produit-nom="<?php echo htmlspecialchars($produit_nom, ENT_QUOTES, 'UTF-8'); ?>"
@@ -99,9 +110,13 @@ $can_order = function_exists('prix_negociation_peut_commander') && prix_negociat
                 data-option-variante-image="<?php echo htmlspecialchars((string) ($opts['variante_image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                 data-option-surcout-poids="<?php echo (float) ($opts['surcout_poids'] ?? 0); ?>"
                 data-option-surcout-taille="<?php echo (float) ($opts['surcout_taille'] ?? 0); ?>">
-                <i class="fas fa-handshake"></i> Proposer un nouveau prix
+                <i class="fas fa-handshake"></i> Nouvelle offre
             </button>
-            <?php endif; ?>
-        </div>
+        <?php endif; ?>
+        <?php if ($produit_id > 0): ?>
+            <a href="/produit.php?id=<?php echo $produit_id; ?>" class="uc-card-btn uc-card-btn--detail">
+                <i class="fas fa-eye"></i> Voir le produit
+            </a>
+        <?php endif; ?>
     </div>
 </article>

@@ -46,16 +46,36 @@
     }
 
     /**
+     * Texte de partage sans l'URL (évite la duplication quand url est aussi envoyée).
+     */
+    function buildShareText(opts) {
+        var url = (opts.url || '').trim();
+        var title = (opts.title || opts.modalTitle || 'Partager').trim();
+        var text = (opts.message || title).trim();
+        if (url && text.indexOf(url) !== -1) {
+            text = text.replace(url, '').replace(/\s*:\s*$/, '').trim();
+        }
+        if (!text) {
+            text = title;
+        }
+        return text;
+    }
+
+    /**
      * Construit la charge utile commune au partage natif.
      */
     function buildSharePayload(opts) {
-        var url = opts.url || '';
-        var title = opts.title || opts.modalTitle || 'Partager';
-        return {
-            title: title,
-            text: opts.message || (title + ' : ' + url),
-            url: url
-        };
+        var url = (opts.url || '').trim();
+        var title = (opts.title || opts.modalTitle || 'Partager').trim();
+        var text = buildShareText(opts);
+        /* Partage de lien : texte court sans URL (le champ url suffit — évite duplication Facebook/WhatsApp) */
+        if (url) {
+            if (text === url || text.indexOf(url) !== -1) {
+                text = title;
+            }
+            return { title: title, text: text, url: url };
+        }
+        return { title: title, text: text || title, url: '' };
     }
 
     /**
@@ -89,11 +109,16 @@
     function nativeShareViaWebApi(payload) {
         if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
             try {
-                var p = navigator.share({
-                    title: payload.title,
-                    text: payload.text,
-                    url: payload.url
-                });
+                var shareData = { title: payload.title || '' };
+                if (payload.url) {
+                    shareData.url = payload.url;
+                    if (payload.text && payload.text.indexOf(payload.url) === -1) {
+                        shareData.text = payload.text;
+                    }
+                } else if (payload.text) {
+                    shareData.text = payload.text;
+                }
+                var p = navigator.share(shareData);
                 if (p && typeof p.catch === 'function') {
                     p.catch(function () {});
                 }
@@ -371,7 +396,7 @@
                 modalTitle: 'Partager ce produit',
                 title: title,
                 url: url,
-                message: text || ('Découvrez « ' + title + ' » sur COLObanes : ' + url),
+                message: text || title,
                 hint: 'Partagez ce lien pour que vos contacts voient la fiche produit.'
             });
         });

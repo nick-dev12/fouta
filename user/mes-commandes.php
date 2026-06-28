@@ -1385,7 +1385,7 @@ function cmd_timeline_steps($statut) {
                                     data-label="<?php echo htmlspecialchars($boutique_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-share-title="<?php echo htmlspecialchars($boutique_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-share-url="<?php echo htmlspecialchars($boutique_geo_share_url, ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-share-text="<?php echo htmlspecialchars($boutique_geo_label . ' : ' . $boutique_geo_share_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-share-text="<?php echo htmlspecialchars($boutique_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-share-modal-title="Partager la position de la boutique"
                                     data-share-hint="Partagez le point de retrait de la boutique avec vos proches.">
                                     <i class="fab fa-whatsapp" aria-hidden="true"></i> Partager la position de la boutique

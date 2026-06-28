@@ -28,6 +28,37 @@
             || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
+    function isInNativeApp() {
+        return !!(window.__COLOBANES_NATIVE_APP || window.flutter_inappwebview
+            || /ColobanesApp/i.test(navigator.userAgent || ''));
+    }
+
+    /**
+     * Ouvre une URL hors WebView (app Flutter) pour éviter la page blanche sur geo: / maps.
+     */
+    function openExternalUrl(url) {
+        if (!url) {
+            return false;
+        }
+        if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
+            try {
+                window.flutter_inappwebview.callHandler('openExternalUrl', url);
+                return true;
+            } catch (e) {
+                /* fallback ci-dessous */
+            }
+        }
+        if (window.ColobanesNative && typeof window.ColobanesNative.openExternalUrl === 'function') {
+            try {
+                window.ColobanesNative.openExternalUrl(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
     function parseCoord(v) {
         var n = parseFloat(v);
         return isNaN(n) ? null : n;
@@ -70,10 +101,26 @@
         }
 
         var geoHref = 'geo:' + latN + ',' + lngN + '?q=' + latN + ',' + lngN + '(' + enc(label) + ')';
-        var gmapsDir = mapsDirUrl(latN, lngN);
+        var gmapsDir = fallbackUrl || mapsDirUrl(latN, lngN);
         var appleMaps = 'maps://?daddr=' + latN + ',' + lngN;
 
+        /* WebView Flutter : geo:/maps:// chargent une page blanche — ouvrir hors WebView */
+        if (isInNativeApp()) {
+            if (openExternalUrl(gmapsDir)) {
+                return;
+            }
+            if (openExternalUrl(geoHref)) {
+                return;
+            }
+            window.location.href = gmapsDir;
+            return;
+        }
+
         if (isIOS()) {
+            if (isInNativeApp()) {
+                openExternalUrl(appleMaps);
+                return;
+            }
             window.location.href = appleMaps;
             window.setTimeout(function () {
                 window.location.href = gmapsDir;
@@ -110,7 +157,14 @@
             return;
         }
         var title = (opts.title || opts.label || 'Localisation').trim();
-        var message = opts.message || (title + ' : ' + url);
+        var message = (opts.message || title).trim();
+        if (message.indexOf(url) !== -1) {
+            message = message.replace(url, '').replace(/\s*:\s*$/, '').trim();
+        }
+        if (!message) {
+            message = title;
+        }
+        var fullMessage = title + ' : ' + url;
         if (typeof window.openPlatformShareModal === 'function') {
             window.openPlatformShareModal({
                 modalTitle: opts.modalTitle || 'Partager la localisation',
@@ -120,7 +174,7 @@
                 hint: opts.hint || 'Partagez ce lien pour indiquer l\'emplacement sur la carte.'
             });
         } else {
-            window.open('https://wa.me/?text=' + enc(message), '_blank', 'noopener,noreferrer');
+            window.open('https://wa.me/?text=' + enc(fullMessage), '_blank', 'noopener,noreferrer');
         }
     };
 
