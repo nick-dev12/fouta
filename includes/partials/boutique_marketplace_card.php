@@ -29,22 +29,26 @@ $bt_geo_label = 'Boutique — ' . $card['nom'];
 ?>
 <article class="mp-bt-card<?php echo !empty($theme['has_custom']) ? ' mp-bt-card--themed' : ''; ?>"
     style="<?php echo $style_vars; ?>" role="listitem">
-    <button type="button"
-        class="mp-bt-card__share js-platform-share"
-        title="Partager cette boutique"
-        data-share-modal-title="Partager cette boutique"
-        data-share-title="<?php echo htmlspecialchars($card['share_title'], ENT_QUOTES, 'UTF-8'); ?>"
-        data-share-url="<?php echo htmlspecialchars($card['share_url'], ENT_QUOTES, 'UTF-8'); ?>"
-        data-share-text="<?php echo htmlspecialchars($card['share_text'], ENT_QUOTES, 'UTF-8'); ?>"
-        data-share-hint="Partagez le lien de la vitrine avec vos proches.">
-        <i class="fas fa-share-nodes" aria-hidden="true"></i>
-        <span>Partager</span>
-    </button>
-    <div class="mp-bt-bag" aria-hidden="true">
-        <span class="mp-bt-bag__products"><?php echo htmlspecialchars($produits_label, ENT_QUOTES, 'UTF-8'); ?></span>
+    <div class="mp-bt-card__topbar">
+        <span class="mp-bt-card__products"><?php echo htmlspecialchars($produits_label, ENT_QUOTES, 'UTF-8'); ?></span>
+        <button type="button"
+            class="mp-bt-card__share js-platform-share"
+            title="Partager cette boutique"
+            data-share-modal-title="Partager cette boutique"
+            data-share-title="<?php echo htmlspecialchars($card['share_title'], ENT_QUOTES, 'UTF-8'); ?>"
+            data-share-url="<?php echo htmlspecialchars($card['share_url'], ENT_QUOTES, 'UTF-8'); ?>"
+            data-share-text="<?php echo htmlspecialchars($card['share_text'], ENT_QUOTES, 'UTF-8'); ?>"
+            data-share-hint="Partagez le lien de la vitrine avec vos proches.">
+            <i class="fas fa-share-nodes" aria-hidden="true"></i>
+            <span>Partager</span>
+        </button>
+    </div>
+    <div class="mp-bt-bag">
         <div class="mp-bt-bag__handle"></div>
         <div class="mp-bt-bag__shell">
-            <div class="mp-bt-bag__logo">
+            <a class="mp-bt-bag__logo mp-bt-bag__logo-link"
+                href="<?php echo htmlspecialchars($card['vitrine_href'], ENT_QUOTES, 'UTF-8'); ?>"
+                aria-label="Voir la boutique <?php echo htmlspecialchars($card['nom'], ENT_QUOTES, 'UTF-8'); ?>">
                 <?php if ($card['logo_url'] !== ''): ?>
                     <img src="<?php echo htmlspecialchars($card['logo_url'], ENT_QUOTES, 'UTF-8'); ?>"
                         alt=""
@@ -56,7 +60,7 @@ $bt_geo_label = 'Boutique — ' . $card['nom'];
                     <path d="M18 24c0-7.7 6.3-14 14-14s14 6.3 14 14" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
                     <rect x="10" y="24" width="44" height="32" rx="8" fill="currentColor" opacity="0.18"/>
                 </svg>
-            </div>
+            </a>
             <div class="mp-bt-bag__band"></div>
         </div>
     </div>

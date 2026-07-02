@@ -4,7 +4,7 @@
  */
 
 if (!function_exists('marketplace_boutique_public_url')) {
-    function marketplace_boutique_public_url(string $slug): string
+    function marketplace_boutique_public_url(string $slug, string $nom = ''): string
     {
         if (!function_exists('get_site_base_url')) {
             require_once __DIR__ . '/site_url.php';
@@ -16,7 +16,12 @@ if (!function_exists('marketplace_boutique_public_url')) {
         if ($slug === '') {
             return '/boutiques.php';
         }
-        return rtrim(get_site_base_url(), '/') . boutique_url('index.php', $slug);
+        $url = rtrim(get_site_base_url(), '/') . boutique_url('index.php', $slug);
+        $nom = trim($nom);
+        if ($nom !== '') {
+            $url .= (strpos($url, '?') !== false ? '&' : '?') . 'nom=' . rawurlencode($nom);
+        }
+        return $url;
     }
 }
 
@@ -79,7 +84,7 @@ if (!function_exists('marketplace_boutique_prepare_card')) {
 
         $theme = marketplace_boutique_card_theme($boutique);
         $pickup = boutique_pickup_info_from_admin($boutique, $nom);
-        $share_url = marketplace_boutique_public_url($slug);
+        $share_url = marketplace_boutique_public_url($slug, $nom);
         $share_title = 'Découvrez « ' . $nom . ' » sur COLObanes';
         $share_text = $share_title;
 

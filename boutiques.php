@@ -26,7 +26,7 @@ $geo_loc = geo_session_get_location();
 $geo_error = !empty($_GET['geo_error']);
 $country = marketplace_get_selected_country_code();
 
-$rayon_proche = 15;
+$rayon_proche = 4;
 $lat_proche = $geo_loc !== null ? (float) $geo_loc['lat'] : null;
 $lng_proche = $geo_loc !== null ? (float) $geo_loc['lng'] : null;
 
@@ -53,6 +53,7 @@ $redirect_map = '/boutiques.php';
 if ($search !== '') {
     $redirect_map .= '?q=' . rawurlencode($search);
 }
+$redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=1';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -292,6 +293,15 @@ if ($search !== '') {
                     auto: false,
                     onSuccess: function () { locateForm.submit(); }
                 });
+            }
+
+            var urlParams = new URLSearchParams(window.location.search || '');
+            var shouldOpenMap = urlParams.get('open_map') === '1';
+            if (shouldOpenMap && typeof window.openBoutiquesMapModal === 'function') {
+                var mapBtn = document.getElementById('mpBtOpenMap');
+                if (!mapBtn || !mapBtn.disabled) {
+                    window.openBoutiquesMapModal();
+                }
             }
         });
     </script>
