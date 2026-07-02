@@ -60,7 +60,7 @@
             if (f.typeId > 0 && Number(item.type_id || 0) !== f.typeId) {
                 return false;
             }
-            if (f.maxDist > 0 && item.distance_km != null && Number(item.distance_km) > f.maxDist) {
+            if (f.maxDist > 0 && f.maxDist !== 999 && item.distance_km != null && Number(item.distance_km) > f.maxDist) {
                 return false;
             }
             return true;

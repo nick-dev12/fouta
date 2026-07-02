@@ -64,6 +64,31 @@ function boutique_type_validate_inscription($type_id)
 }
 
 /**
+ * Valeur spéciale : pas de plafond de distance (toutes les boutiques géolocalisées).
+ */
+function boutique_types_distance_unlimited_km()
+{
+    return 999;
+}
+
+function boutique_types_distance_is_unlimited($km)
+{
+    return (int) $km === boutique_types_distance_unlimited_km();
+}
+
+/**
+ * Convertit la valeur filtre (km) en rayon SQL (0 = sans limite).
+ */
+function boutique_types_distance_to_rayon_km($km)
+{
+    $km = (int) $km;
+    if ($km <= 0 || boutique_types_distance_is_unlimited($km)) {
+        return 0.0;
+    }
+    return (float) $km;
+}
+
+/**
  * Rayons de distance autorisés (km) pour le filtre catalogue.
  *
  * @return array<int, string>
@@ -77,6 +102,8 @@ function boutique_types_distance_options()
         5 => '5 km',
         10 => '10 km',
         20 => '20 km',
+        30 => '30 km',
+        999 => '50 km et plus',
     ];
 }
 

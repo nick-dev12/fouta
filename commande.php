@@ -761,19 +761,6 @@ include 'nav_bar.php';
             color: var(--couleur-dominante);
         }
 
-        .cmd-pickup-card__addr {
-            margin: 0;
-            font-size: 0.85rem;
-            color: var(--gris-fonce);
-            line-height: 1.45;
-        }
-
-        .cmd-pickup-card__tel {
-            margin: 8px 0 0;
-            font-size: 0.82rem;
-            color: var(--gris-moyen);
-        }
-
         .cmd-pickup-hint {
             font-size: 0.82rem;
             color: var(--gris-moyen);
@@ -966,11 +953,6 @@ include 'nav_bar.php';
                 margin-bottom: 4px;
             }
 
-            .cmd-pickup-card__addr {
-                font-size: 0.78rem;
-            }
-
-            .cmd-pickup-card__tel,
             .cmd-pickup-card__maps {
                 font-size: 0.75rem;
                 margin-top: 6px;
@@ -1151,10 +1133,6 @@ include 'nav_bar.php';
 
             .cmd-pickup-card__name {
                 font-size: 0.8rem;
-            }
-
-            .cmd-pickup-card__addr {
-                font-size: 0.72rem;
             }
 
             .geo-consent-box {
@@ -1367,28 +1345,12 @@ include 'nav_bar.php';
                                             <i class="fas fa-store" aria-hidden="true"></i>
                                             <?php echo htmlspecialchars($boutique_pickup['nom'], ENT_QUOTES, 'UTF-8'); ?>
                                         </p>
-                                        <?php if (!empty($boutique_pickup['adresse_ligne'])): ?>
-                                            <p class="cmd-pickup-card__addr">
-                                                <i class="fas fa-location-dot" aria-hidden="true"></i>
-                                                <?php echo htmlspecialchars($boutique_pickup['adresse_ligne'], ENT_QUOTES, 'UTF-8'); ?>
-                                            </p>
-                                        <?php else: ?>
-                                            <p class="cmd-pickup-card__addr" style="color:var(--gris-moyen);font-style:italic;">
-                                                Adresse non renseignée — le vendeur peut la compléter dans ses paramètres.
-                                            </p>
-                                        <?php endif; ?>
                                         <?php if (!empty($boutique_pickup['maps_url'])): ?>
                                             <p class="cmd-pickup-card__maps">
                                                 <a href="<?php echo htmlspecialchars($boutique_pickup['maps_url'], ENT_QUOTES, 'UTF-8'); ?>"
                                                     target="_blank" rel="noopener noreferrer">
                                                     <i class="fas fa-map"></i> Voir sur Google Maps
                                                 </a>
-                                            </p>
-                                        <?php endif; ?>
-                                        <?php if ($boutique_pickup['telephone'] !== ''): ?>
-                                            <p class="cmd-pickup-card__tel">
-                                                <i class="fas fa-phone" aria-hidden="true"></i>
-                                                <?php echo htmlspecialchars($boutique_pickup['telephone'], ENT_QUOTES, 'UTF-8'); ?>
                                             </p>
                                         <?php endif; ?>
                                     </div>
