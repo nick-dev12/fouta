@@ -341,12 +341,16 @@ function statut_class_cmd($s) {
             border: 1.5px solid rgba(255,255,255,0.25);
             border-radius: 12px;
             color: #fff;
-            font-size: 0.83rem;
+            font-size: 10px;
             font-weight: 700;
             text-decoration: none;
             cursor: pointer;
             font-family: var(--font-corps);
             transition: background 0.2s;
+        }
+
+        a.cmd-v2-hero__cta {
+            flex-wrap: wrap;
         }
 
         .cmd-v2-hero__cta:hover { background: rgba(255,255,255,0.25); }
@@ -833,7 +837,7 @@ function statut_class_cmd($s) {
                 width: 100%;
                 justify-content: center;
                 padding: 9px 12px;
-                font-size: 0.74rem;
+                font-size: 10px;
             }
 
             .cmd-v2-stats {
@@ -903,7 +907,7 @@ function statut_class_cmd($s) {
             border-bottom: 1px solid rgba(53,100,166,0.1);
         }
         .cmd-pos-modal__head h2 {
-            font-size: 1rem;
+            font-size: 12.1px;
             font-weight: 800;
             margin: 0;
             color: var(--titres);
@@ -919,7 +923,7 @@ function statut_class_cmd($s) {
         }
         .cmd-pos-modal__body { padding: 16px 20px 20px; }
         .cmd-pos-modal__addr {
-            font-size: 0.82rem;
+            font-size: 8px;
             color: var(--gris-fonce);
             margin-bottom: 10px;
             line-height: 1.45;
@@ -935,9 +939,9 @@ function statut_class_cmd($s) {
             .cmd-pos-modal { padding: 8px; align-items: flex-end; }
             .cmd-pos-modal__panel { width: 100%; max-height: 88vh; border-radius: 14px 14px 0 0; }
             .cmd-pos-modal__head { padding: 12px 14px; }
-            .cmd-pos-modal__head h2 { font-size: 0.88rem; }
+            .cmd-pos-modal__head h2 { font-size: 12.1px; }
             .cmd-pos-modal__body { padding: 10px 12px 14px; }
-            .cmd-pos-modal__addr { font-size: 0.74rem; }
+            .cmd-pos-modal__addr { font-size: 8px; }
             .cmd-pos-btn-livreur,
             .cmd-pos-btn-whatsapp { flex: 1 1 calc(50% - 4px); font-size: 0.72rem; padding: 7px 8px; }
         }
@@ -961,7 +965,7 @@ function statut_class_cmd($s) {
             background: var(--orange, #FF6B35);
             color: #fff;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 10px;
             cursor: pointer;
         }
         .cmd-pos-btn-livreur:hover { filter: brightness(1.05); }
@@ -977,11 +981,12 @@ function statut_class_cmd($s) {
             background: #25D366;
             color: #fff;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 9px;
             text-decoration: none;
             cursor: pointer;
             font-family: inherit;
         }
+        .cmd-pos-btn-whatsapp i.fab { font-size: 25px; }
         .cmd-pos-btn-whatsapp:hover { filter: brightness(1.05); }
         .cmd-pos-btn-whatsapp[hidden] { display: none !important; }
         .cmd-pos-loading {

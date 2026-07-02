@@ -1135,7 +1135,7 @@
 }
 
 .csf-node__label {
-  font-size: 0.62rem;
+  font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1437,7 +1437,7 @@
 
 .cmd-retrait-section .cmd-retrait-badge {
   margin: 0 0 0.75rem;
-  font-size: 0.85rem;
+  font-size: 11.6px;
   font-weight: 600;
   color: var(--orange-fonce, #e85a2a);
   display: flex;

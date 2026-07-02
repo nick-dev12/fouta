@@ -1,7 +1,6 @@
 <?php
 /**
- * Page de liste des commandes annulées (Admin)
- * Programmation procédurale uniquement
+ * Commandes annulées — Admin & Vendeur
  */
 
 require_once __DIR__ . '/../includes/require_admin_session.php';
@@ -9,328 +8,190 @@ require_once __DIR__ . '/../includes/require_admin_session.php';
 
 
 require_once __DIR__ . '/../includes/require_access.php';
-
-// Récupérer toutes les commandes
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
-require_once __DIR__ . '/../../includes/admin_route_access.php';
+require_once __DIR__ . '/includes/commandes_v2_helpers.php';
+
 $vf_cmd = admin_vendeur_filter_id();
 $toutes_commandes = get_all_commandes(null, $vf_cmd);
 
-// Filtrer pour ne garder que les commandes avec le statut "annulee"
-$commandes_annulees = array_filter($toutes_commandes, function($commande) {
-    return $commande['statut'] === 'annulee';
-});
+$commandes_annulees_all = array_values(array_filter($toutes_commandes ?: [], function ($commande) {
+    return ($commande['statut'] ?? '') === 'annulee';
+}));
 
-// Statistiques
+$vue = isset($_GET['vue']) ? (string) $_GET['vue'] : 'jour';
+if (!in_array($vue, ['jour', 'toutes'], true)) {
+    $vue = 'jour';
+}
+
+$commandes_annulees = $commandes_annulees_all;
+if ($vue === 'jour') {
+    $aujourd_hui = date('Y-m-d');
+    $commandes_annulees = array_values(array_filter($commandes_annulees_all, function ($c) use ($aujourd_hui) {
+        $date_ref = $c['date_commande'] ?? '';
+        if ($date_ref === '') {
+            return false;
+        }
+        return date('Y-m-d', strtotime($date_ref)) === $aujourd_hui;
+    }));
+}
+
+$commandes_annulees = cmd_v2_tri_commandes($commandes_annulees, 'date_desc');
+
 $total_commandes = count_commandes_by_statut(null, $vf_cmd);
-$annulees = count_commandes_by_statut('annulee', $vf_cmd);
-
-// Comptabilité : montant total des commandes annulées
+$nb_annulees = count_commandes_by_statut('annulee', $vf_cmd);
 $montant_total_annulees = get_montant_total_commandes('annulee', $vf_cmd);
+$montant_affiche = array_sum(array_map(function ($c) {
+    return (float) ($c['montant_total'] ?? 0);
+}, $commandes_annulees));
+
+$nb_jour = count(array_filter($commandes_annulees_all, function ($c) {
+    $date_ref = $c['date_commande'] ?? '';
+    return $date_ref !== '' && date('Y-m-d', strtotime($date_ref)) === date('Y-m-d');
+}));
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commandes Annulées - Administration</title>
+    <title>Commandes annul&eacute;es &mdash; Administration COLObanes</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../../css/admin-dashboard.css<?php echo asset_version_query(); ?>">
-    <style>
-        .commandes-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-box {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid #842029;
-        }
-
-        .stat-box h3 {
-            color: #6b2f20;
-            font-size: 14px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .stat-box .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #842029;
-        }
-
-        .commandes-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        @media (min-width: 300px) {
-            .commandes-grid {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 300px));
-            }
-        }
-
-        .commande-item {
-            background: #ffffff;
-            border: 1px solid #e8e8e8;
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 300px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .commande-item:hover {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            transform: translateY(-3px);
-        }
-
-        .commande-header {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 15px;
-            gap: 10px;
-        }
-
-        .commande-info {
-            width: 100%;
-        }
-
-        .commande-info h3 {
-            color: #6b2f20;
-            font-size: 16px;
-            margin-bottom: 8px;
-            font-weight: 700;
-        }
-
-        .commande-info p {
-            color: #666;
-            font-size: 12px;
-            margin: 0;
-        }
-
-        .commande-info .client-email {
-            color: #999;
-            font-size: 11px;
-            margin-top: 4px;
-        }
-
-        .commande-statut {
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            align-self: flex-start;
-        }
-
-        .statut-annulee {
-            background: #f8d7da;
-            color: #842029;
-        }
-
-        .commande-details {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e8e8e8;
-        }
-
-        .detail-item {
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-        }
-
-        .detail-item label {
-            color: #666;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .detail-item .value {
-            color: #000000;
-            font-weight: 600;
-            text-align: right;
-            font-size: 13px;
-        }
-
-        .btn-view {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #918a44;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-align: center;
-            width: 100%;
-            margin-top: 15px;
-        }
-
-        .btn-view:hover {
-            background-color: #6b2f20;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .empty-state i {
-            font-size: 64px;
-            margin-bottom: 20px;
-            opacity: 0.4;
-            color: #842029;
-        }
-
-        .empty-state h3 {
-            font-size: 20px;
-            color: #6b2f20;
-            margin-bottom: 10px;
-        }
-
-        .empty-state p {
-            font-size: 14px;
-            margin-bottom: 25px;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .btn-link {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #918a44;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-link:hover {
-            background-color: #6b2f20;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-    </style>
+    <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-commandes-v2.css<?php echo asset_version_query(); ?>">
 </head>
+
 <body>
     <?php include '../includes/nav.php'; ?>
-    
-    <div class="content-header">
-        <h1><i class="fas fa-ban"></i> Commandes Annulées</h1>
-    </div>
 
-    <!-- Statistiques -->
-    <div class="commandes-stats">
-        <div class="stat-box">
-            <h3>Total Commandes</h3>
-            <div class="stat-value"><?php echo $total_commandes; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>Commandes Annulées</h3>
-            <div class="stat-value"><?php echo $annulees; ?></div>
-        </div>
-    </div>
+    <div class="contents-container">
+        <div class="cmd-v2-page">
 
-    <!-- Comptabilité -->
-    <div class="comptabilite-box">
-        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes annulées</div>
-        <div class="comptabilite-value"><?php echo number_format($montant_total_annulees, 0, ',', ' '); ?> FCFA</div>
-    </div>
+            <?php if (isset($_SESSION['success_message'])): ?>
+                <div class="cmd-v2-notif" role="status">
+                    <i class="fas fa-check-circle"></i>
+                    <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
+                </div>
+            <?php endif; ?>
 
-    <!-- Liste des commandes -->
-    <section class="content-section">
-        <div class="section-header">
-            <div class="section-title">
-                <h2><i class="fas fa-ban"></i> Commandes Annulées (<?php echo count($commandes_annulees); ?>)</h2>
-            </div>
-            <a href="index.php" class="btn-link">
-                <i class="fas fa-shopping-bag"></i> Voir les commandes à traiter
-            </a>
-        </div>
+            <header class="cmd-v2-header">
+                <div class="cmd-v2-header__left">
+                    <p class="cmd-v2-header__eyebrow"><i class="fas fa-ban"></i> Commandes annul&eacute;es</p>
+                    <h1 class="cmd-v2-header__title">Annulations</h1>
+                </div>
+                <div class="cmd-v2-header__actions">
+                    <a href="index.php" class="cmd-v2-btn cmd-v2-btn--outline">
+                        <i class="fas fa-shopping-bag"></i> &Agrave; traiter
+                    </a>
+                    <a href="livrees.php" class="cmd-v2-btn cmd-v2-btn--outline">
+                        <i class="fas fa-circle-check"></i> Livr&eacute;es
+                    </a>
+                    <a href="historique-ventes.php?filtre_statut=annulees" class="cmd-v2-btn cmd-v2-btn--danger">
+                        <i class="fas fa-chart-line"></i> Historique
+                    </a>
+                </div>
+            </header>
 
-        <?php if (empty($commandes_annulees)): ?>
-            <div class="empty-state">
-                <i class="fas fa-ban"></i>
-                <h3>Aucune commande annulée</h3>
-                <p>Aucune commande n'a été annulée pour le moment.</p>
-            </div>
-        <?php else: ?>
-            <div class="commandes-grid">
-                <?php foreach ($commandes_annulees as $commande): ?>
-                    <div class="commande-item">
-                        <div class="commande-header">
-                            <div class="commande-info">
-                                <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
-                                <p>
-                                    <strong>Client:</strong> <?php echo htmlspecialchars($commande['user_prenom'] . ' ' . $commande['user_nom']); ?><br>
-                                    <span class="client-email"><?php echo htmlspecialchars($commande['user_email']); ?></span>
-                                </p>
-                                <p style="margin-top: 8px;">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
-                            </div>
-                            <span class="commande-statut statut-annulee">
-                                <i class="fas fa-ban"></i> Annulée
-                            </span>
+            <div class="cmd-v2-hero">
+                <div class="cmd-v2-hero__inner">
+                    <div>
+                        <p class="cmd-v2-hero__label">
+                            <?php echo $vue === 'jour' ? 'Montant — Annulations du jour' : 'Montant — Toutes les annulées'; ?>
+                        </p>
+                        <div class="cmd-v2-hero__amount">
+                            <?php echo number_format($montant_affiche, 0, ',', ' '); ?><span>FCFA</span>
                         </div>
-                        <div class="commande-details">
-                            <div class="detail-item">
-                                <label>Montant total</label>
-                                <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
+                        <div class="cmd-v2-hero__pills">
+                            <div class="cmd-v2-hero__pill cmd-v2-hero__pill--danger">
+                                <i class="fas fa-ban"></i>
+                                <span><strong><?php echo count($commandes_annulees); ?></strong> affich&eacute;e<?php echo count($commandes_annulees) > 1 ? 's' : ''; ?></span>
                             </div>
-                            <div class="detail-item">
-                                <label>Adresse</label>
-                                <div class="value" style="font-size: 11px; max-width: 150px; text-align: right; word-break: break-word;">
-                                    <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
-                                </div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Téléphone</label>
-                                <div class="value" style="font-size: 12px;"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
+                            <div class="cmd-v2-hero__pill">
+                                <i class="fas fa-layer-group"></i>
+                                <span><strong><?php echo $nb_annulees; ?></strong> au total</span>
                             </div>
                         </div>
-                        
-                        <a href="details.php?id=<?php echo $commande['id']; ?>" class="btn-view">
-                            <i class="fas fa-eye"></i> Voir les détails
+                    </div>
+                    <div class="cmd-v2-hero__right">
+                        <a href="historique-ventes.php?filtre_statut=annulees" class="cmd-v2-hero__cta">
+                            <i class="fas fa-chart-line"></i> Voir l'historique
                         </a>
                     </div>
-                <?php endforeach; ?>
+                </div>
             </div>
-        <?php endif; ?>
-    </section>
+
+            <div class="cmd-v2-stats">
+                <a href="?vue=jour" class="cmd-v2-stat cmd-v2-stat--annulee<?php echo $vue === 'jour' ? ' cmd-v2-stat--active' : ''; ?>">
+                    <div class="cmd-v2-stat__icon"><i class="fas fa-calendar-day"></i></div>
+                    <div class="cmd-v2-stat__content">
+                        <span class="cmd-v2-stat__label">Aujourd'hui</span>
+                        <span class="cmd-v2-stat__value"><?php echo $nb_jour; ?></span>
+                    </div>
+                </a>
+                <a href="?vue=toutes" class="cmd-v2-stat cmd-v2-stat--total<?php echo $vue === 'toutes' ? ' cmd-v2-stat--active' : ''; ?>">
+                    <div class="cmd-v2-stat__icon"><i class="fas fa-ban"></i></div>
+                    <div class="cmd-v2-stat__content">
+                        <span class="cmd-v2-stat__label">Toutes annul&eacute;es</span>
+                        <span class="cmd-v2-stat__value"><?php echo $nb_annulees; ?></span>
+                    </div>
+                </a>
+                <div class="cmd-v2-stat cmd-v2-stat--prise">
+                    <div class="cmd-v2-stat__icon"><i class="fas fa-coins"></i></div>
+                    <div class="cmd-v2-stat__content">
+                        <span class="cmd-v2-stat__label">Montant annul&eacute; total</span>
+                        <span class="cmd-v2-stat__value" style="font-size:1.15rem;"><?php echo number_format($montant_total_annulees, 0, ',', ' '); ?></span>
+                    </div>
+                </div>
+                <div class="cmd-v2-stat cmd-v2-stat--livraison">
+                    <div class="cmd-v2-stat__icon"><i class="fas fa-shopping-bag"></i></div>
+                    <div class="cmd-v2-stat__content">
+                        <span class="cmd-v2-stat__label">Toutes commandes</span>
+                        <span class="cmd-v2-stat__value"><?php echo $total_commandes; ?></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cmd-v2-tabs-row">
+                <div class="cmd-v2-tabs" role="tablist">
+                    <a href="?vue=jour" class="cmd-v2-tab<?php echo $vue === 'jour' ? ' active' : ''; ?>" role="tab">
+                        <i class="fas fa-calendar-day"></i>
+                        Annulations du jour
+                        <span class="cmd-v2-tab__count"><?php echo $nb_jour; ?></span>
+                    </a>
+                    <a href="?vue=toutes" class="cmd-v2-tab<?php echo $vue === 'toutes' ? ' active' : ''; ?>" role="tab">
+                        <i class="fas fa-history"></i>
+                        Toutes les annul&eacute;es
+                        <span class="cmd-v2-tab__count"><?php echo $nb_annulees; ?></span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="cmd-v2-grid">
+                <?php if (empty($commandes_annulees)): ?>
+                    <div class="cmd-v2-empty">
+                        <div class="cmd-v2-empty__icon"><i class="fas fa-ban"></i></div>
+                        <h3>Aucune commande annul&eacute;e</h3>
+                        <p>
+                            <?php if ($vue === 'jour'): ?>
+                                Aucune annulation enregistr&eacute;e aujourd'hui. Consultez &laquo;&nbsp;Toutes les annul&eacute;es&nbsp;&raquo; ou l'historique des ventes.
+                            <?php else: ?>
+                                Aucune commande n'a &eacute;t&eacute; annul&eacute;e pour le moment.
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($commandes_annulees as $commande): ?>
+                        <?php cmd_v2_render_card($commande); ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+        </div>
+    </div>
 
     <?php include '../includes/footer.php'; ?>
-
 </body>
-</html>
 
+</html>

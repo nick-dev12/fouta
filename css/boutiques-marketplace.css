@@ -776,6 +776,7 @@
     border-radius: 999px;
     font-size: 0.68rem;
     font-weight: 700;
+    font-family: inherit;
     text-decoration: none;
     border: none;
     cursor: pointer;

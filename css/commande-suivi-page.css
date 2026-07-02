@@ -62,10 +62,53 @@ body.commande-suivi-shell section.content-section.commande-categorie-suivi {
   flex: none;
   width: 100%;
   margin-left: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.cc-header-cancel-form {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.cc-header-btn-products,
+.cc-header-btn-cancel {
+  flex: 1 1 calc(50% - 0.25rem);
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cc-header-btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 0.9rem;
+  font-family: var(--font-corps);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+  white-space: nowrap;
+}
+
+.cc-header-btn-cancel:hover {
+  background: rgba(220, 38, 38, 0.14);
+  border-color: rgba(220, 38, 38, 0.45);
 }
 
 .cc-header-btn-products {
-  width: 100%;
+  width: auto;
   max-width: 100%;
 }
 
@@ -142,10 +185,14 @@ body.commande-suivi-shell section.content-section.commande-categorie-suivi {
     flex: none;
     width: 100%;
     margin-left: 0;
+    flex-direction: row;
+    gap: 0.45rem;
   }
 
-  .cc-header-btn-products {
-    width: 100%;
+  .cc-header-btn-products,
+  .cc-header-btn-cancel {
+    flex: 1 1 calc(50% - 0.25rem);
+    width: auto;
     padding: 0.55rem 0.85rem;
     font-size: 0.82rem;
     border-radius: 10px;
@@ -864,4 +911,87 @@ body.commande-suivi-shell section.content-section.commande-categorie-suivi {
     max-width: none;
     gap: 10px !important;
   }
+}
+
+/* Modal annulation (page suivi) */
+.uc-cancel-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.uc-cancel-modal[hidden] {
+  display: none !important;
+}
+
+.uc-cancel-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 13, 13, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+.uc-cancel-modal__sheet {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 360px);
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 20px 50px rgba(53, 100, 166, 0.22);
+  border: 1px solid rgba(53, 100, 166, 0.1);
+}
+
+.uc-cancel-modal__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--titres);
+  margin: 0 0 8px;
+  font-family: var(--font-titres);
+}
+
+.uc-cancel-modal__text {
+  font-size: 0.86rem;
+  color: var(--gris-fonce, #4a4a4a);
+  line-height: 1.45;
+  margin: 0 0 18px;
+}
+
+.uc-cancel-modal__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.uc-cancel-modal__btn {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-family: var(--font-corps);
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.15s ease;
+}
+
+.uc-cancel-modal__btn--no {
+  background: rgba(53, 100, 166, 0.08);
+  color: var(--gris-fonce, #4a4a4a);
+}
+
+.uc-cancel-modal__btn--no:hover {
+  background: rgba(53, 100, 166, 0.14);
+}
+
+.uc-cancel-modal__btn--yes {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.uc-cancel-modal__btn--yes:hover {
+  background: #991b1b;
 }

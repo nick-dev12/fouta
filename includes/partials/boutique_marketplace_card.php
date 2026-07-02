@@ -46,9 +46,6 @@ $style_vars = '--bt-main:' . htmlspecialchars($theme['main'], ENT_QUOTES, 'UTF-8
 
     <div class="mp-bt-card__body">
         <h3 class="mp-bt-card__title"><?php echo htmlspecialchars($card['nom'], ENT_QUOTES, 'UTF-8'); ?></h3>
-        <?php if ($card['region'] !== ''): ?>
-            <p class="mp-bt-card__region"><?php echo htmlspecialchars($card['region'], ENT_QUOTES, 'UTF-8'); ?></p>
-        <?php endif; ?>
         <?php if ($card['distance_km'] !== null && function_exists('geo_format_distance')): ?>
             <p class="mp-bt-card__dist">
                 <i class="fas fa-route" aria-hidden="true"></i>
@@ -61,11 +58,25 @@ $style_vars = '--bt-main:' . htmlspecialchars($theme['main'], ENT_QUOTES, 'UTF-8
                 class="mp-bt-card__btn mp-bt-card__btn--primary">
                 <i class="fas fa-store" aria-hidden="true"></i> Voir la boutique
             </a>
-            <?php if ($card['maps_url'] !== ''): ?>
-                <a href="<?php echo htmlspecialchars($card['maps_url'], ENT_QUOTES, 'UTF-8'); ?>"
-                    class="mp-bt-card__btn mp-bt-card__btn--ghost" target="_blank" rel="noopener noreferrer">
+            <?php if ($card['maps_url'] !== '' || ($card['lat'] !== null && $card['lng'] !== null)): ?>
+                <?php
+                $bt_geo_label = 'Boutique — ' . $card['nom'];
+                $bt_maps_url = $card['maps_url'];
+                if ($bt_maps_url === '' && $card['lat'] !== null && $card['lng'] !== null) {
+                    $bt_maps_url = 'https://www.google.com/maps/dir/?api=1&destination='
+                        . rawurlencode((string) $card['lat'] . ',' . (string) $card['lng'])
+                        . '&travelmode=driving';
+                }
+                ?>
+                <button type="button"
+                    class="mp-bt-card__btn mp-bt-card__btn--ghost js-geo-open-maps"
+                    title="Ouvrir avec une application de navigation"
+                    data-lat="<?php echo $card['lat'] !== null ? htmlspecialchars((string) $card['lat'], ENT_QUOTES, 'UTF-8') : ''; ?>"
+                    data-lng="<?php echo $card['lng'] !== null ? htmlspecialchars((string) $card['lng'], ENT_QUOTES, 'UTF-8') : ''; ?>"
+                    data-label="<?php echo htmlspecialchars($bt_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-maps-url="<?php echo htmlspecialchars($bt_maps_url, ENT_QUOTES, 'UTF-8'); ?>">
                     <i class="fas fa-location-dot" aria-hidden="true"></i> Localisation
-                </a>
+                </button>
             <?php endif; ?>
         </div>
     </div>

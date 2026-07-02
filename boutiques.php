@@ -273,6 +273,7 @@ if ($search !== '') {
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="/js/geo-location.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/boutiques-proches-map.js<?php echo asset_version_query(); ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

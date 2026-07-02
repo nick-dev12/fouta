@@ -197,6 +197,7 @@
 .cmd-v2-hero__pill strong { font-size: 1.06em; }
 .cmd-v2-hero__pill--warn { background: rgba(255,193,7,0.2); border-color: rgba(255,193,7,0.35); }
 .cmd-v2-hero__pill--ok   { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.3); }
+.cmd-v2-hero__pill--danger { background: rgba(239,68,68,0.16); border-color: rgba(239,68,68,0.32); }
 
 .cmd-v2-hero__right {
     display: flex;
@@ -214,12 +215,16 @@
     border: 1.5px solid rgba(255,255,255,0.25);
     border-radius: 12px;
     color: #fff;
-    font-size: 0.83rem;
+    font-size: 10px;
     font-weight: 700;
     text-decoration: none;
     cursor: pointer;
     font-family: var(--font-corps);
     transition: background 0.2s;
+}
+
+a.cmd-v2-hero__cta {
+    flex-wrap: wrap;
 }
 
 .cmd-v2-hero__cta:hover { background: rgba(255,255,255,0.25); }
@@ -647,7 +652,7 @@
         width: 100%;
         justify-content: center;
         padding: 9px 12px;
-        font-size: 0.74rem;
+        font-size: 10px;
     }
 
     .cmd-v2-stats {

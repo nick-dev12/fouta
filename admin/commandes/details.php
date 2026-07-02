@@ -145,7 +145,6 @@ $detail_form_action = 'details.php?id=' . (int) $commande_id;
             </div>
             <div class="cmd-detail-hero__main">
                 <div>
-                    <p class="cmd-detail-eyebrow">Fiche commande</p>
                     <h1 class="cmd-detail-hero__title" id="cmd-detail-title">Commande <span>#<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?></span></h1>
                     <p class="cmd-detail-meta">
                         <span><i class="far fa-calendar-alt" aria-hidden="true"></i> <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></span>

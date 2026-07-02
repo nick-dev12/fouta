@@ -125,10 +125,16 @@ if ($cmd_id > 0) {
                 <?php echo number_format((float) ($commande['montant_total'] ?? 0), 0, ',', ' '); ?><small>FCFA</small>
             </div>
             <?php if ($card_phone !== ''): ?>
-                <a href="tel:<?php echo htmlspecialchars(preg_replace('/\s+/', '', $card_phone), ENT_QUOTES, 'UTF-8'); ?>"
+                <?php
+                $card_phone_display = function_exists('commande_suivi_format_phone_display')
+                    ? commande_suivi_format_phone_display($card_phone)
+                    : $card_phone;
+                $card_phone_href = 'tel:' . preg_replace('/\s+/', '', $card_phone_display);
+                ?>
+                <a href="<?php echo htmlspecialchars($card_phone_href, ENT_QUOTES, 'UTF-8'); ?>"
                     class="uc-v2-card__tel<?php echo $card_context === 'client' ? ' uc-v2-card__tel--boutique' : ''; ?>">
                     <i class="fas <?php echo $card_context === 'client' ? 'fa-store' : 'fa-phone'; ?>"></i>
-                    <?php echo htmlspecialchars($card_phone, ENT_QUOTES, 'UTF-8'); ?>
+                    <?php echo htmlspecialchars($card_phone_display, ENT_QUOTES, 'UTF-8'); ?>
                 </a>
             <?php endif; ?>
         </div>

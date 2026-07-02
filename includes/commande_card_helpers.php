@@ -3,6 +3,10 @@
  * Helpers partagés — cartes commande (client + vendeur).
  */
 
+if (!function_exists('commande_suivi_format_phone_display')) {
+    require_once __DIR__ . '/commande_suivi_ui.php';
+}
+
 if (!function_exists('commande_card_label')) {
     function commande_card_label($statut)
     {

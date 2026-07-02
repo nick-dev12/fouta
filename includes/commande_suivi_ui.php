@@ -256,7 +256,6 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                     <div class="cc-live-copy">
                         <h2 class="cc-live-status"><?php echo htmlspecialchars($live_pair[0], ENT_QUOTES, 'UTF-8'); ?></h2>
                         <div class="cc-live-bar-track"><div class="cc-live-bar-fill" role="presentation"></div></div>
-                        <p class="cc-live-sub"><?php echo htmlspecialchars($live_pair[1], ENT_QUOTES, 'UTF-8'); ?></p>
                     </div>
                     <div class="cc-live-ring-wrap">
                         <svg class="cc-live-ring-svg" viewBox="0 0 100 100" aria-hidden="true">

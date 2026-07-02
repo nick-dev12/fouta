@@ -54,6 +54,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirmer_livraison']
     $suivi_confirm_error = true;
 }
 
+// ---- Annulation commande (page suivi) ----
+$suivi_cancel_error = false;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['annuler_commande']) && $commande_id) {
+    $post_cmd_id = (int) ($_POST['commande_id'] ?? 0);
+    if ($post_cmd_id > 0 && $post_cmd_id === $commande_id) {
+        $cmd_cancel = get_commande_by_id($post_cmd_id, $user_id);
+        $st_cancel = (string) ($cmd_cancel['statut'] ?? '');
+        $can_cancel_post = $cmd_cancel && in_array($st_cancel, ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation'], true);
+        if ($can_cancel_post) {
+            if (update_commande_statut_user($post_cmd_id, $user_id, 'annulee')) {
+                require_once __DIR__ . '/../services/send_commande_notification.php';
+                send_commande_status_notification($user_id, $cmd_cancel['numero_commande'], 'annulee', trim($_SESSION['user_email'] ?? ''));
+                $vendeur_id = (int) ($cmd_cancel['vendeur_id'] ?? 0);
+                if ($vendeur_id > 0) {
+                    send_commande_vendeur_action_notification($vendeur_id, $post_cmd_id, $cmd_cancel['numero_commande'], 'Annulée par le client');
+                }
+                header('Location: mes-commandes.php?commande_annulee=1');
+                exit;
+            }
+        }
+    }
+    $suivi_cancel_error = true;
+}
+
 $commande = null;
 $produits_commande = [];
 
@@ -74,11 +98,19 @@ if ($commande_id && $commande) {
 
 $page_is_suivi = (bool) ($commande_id && $commande);
 $nb_prod = $page_is_suivi ? count($produits_commande) : 0;
+$can_cancel_suivi = false;
+if ($page_is_suivi && $commande) {
+    $st_suivi = (string) ($commande['statut'] ?? '');
+    $can_cancel_suivi = in_array($st_suivi, ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation'], true);
+}
 $page_title = $page_is_suivi ? 'Suivi de commande - COLObanes' : 'Mes commandes par catégorie - COLObanes';
 
 require_once __DIR__ . '/../includes/flash_toast.php';
 if ($suivi_confirm_error) {
     flash_toast_queue_page('error', 'Impossible d\'enregistrer la réception pour cette commande.');
+}
+if ($suivi_cancel_error) {
+    flash_toast_queue_page('error', 'Cette commande ne peut pas être annulée.');
 }
 ?>
 <!DOCTYPE html>
@@ -282,6 +314,15 @@ if ($suivi_confirm_error) {
                 <i class="fas fa-box-open" aria-hidden="true"></i>
                 <span>Voir les produits<?php echo $nb_prod > 0 ? ' (' . $nb_prod . ')' : ''; ?></span>
             </button>
+            <?php if ($can_cancel_suivi): ?>
+            <form method="post" action="" class="uc-cancel-form cc-header-cancel-form">
+                <input type="hidden" name="commande_id" value="<?php echo (int) $commande_id; ?>">
+                <button type="button" class="cc-header-btn-cancel uc-btn-open-cancel">
+                    <i class="fas fa-times-circle" aria-hidden="true"></i>
+                    <span>Annuler la commande</span>
+                </button>
+            </form>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>
@@ -466,6 +507,21 @@ if ($suivi_confirm_error) {
             </div>
         </div>
     </div>
+    <div id="ucCancelModal" class="uc-cancel-modal" hidden aria-hidden="true" role="dialog" aria-modal="true"
+        aria-labelledby="ucCancelModalTitle">
+        <div class="uc-cancel-modal__backdrop" id="ucCancelModalBackdrop"></div>
+        <div class="uc-cancel-modal__sheet">
+            <h2 class="uc-cancel-modal__title" id="ucCancelModalTitle">Annuler la commande</h2>
+            <p class="uc-cancel-modal__text">&Ecirc;tes-vous vraiment s&ucirc;r de vouloir annuler cette commande ?
+                Cette action est irr&eacute;versible.</p>
+            <div class="uc-cancel-modal__actions">
+                <button type="button" class="uc-cancel-modal__btn uc-cancel-modal__btn--no"
+                    id="ucCancelModalNo">Non</button>
+                <button type="button" class="uc-cancel-modal__btn uc-cancel-modal__btn--yes"
+                    id="ucCancelModalYes">Oui, annuler</button>
+            </div>
+        </div>
+    </div>
     <script>
     (function(){
         var o = document.getElementById('ccProductsOverlay');
@@ -478,6 +534,54 @@ if ($suivi_confirm_error) {
         if(bk) bk.addEventListener('click', shut);
         if(cl) cl.addEventListener('click', shut);
         document.addEventListener('keydown', function(e){ if(e.key==='Escape') shut(); });
+
+        var modal = document.getElementById('ucCancelModal');
+        var backdrop = document.getElementById('ucCancelModalBackdrop');
+        var btnNo = document.getElementById('ucCancelModalNo');
+        var btnYes = document.getElementById('ucCancelModalYes');
+        var pendingForm = null;
+        if (modal && btnNo && btnYes) {
+            function closeCancelModal() {
+                modal.hidden = true;
+                modal.setAttribute('aria-hidden', 'true');
+                pendingForm = null;
+            }
+            function openCancelModal(form) {
+                pendingForm = form;
+                modal.hidden = false;
+                modal.setAttribute('aria-hidden', 'false');
+                btnNo.focus();
+            }
+            document.querySelectorAll('.uc-btn-open-cancel').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    var form = el.closest('form.uc-cancel-form');
+                    if (form) {
+                        openCancelModal(form);
+                    }
+                });
+            });
+            btnNo.addEventListener('click', closeCancelModal);
+            if (backdrop) {
+                backdrop.addEventListener('click', closeCancelModal);
+            }
+            btnYes.addEventListener('click', function () {
+                if (!pendingForm) {
+                    closeCancelModal();
+                    return;
+                }
+                var submit = document.createElement('input');
+                submit.type = 'hidden';
+                submit.name = 'annuler_commande';
+                submit.value = '1';
+                pendingForm.appendChild(submit);
+                pendingForm.submit();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !modal.hidden) {
+                    closeCancelModal();
+                }
+            });
+        }
     })();
     </script>
     <?php endif; ?>

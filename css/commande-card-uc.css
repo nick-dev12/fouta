@@ -795,13 +795,13 @@
         min-height: 38px;
         padding-top: 8px;
         padding-bottom: 8px;
-        font-size: 0.72rem;
+        font-size: 9px;
         line-height: 1.2;
     }
 
     .uc-v2-card__footer--vendor-has-pos .uc-v2-card__pos-btn i,
     .uc-v2-card__footer--vendor-has-pos .uc-card-btn--vendor-detail i {
-        font-size: 0.72rem;
+        font-size: 9px;
     }
 }
 

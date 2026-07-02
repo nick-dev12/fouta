@@ -692,6 +692,20 @@ function cmd_timeline_steps($statut)
             flex-wrap: nowrap;
         }
 
+        .uc-v2-card__body--track {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .uc-v2-card__body--track:hover {
+            background: rgba(53, 100, 166, 0.04);
+        }
+
+        .uc-v2-card__body--track:focus-visible {
+            outline: 2px solid var(--couleur-dominante, #3564a6);
+            outline-offset: -2px;
+        }
+
         .uc-v2-card__body-inner {
             flex: 1;
             min-width: 0;
@@ -1619,7 +1633,11 @@ function cmd_timeline_steps($statut)
                         </div>
 
                         <!-- Body -->
-                        <div class="uc-v2-card__body">
+                        <?php $cmd_track_url = 'commande-categorie.php?commande_id=' . (int) $commande['id']; ?>
+                        <div class="uc-v2-card__body uc-v2-card__body--track"
+                            data-track-url="<?php echo htmlspecialchars($cmd_track_url, ENT_QUOTES, 'UTF-8'); ?>"
+                            role="link" tabindex="0"
+                            aria-label="Voir le suivi de la commande #<?php echo htmlspecialchars($commande['numero_commande'], ENT_QUOTES, 'UTF-8'); ?>">
                             <?php if (!empty($cmd_galerie_urls)): ?>
                                 <button type="button" class="uc-v2-card__thumb uc-btn-open-gallery"
                                     data-gallery="<?php echo htmlspecialchars(json_encode($cmd_galerie_urls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>"
@@ -1676,14 +1694,14 @@ function cmd_timeline_steps($statut)
 
                         <!-- Footer actions -->
                         <div class="uc-v2-card__footer">
-                            <?php if ($boutique_maps_url !== '' || $boutique_geo_share_url !== ''): ?>
+                            <?php if ($boutique_maps_url !== '' || ($boutique_geo_lat !== null && $boutique_geo_lng !== null)): ?>
                                 <button type="button" class="uc-card-btn uc-card-btn--gmaps js-geo-open-maps"
                                     title="Ouvrir avec une application de navigation"
                                     data-lat="<?php echo $boutique_geo_lat !== null ? htmlspecialchars((string) $boutique_geo_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
                                     data-lng="<?php echo $boutique_geo_lng !== null ? htmlspecialchars((string) $boutique_geo_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
                                     data-label="<?php echo htmlspecialchars($boutique_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-maps-url="<?php echo htmlspecialchars($boutique_maps_url, ENT_QUOTES, 'UTF-8'); ?>">
-                                    <i class="fab fa-google" aria-hidden="true"></i> Ouvrir avec Google Maps
+                                    <i class="fas fa-location-dot" aria-hidden="true"></i> Ouvrir avec une application de navigation
                                 </button>
                             <?php endif; ?>
                             <?php if ($boutique_geo_share_url !== ''): ?>
@@ -1723,16 +1741,6 @@ function cmd_timeline_steps($statut)
                                 </form>
                             <?php endif; ?>
 
-                            <?php if ($can_cancel): ?>
-                                <form method="post" action="" class="uc-cancel-form" style="display:inline;">
-                                    <input type="hidden" name="commande_id" value="<?php echo (int) $commande['id']; ?>">
-                                    <button type="button" class="uc-card-btn uc-card-btn--cancel uc-btn-open-cancel"
-                                        data-commande-id="<?php echo (int) $commande['id']; ?>">
-                                        <i class="fas fa-times-circle"></i> Annuler
-                                    </button>
-                                </form>
-                            <?php endif; ?>
-
                             <?php if ($can_reorder): ?>
                                 <form method="post" action="" style="display:inline;">
                                     <input type="hidden" name="commande_id" value="<?php echo (int) $commande['id']; ?>">
@@ -1753,78 +1761,26 @@ function cmd_timeline_steps($statut)
 
     <?php require __DIR__ . '/../includes/partials/uc_gallery_lightbox.php'; ?>
 
-    <div id="ucCancelModal" class="uc-cancel-modal" hidden aria-hidden="true" role="dialog" aria-modal="true"
-        aria-labelledby="ucCancelModalTitle">
-        <div class="uc-cancel-modal__backdrop" id="ucCancelModalBackdrop"></div>
-        <div class="uc-cancel-modal__sheet">
-            <h2 class="uc-cancel-modal__title" id="ucCancelModalTitle">Annuler la commande</h2>
-            <p class="uc-cancel-modal__text">&Ecirc;tes-vous vraiment s&ucirc;r de vouloir annuler cette commande ?
-                Cette action est irr&eacute;versible.</p>
-            <div class="uc-cancel-modal__actions">
-                <button type="button" class="uc-cancel-modal__btn uc-cancel-modal__btn--no"
-                    id="ucCancelModalNo">Annuler</button>
-                <button type="button" class="uc-cancel-modal__btn uc-cancel-modal__btn--yes"
-                    id="ucCancelModalYes">Oui</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         (function () {
-            var modal = document.getElementById('ucCancelModal');
-            var backdrop = document.getElementById('ucCancelModalBackdrop');
-            var btnNo = document.getElementById('ucCancelModalNo');
-            var btnYes = document.getElementById('ucCancelModalYes');
-            var pendingForm = null;
-
-            if (!modal || !btnYes || !btnNo) {
-                return;
-            }
-
-            function closeModal() {
-                modal.hidden = true;
-                modal.setAttribute('aria-hidden', 'true');
-                pendingForm = null;
-            }
-
-            function openModal(form) {
-                pendingForm = form;
-                modal.hidden = false;
-                modal.setAttribute('aria-hidden', 'false');
-                btnNo.focus();
-            }
-
-            document.querySelectorAll('.uc-btn-open-cancel').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var form = btn.closest('form.uc-cancel-form');
-                    if (form) {
-                        openModal(form);
-                    }
-                });
-            });
-
-            btnNo.addEventListener('click', closeModal);
-            if (backdrop) {
-                backdrop.addEventListener('click', closeModal);
-            }
-
-            btnYes.addEventListener('click', function () {
-                if (!pendingForm) {
-                    closeModal();
+            document.querySelectorAll('.uc-v2-card__body--track').forEach(function (body) {
+                var url = body.getAttribute('data-track-url') || '';
+                if (!url) {
                     return;
                 }
-                var submit = document.createElement('input');
-                submit.type = 'hidden';
-                submit.name = 'annuler_commande';
-                submit.value = '1';
-                pendingForm.appendChild(submit);
-                pendingForm.submit();
-            });
-
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && !modal.hidden) {
-                    closeModal();
+                function goToTrack(e) {
+                    if (e.target.closest('a, button, input, select, textarea, label')) {
+                        return;
+                    }
+                    window.location.href = url;
                 }
+                body.addEventListener('click', goToTrack);
+                body.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        goToTrack(e);
+                    }
+                });
             });
         })();
     </script>
