@@ -114,7 +114,7 @@
   font-weight: 800;
   color: var(--titres, #0d0d0d);
   font-family: var(--font-titres, inherit);
-  line-height: 1.2;
+  line-height: 1.126;
 }
 
 @media (min-width: 768px) {
@@ -1374,7 +1374,7 @@
 
 .cmd-geo-distance {
   margin: 0 0 0.85rem;
-  font-size: 0.82rem;
+  font-size: 9px;
   font-weight: 600;
   color: var(--orange-fonce, #e85a2a);
   display: flex;
@@ -1398,7 +1398,7 @@
   text-decoration: none;
   color: #fff;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.65625rem;
   font-family: var(--font-corps, 'Poppins', sans-serif);
   cursor: pointer;
   transition: filter 0.15s;
@@ -1417,7 +1417,7 @@
 @media (max-width: 768px) {
   .cmd-detail-page { padding: 12px 10px; }
   .cmd-detail-hero { padding: 14px 12px; border-radius: 14px; }
-  .cmd-detail-hero__title { font-size: 1.05rem; }
+  .cmd-detail-hero__title { font-size: 0.675rem; line-height: 12.16px; }
   .cmd-detail-hero__actions { flex-wrap: wrap; gap: 8px; }
   .cmd-detail-hero__actions .btn-primary,
   .cmd-detail-hero__actions .btn-back { font-size: 0.78rem; padding: 8px 12px; }
@@ -1426,7 +1426,7 @@
   .cmd-products-section__head { padding: 12px 14px; }
   .cmd-products-list .cpd-row { padding: 10px 12px; }
   .geo-nav-apps { gap: 8px; }
-  .geo-nav-app { font-size: 0.78rem; padding: 8px 12px; }
+  .geo-nav-app { font-size: 0.65625rem; padding: 8px 12px; }
 }
 
 @media (max-width: 480px) {

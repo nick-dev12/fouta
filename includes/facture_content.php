@@ -5,7 +5,8 @@
  *   $date_facture_aff, $entreprise_nom, $entreprise_rc, $entreprise_ninea, $entreprise_adresse,
  *   $entreprise_tel1, $entreprise_tel2, $entreprise_site, $entreprise_email
  * $is_public (bool): true = page publique (pas d'actions admin), false = page admin
- * $whatsapp_url (string, optionnel): URL WhatsApp pour le bouton
+ * $facture_share_url, $facture_share_message, $facture_share_title (optionnel): partage modal unifiée
+ * $whatsapp_url (string, optionnel, déprécié): ancien lien WhatsApp direct
  * $facture_back_url (string, optionnel): URL du lien "Retour" (ex: details.php?id=5)
  * $facture_back_label (string, optionnel): Libellé du lien Retour (défaut: "Retour à la commande")
  * $facture_bl_statut_libelle (string, optionnel): statut du BL (ex. facture BL)
@@ -31,6 +32,13 @@ if ($facture_bl_statut_libelle !== '') {
     }
 }
 require_once __DIR__ . '/site_url.php';
+if (!function_exists('asset_version_query')) {
+    require_once __DIR__ . '/asset_version.php';
+}
+$facture_share_url = $facture_share_url ?? '';
+$facture_share_message = $facture_share_message ?? '';
+$facture_share_title = $facture_share_title ?? ('Facture ' . ($facture['numero_facture'] ?? ''));
+$facture_can_share = $facture_share_url !== '' && $facture_share_message !== '';
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - COLObanes';
 $facture_og_desc = 'Facture COLObanes - ' . ($entreprise_nom ?? 'COLObanes') . ' - Montant : ' . number_format($facture['montant_total'] ?? 0, 0, ',', ' ') . ' CFA';
 $facture_og_image = get_site_base_url() . $facture_logo_url;
@@ -52,6 +60,9 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <?php if ($facture_can_share): ?>
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
+    <?php endif; ?>
     <style>
         :root {
             --facture-primary: <?php echo htmlspecialchars($facture_couleur_principale, ENT_QUOTES, 'UTF-8'); ?>;
@@ -103,6 +114,14 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
             box-sizing: border-box;
         }
 
+        .facture-body {
+            width: 100%;
+            max-width: 550px;
+            margin: 0 auto;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+
         .facture-banner-top {
             height: 28px;
             background: linear-gradient(135deg, var(--facture-primary-soft) 0%, color-mix(in srgb, var(--facture-primary) 20%, white) 50%, var(--facture-primary-muted) 100%);
@@ -114,19 +133,22 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
             justify-content: space-between;
             align-items: flex-start;
             flex-direction: row;
-            padding: 14px 18px 12px;
+            gap: 10px;
+            padding: 10px 4px 8px;
             border-bottom: 1px solid #eee;
         }
 
         .facture-entreprise {
             display: flex;
             align-items: flex-start;
-            gap: 20px;
+            gap: 10px;
+            min-width: 0;
+            flex: 1 1 auto;
         }
 
         .facture-logo {
-            width: 72px;
-            height: 72px;
+            width: 52px;
+            height: 52px;
             border: 2px solid var(--facture-primary);
             border-radius: 50%;
             overflow: hidden;
@@ -140,16 +162,19 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-entreprise-info h1 {
-            font-size: 18pt;
+            font-size: 11pt;
             font-weight: 700;
             color: #000;
-            margin-bottom: 6px;
+            margin-bottom: 3px;
+            line-height: 1.2;
         }
 
         .facture-entreprise-info p {
-            font-size: 9pt;
+            font-size: 7.5pt;
             color: #666;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
+            line-height: 1.3;
+            word-break: break-word;
         }
 
         .facture-entreprise-info a {
@@ -158,11 +183,14 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-entreprise-info .tel {
-            margin-top: 6px;
+            margin-top: 3px;
+            font-size: 7.5pt;
         }
 
         .facture-meta {
             text-align: right;
+            flex-shrink: 0;
+            max-width: 42%;
         }
 
         .facture-meta .label {
@@ -180,7 +208,7 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-meta-kv {
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .facture-meta-kv:first-of-type {
@@ -188,13 +216,13 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-meta-kv .label {
-            font-size: 9pt;
-            margin-bottom: 2px;
+            font-size: 7.5pt;
+            margin-bottom: 1px;
         }
 
         .facture-meta-kv .value {
-            font-size: 10pt;
-            line-height: 1.35;
+            font-size: 8.5pt;
+            line-height: 1.25;
         }
 
         .facture-meta-kv .value.facture-meta-bl-statut {
@@ -213,7 +241,7 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-billing {
-            padding: 10px 18px;
+            padding: 8px 4px;
             border-bottom: 1px solid #eee;
         }
 
@@ -226,14 +254,14 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-billing .client-name {
-            font-size: 18px;
+            font-size: 11pt;
             font-weight: 700;
             color: #000;
             margin-bottom: 2px;
         }
 
         .facture-billing .client-tel {
-            font-size: 14px;
+            font-size: 9pt;
             color: #444;
             margin-top: 0;
         }
@@ -248,22 +276,44 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         .facture-table-wrapper {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            padding: 0 4px;
         }
 
         .facture-table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
         .facture-table th {
             background: var(--facture-primary);
             color: #fff;
-            font-size: 9pt;
+            font-size: 7.5pt;
             font-weight: 700;
             text-transform: uppercase;
-            padding: 5px 8px;
+            padding: 4px 5px;
             text-align: left;
-            line-height: 1.35;
+            line-height: 1.25;
+        }
+
+        .facture-table th:nth-child(1),
+        .facture-table td:nth-child(1) {
+            width: 10%;
+        }
+
+        .facture-table th:nth-child(2),
+        .facture-table td:nth-child(2) {
+            width: 48%;
+        }
+
+        .facture-table th:nth-child(3),
+        .facture-table td:nth-child(3) {
+            width: 21%;
+        }
+
+        .facture-table th:nth-child(4),
+        .facture-table td:nth-child(4) {
+            width: 21%;
         }
 
         .facture-table th:last-child,
@@ -277,10 +327,12 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-table td {
-            padding: 5px 8px;
-            font-size: 9pt;
-            line-height: 1.55;
+            padding: 4px 5px;
+            font-size: 8pt;
+            line-height: 1.35;
             border-bottom: 1px solid #f0f0f0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .facture-table tr:nth-child(even) td {
@@ -294,39 +346,49 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         .facture-footer-section {
             display: flex;
             justify-content: space-between;
-            padding: 16px 32px 20px;
-            gap: 28px;
+            align-items: flex-start;
+            padding: 10px 4px 12px;
+            gap: 12px;
+        }
+
+        .facture-payment {
+            flex: 1 1 auto;
+            min-width: 0;
         }
 
         .facture-payment h3 {
-            font-size: 14px;
+            font-size: 9pt;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
             color: #000;
         }
 
         .facture-payment p {
-            font-size: 13px;
+            font-size: 8pt;
             color: #666;
+            line-height: 1.35;
         }
 
         .facture-summary {
-            min-width: 280px;
+            min-width: 0;
+            flex: 0 0 42%;
+            max-width: 42%;
         }
 
         .facture-summary .row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            font-size: 14px;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 8pt;
         }
 
         .facture-summary .total {
             font-weight: 700;
-            font-size: 16px;
-            padding-top: 12px;
+            font-size: 9pt;
+            padding-top: 6px;
             border-top: 2px solid var(--facture-primary);
-            margin-top: 8px;
+            margin-top: 4px;
         }
 
         .facture-summary .solde-row {
@@ -379,32 +441,33 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         }
 
         .facture-invoice-title {
-            font-size: 20pt;
+            font-size: 12pt;
             font-weight: 800;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             color: #000;
-            margin: 0 0 4px;
+            margin: 0 0 2px;
         }
 
         .facture-invoice-no {
-            font-size: 11pt;
+            font-size: 8.5pt;
             font-weight: 700;
             color: var(--facture-accent);
+            margin-bottom: 2px;
         }
 
         .facture-customer-box {
             border: 1px solid #ddd;
-            padding: 12px 14px;
-            margin-top: 8px;
+            padding: 8px 10px;
+            margin-top: 0;
             background: #fafafa;
         }
 
         .facture-customer-box__title {
-            font-size: 10pt;
+            font-size: 7.5pt;
             font-weight: 700;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             color: #666;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .facture-thankyou {
@@ -464,7 +527,8 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
             margin-bottom: 0;
         }
 
-        .facture-actions a {
+        .facture-actions a,
+        .facture-actions button {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -472,21 +536,27 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
             background: var(--facture-primary);
             color: #fff;
             text-decoration: none;
+            border: none;
             border-radius: 8px;
             font-weight: 600;
             font-size: 14px;
             white-space: nowrap;
+            cursor: pointer;
+            font-family: inherit;
         }
 
-        .facture-actions a:hover {
+        .facture-actions a:hover,
+        .facture-actions button:hover {
             background: color-mix(in srgb, var(--facture-primary) 78%, black);
         }
 
-        .facture-actions a.btn-whatsapp {
+        .facture-actions a.btn-whatsapp,
+        .facture-actions button.btn-whatsapp {
             background: #25D366;
         }
 
-        .facture-actions a.btn-whatsapp:hover {
+        .facture-actions a.btn-whatsapp:hover,
+        .facture-actions button.btn-whatsapp:hover {
             background: #1da851;
         }
 
@@ -520,6 +590,13 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
                 margin: 0 auto !important;
                 overflow: visible !important;
                 transform: none !important;
+            }
+
+            .facture-body {
+                max-width: 550px !important;
+                width: 100% !important;
+                margin: 0 auto !important;
+                padding: 0 6px !important;
             }
 
             .facture-scale-inner {
@@ -600,7 +677,7 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
 
             .facture-header {
                 flex-direction: row !important;
-                padding: 10px 8px 10px !important;
+                padding: 8px 2px 6px !important;
                 box-sizing: border-box !important;
             }
 
@@ -617,19 +694,19 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
 
             .facture-footer-section {
                 flex-direction: row !important;
-                padding: 10px 8px 12px !important;
-                gap: 16px !important;
+                padding: 8px 2px 10px !important;
+                gap: 10px !important;
                 box-sizing: border-box !important;
             }
 
             .facture-summary {
                 min-width: 0 !important;
-                flex: 0 1 auto !important;
-                max-width: 48% !important;
+                flex: 0 0 42% !important;
+                max-width: 42% !important;
             }
 
             .facture-billing {
-                padding: 8px 8px !important;
+                padding: 6px 2px !important;
                 box-sizing: border-box !important;
             }
 
@@ -649,20 +726,6 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
             }
         }
 
-        @media (max-width: 992px) {
-            .facture-header {
-                padding: 16px 20px;
-            }
-
-            .facture-billing {
-                padding: 12px 20px;
-            }
-
-            .facture-footer-section {
-                padding: 14px 20px;
-            }
-        }
-
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -676,64 +739,18 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
                 height: 24px;
             }
 
-            .facture-header {
-
-                gap: 6px;
-                padding: 14px 8px;
-            }
-
-            .facture-entreprise {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .facture-logo {
-                width: 70px;
-                height: 70px;
-            }
-
-            .facture-entreprise-info h1 {
-                font-size: 22px;
-            }
-
-            .facture-entreprise-info p {
-                font-size: 11px;
-            }
-
-            .facture-meta {
-                text-align: left;
-            }
-
-            .facture-billing {
-                padding: 16px;
-            }
-
-            .facture-billing .client-name {
-                font-size: 16px;
-            }
-
-            .facture-table-wrapper {
-                margin: 0 -16px;
-            }
-
-            .facture-table {
-                font-size: 13px;
-                min-width: 400px;
-            }
-
-            .facture-table th,
-            .facture-table td {
-                padding: 6px 8px;
+            .facture-body {
+                padding: 0 8px;
             }
 
             .facture-footer-section {
                 flex-direction: column;
-                padding: 20px 16px;
-                gap: 20px;
+                gap: 14px;
             }
 
             .facture-summary {
-                min-width: auto;
+                flex: 1 1 auto;
+                max-width: 100%;
             }
 
             .facture-banner-bottom {
@@ -745,7 +762,8 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
                 gap: 8px;
             }
 
-            .facture-actions a {
+            .facture-actions a,
+            .facture-actions button {
                 padding: 10px 16px;
                 font-size: 13px;
             }
@@ -756,23 +774,16 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
                 padding: 8px;
             }
 
-            .facture-header {
-                padding: 16px 8px;
-            }
-
-            .facture-billing {
-                padding: 12px;
-            }
-
-            .facture-footer-section {
-                padding: 16px 8px;
+            .facture-body {
+                padding: 0 6px;
             }
 
             .facture-actions {
                 flex-direction: column;
             }
 
-            .facture-actions a {
+            .facture-actions a,
+            .facture-actions button {
                 width: 100%;
                 justify-content: center;
             }
@@ -789,7 +800,17 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
         <div class="facture-actions facture-actions-top">
             <a href="<?php echo htmlspecialchars($back_url); ?>"><i class="fas fa-arrow-left"></i> <?php echo htmlspecialchars($back_label); ?></a>
             <a href="javascript:window.print();"><i class="fas fa-print"></i> Imprimer</a>
-            <?php if (!empty($whatsapp_url)): ?>
+            <?php if ($facture_can_share): ?>
+                <button type="button" class="btn-whatsapp js-platform-share"
+                    aria-haspopup="dialog" aria-controls="platformShareModal"
+                    data-share-modal-title="Envoyer la facture"
+                    data-share-title="<?php echo htmlspecialchars($facture_share_title, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-share-url="<?php echo htmlspecialchars($facture_share_url, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-share-text="<?php echo htmlspecialchars($facture_share_message, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-share-hint="Partagez le lien et le récapitulatif de la facture avec votre client.">
+                    <i class="fab fa-whatsapp"></i> Envoyer la facture sur WhatsApp
+                </button>
+            <?php elseif (!empty($whatsapp_url)): ?>
                 <a href="<?php echo htmlspecialchars($whatsapp_url); ?>" target="_blank" rel="noopener noreferrer"
                     class="btn-whatsapp">
                     <i class="fab fa-whatsapp"></i> Envoyer la facture sur WhatsApp
@@ -807,6 +828,7 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
     <div class="facture-container">
         <div class="facture-banner-top"></div>
 
+        <div class="facture-body">
         <div class="facture-header">
             <div class="facture-entreprise">
                 <div class="facture-logo">
@@ -940,6 +962,7 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
                 <?php endif; ?>
             </div>
         </div>
+        </div>
 
         <?php if ($facture_show_client_zone): ?>
         <div class="facture-client-zone">
@@ -953,6 +976,10 @@ $facture_og_image = get_site_base_url() . $facture_logo_url;
     </div>
     </div>
     </div>
+    <?php if ($facture_can_share): ?>
+        <?php require __DIR__ . '/partials/platform_share_modal.php'; ?>
+        <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
 </body>
 
 </html>

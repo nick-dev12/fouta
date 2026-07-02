@@ -75,7 +75,9 @@ $msg_whatsapp = "Bonjour " . $client_nom . ",\n\n"
     . "Date : " . $date_facture_aff . "\n\n"
     . "Consultez votre facture en ligne :\n" . $facture_url . "\n\n"
     . "Cordialement,\n" . ($entreprise_nom ?? 'COLObanes');
-$whatsapp_url = !empty($tel_whatsapp) ? 'https://wa.me/' . $tel_whatsapp . '?text=' . urlencode($msg_whatsapp) : '';
+$facture_share_url = $facture_url;
+$facture_share_message = $msg_whatsapp;
+$facture_share_title = 'Facture ' . ($facture['numero_facture'] ?? '');
 
 $is_public = false;
 require __DIR__ . '/../../includes/facture_content.php';

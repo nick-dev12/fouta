@@ -280,8 +280,6 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                         $cnom = '—';
                     }
                     $ctel_liv = commande_suivi_format_phone_display((string) ($commande['telephone_livraison'] ?? ''));
-                    $adresse_liv = trim((string) ($commande['adresse_livraison'] ?? ''));
-                    $d_cmd_fmt = $dt_cmd ? date('d/m/Y à H:i', $dt_cmd) : '—';
                     ?>
                 <div class="cc-live-admin-contact" aria-label="Coordonnées commande">
                     <div class="cc-live-admin-contact__grid">
@@ -290,21 +288,8 @@ if (!function_exists('commande_suivi_render_dashboard')) {
                             <span class="cc-live-admin-contact__val"><?php echo htmlspecialchars($cnom, ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                         <div class="cc-live-admin-contact__cell">
-                            <?php if ($cmd_suivi_is_retrait): ?>
-                            <span class="cc-live-admin-contact__lab"><i class="fas fa-store" aria-hidden="true"></i> Retrait</span>
-                            <span class="cc-live-admin-contact__val">Récupérer sur site</span>
-                            <?php else: ?>
-                            <span class="cc-live-admin-contact__lab"><i class="fas fa-location-dot" aria-hidden="true"></i> Adresse livraison</span>
-                            <span class="cc-live-admin-contact__val"><?php echo $adresse_liv !== '' ? htmlspecialchars($adresse_liv, ENT_QUOTES, 'UTF-8') : '—'; ?></span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="cc-live-admin-contact__cell">
                             <span class="cc-live-admin-contact__lab"><i class="fas fa-headset" aria-hidden="true"></i> <?php echo $cmd_suivi_is_retrait ? 'Tél. contact' : 'Tél. livraison'; ?></span>
                             <span class="cc-live-admin-contact__val"><?php echo $ctel_liv !== '' ? htmlspecialchars($ctel_liv, ENT_QUOTES, 'UTF-8') : '—'; ?></span>
-                        </div>
-                        <div class="cc-live-admin-contact__cell">
-                            <span class="cc-live-admin-contact__lab"><i class="far fa-calendar-alt" aria-hidden="true"></i> Commande</span>
-                            <span class="cc-live-admin-contact__val"><?php echo htmlspecialchars($d_cmd_fmt, ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                     </div>
                 </div>

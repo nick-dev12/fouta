@@ -63,6 +63,7 @@ $seo_json_ld_blocks = [
     <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/boutiques-marketplace.css<?php echo asset_version_query(); ?>">
     <style>
         /* Bannière vitrine - Design site vitrine professionnel */
         .vitrine-hero {
@@ -1233,7 +1234,7 @@ $seo_json_ld_blocks = [
                 padding: 18px 16px 20px;
             }
 
-            .mp-showcase-spotlight {
+            .mp-showcase-boutiques {
                 min-height: auto;
                 max-width: 100%;
             }
@@ -1530,288 +1531,7 @@ $seo_json_ld_blocks = [
             object-position: center;
         }
 
-        /* Coups de cœur — carte mise en avant */
-        .mp-showcase-spotlight {
-            box-sizing: border-box;
-            width: 100%;
-            max-width: 100%;
-            justify-self: stretch;
-            border-radius: 18px;
-            overflow: hidden;
-            position: relative;
-            background: linear-gradient(155deg, #ffffff 0%, var(--blanc-casse) 38%, rgba(53, 100, 166, 0.07) 100%);
-            border: 1px solid rgba(53, 100, 166, 0.14);
-            box-shadow: 0 4px 24px rgba(53, 100, 166, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
-            padding: clamp(16px, 3vw, 24px) clamp(14px, 2.5vw, 22px) clamp(16px, 2.5vw, 22px);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: clamp(10px, 2vw, 18px);
-            min-height: min(360px, 52vh);
-        }
-
-        .mp-showcase-spotlight::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image:
-                radial-gradient(ellipse 90% 70% at 0% 0%, rgba(53, 100, 166, 0.12) 0%, transparent 55%),
-                radial-gradient(ellipse 80% 60% at 100% 100%, rgba(255, 107, 53, 0.1) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .mp-sp-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .mp-sp-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            color: var(--couleur-dominante);
-            background: rgba(53, 100, 166, 0.1);
-            border: 1px solid rgba(53, 100, 166, 0.18);
-            padding: 5px 10px;
-            border-radius: 999px;
-            margin-bottom: 10px;
-        }
-
-        .mp-sp-badge i {
-            font-size: 0.7rem;
-            opacity: 0.9;
-        }
-
-        .mp-sp-content h2 {
-            margin: 0 0 clamp(6px, 1.2vw, 10px);
-            font-size: clamp(1.15rem, 2.4vw, 1.45rem);
-            font-weight: 700;
-            color: var(--titres);
-            font-family: var(--font-titres);
-            letter-spacing: -0.03em;
-            line-height: 1.2;
-        }
-
-        .mp-sp-content p {
-            margin: 0;
-            font-size: clamp(12px, 1.8vw, 14px);
-            line-height: 1.55;
-            color: var(--gris-fonce);
-            max-width: 28em;
-        }
-
-        .mp-sp-visual {
-            position: relative;
-            z-index: 1;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 120px;
-            margin: 0;
-            padding: clamp(8px, 2vw, 14px);
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(250, 250, 250, 0.95) 100%);
-            border: 1px solid rgba(53, 100, 166, 0.1);
-            border-radius: 16px;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 28px rgba(53, 100, 166, 0.08);
-        }
-
-        .mp-sp-slides-stack {
-            display: grid;
-            grid-template-areas: "mpSpotStack";
-            width: 100%;
-            min-height: 100px;
-            place-items: center;
-        }
-
-        .mp-sp-slide {
-            grid-area: mpSpotStack;
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            opacity: 0;
-            transition: opacity 0.45s ease;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .mp-sp-slide.is-active {
-            opacity: 1;
-            pointer-events: auto;
-            z-index: 1;
-        }
-
-        .mp-sp-grid--single {
-            grid-template-columns: 1fr;
-            max-width: 180px;
-        }
-
-        .mp-sp-visual img {
-            max-width: 100%;
-            width: auto;
-            height: auto;
-            max-height: clamp(110px, 22vw, 150px);
-            object-fit: contain;
-            border-radius: 12px;
-            filter: drop-shadow(0 6px 16px rgba(53, 100, 166, 0.14));
-        }
-
-        .mp-sp-visual .mp-sp-fallback-ico {
-            font-size: clamp(2.5rem, 12vw, 3.5rem);
-            color: var(--bleu-clair);
-            opacity: 0.35;
-        }
-
-        .mp-sp-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            width: 100%;
-            max-width: 360px;
-            margin: 0 auto;
-        }
-
-        .mp-sp-tile {
-            display: block;
-            border-radius: 10px;
-            overflow: hidden;
-            aspect-ratio: 1 / 1;
-            border: 1px solid rgba(53, 100, 166, 0.15);
-        }
-
-        .mp-sp-tile img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            object-position: center;
-            max-height: none;
-            filter: none;
-            display: block;
-        }
-
-        .mp-sp-dots {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            z-index: 1;
-            padding: 4px 0 0;
-        }
-
-        .mp-sp-dots button.mp-sp-dot {
-            width: 8px;
-            height: 8px;
-            padding: 0;
-            border: none;
-            border-radius: 50%;
-            background: var(--gris-clair);
-            opacity: 0.45;
-            cursor: pointer;
-            transition: transform 0.2s, opacity 0.2s, background 0.2s;
-        }
-
-        .mp-sp-dots button.mp-sp-dot.is-active,
-        .mp-sp-dots button.mp-sp-dot[aria-current="true"] {
-            background: var(--couleur-dominante);
-            opacity: 1;
-            transform: scale(1.2);
-        }
-
-        .mp-sp-cta {
-            position: relative;
-            z-index: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            padding: clamp(11px, 2.5vw, 14px) clamp(14px, 3vw, 20px);
-            background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
-            color: var(--texte-clair) !important;
-            font-weight: 600;
-            font-size: clamp(13px, 2vw, 14px);
-            border-radius: 999px;
-            text-decoration: none;
-            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
-            margin-top: 0;
-            box-shadow: 0 4px 14px rgba(53, 100, 166, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .mp-sp-cta i {
-            font-size: 0.9em;
-            opacity: 0.95;
-            transition: transform 0.2s ease;
-        }
-
-        .mp-sp-cta:hover {
-            background: linear-gradient(135deg, var(--couleur-dominante-hover) 0%, var(--bleu-fonce) 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 8px 22px rgba(53, 100, 166, 0.4);
-        }
-
-        .mp-sp-cta:hover i {
-            transform: translateX(3px);
-        }
-
-        @media (max-width: 1100px) {
-            .mp-showcase-spotlight {
-                min-height: auto;
-                max-width: 100%;
-                margin-left: 0;
-                margin-right: 0;
-            }
-
-            .mp-sp-visual img {
-                max-height: clamp(130px, 28vw, 180px);
-            }
-        }
-
-        @media (max-width: 600px) {
-            .mp-showcase-spotlight {
-                border-radius: 16px;
-                padding: 16px 14px 16px;
-                gap: 12px;
-            }
-
-            .mp-sp-badge {
-                font-size: 0.6rem;
-                padding: 4px 9px;
-            }
-
-            .mp-sp-visual {
-                min-height: 108px;
-                padding: 10px;
-                border-radius: 14px;
-            }
-
-            .mp-sp-visual img {
-                max-height: min(170px, 42vw);
-            }
-
-            .mp-sp-dots {
-                padding-top: 2px;
-            }
-        }
-
-        @media (max-width: 380px) {
-            .mp-showcase-spotlight {
-                padding: 14px 12px 14px;
-            }
-
-            .mp-sp-content p {
-                line-height: 1.45;
-            }
-
-            .mp-sp-cta {
-                gap: 8px;
-            }
-        }
+        /* Panneau boutiques : css/boutiques-marketplace.css */
 
         /* Bandeau « commande / personnalisation » */
         .mp-promo-b2b {
@@ -2404,22 +2124,14 @@ $seo_json_ld_blocks = [
         : [];
     $produits_strip = marketplace_produits_aleatoires_avec_seuil($vendus_candidats, 8, 5);
 
-    /* Mieux notés : carrousel — produits avec la meilleure moyenne d'avis (ordre décroissant) */
-    $mieux_notes_candidats = function_exists('get_produits_mieux_notes_marketplace')
-        ? get_produits_mieux_notes_marketplace(40)
-        : [];
-    $spotlight_pool = marketplace_produits_ordre_ou_aleatoire($mieux_notes_candidats, 12, 'marketplace_mieux_notes', false);
-    if (!is_array($spotlight_pool)) {
-        $spotlight_pool = [];
+    /* Boutiques partenaires — aperçu accueil */
+    $boutiques_accueil = [];
+    if (file_exists(__DIR__ . '/models/model_boutiques_marketplace.php')) {
+        require_once __DIR__ . '/models/model_boutiques_marketplace.php';
+        require_once __DIR__ . '/includes/marketplace_country_filter.php';
+        $mp_country_boutiques = marketplace_get_selected_country_code();
+        $boutiques_accueil = marketplace_boutiques_featured(6, $mp_country_boutiques);
     }
-    $spotlight_slides = [];
-    for ($i = 0; $i < count($spotlight_pool) - 1; $i += 2) {
-        $spotlight_slides[] = array_slice($spotlight_pool, $i, 2);
-    }
-    if (count($spotlight_pool) % 2 === 1) {
-        $spotlight_slides[] = [$spotlight_pool[count($spotlight_pool) - 1]];
-    }
-    $spotlight_slides = array_slice($spotlight_slides, 0, 5);
 
     $hero_affiches = [];
     if (file_exists(__DIR__ . '/models/model_marketplace_hero.php')) {
@@ -2436,16 +2148,6 @@ $seo_json_ld_blocks = [
         $produits_top_panneau = produits_avis_enrich_products($produits_top_panneau);
         $produits_new_panneau = produits_avis_enrich_products($produits_new_panneau);
         $produits_tous = produits_avis_enrich_products($produits_tous);
-        if (!empty($spotlight_pool)) {
-            $spotlight_pool = produits_avis_enrich_products($spotlight_pool);
-        }
-    }
-
-    $mp_spotlight_img = null;
-    if (!empty($hero_affiches[0]['image'])) {
-        $mp_spotlight_img = upload_image_url('marketplace_hero/' . (string) $hero_affiches[0]['image'], 'md');
-    } elseif (!empty($slides[0]['image'])) {
-        $mp_spotlight_img = upload_image_url('slider/' . (string) $slides[0]['image'], 'md');
     }
     ?>
 
@@ -2581,103 +2283,28 @@ $seo_json_ld_blocks = [
                         </div>
                     </div>
 
-                    <aside class="mp-showcase-spotlight" aria-labelledby="mp-sp-title">
-                        <div class="mp-sp-content">
-                            <span class="mp-sp-badge"><i class="fas fa-star" aria-hidden="true"></i> Communauté</span>
-                            <h2 id="mp-sp-title">Mieux notés</h2>
+                    <aside class="mp-showcase-boutiques" aria-labelledby="mp-bt-title">
+                        <div class="mp-bt-panel-head">
+                            <span class="mp-bt-panel-badge"><i class="fas fa-store" aria-hidden="true"></i> Vendeurs</span>
+                            <h2 id="mp-bt-title">Boutiques partenaires</h2>
+                            <p>Découvrez nos vendeurs partenaires sur la marketplace.</p>
                         </div>
-                        <div class="mp-sp-visual" id="mpSpotlightVisual">
-                            <?php if (!empty($spotlight_slides)): ?>
-                                <div class="mp-sp-slides-stack" id="mpSpotlightSlides" data-spotlight-interval="60000"
-                                    role="region" aria-label="Produits mis en avant" aria-live="polite">
-                                    <?php foreach ($spotlight_slides as $sidx => $slide_products): ?>
-                                        <div class="mp-sp-slide<?php echo (int) $sidx === 0 ? ' is-active' : ''; ?>"
-                                            data-spotlight-slide="<?php echo (int) $sidx; ?>" <?php if ((int) $sidx !== 0): ?>aria-hidden="true" <?php else: ?>aria-hidden="false" <?php endif; ?>>
-                                            <div class="mp-sp-grid<?php echo count($slide_products) < 2 ? ' mp-sp-grid--single' : ''; ?>"
-                                                role="list">
-                                                <?php foreach ($slide_products as $sp):
-                                                    $spid = (int) ($sp['id'] ?? 0);
-                                                    if ($spid <= 0) {
-                                                        continue;
-                                                    }
-                                                    ?>
-                                                    <a class="mp-sp-tile" role="listitem"
-                                                        href="produit.php?id=<?php echo $spid; ?>">
-                                                        <img src="<?php echo htmlspecialchars(upload_image_url($sp['image_principale'] ?? '', 'sm')); ?>"
-                                                            alt="<?php echo htmlspecialchars($sp['nom'] ?? 'Produit'); ?>"
-                                                            loading="<?php echo (int) $sidx === 0 ? 'eager' : 'lazy'; ?>"
-                                                            onerror="this.src='/image/produit1.jpg'">
-                                                    </a>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php elseif ($mp_spotlight_img): ?>
-                                <img src="<?php echo htmlspecialchars($mp_spotlight_img, ENT_QUOTES, 'UTF-8'); ?>"
-                                    alt="Aperçu de la sélection" onerror="this.style.display='none'">
-                            <?php else: ?>
-                                <span class="mp-sp-fallback-ico" aria-hidden="true"><i class="fas fa-store"></i></span>
-                            <?php endif; ?>
-                        </div>
-                        <a class="mp-sp-cta" href="produits.php"><span>En savoir plus</span><i
-                                class="fas fa-arrow-right" aria-hidden="true"></i></a>
-                        <?php if (!empty($spotlight_slides) && count($spotlight_slides) > 1): ?>
-                            <div class="mp-sp-dots" id="mpSpotlightDots" role="group"
-                                aria-label="Navigation des sélections de produits">
-                                <?php foreach ($spotlight_slides as $didx => $_s): ?>
-                                    <button type="button" class="mp-sp-dot<?php echo (int) $didx === 0 ? ' is-active' : ''; ?>"
-                                        id="mpSpotlightDot<?php echo (int) $didx; ?>" data-slide-to="<?php echo (int) $didx; ?>"
-                                        aria-selected="<?php echo (int) $didx === 0 ? 'true' : 'false'; ?>"
-                                        aria-label="Sélection <?php echo (int) $didx + 1; ?> sur <?php echo (int) count($spotlight_slides); ?>"></button>
-                                <?php endforeach; ?>
+                        <?php if (empty($boutiques_accueil)): ?>
+                            <div class="mp-bt-panel-empty">
+                                <i class="fas fa-store" aria-hidden="true"></i>
+                                <span>Les boutiques vendeurs apparaîtront ici.</span>
+                            </div>
+                        <?php else: ?>
+                            <div class="mp-bt-panel-grid" role="list">
+                                <?php foreach ($boutiques_accueil as $boutique):
+                                    include __DIR__ . '/includes/partials/boutique_marketplace_tile.php';
+                                endforeach; ?>
                             </div>
                         <?php endif; ?>
-                        <?php if (!empty($spotlight_slides) && count($spotlight_slides) > 1): ?>
-                            <script>
-                                (function () {
-                                    var stack = document.getElementById('mpSpotlightSlides');
-                                    if (!stack) {
-                                        return;
-                                    }
-                                    var ms = parseInt(stack.getAttribute('data-spotlight-interval') || '60000', 10);
-                                    if (isNaN(ms) || ms < 5000) {
-                                        ms = 60000;
-                                    }
-                                    var slides = stack.querySelectorAll('.mp-sp-slide');
-                                    var dots = document.querySelectorAll('#mpSpotlightDots .mp-sp-dot');
-                                    if (slides.length < 2) {
-                                        return;
-                                    }
-                                    var n = slides.length;
-                                    var cur = 0;
-
-                                    function go(i) {
-                                        i = ((i % n) + n) % n;
-                                        cur = i;
-                                        for (var j = 0; j < n; j++) {
-                                            var on = (j === i);
-                                            slides[j].classList.toggle('is-active', on);
-                                            slides[j].setAttribute('aria-hidden', on ? 'false' : 'true');
-                                            if (dots[j]) {
-                                                dots[j].classList.toggle('is-active', on);
-                                                dots[j].setAttribute('aria-selected', on ? 'true' : 'false');
-                                            }
-                                        }
-                                    }
-                                    setInterval(function () {
-                                        go(cur + 1);
-                                    }, ms);
-                                    for (var d = 0; d < dots.length; d++) {
-                                        (function (idx) {
-                                            dots[idx].addEventListener('click', function () {
-                                                go(idx);
-                                            });
-                                        })(d);
-                                    }
-                                })();
-                            </script>
-                        <?php endif; ?>
+                        <a class="mp-bt-panel-cta" href="/boutiques.php">
+                            <span>Voir toutes les boutiques</span>
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
                     </aside>
                 </div>
             </section>

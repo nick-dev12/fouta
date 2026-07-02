@@ -25,7 +25,7 @@ if (!function_exists('marketplace_reserved_public_slugs')) {
             'choix-connexion', 'choix-inscription', 'contact', 'promo', 'nouveautes',
             'conditions-utilisation', 'politique-confidentialite', 'politique-suppression-compte', 'sign-up', 'add-to-panier',
             'commande-personnalisee', 'stock-info', 'facture', 'facture-cp', 'facture-devis',
-            'robots', 'sitemap', 'debug_cp', 'check_php_config', 'generate_sitemap',
+            'robots', 'sitemap', 'boutiques', 'boutiques-proches', 'debug_cp', 'check_php_config', 'generate_sitemap',
             'generate_pwa_icons', 'run_migrate_fcm', 'run_migration_image_cp', 'fix_ssl_certificates',
             'autoload', 'footer', 'nav_bar', 'admin', 'user', 'boutique', 'api', 'css', 'js',
             'image', 'upload', 'config', 'conn', 'vendor', 'page', 'models', 'controllers',

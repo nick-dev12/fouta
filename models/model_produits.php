@@ -148,10 +148,6 @@ function produits_region_filter_code_or_null(int|string|null $boutique_admin_id 
     if (!marketplace_region_filter_applies()) {
         return null;
     }
-    $country = marketplace_get_selected_country_code();
-    if ($country === null || !marketplace_country_supports_regions($country)) {
-        return null;
-    }
     require_once __DIR__ . '/../models/model_admin.php';
     if (!admin_has_boutique_region_column()) {
         return null;

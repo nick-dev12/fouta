@@ -344,6 +344,16 @@
             + '<i class="fa-solid fa-share-nodes" aria-hidden="true"></i></button></div>';
     };
 
+    function readPlatformShareBtn(el) {
+        return {
+            modalTitle: el.getAttribute('data-share-modal-title') || '',
+            title: el.getAttribute('data-share-title') || 'Partager',
+            url: el.getAttribute('data-share-url') || '',
+            message: el.getAttribute('data-share-text') || '',
+            hint: el.getAttribute('data-share-hint') || ''
+        };
+    }
+
     function bindPshareToggleHandler() {
         /* Capture : avant stopPropagation sur cartes cliquables (ex. stock admin). */
         document.addEventListener('click', function (e) {
@@ -367,6 +377,25 @@
                 hint: 'Partagez ce lien pour que vos contacts voient la fiche produit.'
             });
         }, true);
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.js-platform-share');
+            if (!btn) {
+                return;
+            }
+            e.preventDefault();
+            var data = readPlatformShareBtn(btn);
+            if (!data.url && !data.message) {
+                return;
+            }
+            openModal({
+                modalTitle: data.modalTitle || data.title || 'Partager',
+                title: data.title,
+                url: data.url,
+                message: data.message || data.title,
+                hint: data.hint
+            });
+        });
     }
 
     function init() {

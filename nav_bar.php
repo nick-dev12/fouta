@@ -21,7 +21,7 @@ $nav_show_region_filter = false;
 $nav_needs_country_welcome = false;
 $nav_suggested_country = 'SN';
 $nav_region_selected = '';
-$nav_region_selected_label = 'Région';
+$nav_region_selected_label = 'Toutes les régions';
 $nav_country_selected = '';
 $nav_country_selected_label = 'Pays';
 $nav_country_flag_url = '';
@@ -30,6 +30,7 @@ $nav_geo_redirect = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_
 if ($nav_geo_redirect === '' || strpos($nav_geo_redirect, '/') !== 0 || strpos($nav_geo_redirect, '//') === 0) {
     $nav_geo_redirect = '/index.php';
 }
+$nav_regions_for_country = [];
 if ($nav_show_country_filter) {
     require_once __DIR__ . '/includes/marketplace_country_filter.php';
     require_once __DIR__ . '/includes/marketplace_countries.php';
@@ -50,21 +51,19 @@ if ($nav_show_country_filter) {
             $nav_country_flag_url = marketplace_country_flag_url($nav_country_selected, 40);
             $nav_country_flag_url_alt = marketplace_country_flag_url_alt($nav_country_selected, 40);
         }
-        $nav_show_region_filter = marketplace_country_supports_regions($nav_country_selected);
     }
 }
-if ($nav_show_region_filter) {
+if ($nav_show_country_filter && !$nav_needs_country_welcome) {
     require_once __DIR__ . '/includes/marketplace_region_filter.php';
-    $nav_region_selected = marketplace_get_selected_region_code() ?? '';
-    $lbl = marketplace_get_selected_region_label();
-    if ($lbl !== '') {
-        $nav_region_selected_label = $lbl;
+    if (marketplace_region_filter_applies()) {
+        $nav_show_region_filter = true;
+        $nav_country_for_regions = marketplace_region_context_country();
+        $nav_regions_for_country = geo_regions_for_country($nav_country_for_regions);
+        $nav_region_selected = marketplace_get_selected_region_code() ?? '';
+        $nav_region_selected_label = marketplace_get_selected_region_label();
     }
 }
 $nav_region_redirect = $nav_geo_redirect;
-$nav_regions_for_country = ($nav_country_selected !== '')
-    ? geo_regions_for_country($nav_country_selected)
-    : [];
 if (!function_exists('nav_categorie_href')) {
     require_once __DIR__ . '/includes/marketplace_helpers.php';
 }

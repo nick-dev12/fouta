@@ -34,9 +34,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'clear_location') {
     exit;
 }
 
-$lat = geo_parse_coord($_POST['geo_lat'] ?? null);
-$lng = geo_parse_coord($_POST['geo_lng'] ?? null);
-$precision = geo_parse_precision($_POST['geo_precision'] ?? null);
+$lat = geo_parse_coord($_POST['geo_lat'] ?? $_POST['lat'] ?? null);
+$lng = geo_parse_coord($_POST['geo_lng'] ?? $_POST['lng'] ?? null);
+$precision = geo_parse_precision($_POST['geo_precision'] ?? $_POST['precision'] ?? null);
 
 if (geo_coords_valid($lat, $lng)) {
     geo_session_set_location($lat, $lng, $precision);
