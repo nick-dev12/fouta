@@ -1215,19 +1215,19 @@ $seo_json_ld_blocks = [
 
         @media (min-width: 1101px) {
             .mp-showcase-inner {
-                grid-template-columns: 240px minmax(0, 1fr) minmax(260px, 320px);
+                grid-template-columns: 240px minmax(0, 3fr) minmax(0, 2fr);
             }
 
             .mp-showcase-inner.mp-showcase-inner--no-nav {
-                grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+                grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
             }
         }
 
-        /* Tablette : mêmes proportions que desktop, légèrement adaptées */
+        /* Tablette : tendances puis boutiques sur une ligne dédiée pleine largeur */
         @media (min-width: 768px) and (max-width: 1100px) {
             .mp-showcase-inner.mp-showcase-inner--no-nav {
-                grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
-                gap: 14px;
+                grid-template-columns: 1fr;
+                gap: 16px;
             }
 
             .mp-showcase-center {
@@ -1237,6 +1237,7 @@ $seo_json_ld_blocks = [
             .mp-showcase-boutiques {
                 min-height: auto;
                 max-width: 100%;
+                width: 100%;
             }
 
             .mp-promo-b2b-inner {
@@ -1565,41 +1566,36 @@ $seo_json_ld_blocks = [
         .mp-promo-copy .mp-promo-ico {
             font-size: 22px;
             opacity: 0.95;
-            margin-bottom: 10px;
-            display: block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .mp-promo-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: nowrap;
+            margin-bottom: 18px;
+            min-width: 0;
+        }
+
+        .mp-promo-head h2 {
+            margin: 0;
+            font-size: clamp(18px, 2.8vw, 26px);
+            font-weight: 700;
+            font-family: var(--font-titres);
+            line-height: 1.15;
+            white-space: nowrap;
         }
 
         .mp-promo-copy h2 {
-            margin: 0 0 14px;
+            margin: 0;
             font-size: clamp(20px, 3vw, 26px);
             font-weight: 700;
             font-family: var(--font-titres);
             line-height: 1.2;
-        }
-
-        .mp-promo-list {
-            list-style: none;
-            margin: 0 0 22px;
-            padding: 0;
-        }
-
-        .mp-promo-list li {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .mp-promo-list i {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.22);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
         }
 
         .mp-promo-cta {
@@ -2128,9 +2124,10 @@ $seo_json_ld_blocks = [
     $boutiques_accueil = [];
     if (file_exists(__DIR__ . '/models/model_boutiques_marketplace.php')) {
         require_once __DIR__ . '/models/model_boutiques_marketplace.php';
+        require_once __DIR__ . '/includes/marketplace_boutique_card_helpers.php';
         require_once __DIR__ . '/includes/marketplace_country_filter.php';
         $mp_country_boutiques = marketplace_get_selected_country_code();
-        $boutiques_accueil = marketplace_boutiques_featured(6, $mp_country_boutiques);
+        $boutiques_accueil = marketplace_boutiques_featured(4, $mp_country_boutiques, true);
     }
 
     $hero_affiches = [];
@@ -2285,9 +2282,11 @@ $seo_json_ld_blocks = [
 
                     <aside class="mp-showcase-boutiques" aria-labelledby="mp-bt-title">
                         <div class="mp-bt-panel-head">
-                            <span class="mp-bt-panel-badge"><i class="fas fa-store" aria-hidden="true"></i> Vendeurs</span>
                             <h2 id="mp-bt-title">Boutiques partenaires</h2>
-                            <p>Découvrez nos vendeurs partenaires sur la marketplace.</p>
+                            <a class="mp-bt-panel-cta" href="/boutiques.php">
+                                <span>Voir toutes les boutiques</span>
+                                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            </a>
                         </div>
                         <?php if (empty($boutiques_accueil)): ?>
                             <div class="mp-bt-panel-empty">
@@ -2301,10 +2300,6 @@ $seo_json_ld_blocks = [
                                 endforeach; ?>
                             </div>
                         <?php endif; ?>
-                        <a class="mp-bt-panel-cta" href="/boutiques.php">
-                            <span>Voir toutes les boutiques</span>
-                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                        </a>
                     </aside>
                 </div>
             </section>
@@ -2314,14 +2309,10 @@ $seo_json_ld_blocks = [
             <section class="mp-promo-b2b" aria-labelledby="mp-b2b-title">
                 <div class="mp-promo-b2b-inner">
                     <div class="mp-promo-copy">
-                        <span class="mp-promo-ico" aria-hidden="true"><i class="fas fa-trophy"></i></span>
-                        <h2 id="mp-b2b-title">Top des ventes</h2>
-                        <ul class="mp-promo-list">
-                            <li><i class="fas fa-check" aria-hidden="true"></i> Articles les plus commandés sur la
-                                marketplace (volumes réels de vente)</li>
-                            <li><i class="fas fa-check" aria-hidden="true"></i> Découvrez ce que les professionnels et
-                                particuliers achètent le plus</li>
-                        </ul>
+                        <div class="mp-promo-head">
+                            <span class="mp-promo-ico" aria-hidden="true"><i class="fas fa-trophy"></i></span>
+                            <h2 id="mp-b2b-title">Top des ventes</h2>
+                        </div>
                         <a class="mp-promo-cta" href="produits.php">Découvrir dès maintenant</a>
                     </div>
                     <div class="mp-strip-scroll" id="mpStripScroll">
@@ -2428,7 +2419,7 @@ $seo_json_ld_blocks = [
                             <div>
                                 <h2>Nouveautés</h2>
                             </div>
-                            <a class="mp-panel-more" href="produits.php?tri=date">En savoir plus &gt;</a>
+                            <a class="mp-panel-more" href="nouveautes.php">En savoir plus &gt;</a>
                         </header>
                         <div class="mp-panel-products">
                             <?php if (empty($produits_new_panneau)): ?>

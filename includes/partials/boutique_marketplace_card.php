@@ -69,6 +69,47 @@ $bt_geo_label = 'Boutique — ' . $card['nom'];
 
     <div class="mp-bt-card__body">
         <h3 class="mp-bt-card__title"><?php echo htmlspecialchars($card['nom'], ENT_QUOTES, 'UTF-8'); ?></h3>
+        <?php
+        $produits_vignettes = isset($card['produits_vignettes']) && is_array($card['produits_vignettes'])
+            ? array_slice($card['produits_vignettes'], 0, 10)
+            : [];
+        ?>
+        <?php if (!empty($produits_vignettes)):
+            $nb_vignettes = count($produits_vignettes);
+            $marquee_animate = $nb_vignettes >= 4;
+            $marquee_class = 'mp-bt-card__products-marquee' . ($marquee_animate ? '' : ' mp-bt-card__products-marquee--static');
+        ?>
+            <div class="<?php echo $marquee_class; ?>" aria-label="Aperçu des produits de la boutique">
+                <div class="mp-bt-card__products-track">
+                    <?php foreach ($produits_vignettes as $pv): ?>
+                        <a class="mp-bt-card__product-bubble"
+                            href="<?php echo htmlspecialchars((string) ($pv['href'] ?? '#'), ENT_QUOTES, 'UTF-8'); ?>"
+                            title="<?php echo htmlspecialchars((string) ($pv['nom'] ?? 'Produit'), ENT_QUOTES, 'UTF-8'); ?>">
+                            <img src="<?php echo htmlspecialchars((string) ($pv['image_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                onerror="this.src='/image/produit1.jpg'">
+                        </a>
+                    <?php endforeach; ?>
+                    <?php if ($marquee_animate): ?>
+                        <?php foreach ($produits_vignettes as $pv): ?>
+                            <a class="mp-bt-card__product-bubble"
+                                href="<?php echo htmlspecialchars((string) ($pv['href'] ?? '#'), ENT_QUOTES, 'UTF-8'); ?>"
+                                title="<?php echo htmlspecialchars((string) ($pv['nom'] ?? 'Produit'), ENT_QUOTES, 'UTF-8'); ?>"
+                                tabindex="-1"
+                                aria-hidden="true">
+                                <img src="<?php echo htmlspecialchars((string) ($pv['image_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    alt=""
+                                    loading="lazy"
+                                    decoding="async"
+                                    onerror="this.src='/image/produit1.jpg'">
+                            </a>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
         <?php if ($card['distance_km'] !== null && function_exists('geo_format_distance')): ?>
             <p class="mp-bt-card__dist">
                 <i class="fas fa-route" aria-hidden="true"></i>

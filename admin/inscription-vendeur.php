@@ -102,6 +102,9 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                             $sel_country = marketplace_country_default_code();
                         }
                         $sel_region = isset($_POST['boutique_region']) ? (string) $_POST['boutique_region'] : '';
+                        require_once __DIR__ . '/../includes/boutique_types.php';
+                        $sel_boutique_type = isset($_POST['boutique_type_id']) ? (int) $_POST['boutique_type_id'] : 0;
+                        $boutique_types_required = boutique_types_inscription_required();
                         ?>
                         <script type="application/json" id="geoRegionsData"><?php echo geo_regions_json_for_js(); ?></script>
                         <div class="form-group">
@@ -124,6 +127,18 @@ $url_choix_connexion = get_site_base_url() . '/choix-connexion.php';
                                 <i class="fas fa-location-dot" aria-hidden="true"></i>
                             </div>
                         </div>
+
+                        <?php if ($boutique_types_required): ?>
+                        <div class="form-group">
+                            <label for="boutique_type_id"><i class="fas fa-layer-group"></i> Type de boutique *</label>
+                            <div class="input-wrapper">
+                                <select id="boutique_type_id" name="boutique_type_id" required class="auth-select">
+                                    <?php echo boutique_types_options_html($sel_boutique_type, true, 'Sélectionnez un type de boutique'); ?>
+                                </select>
+                                <i class="fas fa-tags" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
                         <div class="form-group">
                             <label for="telephone"><i class="fas fa-phone"></i> Téléphone (connexion) *</label>

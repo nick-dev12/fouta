@@ -125,6 +125,40 @@ function get_slide_by_id($id) {
 }
 
 /**
+ * Prochain ordre d'affichage pour un nouveau slide.
+ *
+ * @param int|null $admin_id Propriétaire vendeur ou null (tous / plateforme)
+ */
+function slider_get_next_ordre($admin_id = null)
+{
+    global $db;
+
+    if (!$db) {
+        return 0;
+    }
+
+    try {
+        if (slider_table_has_admin_id_column() && $admin_id !== null && (int) $admin_id > 0) {
+            $stmt = $db->prepare('
+                SELECT COALESCE(MAX(ordre), -1) + 1 AS next_ordre
+                FROM slider
+                WHERE admin_id = :admin_id
+            ');
+            $stmt->execute(['admin_id' => (int) $admin_id]);
+        } else {
+            $stmt = $db->query('
+                SELECT COALESCE(MAX(ordre), -1) + 1 AS next_ordre
+                FROM slider
+            ');
+        }
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return isset($row['next_ordre']) ? (int) $row['next_ordre'] : 0;
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
  * Crée un nouveau slide
  * @param string $titre Le titre du slide
  * @param string $paragraphe Le paragraphe du slide

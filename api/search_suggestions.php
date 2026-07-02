@@ -25,7 +25,8 @@ if (mb_strlen($q, 'UTF-8') < 2) {
 $boutique_admin_id = null;
 if (!empty($_GET['boutique'])) {
     require_once __DIR__ . '/../models/model_admin.php';
-    $row = get_admin_by_boutique_slug(trim((string) $_GET['boutique']));
+    require_once __DIR__ . '/../includes/boutique_slug_redirect.php';
+    $row = resolve_vendeur_by_boutique_slug(trim((string) $_GET['boutique']));
     if ($row && ($row['role'] ?? '') === 'vendeur' && ($row['statut'] ?? '') === 'actif') {
         $boutique_admin_id = (int) $row['id'];
     }

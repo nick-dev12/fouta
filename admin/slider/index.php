@@ -6,15 +6,64 @@
 
 require_once __DIR__ . '/../includes/require_admin_session.php';
 
+require_once __DIR__ . '/../../includes/flash_toast.php';
+require_once __DIR__ . '/../../includes/upload_image_limits.php';
+require_once __DIR__ . '/../../controllers/controller_slider.php';
+require_once __DIR__ . '/../../models/model_slider.php';
 
-
-$success_message = '';
 if (isset($_SESSION['success_message'])) {
-    $success_message = $_SESSION['success_message'];
+    flash_toast_push('success', (string) $_SESSION['success_message']);
     unset($_SESSION['success_message']);
 }
 
-require_once __DIR__ . '/../../models/model_slider.php';
+$show_add_modal = isset($_GET['ajouter']) && $_GET['ajouter'] === '1';
+$show_edit_modal = false;
+$edit_slide_id = isset($_GET['modifier']) ? (int) $_GET['modifier'] : 0;
+$edit_slide = null;
+$edit_slide_img = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_slide_image'])) {
+    $add_result = process_add_slide_image_only();
+    if (!empty($add_result['success'])) {
+        flash_toast_push('success', $add_result['message']);
+        header('Location: index.php');
+        exit;
+    }
+    if (!empty($add_result['message'])) {
+        flash_toast_queue_page('error', str_replace('<br>', ' — ', $add_result['message']));
+    }
+    $show_add_modal = true;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_slide_image'])) {
+    $posted_slide_id = (int) ($_POST['slide_id'] ?? 0);
+    $edit_result = process_update_slide_image_only($posted_slide_id);
+    if (!empty($edit_result['success'])) {
+        flash_toast_push('success', $edit_result['message']);
+        header('Location: index.php');
+        exit;
+    }
+    if (!empty($edit_result['message'])) {
+        flash_toast_queue_page('error', str_replace('<br>', ' — ', $edit_result['message']));
+    }
+    $edit_slide_id = $posted_slide_id;
+    $show_edit_modal = true;
+}
+
+if ($edit_slide_id > 0) {
+    $edit_slide = get_slide_by_id($edit_slide_id);
+    if (!$edit_slide || !slider_admin_can_manage_slide($edit_slide)) {
+        $edit_slide = null;
+        $edit_slide_id = 0;
+        $show_edit_modal = false;
+    } else {
+        $edit_slide_img = '/upload/slider/' . (string) ($edit_slide['image'] ?? '');
+        if (isset($_GET['modifier'])) {
+            $show_edit_modal = true;
+        }
+    }
+}
+
 $slides = get_all_slides(null);
 $is_vendeur = isset($_SESSION['admin_role']) && ($_SESSION['admin_role'] ?? '') === 'vendeur' && !empty($_SESSION['admin_id']);
 if ($is_vendeur) {
@@ -33,10 +82,11 @@ $nb_inactif = $nb_total - $nb_actif;
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion du Slider &mdash; Administration</title>
+    <title>Gestion des affiches publicitaires &mdash; Administration</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-slider-add-modal.css<?php echo asset_version_query(); ?>">
     <style>
         /* ===== SLIDER INDEX v2 ===== */
 
@@ -155,6 +205,8 @@ $nb_inactif = $nb_total - $nb_actif;
             font-size: 0.83rem; font-weight: 700;
             text-decoration: none; transition: background 0.2s;
             white-space: nowrap; align-self: flex-start;
+            cursor: pointer;
+            font-family: var(--font-corps, 'Poppins', sans-serif);
         }
 
         .sl-hero__cta:hover { background: rgba(255,255,255,0.26); }
@@ -252,11 +304,12 @@ $nb_inactif = $nb_total - $nb_actif;
         }
 
         .sl-card__img {
-            width: 100%; height: 100%; object-fit: cover;
+            width: 100%; height: 100%; object-fit: contain;
             transition: transform 0.35s;
+            background: #f1f5f9;
         }
 
-        .sl-card:hover .sl-card__img { transform: scale(1.04); }
+        .sl-card:hover .sl-card__img { transform: none; }
 
         /* Overlay ordre */
         .sl-card__order-badge {
@@ -330,6 +383,7 @@ $nb_inactif = $nb_total - $nb_actif;
             text-decoration: none;
             transition: all 0.18s; border: none; cursor: pointer;
             font-family: var(--font-corps, 'Poppins', sans-serif);
+            background: transparent;
         }
 
         .sl-card-btn--edit   { background: rgba(67,56,202,0.1); color: #4338ca; }
@@ -374,14 +428,11 @@ $nb_inactif = $nb_total - $nb_actif;
                 <p class="sl-page-header__eyebrow">
                     <i class="fas fa-images"></i> Contenu publicitaire
                 </p>
-                <h1 class="sl-page-header__title">Gestion du Slider</h1>
+                <h1 class="sl-page-header__title">Gestion des affiches publicitaires</h1>
             </div>
             <div class="sl-page-header__actions">
                 <a href="../parametres.php" class="sl-btn sl-btn--outline">
                     <i class="fas fa-arrow-left"></i> Param&egrave;tres
-                </a>
-                <a href="ajouter.php" class="sl-btn sl-btn--primary">
-                    <i class="fas fa-plus"></i> Nouveau slide
                 </a>
             </div>
         </header>
@@ -392,25 +443,10 @@ $nb_inactif = $nb_total - $nb_actif;
                 <div>
                     <p class="sl-hero__label">Carrousel principal</p>
                     <div class="sl-hero__count"><?php echo $nb_total; ?></div>
-                    <p class="sl-hero__sub">
-                        slide<?php echo $nb_total > 1 ? 's' : ''; ?> enregistr&eacute;<?php echo $nb_total > 1 ? 's' : ''; ?>
-                    </p>
-                    <div class="sl-hero__pills">
-                        <div class="sl-hero__pill sl-hero__pill--on">
-                            <i class="fas fa-circle-check" style="font-size:.7rem;"></i>
-                            <span><strong><?php echo $nb_actif; ?></strong> actif<?php echo $nb_actif > 1 ? 's' : ''; ?></span>
-                        </div>
-                        <?php if ($nb_inactif > 0): ?>
-                            <div class="sl-hero__pill sl-hero__pill--off">
-                                <i class="fas fa-circle-pause" style="font-size:.7rem;"></i>
-                                <span><strong><?php echo $nb_inactif; ?></strong> inactif<?php echo $nb_inactif > 1 ? 's' : ''; ?></span>
-                            </div>
-                        <?php endif; ?>
-                    </div>
                 </div>
-                <a href="ajouter.php" class="sl-hero__cta">
-                    <i class="fas fa-plus"></i> Ajouter un slide
-                </a>
+                <button type="button" class="sl-hero__cta" data-sl-open-add>
+                    <i class="fas fa-plus"></i> Ajouter une affiche publicitaire
+                </button>
             </div>
         </div>
 
@@ -439,23 +475,23 @@ $nb_inactif = $nb_total - $nb_actif;
             </div>
         </div>
 
-        <!-- ===== LISTE SLIDES ===== -->
+        <!-- ===== LISTE AFFICHES ===== -->
         <?php if (empty($slides)): ?>
 
             <div class="sl-empty">
                 <div class="sl-empty__icon"><i class="fas fa-images"></i></div>
-                <h3>Aucun slide enregistr&eacute;</h3>
-                <p>Ajoutez votre premier slide publicitaire pour l&rsquo;afficher sur la page d&rsquo;accueil.</p>
-                <a href="ajouter.php" class="sl-btn sl-btn--primary">
-                    <i class="fas fa-plus"></i> Ajouter le premier slide
-                </a>
+                <h3>Aucune affiche publicitaire enregistr&eacute;e</h3>
+                <p>Ajoutez votre premi&egrave;re affiche publicitaire pour l&rsquo;afficher sur la page d&rsquo;accueil.</p>
+                <button type="button" class="sl-btn sl-btn--primary" data-sl-open-add>
+                    <i class="fas fa-plus"></i> Ajouter la premi&egrave;re affiche publicitaire
+                </button>
             </div>
 
         <?php else: ?>
 
             <div class="sl-section-head">
                 <h2 class="sl-section-head__title">
-                    Slides du carrousel (<?php echo $nb_total; ?>)
+                    Affiches publicitaires du carrousel (<?php echo $nb_total; ?>)
                 </h2>
             </div>
 
@@ -466,6 +502,7 @@ $nb_inactif = $nb_total - $nb_actif;
                     $titre_safe  = htmlspecialchars($slide['titre'] ?? '');
                     $para_safe   = htmlspecialchars($slide['paragraphe'] ?? '');
                     $img_path    = '/upload/slider/' . htmlspecialchars($slide['image'] ?? '');
+                    $has_card_text = $titre_safe !== '' || $para_safe !== '' || !empty($slide['bouton_texte']);
                 ?>
                     <article class="sl-card <?php echo !$is_actif ? 'sl-card--inactive' : ''; ?>">
 
@@ -488,6 +525,7 @@ $nb_inactif = $nb_total - $nb_actif;
                         </div>
 
                         <!-- Body -->
+                        <?php if ($has_card_text): ?>
                         <div class="sl-card__body">
                             <?php if ($titre_safe !== ''): ?>
                                 <h3 class="sl-card__title"><?php echo $titre_safe; ?></h3>
@@ -502,16 +540,20 @@ $nb_inactif = $nb_total - $nb_actif;
                                 </span>
                             <?php endif; ?>
                         </div>
+                        <?php endif; ?>
 
                         <!-- Footer -->
                         <div class="sl-card__footer">
-                            <a href="modifier.php?id=<?php echo (int)$slide['id']; ?>"
-                                class="sl-card-btn sl-card-btn--edit">
+                            <button type="button"
+                                class="sl-card-btn sl-card-btn--edit"
+                                data-sl-open-edit
+                                data-slide-id="<?php echo (int) $slide['id']; ?>"
+                                data-slide-img="/upload/slider/<?php echo htmlspecialchars((string) ($slide['image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
                                 <i class="fas fa-pen-to-square"></i> Modifier
-                            </a>
+                            </button>
                             <a href="supprimer.php?id=<?php echo (int)$slide['id']; ?>"
                                 class="sl-card-btn sl-card-btn--delete"
-                                onclick="return confirm('Supprimer ce slide définitivement ?');">
+                                onclick="return confirm('Supprimer cette affiche publicitaire définitivement ?');">
                                 <i class="fas fa-trash"></i> Supprimer
                             </a>
                         </div>
@@ -524,6 +566,113 @@ $nb_inactif = $nb_total - $nb_actif;
 
     </div><!-- /.sl-page -->
 
+    <div class="sl-add-overlay" id="slAddOverlay"
+        <?php echo $show_add_modal ? '' : 'hidden'; ?>
+        aria-hidden="<?php echo $show_add_modal ? 'false' : 'true'; ?>"
+        data-open-on-load="<?php echo $show_add_modal ? '1' : '0'; ?>">
+        <div class="sl-add-modal" role="dialog" aria-modal="true" aria-labelledby="slAddTitle">
+            <header class="sl-add-modal__head">
+                <div>
+                    <p class="sl-add-modal__eyebrow"><i class="fas fa-image"></i> Nouvelle affiche publicitaire</p>
+                    <h2 class="sl-add-modal__title" id="slAddTitle">Ajouter une affiche publicitaire</h2>
+                    <p class="sl-add-modal__sub">Importez votre visuel — il sera affiché dans le carrousel de votre vitrine.</p>
+                </div>
+                <button type="button" class="sl-add-modal__close" data-sl-close-modal aria-label="Fermer">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </header>
+            <div class="sl-add-modal__body">
+                <form method="POST" action="index.php" enctype="multipart/form-data" id="slAddForm">
+                    <input type="hidden" name="add_slide_image" value="1">
+                    <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo (int) UPLOAD_MAX_IMAGE_BYTES; ?>">
+
+                    <div class="sl-add-drop" id="slAddDrop">
+                        <input type="file" class="sl-add-drop__input" id="slAddImage" name="image"
+                            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/avif" required
+                            aria-label="Choisir une image d'affiche publicitaire">
+
+                        <div class="sl-add-drop__placeholder">
+                            <span class="sl-add-drop__icon"><i class="fas fa-cloud-arrow-up"></i></span>
+                            <span class="sl-add-drop__label">Glissez votre image ici</span>
+                            <span class="sl-add-drop__hint">ou cliquez pour parcourir — JPEG, PNG, GIF, WEBP, AVIF (max. 20 Mo)</span>
+                        </div>
+
+                        <div class="sl-add-preview" id="slAddPreview">
+                            <img src="" alt="" class="sl-add-preview__img" id="slAddPreviewImg">
+                            <span class="sl-add-preview__change"><i class="fas fa-pen"></i> Changer</span>
+                        </div>
+                    </div>
+
+                    <div class="sl-add-modal__actions">
+                        <button type="button" class="sl-add-modal__btn sl-add-modal__btn--ghost" data-sl-close-modal>
+                            Annuler
+                        </button>
+                        <button type="submit" class="sl-add-modal__btn sl-add-modal__btn--primary" id="slAddSubmit" disabled>
+                            <i class="fas fa-check"></i> Enregistrer l'affiche publicitaire
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="sl-add-overlay" id="slEditOverlay"
+        <?php echo $show_edit_modal ? '' : 'hidden'; ?>
+        aria-hidden="<?php echo $show_edit_modal ? 'false' : 'true'; ?>"
+        data-open-on-load="<?php echo $show_edit_modal ? '1' : '0'; ?>">
+        <div class="sl-add-modal" role="dialog" aria-modal="true" aria-labelledby="slEditTitle">
+            <header class="sl-add-modal__head">
+                <div>
+                    <p class="sl-add-modal__eyebrow"><i class="fas fa-pen-to-square"></i> Modification</p>
+                    <h2 class="sl-add-modal__title" id="slEditTitle">Modifier l'affiche publicitaire</h2>
+                    <p class="sl-add-modal__sub">Remplacez l'image actuelle par un nouveau visuel pour votre carrousel.</p>
+                </div>
+                <button type="button" class="sl-add-modal__close" data-sl-close-modal aria-label="Fermer">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </header>
+            <div class="sl-add-modal__body">
+                <form method="POST" action="index.php" enctype="multipart/form-data" id="slEditForm">
+                    <input type="hidden" name="edit_slide_image" value="1">
+                    <input type="hidden" name="slide_id" id="slEditSlideId"
+                        value="<?php echo $show_edit_modal ? (int) $edit_slide_id : 0; ?>"
+                        <?php if ($show_edit_modal && $edit_slide_img !== ''): ?>
+                        data-initial-img="<?php echo htmlspecialchars($edit_slide_img, ENT_QUOTES, 'UTF-8'); ?>"
+                        <?php endif; ?>>
+                    <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo (int) UPLOAD_MAX_IMAGE_BYTES; ?>">
+
+                    <div class="sl-add-drop<?php echo ($show_edit_modal && $edit_slide_img !== '') ? ' is-has-preview' : ''; ?>" id="slEditDrop">
+                        <input type="file" class="sl-add-drop__input" id="slEditImage" name="image"
+                            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/avif" required
+                            aria-label="Choisir une nouvelle image d'affiche publicitaire">
+
+                        <div class="sl-add-drop__placeholder">
+                            <span class="sl-add-drop__icon"><i class="fas fa-cloud-arrow-up"></i></span>
+                            <span class="sl-add-drop__label">Glissez la nouvelle image ici</span>
+                            <span class="sl-add-drop__hint">ou cliquez pour parcourir — JPEG, PNG, GIF, WEBP, AVIF (max. 20 Mo)</span>
+                        </div>
+
+                        <div class="sl-add-preview" id="slEditPreview" style="<?php echo ($show_edit_modal && $edit_slide_img !== '') ? 'display:block;' : ''; ?>">
+                            <img src="<?php echo $show_edit_modal && $edit_slide_img !== '' ? htmlspecialchars($edit_slide_img, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                alt="Image actuelle" class="sl-add-preview__img" id="slEditPreviewImg">
+                            <span class="sl-add-preview__change"><i class="fas fa-pen"></i> Changer</span>
+                        </div>
+                    </div>
+
+                    <div class="sl-add-modal__actions">
+                        <button type="button" class="sl-add-modal__btn sl-add-modal__btn--ghost" data-sl-close-modal>
+                            Annuler
+                        </button>
+                        <button type="submit" class="sl-add-modal__btn sl-add-modal__btn--primary" id="slEditSubmit" disabled>
+                            <i class="fas fa-check"></i> Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <?php include '../includes/footer.php'; ?>
+    <script src="/js/admin-slider-modal.js<?php echo asset_version_query(); ?>"></script>
 </body>
 </html>

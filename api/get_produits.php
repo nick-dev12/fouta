@@ -10,13 +10,14 @@ session_start();
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_admin.php';
+require_once __DIR__ . '/../includes/boutique_slug_redirect.php';
 require_once __DIR__ . '/../includes/marketplace_helpers.php';
 require_once __DIR__ . '/../includes/catalogue_shuffle.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 
 $boutique_admin_id = null;
 if (!empty($_GET['boutique'])) {
-    $row = get_admin_by_boutique_slug(trim((string) $_GET['boutique']));
+    $row = resolve_vendeur_by_boutique_slug(trim((string) $_GET['boutique']));
     if ($row && ($row['role'] ?? '') === 'vendeur' && ($row['statut'] ?? '') === 'actif') {
         $boutique_admin_id = (int) $row['id'];
     }

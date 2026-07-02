@@ -43,6 +43,21 @@ if ($__param_role === 'vendeur') {
     require_once __DIR__ . '/../models/model_admin.php';
     $vbl_admin_id = (int) ($_SESSION['admin_id'] ?? 0);
     $vbl_admin = $vbl_admin_id > 0 ? get_admin_by_id($vbl_admin_id) : null;
+    if ($vbl_admin && ($vbl_admin['role'] ?? '') === 'vendeur') {
+        admin_sync_vendeur_boutique_session_from_admin($vbl_admin);
+        $__vendeur_boutique_slug = trim((string) ($vbl_admin['boutique_slug'] ?? ''));
+        $__vendeur_boutique_nom_aff = trim((string) ($vbl_admin['boutique_nom'] ?? ''));
+        if ($__vendeur_boutique_nom_aff === '') {
+            $__vendeur_boutique_nom_aff = 'Ma boutique';
+        }
+        $__vendeur_site_path = '';
+        $__vendeur_site_full_url = '';
+        if ($__vendeur_boutique_slug !== '') {
+            $__vendeur_site_path = boutique_url('index.php', $__vendeur_boutique_slug);
+            $__vendeur_site_full_url = rtrim(get_site_base_url(), '/') . $__vendeur_site_path;
+        }
+        $__voir_site_href = ($__vendeur_boutique_slug !== '') ? $__vendeur_site_path : '../index.php';
+    }
     require_once __DIR__ . '/includes/vendeur_boutique_localisation.php';
 }
 

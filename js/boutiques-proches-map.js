@@ -1,5 +1,5 @@
 /**
- * Carte interactive — boutiques proches (Leaflet).
+ * Carte interactive — boutiques proches (Leaflet) + filtres type / distance.
  */
 (function (win, doc) {
     'use strict';
@@ -9,10 +9,12 @@
     var userMarker = null;
     var markerById = {};
     var selectedId = null;
-    var state = { user: null, boutiques: [] };
+    var state = { user: null, allBoutiques: [], boutiques: [] };
     var sidePanel = null;
     var listPanel = null;
     var listToggle = null;
+    var filterTypeEl = null;
+    var filterDistEl = null;
 
     function readPayload() {
         var el = doc.getElementById('mpBtMapData');
@@ -22,9 +24,90 @@
         try {
             var data = JSON.parse(el.textContent || '{}');
             state.user = data.user || null;
-            state.boutiques = Array.isArray(data.boutiques) ? data.boutiques : [];
+            state.allBoutiques = Array.isArray(data.boutiques) ? data.boutiques : [];
+            var filters = data.filters || {};
+            if (filterTypeEl && filters.type_id != null) {
+                filterTypeEl.value = String(filters.type_id || '');
+            }
+            if (filterDistEl && filters.dist_km != null) {
+                filterDistEl.value = String(filters.dist_km || '0');
+            }
+            applyMapFilters(false);
         } catch (e) {
+            state.allBoutiques = [];
             state.boutiques = [];
+        }
+    }
+
+    function getFilterValues() {
+        var typeId = filterTypeEl ? parseInt(filterTypeEl.value, 10) : 0;
+        var maxDist = filterDistEl ? parseFloat(filterDistEl.value) : 0;
+        if (isNaN(typeId) || typeId < 0) {
+            typeId = 0;
+        }
+        if (isNaN(maxDist) || maxDist < 0) {
+            maxDist = 0;
+        }
+        return { typeId: typeId, maxDist: maxDist };
+    }
+
+    function applyMapFilters(updateUrl) {
+        if (updateUrl === undefined) {
+            updateUrl = true;
+        }
+        var f = getFilterValues();
+        state.boutiques = state.allBoutiques.filter(function (item) {
+            if (f.typeId > 0 && Number(item.type_id || 0) !== f.typeId) {
+                return false;
+            }
+            if (f.maxDist > 0 && item.distance_km != null && Number(item.distance_km) > f.maxDist) {
+                return false;
+            }
+            return true;
+        });
+
+        if (selectedId && !state.boutiques.some(function (b) { return String(b.id) === String(selectedId); })) {
+            hideDetailPanel();
+        }
+
+        if (map && markersLayer) {
+            rebuildMarkers();
+        }
+        buildList();
+
+        if (updateUrl) {
+            syncUrlParams(f.typeId, f.maxDist);
+        }
+    }
+
+    function syncUrlParams(typeId, maxDist) {
+        try {
+            var params = new URLSearchParams(win.location.search || '');
+            if (typeId > 0) {
+                params.set('type', String(typeId));
+            } else {
+                params.delete('type');
+            }
+            if (maxDist > 0) {
+                params.set('dist', String(maxDist));
+            } else {
+                params.delete('dist');
+            }
+            params.delete('page');
+            params.delete('open_map');
+            var qs = params.toString();
+            win.history.replaceState({}, '', win.location.pathname + (qs ? '?' + qs : ''));
+        } catch (e) { /* ignore */ }
+
+        var catalogType = doc.getElementById('mpBtFilterType');
+        if (catalogType) {
+            catalogType.value = typeId > 0 ? String(typeId) : '';
+        }
+        if (filterDistEl) {
+            var catalogDist = doc.getElementById('mpBtFilterDist');
+            if (catalogDist) {
+                catalogDist.value = maxDist > 0 ? String(maxDist) : '0';
+            }
         }
     }
 
@@ -241,6 +324,13 @@
             return da - db;
         });
 
+        if (!sorted.length) {
+            var emptyLi = doc.createElement('li');
+            emptyLi.className = 'mp-bt-map-list__item mp-bt-map-list__item--empty';
+            emptyLi.textContent = 'Aucune boutique pour ces filtres.';
+            listEl.appendChild(emptyLi);
+        }
+
         sorted.forEach(function (item) {
             var li = doc.createElement('li');
             li.className = 'mp-bt-map-list__item';
@@ -277,45 +367,32 @@
         }
     }
 
-    function initMap() {
-        if (!win.L) {
+    function fitMapToVisible() {
+        if (!map) {
             return;
         }
-        var canvas = doc.getElementById('mpBtMapCanvas');
-        if (!canvas || !state.boutiques.length) {
-            return;
-        }
-
-        if (map) {
-            map.invalidateSize();
-            buildList();
-            return;
-        }
-
-        var centerLat = state.user ? state.user.lat : state.boutiques[0].lat;
-        var centerLng = state.user ? state.user.lng : state.boutiques[0].lng;
-
-        map = L.map(canvas, { zoomControl: true }).setView([centerLat, centerLng], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
-
-        markersLayer = L.layerGroup().addTo(map);
-        markerById = {};
         var bounds = [];
-
         if (state.user && state.user.lat && state.user.lng) {
-            userMarker = L.circleMarker([state.user.lat, state.user.lng], {
-                radius: 8,
-                color: '#3564a6',
-                fillColor: '#3564a6',
-                fillOpacity: 0.85,
-                weight: 2
-            }).addTo(map);
-            userMarker.bindTooltip('Vous', { permanent: false, direction: 'top' });
             bounds.push([state.user.lat, state.user.lng]);
         }
+        state.boutiques.forEach(function (item) {
+            if (item.lat && item.lng) {
+                bounds.push([item.lat, item.lng]);
+            }
+        });
+        if (bounds.length > 1) {
+            map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+        } else if (bounds.length === 1) {
+            map.setView(bounds[0], 14);
+        }
+    }
+
+    function rebuildMarkers() {
+        if (!map || !markersLayer) {
+            return;
+        }
+        markersLayer.clearLayers();
+        markerById = {};
 
         state.boutiques.forEach(function (item) {
             if (!item.lat || !item.lng) {
@@ -330,17 +407,58 @@
             });
             marker.addTo(markersLayer);
             markerById[item.id] = marker;
-            bounds.push([item.lat, item.lng]);
         });
+
+        fitMapToVisible();
+    }
+
+    function initMap() {
+        if (!win.L) {
+            return;
+        }
+        var canvas = doc.getElementById('mpBtMapCanvas');
+        if (!canvas) {
+            return;
+        }
+
+        if (map) {
+            map.invalidateSize();
+            rebuildMarkers();
+            buildList();
+            return;
+        }
+
+        if (!state.allBoutiques.length && !state.user) {
+            return;
+        }
+
+        var centerLat = state.user ? state.user.lat : (state.boutiques[0] ? state.boutiques[0].lat : 14.6928);
+        var centerLng = state.user ? state.user.lng : (state.boutiques[0] ? state.boutiques[0].lng : -17.4467);
+
+        map = L.map(canvas, { zoomControl: true }).setView([centerLat, centerLng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        markersLayer = L.layerGroup().addTo(map);
+
+        if (state.user && state.user.lat && state.user.lng) {
+            userMarker = L.circleMarker([state.user.lat, state.user.lng], {
+                radius: 8,
+                color: '#3564a6',
+                fillColor: '#3564a6',
+                fillOpacity: 0.85,
+                weight: 2
+            }).addTo(map);
+            userMarker.bindTooltip('Vous', { permanent: false, direction: 'top' });
+        }
 
         map.on('click', function () {
             hideDetailPanel();
         });
 
-        if (bounds.length > 1) {
-            map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
-        }
-
+        rebuildMarkers();
         buildList();
         hideDetailPanel();
 
@@ -360,6 +478,21 @@
         sidePanel = doc.getElementById('mpBtMapSide');
         listPanel = doc.getElementById('mpBtMapList');
         listToggle = doc.getElementById('mpBtMapListToggle');
+        filterTypeEl = doc.getElementById('mpBtMapFilterType');
+        filterDistEl = doc.getElementById('mpBtMapFilterDist');
+
+        readPayload();
+
+        if (filterTypeEl) {
+            filterTypeEl.addEventListener('change', function () {
+                applyMapFilters(true);
+            });
+        }
+        if (filterDistEl) {
+            filterDistEl.addEventListener('change', function () {
+                applyMapFilters(true);
+            });
+        }
 
         var openBtn = doc.getElementById('mpBtOpenMap');
         if (openBtn) {
@@ -411,7 +544,6 @@
         });
     }
 
-    readPayload();
     win.openBoutiquesMapModal = openModal;
 
     if (doc.readyState === 'loading') {

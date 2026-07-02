@@ -2,10 +2,10 @@
  * Met à jour la liste des régions selon le pays sélectionné (UI uniquement).
  */
 (function () {
-    function initGeoCountryRegion(countryId, regionId) {
-        var dataEl = document.getElementById('geoRegionsData');
-        var countrySel = document.getElementById(countryId);
-        var regionSel = document.getElementById(regionId);
+    function initGeoCountryRegion(countryId, regionId, dataElId) {
+        var dataEl = document.getElementById(dataElId || 'geoRegionsData');
+        var countrySel = typeof countryId === 'string' ? document.getElementById(countryId) : countryId;
+        var regionSel = typeof regionId === 'string' ? document.getElementById(regionId) : regionId;
         if (!dataEl || !countrySel || !regionSel) {
             return;
         }
@@ -46,6 +46,8 @@
         });
         refresh(false);
     }
+
+    window.initGeoCountryRegion = initGeoCountryRegion;
 
     document.addEventListener('DOMContentLoaded', function () {
         initGeoCountryRegion('boutique_country', 'boutique_region');

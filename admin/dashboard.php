@@ -47,6 +47,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_add_produit'])
 
 $__role_dash = admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin');
 $fap_use_category_hierarchy = categories_hierarchy_enabled() && ($__role_dash === 'vendeur');
+
+$__vendeur_rappel_pending = false;
+$__vendeur_admin = false;
+if ($__role_dash === 'vendeur') {
+    require_once __DIR__ . '/../models/model_vendeur_rappels.php';
+    require_once __DIR__ . '/../models/model_admin.php';
+    $__vendeur_admin = get_admin_by_id((int) ($_SESSION['admin_id'] ?? 0));
+    if ($__vendeur_admin && ($__vendeur_admin['role'] ?? '') === 'vendeur') {
+        $__vendeur_rappel_pending = vendeur_rappel_get_pending_for_dashboard((int) $__vendeur_admin['id']);
+        if ($__vendeur_rappel_pending === false) {
+            $__vendeur_rappel_pending = false;
+        }
+    }
+}
+
 $vcat_prefill_sub = 0;
 $vcat_prefill_generale = 0;
 $vendeur_genre_ids_prefill = [];
@@ -1930,6 +1945,9 @@ if (count($dash_promo_images) < 4) {
         vendeur_share_boutique_render_script([
             'open_button_ids' => ['dashHeroShareBoutique'],
         ]);
+    }
+    if ($__role_dash === 'vendeur' && !empty($__vendeur_rappel_pending) && is_array($__vendeur_rappel_pending)) {
+        include dirname(__DIR__) . '/includes/partials/vendeur_rappel_modal.php';
     }
     ?>
     <?php include 'includes/footer.php'; ?>

@@ -116,6 +116,124 @@ function process_add_slide() {
 }
 
 /**
+ * Ajout d'une affiche publicitaire (image uniquement).
+ *
+ * @return array{success: bool, message: string}
+ */
+function process_add_slide_image_only()
+{
+    $errors = [];
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['add_slide_image'])) {
+        return ['success' => false, 'message' => ''];
+    }
+
+    $image = upload_slider_image('image');
+    if (!$image) {
+        if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'Veuillez sélectionner une image pour votre affiche.';
+        } elseif (isset($_SESSION['upload_error'])) {
+            $errors[] = $_SESSION['upload_error'];
+            unset($_SESSION['upload_error']);
+        } else {
+            $errors[] = 'Erreur lors de l\'upload. Formats acceptés : JPEG, PNG, GIF, WEBP, AVIF (max. 20 Mo).';
+        }
+    }
+
+    if (!empty($errors)) {
+        return [
+            'success' => false,
+            'message' => implode('<br>', $errors),
+        ];
+    }
+
+    $admin_id_slide = null;
+    if (isset($_SESSION['admin_role']) && ($_SESSION['admin_role'] ?? '') === 'vendeur' && !empty($_SESSION['admin_id'])) {
+        $admin_id_slide = (int) $_SESSION['admin_id'];
+    }
+
+    $ordre = slider_get_next_ordre($admin_id_slide);
+    $slide_id = add_slide('', '', $image, null, null, $ordre, 'actif', $admin_id_slide);
+
+    if ($slide_id) {
+        return ['success' => true, 'message' => 'Affiche ajoutée avec succès.'];
+    }
+
+    return ['success' => false, 'message' => 'Impossible d\'enregistrer l\'affiche. Réessayez.'];
+}
+
+function slider_admin_can_manage_slide($slide)
+{
+    if (!is_array($slide) || empty($slide['id'])) {
+        return false;
+    }
+
+    $role = $_SESSION['admin_role'] ?? '';
+    if ($role !== 'vendeur') {
+        return true;
+    }
+
+    if (!slider_table_has_admin_id_column()) {
+        return false;
+    }
+
+    return isset($slide['admin_id']) && (int) $slide['admin_id'] === (int) ($_SESSION['admin_id'] ?? 0);
+}
+
+/**
+ * Modification d'une affiche (image uniquement).
+ *
+ * @return array{success: bool, message: string}
+ */
+function process_update_slide_image_only($slide_id)
+{
+    $slide_id = (int) $slide_id;
+    if ($slide_id <= 0) {
+        return ['success' => false, 'message' => 'Affiche introuvable.'];
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['edit_slide_image'])) {
+        return ['success' => false, 'message' => ''];
+    }
+
+    $current = get_slide_by_id($slide_id);
+    if (!$current || !slider_admin_can_manage_slide($current)) {
+        return ['success' => false, 'message' => 'Affiche introuvable.'];
+    }
+
+    if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'Veuillez sélectionner une nouvelle image.'];
+    }
+
+    $image = upload_slider_image('image', $current['image']);
+    if (!$image) {
+        if (isset($_SESSION['upload_error'])) {
+            $message = (string) $_SESSION['upload_error'];
+            unset($_SESSION['upload_error']);
+            return ['success' => false, 'message' => $message];
+        }
+        return ['success' => false, 'message' => 'Erreur lors de l\'upload. Formats acceptés : JPEG, PNG, GIF, WEBP, AVIF (max. 20 Mo).'];
+    }
+
+    $ok = update_slide(
+        $slide_id,
+        (string) ($current['titre'] ?? ''),
+        (string) ($current['paragraphe'] ?? ''),
+        $image,
+        $current['bouton_texte'] ?? null,
+        $current['bouton_lien'] ?? null,
+        (int) ($current['ordre'] ?? 0),
+        (string) ($current['statut'] ?? 'actif')
+    );
+
+    if ($ok) {
+        return ['success' => true, 'message' => 'Affiche modifiée avec succès.'];
+    }
+
+    return ['success' => false, 'message' => 'Impossible de modifier l\'affiche. Réessayez.'];
+}
+
+/**
  * Traite la modification d'un slide
  * @param int $slide_id L'ID du slide
  * @return array Tableau avec 'success' (bool) et 'message' (string)

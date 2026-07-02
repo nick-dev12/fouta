@@ -405,6 +405,7 @@ function process_inscription_vendeur() {
     require_once __DIR__ . '/../includes/marketplace_helpers.php';
     require_once __DIR__ . '/../includes/marketplace_countries.php';
     require_once __DIR__ . '/../includes/geo_regions.php';
+    require_once __DIR__ . '/../includes/boutique_types.php';
 
     $identite = isset($_POST['identite']) ? trim((string) $_POST['identite']) : '';
     $email = isset($_POST['email']) ? trim((string) $_POST['email']) : '';
@@ -414,6 +415,7 @@ function process_inscription_vendeur() {
     $boutique_nom = isset($_POST['boutique_nom']) ? trim((string) $_POST['boutique_nom']) : '';
     $boutique_country = isset($_POST['boutique_country']) ? strtoupper(trim((string) $_POST['boutique_country'])) : '';
     $boutique_region = isset($_POST['boutique_region']) ? trim((string) $_POST['boutique_region']) : '';
+    $boutique_type_id_raw = isset($_POST['boutique_type_id']) ? (int) $_POST['boutique_type_id'] : 0;
 
     $errors = [];
     if (mb_strlen($identite) < 2) {
@@ -440,6 +442,11 @@ function process_inscription_vendeur() {
     if ($boutique_country !== '' && ($boutique_region === '' || !geo_region_is_valid($boutique_country, $boutique_region))) {
         $errors[] = 'Veuillez sélectionner la région de votre boutique.';
     }
+    $type_check = boutique_type_validate_inscription($boutique_type_id_raw);
+    if (!$type_check['ok']) {
+        $errors[] = $type_check['message'];
+    }
+    $boutique_type_id = $type_check['id'];
     if (admin_telephone_exists($telephone)) {
         $errors[] = 'Ce numéro de téléphone est déjà enregistré.';
     }
@@ -464,7 +471,7 @@ function process_inscription_vendeur() {
     }
 
     $hash = password_hash($pin, PASSWORD_BCRYPT);
-    $id = create_vendeur_boutique($identite, $email !== '' ? $email : null, $telephone, $hash, $boutique_nom, $slug, $boutique_region, $boutique_country);
+    $id = create_vendeur_boutique($identite, $email !== '' ? $email : null, $telephone, $hash, $boutique_nom, $slug, $boutique_region, $boutique_country, $boutique_type_id);
     if (!$id) {
         return ['success' => false, 'message' => 'Erreur lors de la création du compte. Réessayez.'];
     }

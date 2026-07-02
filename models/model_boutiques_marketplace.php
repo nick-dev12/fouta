@@ -8,7 +8,7 @@ if (!function_exists('marketplace_boutiques_search_where')) {
     /**
      * @param array<string, mixed> $params
      */
-    function marketplace_boutiques_search_where(string $search, ?string $country, array &$params): string
+    function marketplace_boutiques_search_where(string $search, ?string $country, array &$params, int $boutique_type_id = 0): string
     {
         $parts = [
             "a.role = 'vendeur'",
@@ -54,6 +54,17 @@ if (!function_exists('marketplace_boutiques_search_where')) {
             $params['mp_q4'] = $like;
         }
 
+        $boutique_type_id = (int) $boutique_type_id;
+        if ($boutique_type_id > 0) {
+            if (!function_exists('admin_has_boutique_type_id_column')) {
+                require_once dirname(__DIR__) . '/models/model_admin.php';
+            }
+            if (admin_has_boutique_type_id_column()) {
+                $parts[] = 'a.boutique_type_id = :mp_boutique_type_id';
+                $params['mp_boutique_type_id'] = $boutique_type_id;
+            }
+        }
+
         return implode(' AND ', $parts);
     }
 }
@@ -65,7 +76,8 @@ if (!function_exists('marketplace_count_boutiques')) {
         ?float $lat = null,
         ?float $lng = null,
         float $rayon_km = 0.0,
-        bool $proche_only = false
+        bool $proche_only = false,
+        int $boutique_type_id = 0
     ): int {
         global $db;
 
@@ -78,13 +90,13 @@ if (!function_exists('marketplace_count_boutiques')) {
         }
 
         $params = [];
-        $where = marketplace_boutiques_search_where($search, $country, $params);
+        $where = marketplace_boutiques_search_where($search, $country, $params, $boutique_type_id);
 
         $geo_sql = '';
         $having = '';
         if ($proche_only || ($lat !== null && $lng !== null && geo_coords_valid($lat, $lng))) {
             if (!geo_boutiques_ready() || $lat === null || $lng === null || !geo_coords_valid($lat, $lng)) {
-                return $proche_only ? 0 : marketplace_count_boutiques($search, $country, null, null, 0, false);
+                return $proche_only ? 0 : marketplace_count_boutiques($search, $country, null, null, 0, false, $boutique_type_id);
             }
 
             $distance_expr = geo_sql_distance_expr('a.boutique_latitude', 'a.boutique_longitude');
@@ -143,7 +155,8 @@ if (!function_exists('marketplace_list_boutiques')) {
         ?float $lat = null,
         ?float $lng = null,
         float $rayon_km = 0.0,
-        bool $proche_only = false
+        bool $proche_only = false,
+        int $boutique_type_id = 0
     ): array {
         global $db;
 
@@ -159,7 +172,7 @@ if (!function_exists('marketplace_list_boutiques')) {
         $offset = max(0, $offset);
 
         $params = [];
-        $where = marketplace_boutiques_search_where($search, $country, $params);
+        $where = marketplace_boutiques_search_where($search, $country, $params, $boutique_type_id);
 
         $distance_select = 'NULL AS distance_km';
         $having = '';
@@ -169,7 +182,7 @@ if (!function_exists('marketplace_list_boutiques')) {
             if (!geo_boutiques_ready() || $lat === null || $lng === null || !geo_coords_valid($lat, $lng)) {
                 return $proche_only
                     ? []
-                    : marketplace_list_boutiques($search, $limit, $offset, $country, null, null, 0, false);
+                    : marketplace_list_boutiques($search, $limit, $offset, $country, null, null, 0, false, $boutique_type_id);
             }
 
             $distance_expr = geo_sql_distance_expr('a.boutique_latitude', 'a.boutique_longitude');
@@ -209,6 +222,16 @@ if (!function_exists('marketplace_list_boutiques')) {
             /* garde 0 par défaut */
         }
 
+        $type_select = '';
+        if (function_exists('admin_has_boutique_type_id_column') && admin_has_boutique_type_id_column()) {
+            $type_select = 'a.boutique_type_id,';
+        } elseif (!function_exists('admin_has_boutique_type_id_column')) {
+            require_once dirname(__DIR__) . '/models/model_admin.php';
+            if (admin_has_boutique_type_id_column()) {
+                $type_select = 'a.boutique_type_id,';
+            }
+        }
+
         try {
             $sql = "
                 SELECT
@@ -223,6 +246,7 @@ if (!function_exists('marketplace_list_boutiques')) {
                     a.boutique_couleur_principale,
                     a.boutique_couleur_accent,
                     a.telephone,
+                    $type_select
                     $nb_produits_select,
                     $distance_select
                 FROM admin a
@@ -248,15 +272,23 @@ if (!function_exists('marketplace_boutiques_featured')) {
      *
      * @return array<int, array<string, mixed>>
      */
-    function marketplace_boutiques_featured(int $limit = 6, ?string $country = null): array
+    function marketplace_boutiques_featured(int $limit = 6, ?string $country = null, bool $logo_only = false): array
     {
         $limit = max(1, min($limit, 12));
-        $pool = max($limit, 24);
+        $pool = max($limit * 4, 48);
         $all = marketplace_list_boutiques('', $pool, 0, $country, null, null, 0, false);
-        if (count($all) <= $limit) {
-            shuffle($all);
-            return $all;
+
+        if ($logo_only) {
+            if (!function_exists('marketplace_boutique_has_logo')) {
+                require_once dirname(__DIR__) . '/includes/marketplace_boutique_card_helpers.php';
+            }
+            $all = array_values(array_filter($all, 'marketplace_boutique_has_logo'));
         }
+
+        if ($all === []) {
+            return [];
+        }
+
         shuffle($all);
         return array_slice($all, 0, $limit);
     }

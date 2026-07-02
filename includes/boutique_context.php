@@ -5,6 +5,7 @@
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/marketplace_helpers.php';
 require_once __DIR__ . '/boutique_vendeur_display.php';
+require_once __DIR__ . '/boutique_slug_redirect.php';
 require_once __DIR__ . '/../models/model_admin.php';
 
 /**
@@ -43,8 +44,8 @@ function boutique_bootstrap_or_404() {
         http_response_code(404);
         exit('Boutique introuvable');
     }
-    $row = get_admin_by_boutique_slug($slug);
-    if (!$row || ($row['statut'] ?? '') !== 'actif' || ($row['role'] ?? '') !== 'vendeur') {
+    $row = boutique_resolve_vendeur_web($slug);
+    if (!$row) {
         http_response_code(404);
         exit('Boutique introuvable');
     }

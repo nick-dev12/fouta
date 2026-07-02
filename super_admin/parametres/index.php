@@ -90,6 +90,28 @@ require_once __DIR__ . '/../includes/require_login.php';
                 </div>
             </a>
 
+            <a class="sa-param-card" href="boutique-types.php">
+                <div class="sa-param-card__top">
+                    <span class="sa-param-card__icon" aria-hidden="true"><i class="fas fa-layer-group"></i></span>
+                    <span class="sa-param-card__tag">Vendeurs</span>
+                </div>
+                <h3 class="sa-param-card__title">Types de boutique</h3>
+                <div class="sa-param-card__footer">
+                    <span>Ouvrir l'espace <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                </div>
+            </a>
+
+            <a class="sa-param-card" href="rappels-vendeur.php">
+                <div class="sa-param-card__top">
+                    <span class="sa-param-card__icon" aria-hidden="true"><i class="fas fa-bell"></i></span>
+                    <span class="sa-param-card__tag">Vendeurs</span>
+                </div>
+                <h3 class="sa-param-card__title">Rappels vendeur</h3>
+                <div class="sa-param-card__footer">
+                    <span>Ouvrir l'espace <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                </div>
+            </a>
+
             <a class="sa-param-card sa-param-card--accent-orange" href="hero-affiches.php">
                 <div class="sa-param-card__top">
                     <span class="sa-param-card__icon" aria-hidden="true"><i class="fas fa-panorama"></i></span>

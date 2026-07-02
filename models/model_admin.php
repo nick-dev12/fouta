@@ -319,18 +319,68 @@ function admin_telephone_exists($telephone)
 }
 
 /**
- * Slug boutique déjà pris
+ * Slug boutique déjà pris (optionnel : exclure un admin pour la mise à jour profil).
  */
-function admin_boutique_slug_exists($slug)
+function admin_boutique_slug_exists($slug, $exclude_admin_id = 0)
 {
     global $db;
 
+    $slug = trim((string) $slug);
+    if ($slug === '') {
+        return false;
+    }
+
     try {
-        $stmt = $db->prepare("SELECT COUNT(*) FROM admin WHERE boutique_slug = :s");
-        $stmt->execute(['s' => $slug]);
+        $exclude_admin_id = (int) $exclude_admin_id;
+        if ($exclude_admin_id > 0) {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM admin WHERE boutique_slug = :s AND id != :id');
+            $stmt->execute(['s' => $slug, 'id' => $exclude_admin_id]);
+        } else {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM admin WHERE boutique_slug = :s');
+            $stmt->execute(['s' => $slug]);
+        }
         return ((int) $stmt->fetchColumn()) > 0;
     } catch (PDOException $e) {
         return false;
+    }
+}
+
+/**
+ * Génère un slug unique à partir du nom de boutique.
+ */
+function admin_generate_unique_boutique_slug($boutique_nom, $exclude_admin_id = 0)
+{
+    if (!function_exists('marketplace_slugify')) {
+        require_once dirname(__DIR__) . '/includes/marketplace_helpers.php';
+    }
+
+    $base = marketplace_slugify($boutique_nom);
+    $slug = $base;
+    $i = 0;
+    while (admin_boutique_slug_exists($slug, $exclude_admin_id)) {
+        $i++;
+        $slug = $base . '-' . $i;
+    }
+    return $slug;
+}
+
+/**
+ * Synchronise nom + slug boutique vendeur en session.
+ */
+function admin_sync_vendeur_boutique_session_from_admin(array $admin)
+{
+    if (($admin['role'] ?? '') !== 'vendeur') {
+        return;
+    }
+    $_SESSION['admin_boutique_nom'] = trim((string) ($admin['boutique_nom'] ?? ''));
+    $_SESSION['admin_boutique_slug'] = trim((string) ($admin['boutique_slug'] ?? ''));
+}
+
+function admin_sync_vendeur_boutique_session($admin_id)
+{
+    $admin = get_admin_by_id((int) $admin_id);
+    if ($admin) {
+        admin_sync_vendeur_boutique_session_from_admin($admin);
     }
 }
 
@@ -381,6 +431,54 @@ function admin_has_boutique_region_column()
 }
 
 /**
+ * Indique si la colonne boutique_type_id existe sur admin
+ */
+function admin_has_boutique_type_id_column()
+{
+    static $exists = null;
+    global $db;
+    if ($exists !== null) {
+        return $exists;
+    }
+    $exists = false;
+    if (!$db) {
+        return false;
+    }
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM admin LIKE 'boutique_type_id'");
+        $exists = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $exists = false;
+    }
+    return $exists;
+}
+
+/**
+ * Met à jour le type de boutique du vendeur.
+ */
+function update_admin_boutique_type($id, $boutique_type_id)
+{
+    global $db;
+    $id = (int) $id;
+    $boutique_type_id = (int) $boutique_type_id;
+    if ($id <= 0 || $boutique_type_id <= 0 || !admin_has_boutique_type_id_column()) {
+        return false;
+    }
+    if (!function_exists('boutique_type_is_valid_active')) {
+        require_once __DIR__ . '/model_boutique_types.php';
+    }
+    if (!boutique_type_is_valid_active($boutique_type_id)) {
+        return false;
+    }
+    try {
+        $st = $db->prepare('UPDATE admin SET boutique_type_id = :tid WHERE id = :id AND role = \'vendeur\'');
+        return $st->execute(['id' => $id, 'tid' => $boutique_type_id]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Crée un compte vendeur (boutique)
  * @param string $identite Nom affiché (champ unique UI)
  * @param string|null $email
@@ -390,9 +488,10 @@ function admin_has_boutique_region_column()
  * @param string $boutique_slug Slug URL unique
  * @param string|null $boutique_region Code région Sénégal
  * @param string|null $boutique_country Code pays ISO (détecté à l'inscription)
+ * @param int|null $boutique_type_id Type de boutique (référence boutique_types)
  * @return bool|int id ou false
  */
-function create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region = null, $boutique_country = null)
+function create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region = null, $boutique_country = null, $boutique_type_id = null)
 {
     global $db;
 
@@ -436,6 +535,11 @@ function create_vendeur_boutique($identite, $email, $telephone, $password_hash, 
             $vals .= ', :boutique_region';
             $params['boutique_region'] = $boutique_region;
         }
+        if (admin_has_boutique_type_id_column() && $boutique_type_id !== null && (int) $boutique_type_id > 0) {
+            $cols .= ', boutique_type_id';
+            $vals .= ', :boutique_type_id';
+            $params['boutique_type_id'] = (int) $boutique_type_id;
+        }
         $stmt = $db->prepare("INSERT INTO admin ($cols) VALUES ($vals)");
         $ok = $stmt->execute($params);
         if ($ok) {
@@ -450,10 +554,10 @@ function create_vendeur_boutique($identite, $email, $telephone, $password_hash, 
 /**
  * Crée un vendeur depuis Google, puis le lie à Firebase.
  */
-function create_google_vendeur_boutique($identite, $email, $telephone, $boutique_nom, $boutique_slug, $boutique_region, $firebase_uid, $auth_provider = 'google', $boutique_country = null)
+function create_google_vendeur_boutique($identite, $email, $telephone, $boutique_nom, $boutique_slug, $boutique_region, $firebase_uid, $auth_provider = 'google', $boutique_country = null, $boutique_type_id = null)
 {
     $password_hash = password_hash(bin2hex(random_bytes(24)), PASSWORD_BCRYPT);
-    $admin_id = create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region, $boutique_country);
+    $admin_id = create_vendeur_boutique($identite, $email, $telephone, $password_hash, $boutique_nom, $boutique_slug, $boutique_region, $boutique_country, $boutique_type_id);
     if ($admin_id) {
         update_admin_google_identity($admin_id, $firebase_uid, $auth_provider);
     }
@@ -541,32 +645,65 @@ function update_vendeur_boutique_profil($id, $boutique_nom, $boutique_region)
 {
     global $db;
 
+    $id = (int) $id;
     $boutique_nom = trim((string) $boutique_nom);
     $boutique_region = trim((string) $boutique_region);
 
+    if ($id <= 0 || $boutique_nom === '') {
+        return false;
+    }
+
+    $current = get_admin_by_id($id);
+    if (!$current || ($current['role'] ?? '') !== 'vendeur') {
+        return false;
+    }
+
+    $new_slug = admin_generate_unique_boutique_slug($boutique_nom, $id);
+
     try {
         if (admin_has_boutique_region_column()) {
-            $stmt = $db->prepare("
+            $stmt = $db->prepare('
                 UPDATE admin SET
                     boutique_nom = :boutique_nom,
+                    boutique_slug = :boutique_slug,
                     boutique_region = :boutique_region
-                WHERE id = :id AND role = 'vendeur'
-            ");
-            return $stmt->execute([
-                'id' => (int) $id,
+                WHERE id = :id AND role = \'vendeur\'
+            ');
+            $ok = $stmt->execute([
+                'id' => $id,
                 'boutique_nom' => $boutique_nom,
+                'boutique_slug' => $new_slug,
                 'boutique_region' => $boutique_region !== '' ? $boutique_region : null,
+            ]);
+        } else {
+            $stmt = $db->prepare('
+                UPDATE admin SET
+                    boutique_nom = :boutique_nom,
+                    boutique_slug = :boutique_slug
+                WHERE id = :id AND role = \'vendeur\'
+            ');
+            $ok = $stmt->execute([
+                'id' => $id,
+                'boutique_nom' => $boutique_nom,
+                'boutique_slug' => $new_slug,
             ]);
         }
 
-        $stmt = $db->prepare("
-            UPDATE admin SET boutique_nom = :boutique_nom
-            WHERE id = :id AND role = 'vendeur'
-        ");
-        return $stmt->execute([
-            'id' => (int) $id,
-            'boutique_nom' => $boutique_nom,
-        ]);
+        if ($ok) {
+            $old_slug = trim((string) ($current['boutique_slug'] ?? ''));
+            if ($old_slug !== '' && $old_slug !== $new_slug) {
+                if (!function_exists('boutique_slug_redirect_save')) {
+                    require_once dirname(__DIR__) . '/includes/boutique_slug_redirect.php';
+                }
+                boutique_slug_redirect_save($old_slug, $id);
+            }
+            $updated = get_admin_by_id($id);
+            if ($updated) {
+                admin_sync_vendeur_boutique_session_from_admin($updated);
+            }
+        }
+
+        return $ok;
     } catch (PDOException $e) {
         return false;
     }

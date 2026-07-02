@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_admin.php';
+require_once __DIR__ . '/../includes/boutique_slug_redirect.php';
 require_once __DIR__ . '/../includes/db_schema_helpers.php';
 require_once __DIR__ . '/../includes/geo_location_service.php';
 require_once __DIR__ . '/../includes/commande_mode_helpers.php';
@@ -79,7 +80,7 @@ function process_create_commande() {
     $limit_vendeur_id = null;
     $boutique_slug_post = trim((string) ($_POST['boutique_slug'] ?? ''));
     if ($boutique_slug_post !== '') {
-        $adm_b = get_admin_by_boutique_slug($boutique_slug_post);
+        $adm_b = resolve_vendeur_by_boutique_slug($boutique_slug_post);
         if ($adm_b) {
             $limit_vendeur_id = (int) $adm_b['id'];
         }

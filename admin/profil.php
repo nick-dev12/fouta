@@ -39,11 +39,6 @@ $profil_boutique_region_label = $profil_boutique_region !== ''
 require_once __DIR__ . '/../includes/flash_toast.php';
 $error_message = '';
 
-if (isset($_SESSION['success_message'])) {
-    // success via flash_toast_collect() en footer
-    unset($_SESSION['success_message']);
-}
-
 // Traitement du formulaire d'informations personnelles
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
     // Récupération et nettoyage des données
@@ -113,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_profil'])) {
             }
 
             // Redirection pour éviter la double soumission (pattern Post-Redirect-Get)
-            $_SESSION['success_message'] = 'Vos informations personnelles ont été mises à jour avec succès !';
+            flash_toast_push('success', 'Vos informations personnelles ont été mises à jour avec succès !');
             header('Location: profil.php');
             exit;
         } else {
@@ -143,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_boutique']) 
 
     if (empty($errors)) {
         if (update_vendeur_boutique_profil($_SESSION['admin_id'], $boutique_nom, $boutique_region)) {
-            $_SESSION['success_message'] = 'Les informations de votre boutique ont été mises à jour avec succès !';
+            flash_toast_push('success', 'Les informations de votre boutique ont été mises à jour avec succès !');
             header('Location: profil.php');
             exit;
         }
@@ -200,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
             'password' => $password_hash
         ])) {
             // Redirection pour éviter la double soumission (pattern Post-Redirect-Get)
-            $_SESSION['success_message'] = 'Votre mot de passe a été modifié avec succès !';
+            flash_toast_push('success', 'Votre mot de passe a été modifié avec succès !');
             header('Location: profil.php');
             exit;
         } else {

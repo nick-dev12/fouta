@@ -9,12 +9,13 @@ ob_start();
 session_start();
 
 require_once __DIR__ . '/includes/marketplace_helpers.php';
+require_once __DIR__ . '/includes/boutique_slug_redirect.php';
 require_once __DIR__ . '/models/model_admin.php';
 
 $commande_boutique_slug = trim((string) ($_GET['boutique'] ?? ''));
 $commande_boutique_admin = null;
 if ($commande_boutique_slug !== '') {
-    $commande_boutique_admin = get_admin_by_boutique_slug($commande_boutique_slug);
+    $commande_boutique_admin = boutique_resolve_vendeur_web($commande_boutique_slug);
     if (!$commande_boutique_admin) {
         header('Location: /panier.php');
         exit;

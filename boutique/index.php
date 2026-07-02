@@ -37,7 +37,6 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
@@ -60,6 +59,7 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/mp-category-page.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/boutique-vitrine-products.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/mp-hero-slider.css<?php echo asset_version_query(); ?>">
     <style>
     /* Nouveaux produits et Produits populaires : flex-wrap, Owl désactivé, 6 produits max */
     .carousel-produits-outer {
@@ -262,27 +262,13 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
 
     <?php include __DIR__ . '/../nav_bar.php'; ?>
 
-
     <?php
-    // Slides hero : uniquement ceux du vendeur (admin_id) ; rien si non configuré ou fichier absent
-    $slides = [];
+    $boutique_affiches = [];
     if (file_exists(__DIR__ . '/../models/model_slider.php')) {
         require_once __DIR__ . '/../models/model_slider.php';
-        $slides = get_slides_for_boutique(BOUTIQUE_ADMIN_ID);
+        $boutique_affiches = get_slides_for_boutique(BOUTIQUE_ADMIN_ID);
     }
     ?>
-
-    <?php if (!empty($slides)): ?>
-    <div class="slider-area owl-carousel">
-        <?php foreach ($slides as $slide): ?>
-        <div class="slider-item">
-            <img src="/upload/slider/<?php echo htmlspecialchars($slide['image']); ?>"
-                alt="<?php echo htmlspecialchars($slide['titre']); ?>" onerror="this.src='/image/produit1.jpg'">
-
-        </div>
-        <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
     <div class="commande-perso-success"
@@ -400,6 +386,22 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
         $produits_nouveaux = get_all_produits_paginated(0, 10, BOUTIQUE_ADMIN_ID);
     }
     ?>
+
+    <?php if (!empty($boutique_affiches)): ?>
+    <section class="mp-hero" aria-label="Affiches publicitaires de la boutique">
+        <div class="mp-slider-wrap mp-hero-slider-wrap">
+            <div class="slider-area owl-carousel">
+                <?php foreach ($boutique_affiches as $affiche): ?>
+                <div class="slider-item">
+                    <img src="/upload/slider/<?php echo htmlspecialchars((string) ($affiche['image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                        alt="<?php echo htmlspecialchars(trim((string) ($affiche['titre'] ?? '')) !== '' ? (string) $affiche['titre'] : 'Affiche publicitaire', ENT_QUOTES, 'UTF-8'); ?>"
+                        onerror="this.src='/image/produit1.jpg'">
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <section class="produit_vedete">
         <div class="box1">
@@ -860,65 +862,101 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
         }
     })();
     </script>
-    <script src="/js/owl.carousel.min.js"></script>
-    <script src="/js/owl.carousel.js"></script>
-    <script src="/js/owl.animate.js"></script>
-    <script src="/js/owl.autoplay.js"></script>
+    <script src="/js/owl.carousel.js" defer></script>
+    <script src="/js/owl.navigation.js" defer></script>
+    <script src="/js/owl.autoplay.js" defer></script>
+    <script src="/js/owl.animate.js" defer></script>
 
     <script>
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.owlCarousel === 'undefined') {
+            return;
+        }
+        window.jQuery(function ($) {
 
-        $('.slider1').owlCarousel({
-            items: 2,
-            loop: true,
-            dots: true,
-            autoplay: true,
-            autoplayTimeout: 4000,
-            animateOut: 'slideOutDown',
-            animateIn: 'flipInX',
-            smartSpeed: 400,
-            stagePadding: 0,
-            nav: true,
-            navText: ['<i class="fa-solid fa-chevron-left"></i>',
-                '<i class="fa-solid fa-chevron-right"></i>'
-            ]
-        });
-        var carousel2 = $('.slider1').owlCarousel();
-        $('.owl-next2').click(function() {
-            carousel2.trigger('next.owl.carousel');
-        })
-        $('.owl-prev2').click(function() {
-            carousel2.trigger('prev.owl.carousel');
-        })
-
-        // Nouveaux produits et Produits populaires : Owl désactivé, toujours en mode flex-wrap
-
-
-        if ($('.slider-area').length && $('.slider-area .slider-item').length) {
-            $('.slider-area').owlCarousel({
-                items: 1,
+        if ($('.slider1').length && $('.slider1 .slider-item, .slider1 .item').length) {
+            $('.slider1').owlCarousel({
+                items: 2,
                 loop: true,
                 dots: true,
                 autoplay: true,
-                autoplayTimeout: 6000,
+                autoplayTimeout: 4000,
                 animateOut: 'slideOutDown',
                 animateIn: 'flipInX',
-                smartSpeed: 800,
-                stagePadding: 1,
+                smartSpeed: 400,
+                stagePadding: 0,
                 nav: true,
                 navText: ['<i class="fa-solid fa-chevron-left"></i>',
                     '<i class="fa-solid fa-chevron-right"></i>'
                 ]
             });
+            var carouselSlider1 = $('.slider1').owlCarousel();
+            $('.owl-next2').click(function() {
+                carouselSlider1.trigger('next.owl.carousel');
+            });
+            $('.owl-prev2').click(function() {
+                carouselSlider1.trigger('prev.owl.carousel');
+            });
         }
-        var carousel2 = $('.carousel2').owlCarousel();
-        $('.owl-next2').click(function() {
-            carousel2.trigger('next.owl.carousel');
-        })
-        $('.owl-prev2').click(function() {
-            carousel2.trigger('prev.owl.carousel');
-        })
 
+        // Nouveaux produits et Produits populaires : Owl désactivé, toujours en mode flex-wrap
+
+        if ($('.mp-hero-slider-wrap .slider-area').length && $('.mp-hero-slider-wrap .slider-item').length) {
+            var $mpHeroSlider = $('.mp-hero-slider-wrap .slider-area');
+            var mpHeroSlideCount = $mpHeroSlider.children('.slider-item').length;
+            var mpHeroUsesAutoHeight = function () {
+                return window.matchMedia('(max-width: 992px)').matches;
+            };
+            var mpHeroCarouselEnabled = mpHeroSlideCount > 1;
+
+            $mpHeroSlider.owlCarousel({
+                items: 1,
+                slideBy: 1,
+                loop: mpHeroCarouselEnabled,
+                dots: false,
+                nav: false,
+                autoplay: mpHeroCarouselEnabled,
+                autoplayTimeout: 5000,
+                autoplayHoverPause: true,
+                autoplaySpeed: 450,
+                smartSpeed: 450,
+                stagePadding: 0,
+                autoHeight: mpHeroUsesAutoHeight(),
+                navText: ['<i class="fa-solid fa-chevron-left"></i>',
+                    '<i class="fa-solid fa-chevron-right"></i>'
+                ]
+            });
+
+            var refreshMpHeroSlider = function () {
+                $mpHeroSlider.trigger('refresh.owl.carousel');
+            };
+            var mpHeroResizeTimer;
+            $(window).on('resize', function () {
+                clearTimeout(mpHeroResizeTimer);
+                mpHeroResizeTimer = setTimeout(refreshMpHeroSlider, 150);
+            });
+            $('.mp-hero-slider-wrap .slider-item img').each(function () {
+                if (this.complete) {
+                    refreshMpHeroSlider();
+                } else {
+                    $(this).on('load', refreshMpHeroSlider);
+                }
+            });
+
+            if (mpHeroCarouselEnabled) {
+                $mpHeroSlider.trigger('play.owl.autoplay', [5000]);
+            }
+        }
+
+        if ($('.carousel2').length) {
+            var carousel2 = $('.carousel2').owlCarousel();
+            $('.owl-next2').click(function() {
+                carousel2.trigger('next.owl.carousel');
+            });
+            $('.owl-prev2').click(function() {
+                carousel2.trigger('prev.owl.carousel');
+            });
+        }
 
         // Carrousel des catégories
         if ($('.marques-owl').length && $('.marques-owl .marque-item').length) {
@@ -1001,6 +1039,7 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
         }
 
         // Carrousel catégories : 1 item < 350px, 2 items >= 350px sur mobile
+        if ($('.categorie').length) {
         $('.categorie').owlCarousel({
             items: 5,
             loop: true,
@@ -1062,15 +1101,9 @@ $seo_canonical = $__slug !== '' ? ($base . '/' . rawurlencode($__slug) . '/') : 
                 }
             }
         });
-        var carousel2 = $('.carousel2').owlCarousel();
-        $('.owl-next2').click(function() {
-            carousel2.trigger('next.owl.carousel');
-        })
-        $('.owl-prev2').click(function() {
-            carousel2.trigger('prev.owl.carousel');
-        })
+        }
 
-
+        });
     });
     </script>
 

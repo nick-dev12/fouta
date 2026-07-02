@@ -105,12 +105,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         require_once __DIR__ . '/includes/marketplace_countries.php';
         require_once __DIR__ . '/includes/geo_regions.php';
+        require_once __DIR__ . '/includes/boutique_types.php';
         if ($boutique_country === '' || !marketplace_country_is_valid($boutique_country)) {
             $errors[] = 'Veuillez sélectionner le pays de votre boutique.';
         }
         if ($boutique_country !== '' && ($boutique_region === '' || !geo_region_is_valid($boutique_country, $boutique_region))) {
             $errors[] = 'Veuillez sélectionner la région de votre boutique.';
         }
+        $boutique_type_id_raw = isset($_POST['boutique_type_id']) ? (int) $_POST['boutique_type_id'] : 0;
+        $type_check = boutique_type_validate_inscription($boutique_type_id_raw);
+        if (!$type_check['ok']) {
+            $errors[] = $type_check['message'];
+        }
+        $boutique_type_id = $type_check['id'];
         if (admin_telephone_exists($telephone_digits)) {
             $errors[] = 'Ce numéro de téléphone est déjà enregistré.';
         }
@@ -140,7 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $boutique_region !== '' ? $boutique_region : null,
                 $pending['uid'],
                 $auth_provider,
-                $boutique_country
+                $boutique_country,
+                $boutique_type_id
             );
             if ($admin_id) {
                 try {
@@ -268,6 +276,9 @@ $page_title = $type === 'vendor' ? 'Compléter ma boutique' : 'Compléter mon co
                                 $gg_sel_country = marketplace_country_default_code();
                             }
                             $gg_sel_region = isset($_POST['boutique_region']) ? (string) $_POST['boutique_region'] : '';
+                            require_once __DIR__ . '/includes/boutique_types.php';
+                            $gg_sel_boutique_type = isset($_POST['boutique_type_id']) ? (int) $_POST['boutique_type_id'] : 0;
+                            $gg_boutique_types_required = boutique_types_inscription_required();
                             ?>
                             <script type="application/json" id="geoRegionsData"><?php echo geo_regions_json_for_js(); ?></script>
                             <div class="form-group">
@@ -290,6 +301,18 @@ $page_title = $type === 'vendor' ? 'Compléter ma boutique' : 'Compléter mon co
                                     <i class="fas fa-location-dot" aria-hidden="true"></i>
                                 </div>
                             </div>
+
+                            <?php if ($gg_boutique_types_required): ?>
+                            <div class="form-group">
+                                <label for="boutique_type_id"><i class="fas fa-layer-group"></i> Type de boutique *</label>
+                                <div class="input-wrapper">
+                                    <select id="boutique_type_id" name="boutique_type_id" required class="auth-select">
+                                        <?php echo boutique_types_options_html($gg_sel_boutique_type, true, 'Sélectionnez un type de boutique'); ?>
+                                    </select>
+                                    <i class="fas fa-tags" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         <?php else: ?>
                             <div class="form-group">
                                 <label for="nom"><i class="fas fa-user"></i> Nom complet *</label>

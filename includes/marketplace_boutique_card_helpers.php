@@ -3,6 +3,201 @@
  * Helpers affichage cartes boutique marketplace.
  */
 
+if (!function_exists('marketplace_boutique_has_logo')) {
+    function marketplace_boutique_has_logo(array $boutique): bool
+    {
+        return trim((string) ($boutique['boutique_logo'] ?? '')) !== '';
+    }
+}
+
+if (!function_exists('marketplace_boutiques_produits_vignettes')) {
+    /**
+     * Vignettes produits publiés par boutique (max N par vendeur).
+     *
+     * @param array<int, int|string> $admin_ids
+     * @return array<int, array<int, array{id:int,nom:string,image_url:string,href:string}>>
+     */
+    function marketplace_boutiques_produits_vignettes(array $admin_ids, int $limit_per = 10): array
+    {
+        global $db;
+
+        $admin_ids = array_values(array_unique(array_filter(array_map('intval', $admin_ids), function ($id) {
+            return $id > 0;
+        })));
+        if ($admin_ids === [] || !isset($db) || !($db instanceof PDO)) {
+            return [];
+        }
+
+        $limit_per = max(1, min($limit_per, 10));
+        $placeholders = implode(',', array_fill(0, count($admin_ids), '?'));
+
+        try {
+            $stmt = $db->prepare("
+                SELECT p.id, p.admin_id, p.image_principale, p.nom
+                FROM produits p
+                WHERE p.admin_id IN ($placeholders)
+                AND p.statut IN ('actif', 'rupture_stock')
+                AND TRIM(COALESCE(p.image_principale, '')) <> ''
+                ORDER BY p.admin_id ASC, p.date_creation DESC
+            ");
+            $stmt->execute($admin_ids);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (!is_array($rows)) {
+                return [];
+            }
+
+            if (!function_exists('upload_image_url')) {
+                require_once dirname(__DIR__) . '/includes/image_optimizer.php';
+            }
+
+            $out = [];
+            foreach ($rows as $row) {
+                $aid = (int) ($row['admin_id'] ?? 0);
+                if ($aid <= 0) {
+                    continue;
+                }
+                if (!isset($out[$aid])) {
+                    $out[$aid] = [];
+                }
+                if (count($out[$aid]) >= $limit_per) {
+                    continue;
+                }
+                $pid = (int) ($row['id'] ?? 0);
+                if ($pid <= 0) {
+                    continue;
+                }
+                $out[$aid][] = [
+                    'id' => $pid,
+                    'nom' => trim((string) ($row['nom'] ?? 'Produit')),
+                    'image_url' => upload_image_url((string) ($row['image_principale'] ?? ''), 'sm'),
+                    'href' => 'produit.php?id=' . $pid,
+                ];
+            }
+            return $out;
+        } catch (PDOException $e) {
+            error_log('[marketplace_boutiques_produits_vignettes] ' . $e->getMessage());
+            return [];
+        }
+    }
+}
+
+if (!function_exists('marketplace_boutiques_map_deco_random_positions')) {
+    /**
+     * Positions aléatoires évitant le panneau de recherche (coin haut-gauche desktop, bas mobile).
+     *
+     * @return array<int, array{left:float,top:float,left_m:float,top_m:float,delay:float}>
+     */
+    function marketplace_boutiques_map_deco_random_positions(int $count): array
+    {
+        $count = max(5, $count);
+        $zones_desktop = [
+            ['left_min' => 78, 'left_max' => 95, 'top_min' => 8, 'top_max' => 52],
+            ['left_min' => 78, 'left_max' => 95, 'top_min' => 56, 'top_max' => 88],
+            ['left_min' => 54, 'left_max' => 74, 'top_min' => 72, 'top_max' => 90],
+            ['left_min' => 16, 'left_max' => 40, 'top_min' => 72, 'top_max' => 90],
+            ['left_min' => 82, 'left_max' => 94, 'top_min' => 30, 'top_max' => 48],
+            ['left_min' => 58, 'left_max' => 76, 'top_min' => 78, 'top_max' => 92],
+        ];
+        $zones_mobile = [
+            ['left_min' => 8, 'left_max' => 26, 'top_min' => 8, 'top_max' => 36],
+            ['left_min' => 30, 'left_max' => 50, 'top_min' => 6, 'top_max' => 34],
+            ['left_min' => 54, 'left_max' => 74, 'top_min' => 10, 'top_max' => 38],
+            ['left_min' => 76, 'left_max' => 94, 'top_min' => 8, 'top_max' => 36],
+            ['left_min' => 40, 'left_max' => 62, 'top_min' => 20, 'top_max' => 40],
+            ['left_min' => 18, 'left_max' => 86, 'top_min' => 4, 'top_max' => 30],
+        ];
+
+        shuffle($zones_desktop);
+        shuffle($zones_mobile);
+
+        $positions = [];
+        $min_gap = 7.0;
+
+        for ($i = 0; $i < $count; $i++) {
+            $zd = $zones_desktop[$i % count($zones_desktop)];
+            $zm = $zones_mobile[$i % count($zones_mobile)];
+            $attempts = 0;
+            $left = 0.0;
+            $top = 0.0;
+            $left_m = 0.0;
+            $top_m = 0.0;
+
+            do {
+                $left = round(mt_rand((int) ($zd['left_min'] * 10), (int) ($zd['left_max'] * 10)) / 10, 1);
+                $top = round(mt_rand((int) ($zd['top_min'] * 10), (int) ($zd['top_max'] * 10)) / 10, 1);
+                $left_m = round(mt_rand((int) ($zm['left_min'] * 10), (int) ($zm['left_max'] * 10)) / 10, 1);
+                $top_m = round(mt_rand((int) ($zm['top_min'] * 10), (int) ($zm['top_max'] * 10)) / 10, 1);
+                $ok = true;
+                foreach ($positions as $existing) {
+                    $dx = $left - (float) $existing['left'];
+                    $dy = $top - (float) $existing['top'];
+                    if (($dx * $dx + $dy * $dy) < ($min_gap * $min_gap)) {
+                        $ok = false;
+                        break;
+                    }
+                }
+                $attempts++;
+            } while (!$ok && $attempts < 40);
+
+            $positions[] = [
+                'left' => $left,
+                'top' => $top,
+                'left_m' => $left_m,
+                'top_m' => $top_m,
+                'delay' => round($i * 0.55, 2),
+            ];
+        }
+
+        return $positions;
+    }
+}
+
+if (!function_exists('marketplace_boutiques_map_deco_logos')) {
+    /**
+     * Boutiques aléatoires avec logo pour les marqueurs décoratifs de la carte.
+     *
+     * @return array<int, array{logo:string,left:float,top:float,left_m:float,top_m:float,delay:float}>
+     */
+    function marketplace_boutiques_map_deco_logos(int $limit = 5, ?string $country = null): array
+    {
+        if (!function_exists('marketplace_list_boutiques')) {
+            require_once dirname(__DIR__) . '/models/model_boutiques_marketplace.php';
+        }
+        if (!function_exists('marketplace_boutique_has_logo')) {
+            require_once __DIR__ . '/marketplace_boutique_card_helpers.php';
+        }
+
+        $limit = max(5, $limit);
+
+        $pool = marketplace_list_boutiques('', 80, 0, $country, null, null, 0, false);
+        $pool = array_values(array_filter($pool, 'marketplace_boutique_has_logo'));
+        if ($pool === []) {
+            return [];
+        }
+        shuffle($pool);
+        $picked = array_slice($pool, 0, $limit);
+        $positions = marketplace_boutiques_map_deco_random_positions(count($picked));
+
+        $out = [];
+        foreach ($picked as $i => $boutique) {
+            $logo = marketplace_boutique_logo_url($boutique);
+            if ($logo === '') {
+                continue;
+            }
+            $pos = $positions[$i] ?? $positions[0];
+            $out[] = [
+                'logo' => $logo,
+                'left' => (float) $pos['left'],
+                'top' => (float) $pos['top'],
+                'left_m' => (float) $pos['left_m'],
+                'top_m' => (float) $pos['top_m'],
+                'delay' => (float) $pos['delay'],
+            ];
+        }
+        return $out;
+    }
+}
+
 if (!function_exists('marketplace_boutique_public_url')) {
     function marketplace_boutique_public_url(string $slug): string
     {
@@ -122,6 +317,10 @@ if (!function_exists('marketplace_boutique_prepare_card')) {
         }
 
         $nb_produits = (int) ($boutique['nb_produits'] ?? 0);
+        $produits_vignettes = [];
+        if (!empty($boutique['_produits_vignettes']) && is_array($boutique['_produits_vignettes'])) {
+            $produits_vignettes = array_slice($boutique['_produits_vignettes'], 0, 10);
+        }
 
         return [
             'id' => (int) ($boutique['id'] ?? 0),
@@ -144,6 +343,7 @@ if (!function_exists('marketplace_boutique_prepare_card')) {
             'lng' => $has_geo ? (float) $pickup['lng'] : null,
             'has_geo' => $has_geo,
             'nb_produits' => $nb_produits,
+            'produits_vignettes' => $produits_vignettes,
             'distance_km' => isset($boutique['distance_km']) ? (float) $boutique['distance_km'] : null,
             'theme' => $theme,
         ];
@@ -181,6 +381,7 @@ if (!function_exists('marketplace_boutiques_map_payload')) {
                 'lat' => (float) $card['lat'],
                 'lng' => (float) $card['lng'],
                 'distance_km' => $card['distance_km'],
+                'type_id' => isset($boutique['boutique_type_id']) ? (int) $boutique['boutique_type_id'] : 0,
                 'adresse' => $card['adresse'],
                 'region' => $card['region'],
                 'share_url' => $card['share_url'],

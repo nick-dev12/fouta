@@ -17,7 +17,36 @@ function vendeur_share_boutique_get_data()
         ? admin_normalize_role_for_route($_SESSION['admin_role'] ?? 'admin')
         : (string) ($_SESSION['admin_role'] ?? '');
 
-    $slug = ($role === 'vendeur') ? trim((string) ($_SESSION['admin_boutique_slug'] ?? '')) : '';
+    if ($role !== 'vendeur') {
+        $data = ['available' => false];
+        return $data;
+    }
+
+    $admin_id = (int) ($_SESSION['admin_id'] ?? 0);
+    $slug = '';
+    $nom = '';
+
+    if ($admin_id > 0) {
+        if (!function_exists('get_admin_by_id')) {
+            require_once __DIR__ . '/../../models/model_admin.php';
+        }
+        $admin = get_admin_by_id($admin_id);
+        if ($admin && ($admin['role'] ?? '') === 'vendeur') {
+            if (function_exists('admin_sync_vendeur_boutique_session_from_admin')) {
+                admin_sync_vendeur_boutique_session_from_admin($admin);
+            }
+            $slug = trim((string) ($admin['boutique_slug'] ?? ''));
+            $nom = trim((string) ($admin['boutique_nom'] ?? ''));
+        }
+    }
+
+    if ($slug === '') {
+        $slug = trim((string) ($_SESSION['admin_boutique_slug'] ?? ''));
+    }
+    if ($nom === '') {
+        $nom = trim((string) ($_SESSION['admin_boutique_nom'] ?? ''));
+    }
+
     if ($slug === '') {
         $data = ['available' => false];
         return $data;
@@ -29,24 +58,25 @@ function vendeur_share_boutique_get_data()
     if (!function_exists('boutique_url')) {
         require_once __DIR__ . '/../../includes/marketplace_helpers.php';
     }
+    if (!function_exists('marketplace_boutique_share_payload')) {
+        require_once __DIR__ . '/../../includes/marketplace_boutique_card_helpers.php';
+    }
 
-    $nom = trim((string) ($_SESSION['admin_boutique_nom'] ?? ''));
     if ($nom === '') {
         $nom = 'Ma boutique';
     }
 
+    $share = marketplace_boutique_share_payload($slug, $nom);
     $path = boutique_url('index.php', $slug);
     $url = rtrim(get_site_base_url(), '/') . $path;
-    $subject = 'Découvrez ma boutique « ' . $nom . ' » sur COLObanes';
-    $message = $subject . ' : ' . $url;
 
     $data = [
         'available' => true,
         'slug' => $slug,
         'nom' => $nom,
         'url' => $url,
-        'subject' => $subject,
-        'message' => $message,
+        'subject' => $share['subject'],
+        'message' => $share['message'],
     ];
 
     return $data;

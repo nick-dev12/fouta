@@ -11,6 +11,7 @@ require_once __DIR__ . '/includes/geo_location_service.php';
 require_once __DIR__ . '/includes/marketplace_country_filter.php';
 require_once __DIR__ . '/includes/marketplace_helpers.php';
 require_once __DIR__ . '/includes/marketplace_boutique_card_helpers.php';
+require_once __DIR__ . '/includes/boutique_types.php';
 require_once __DIR__ . '/includes/asset_version.php';
 require_once __DIR__ . '/includes/site_url.php';
 require_once __DIR__ . '/includes/site_brand.php';
@@ -22,18 +23,61 @@ $seo_keywords = site_brand_seo_keywords_default() . ', boutiques partenaires, ve
 $seo_canonical = $base . '/boutiques.php';
 
 $search = trim((string) ($_GET['q'] ?? ''));
+$filter_type_id = (int) ($_GET['type'] ?? 0);
+$filter_dist_raw = (int) ($_GET['dist'] ?? 0);
+$filter_dist = boutique_types_distance_is_valid($filter_dist_raw) ? $filter_dist_raw : 0;
 $geo_loc = geo_session_get_location();
 $geo_error = !empty($_GET['geo_error']);
 $country = marketplace_get_selected_country_code();
 
-$rayon_proche = 4;
+$types_actifs = boutique_types_list_active();
+$types_filter_available = count($types_actifs) > 0;
+
+$rayon_proche_default = 4;
+$rayon_proche = $filter_dist > 0 ? (float) $filter_dist : (float) $rayon_proche_default;
+$map_rayon_max = 50;
 $lat_proche = $geo_loc !== null ? (float) $geo_loc['lat'] : null;
 $lng_proche = $geo_loc !== null ? (float) $geo_loc['lng'] : null;
 
-$boutiques = marketplace_list_boutiques($search, 100, 0, $country, null, null, 0, false);
-$nb_boutiques = marketplace_count_boutiques($search, $country, null, null, 0, false);
+$use_geo_catalog = $geo_loc !== null && $filter_dist > 0;
+
+$per_page = 15;
+$page = max(1, (int) ($_GET['page'] ?? 1));
+$nb_boutiques = marketplace_count_boutiques(
+    $search,
+    $country,
+    $use_geo_catalog ? $lat_proche : null,
+    $use_geo_catalog ? $lng_proche : null,
+    $use_geo_catalog ? (float) $filter_dist : 0.0,
+    false,
+    $filter_type_id
+);
+$total_pages = max(1, (int) ceil($nb_boutiques / $per_page));
+if ($page > $total_pages) {
+    $page = $total_pages;
+}
+$offset = ($page - 1) * $per_page;
+
+$boutiques = marketplace_list_boutiques(
+    $search,
+    $per_page,
+    $offset,
+    $country,
+    $use_geo_catalog ? $lat_proche : null,
+    $use_geo_catalog ? $lng_proche : null,
+    $use_geo_catalog ? (float) $filter_dist : 0.0,
+    false,
+    $filter_type_id
+);
+
+$boutiques_vignettes = marketplace_boutiques_produits_vignettes(array_column($boutiques, 'id'), 10);
+foreach ($boutiques as $bk => $boutique_row) {
+    $boutiques[$bk]['_produits_vignettes'] = $boutiques_vignettes[(int) ($boutique_row['id'] ?? 0)] ?? [];
+}
+unset($boutiques_vignettes, $bk, $boutique_row);
 
 $boutiques_proches = [];
+$map_boutiques_all = [];
 if ($geo_loc !== null) {
     $boutiques_proches = marketplace_list_boutiques(
         '',
@@ -43,17 +87,60 @@ if ($geo_loc !== null) {
         $lat_proche,
         $lng_proche,
         (float) $rayon_proche,
-        true
+        true,
+        $filter_type_id
+    );
+    $map_boutiques_all = marketplace_list_boutiques(
+        '',
+        100,
+        0,
+        $country,
+        $lat_proche,
+        $lng_proche,
+        (float) $map_rayon_max,
+        true,
+        0
     );
 }
-$map_payload = marketplace_boutiques_map_payload($boutiques_proches);
+$map_payload = marketplace_boutiques_map_payload($map_boutiques_all);
 $nb_proches = count($boutiques_proches);
 
+$nearby_map_shops = marketplace_boutiques_map_deco_logos(5, $country);
+
 $redirect_map = '/boutiques.php';
+$redirect_params = [];
 if ($search !== '') {
-    $redirect_map .= '?q=' . rawurlencode($search);
+    $redirect_params['q'] = $search;
 }
-$redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=1';
+if ($filter_type_id > 0) {
+    $redirect_params['type'] = $filter_type_id;
+}
+if ($filter_dist > 0) {
+    $redirect_params['dist'] = $filter_dist;
+}
+$redirect_params['open_map'] = 1;
+$redirect_map .= '?' . http_build_query($redirect_params, '', '&', PHP_QUERY_RFC3986);
+
+if (!function_exists('boutiques_catalog_page_url')) {
+    function boutiques_catalog_page_url(int $target_page, string $search_q = '', int $type_id = 0, int $dist_km = 0): string
+    {
+        $params = [];
+        if (trim($search_q) !== '') {
+            $params['q'] = trim($search_q);
+        }
+        if ($type_id > 0) {
+            $params['type'] = $type_id;
+        }
+        if ($dist_km > 0) {
+            $params['dist'] = $dist_km;
+        }
+        if ($target_page > 1) {
+            $params['page'] = $target_page;
+        }
+        $qs = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+        return '/boutiques.php' . ($qs !== '' ? '?' . $qs : '');
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -93,44 +180,100 @@ $redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=
                 </div>
             <?php endif; ?>
 
-            <form class="mp-bt-toolbar" method="get" action="/boutiques.php" role="search">
-                <label class="mp-bt-search-v2" for="mpBtSearch">
-                    <span class="mp-bt-search-v2__label">Rechercher une boutique</span>
-                    <span class="mp-bt-search-v2__wrap">
-                        <i class="fas fa-search mp-bt-search-v2__ico" aria-hidden="true"></i>
-                        <input type="search"
-                            id="mpBtSearch"
-                            name="q"
-                            class="mp-bt-search-v2__input"
-                            value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>"
-                            placeholder="Nom, région, adresse…"
-                            autocomplete="off">
-                        <button type="submit" class="mp-bt-search-v2__btn">
-                            <span>Rechercher</span>
-                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                        </button>
-                    </span>
-                </label>
-            </form>
-
-            <section class="mp-bt-nearby" aria-labelledby="mpBtNearbyTitle">
-                <div class="mp-bt-nearby__glow" aria-hidden="true"></div>
+            <section class="mp-bt-nearby" aria-label="Boutiques proches">
                 <div class="mp-bt-nearby__inner">
+                    <?php if (!empty($nearby_map_shops)): ?>
+                    <div class="mp-bt-nearby__markers" aria-hidden="true">
+                        <?php foreach ($nearby_map_shops as $ms): ?>
+                            <div class="mp-bt-nearby__shop"
+                                style="--shop-left: <?php echo htmlspecialchars((string) $ms['left'], ENT_QUOTES, 'UTF-8'); ?>%; --shop-top: <?php echo htmlspecialchars((string) $ms['top'], ENT_QUOTES, 'UTF-8'); ?>%; --shop-left-m: <?php echo htmlspecialchars((string) $ms['left_m'], ENT_QUOTES, 'UTF-8'); ?>%; --shop-top-m: <?php echo htmlspecialchars((string) $ms['top_m'], ENT_QUOTES, 'UTF-8'); ?>%; animation-delay: <?php echo htmlspecialchars((string) $ms['delay'], ENT_QUOTES, 'UTF-8'); ?>s;">
+                                <span class="mp-bt-nearby__shop-stem"></span>
+                                <span class="mp-bt-nearby__shop-logo">
+                                    <img src="<?php echo htmlspecialchars($ms['logo'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        alt=""
+                                        loading="lazy"
+                                        decoding="async"
+                                        onerror="this.closest('.mp-bt-nearby__shop').remove();">
+                                </span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                    <div class="mp-bt-nearby__glass">
+                    <form class="mp-bt-toolbar mp-bt-toolbar--glass" method="get" action="/boutiques.php" role="search" id="mpBtCatalogForm">
+                        <label class="mp-bt-search-v2" for="mpBtSearch">
+                            <span class="visually-hidden">Rechercher une boutique</span>
+                            <span class="mp-bt-search-v2__wrap">
+                                <i class="fas fa-search mp-bt-search-v2__ico" aria-hidden="true"></i>
+                                <input type="search"
+                                    id="mpBtSearch"
+                                    name="q"
+                                    class="mp-bt-search-v2__input"
+                                    value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>"
+                                    placeholder="Nom, région, adresse…"
+                                    autocomplete="off">
+                                <div class="mp-bt-search-v2__filter-group">
+                                    <button type="button"
+                                        class="mp-bt-search-v2__filter-btn"
+                                        id="mpBtFilterToggle"
+                                        aria-expanded="false"
+                                        aria-controls="mpBtFilterPanel">
+                                        <i class="fas fa-sliders" aria-hidden="true"></i>
+                                        <span>Filtres</span>
+                                    </button>
+                                    <div class="mp-bt-search-v2__filter-panel" id="mpBtFilterPanel" hidden>
+                                        <?php if ($types_filter_available): ?>
+                                        <label class="mp-bt-search-v2__filter-field" for="mpBtFilterType">
+                                            <span class="mp-bt-search-v2__filter-label">Type de boutique</span>
+                                            <select name="type" class="mp-bt-search-v2__filter" id="mpBtFilterType" aria-label="Type de boutique">
+                                                <?php echo boutique_types_filter_options_html($filter_type_id); ?>
+                                            </select>
+                                        </label>
+                                        <?php endif; ?>
+                                        <label class="mp-bt-search-v2__filter-field" for="mpBtFilterDist">
+                                            <span class="mp-bt-search-v2__filter-label">Distance</span>
+                                            <select name="dist" class="mp-bt-search-v2__filter" id="mpBtFilterDist" aria-label="Distance"
+                                                <?php echo $geo_loc === null ? 'title="Activez votre position pour filtrer par distance"' : ''; ?>>
+                                                <?php echo boutique_types_distance_options_html($filter_dist); ?>
+                                            </select>
+                                        </label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="mp-bt-search-v2__btn">
+                                    <span>Rechercher</span>
+                                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                </button>
+                            </span>
+                        </label>
+                        <?php if ($filter_dist > 0 && $geo_loc === null): ?>
+                            <p class="mp-bt-toolbar__hint" role="status">
+                                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                                Le filtre distance nécessite votre position. Activez-la avec le bouton ci-dessous.
+                            </p>
+                        <?php endif; ?>
+                    </form>
+
+                    <div class="mp-bt-nearby__glass-foot">
+                    <?php if ($geo_loc !== null): ?>
                     <div class="mp-bt-nearby__copy">
-                        <p class="mp-bt-nearby__eyebrow"><i class="fas fa-location-dot" aria-hidden="true"></i> Autour de vous</p>
-                        <h2 id="mpBtNearbyTitle">Boutiques proches de chez moi</h2>
-                        <?php if ($geo_loc !== null && $nb_proches === 0): ?>
-                            <p>Aucune boutique géolocalisée trouvée dans un rayon de <?php echo (int) $rayon_proche; ?> km pour le moment.</p>
-                        <?php elseif ($geo_loc !== null && $nb_proches > 0): ?>
+                        <?php if ($nb_proches === 0): ?>
+                            <p>Aucune boutique géolocalisée trouvée dans un rayon de <?php echo (int) $rayon_proche; ?> km<?php echo $filter_type_id > 0 ? ' pour ce type' : ''; ?> pour le moment.</p>
+                        <?php elseif ($nb_proches > 0): ?>
                             <p>
                                 <strong><?php echo (int) $nb_proches; ?></strong>
-                                boutique<?php echo $nb_proches > 1 ? 's' : ''; ?> à moins de <?php echo (int) $rayon_proche; ?> km.
+                                boutique<?php echo $nb_proches > 1 ? 's' : ''; ?> à moins de <?php echo (int) $rayon_proche; ?> km<?php echo $filter_type_id > 0 ? ' (type sélectionné)' : ''; ?>.
                             </p>
                         <?php endif; ?>
                     </div>
+                    <?php endif; ?>
 
                     <?php if ($geo_loc === null): ?>
                         <div class="mp-bt-nearby__actions">
+                            <?php if ($types_filter_available): ?>
+                            <select class="mp-bt-nearby__filter" id="mpBtNearbyType" aria-label="Type de boutique">
+                                <?php echo boutique_types_filter_options_html($filter_type_id); ?>
+                            </select>
+                            <?php endif; ?>
                             <form method="POST" action="/set-location.php" id="geo-locate-form">
                                 <input type="hidden" name="geo_lat" id="geo_lat" value="">
                                 <input type="hidden" name="geo_lng" id="geo_lng" value="">
@@ -152,10 +295,12 @@ $redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=
                                 id="mpBtOpenMap"
                                 <?php echo empty($map_payload) ? 'disabled' : ''; ?>>
                                 <i class="fas fa-map-location-dot" aria-hidden="true"></i>
-                                Voir les boutiques proches de chez moi
+                                Voir sur la carte
                             </button>
                         </div>
                     <?php endif; ?>
+                    </div>
+                    </div>
                 </div>
             </section>
 
@@ -164,6 +309,12 @@ $redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=
                 boutique<?php echo $nb_boutiques > 1 ? 's' : ''; ?> partenaire<?php echo $nb_boutiques > 1 ? 's' : ''; ?>
                 <?php if ($search !== ''): ?>
                     pour « <?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?> »
+                <?php endif; ?>
+                <?php if ($filter_type_id > 0): ?>
+                    — type filtré
+                <?php endif; ?>
+                <?php if ($use_geo_catalog): ?>
+                    — à moins de <?php echo (int) $filter_dist; ?> km
                 <?php endif; ?>
             </p>
 
@@ -188,6 +339,55 @@ $redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=
                         include __DIR__ . '/includes/partials/boutique_marketplace_card.php';
                     endforeach; ?>
                 </div>
+
+                <?php if ($total_pages > 1): ?>
+                    <nav class="mp-bt-pagination" aria-label="Pagination des boutiques">
+                        <?php if ($page > 1): ?>
+                            <a class="mp-bt-pagination__btn" href="<?php echo htmlspecialchars(boutiques_catalog_page_url($page - 1, $search, $filter_type_id, $filter_dist), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Page précédente">
+                                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                            </a>
+                        <?php else: ?>
+                            <span class="mp-bt-pagination__btn mp-bt-pagination__btn--disabled" aria-disabled="true"><i class="fas fa-chevron-left" aria-hidden="true"></i></span>
+                        <?php endif; ?>
+
+                        <?php
+                        $page_window_start = max(1, $page - 2);
+                        $page_window_end = min($total_pages, $page + 2);
+                        if ($page_window_start > 1): ?>
+                            <a class="mp-bt-pagination__btn" href="<?php echo htmlspecialchars(boutiques_catalog_page_url(1, $search, $filter_type_id, $filter_dist), ENT_QUOTES, 'UTF-8'); ?>">1</a>
+                            <?php if ($page_window_start > 2): ?>
+                                <span class="mp-bt-pagination__ellipsis" aria-hidden="true">…</span>
+                            <?php endif; ?>
+                        <?php endif; ?>
+
+                        <?php for ($pi = $page_window_start; $pi <= $page_window_end; $pi++): ?>
+                            <?php if ($pi === $page): ?>
+                                <span class="mp-bt-pagination__btn mp-bt-pagination__btn--active" aria-current="page"><?php echo (int) $pi; ?></span>
+                            <?php else: ?>
+                                <a class="mp-bt-pagination__btn" href="<?php echo htmlspecialchars(boutiques_catalog_page_url($pi, $search, $filter_type_id, $filter_dist), ENT_QUOTES, 'UTF-8'); ?>"><?php echo (int) $pi; ?></a>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+
+                        <?php if ($page_window_end < $total_pages): ?>
+                            <?php if ($page_window_end < $total_pages - 1): ?>
+                                <span class="mp-bt-pagination__ellipsis" aria-hidden="true">…</span>
+                            <?php endif; ?>
+                            <a class="mp-bt-pagination__btn" href="<?php echo htmlspecialchars(boutiques_catalog_page_url($total_pages, $search, $filter_type_id, $filter_dist), ENT_QUOTES, 'UTF-8'); ?>"><?php echo (int) $total_pages; ?></a>
+                        <?php endif; ?>
+
+                        <?php if ($page < $total_pages): ?>
+                            <a class="mp-bt-pagination__btn" href="<?php echo htmlspecialchars(boutiques_catalog_page_url($page + 1, $search, $filter_type_id, $filter_dist), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Page suivante">
+                                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                            </a>
+                        <?php else: ?>
+                            <span class="mp-bt-pagination__btn mp-bt-pagination__btn--disabled" aria-disabled="true"><i class="fas fa-chevron-right" aria-hidden="true"></i></span>
+                        <?php endif; ?>
+                    </nav>
+                    <p class="mp-bt-pagination__info">
+                        Page <strong><?php echo (int) $page; ?></strong> sur <strong><?php echo (int) $total_pages; ?></strong>
+                        — <?php echo (int) $nb_boutiques; ?> boutique<?php echo $nb_boutiques > 1 ? 's' : ''; ?>
+                    </p>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </main>
@@ -196,9 +396,25 @@ $redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=
         <div class="mp-bt-map-modal__backdrop" data-map-close></div>
         <div class="mp-bt-map-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mpBtMapTitle">
             <header class="mp-bt-map-modal__head">
-                <div>
+                <div class="mp-bt-map-modal__head-main">
                     <p class="mp-bt-map-modal__eyebrow">Proximité</p>
                     <h2 id="mpBtMapTitle">Boutiques proches de vous</h2>
+                </div>
+                <div class="mp-bt-map-modal__filters" role="group" aria-label="Filtres carte">
+                    <?php if ($types_filter_available): ?>
+                    <label class="mp-bt-map-modal__filter">
+                        <span class="visually-hidden">Type de boutique</span>
+                        <select id="mpBtMapFilterType" aria-label="Type de boutique">
+                            <?php echo boutique_types_filter_options_html($filter_type_id); ?>
+                        </select>
+                    </label>
+                    <?php endif; ?>
+                    <label class="mp-bt-map-modal__filter">
+                        <span class="visually-hidden">Distance</span>
+                        <select id="mpBtMapFilterDist" aria-label="Distance">
+                            <?php echo boutique_types_distance_options_html($filter_dist); ?>
+                        </select>
+                    </label>
                 </div>
                 <button type="button" class="mp-bt-map-modal__close" data-map-close aria-label="Fermer">
                     <i class="fas fa-times" aria-hidden="true"></i>
@@ -264,6 +480,11 @@ $redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=
         echo json_encode([
             'user' => $geo_loc ? ['lat' => (float) $geo_loc['lat'], 'lng' => (float) $geo_loc['lng']] : null,
             'boutiques' => $map_payload,
+            'filters' => [
+                'type_id' => $filter_type_id,
+                'dist_km' => $filter_dist,
+            ],
+            'types' => boutique_types_filter_json_list(),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     ?></script>
 
@@ -291,8 +512,74 @@ $redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=
                     statusEl: 'geo-status',
                     button: 'btn-geo-locate',
                     auto: false,
-                    onSuccess: function () { locateForm.submit(); }
+                    onSuccess: function () {
+                        var typeSel = document.getElementById('mpBtNearbyType');
+                        var distSel = document.getElementById('mpBtFilterDist');
+                        var redirectInput = locateForm.querySelector('[name=redirect]');
+                        if (redirectInput) {
+                            try {
+                                var u = new URL(redirectInput.value, window.location.origin);
+                                if (typeSel && typeSel.value) {
+                                    u.searchParams.set('type', typeSel.value);
+                                } else {
+                                    u.searchParams.delete('type');
+                                }
+                                if (distSel && distSel.value && distSel.value !== '0') {
+                                    u.searchParams.set('dist', distSel.value);
+                                }
+                                redirectInput.value = u.pathname + u.search;
+                            } catch (e) { /* ignore */ }
+                        }
+                        locateForm.submit();
+                    }
                 });
+            }
+
+            var filterToggle = document.getElementById('mpBtFilterToggle');
+            var filterPanel = document.getElementById('mpBtFilterPanel');
+            if (filterToggle && filterPanel) {
+                function closeFilterPanel() {
+                    filterPanel.hidden = true;
+                    filterToggle.setAttribute('aria-expanded', 'false');
+                }
+
+                function openFilterPanel() {
+                    filterPanel.hidden = false;
+                    filterToggle.setAttribute('aria-expanded', 'true');
+                }
+
+                filterToggle.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (filterPanel.hidden) {
+                        openFilterPanel();
+                    } else {
+                        closeFilterPanel();
+                    }
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (filterPanel.hidden) {
+                        return;
+                    }
+                    if (!event.target.closest('.mp-bt-search-v2__filter-group')) {
+                        closeFilterPanel();
+                    }
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && !filterPanel.hidden) {
+                        closeFilterPanel();
+                        filterToggle.focus();
+                    }
+                });
+
+                var catalogType = document.getElementById('mpBtFilterType');
+                var catalogDist = document.getElementById('mpBtFilterDist');
+                var hasActiveFilter = (catalogType && catalogType.value !== '') || (catalogDist && catalogDist.value !== '0');
+                if (hasActiveFilter) {
+                    filterToggle.classList.add('is-active');
+                }
             }
 
             var urlParams = new URLSearchParams(window.location.search || '');
@@ -302,6 +589,10 @@ $redirect_map .= (strpos($redirect_map, '?') !== false ? '&' : '?') . 'open_map=
                 if (!mapBtn || !mapBtn.disabled) {
                     window.openBoutiquesMapModal();
                 }
+                urlParams.delete('open_map');
+                var cleanQuery = urlParams.toString();
+                var cleanUrl = window.location.pathname + (cleanQuery ? '?' + cleanQuery : '');
+                window.history.replaceState({}, '', cleanUrl);
             }
         });
     </script>
