@@ -21,10 +21,27 @@ $style_vars = '--bt-main:' . htmlspecialchars($theme['main'], ENT_QUOTES, 'UTF-8
     . ';--bt-dark:' . htmlspecialchars($theme['dark'], ENT_QUOTES, 'UTF-8')
     . ';--bt-accent:' . htmlspecialchars($theme['accent'], ENT_QUOTES, 'UTF-8')
     . ';--bt-band:' . htmlspecialchars($theme['band'], ENT_QUOTES, 'UTF-8');
+
+$nb_produits = (int) ($card['nb_produits'] ?? 0);
+$produits_label = $nb_produits . ' produit' . ($nb_produits > 1 ? 's' : '');
+$has_geo = !empty($card['has_geo']);
+$bt_geo_label = 'Boutique — ' . $card['nom'];
 ?>
 <article class="mp-bt-card<?php echo !empty($theme['has_custom']) ? ' mp-bt-card--themed' : ''; ?>"
     style="<?php echo $style_vars; ?>" role="listitem">
+    <button type="button"
+        class="mp-bt-card__share js-platform-share"
+        title="Partager cette boutique"
+        data-share-modal-title="Partager cette boutique"
+        data-share-title="<?php echo htmlspecialchars($card['share_title'], ENT_QUOTES, 'UTF-8'); ?>"
+        data-share-url="<?php echo htmlspecialchars($card['share_url'], ENT_QUOTES, 'UTF-8'); ?>"
+        data-share-text="<?php echo htmlspecialchars($card['share_text'], ENT_QUOTES, 'UTF-8'); ?>"
+        data-share-hint="Partagez le lien de la vitrine avec vos proches.">
+        <i class="fas fa-share-nodes" aria-hidden="true"></i>
+        <span>Partager</span>
+    </button>
     <div class="mp-bt-bag" aria-hidden="true">
+        <span class="mp-bt-bag__products"><?php echo htmlspecialchars($produits_label, ENT_QUOTES, 'UTF-8'); ?></span>
         <div class="mp-bt-bag__handle"></div>
         <div class="mp-bt-bag__shell">
             <div class="mp-bt-bag__logo">
@@ -58,23 +75,14 @@ $style_vars = '--bt-main:' . htmlspecialchars($theme['main'], ENT_QUOTES, 'UTF-8
                 class="mp-bt-card__btn mp-bt-card__btn--primary">
                 <i class="fas fa-store" aria-hidden="true"></i> Voir la boutique
             </a>
-            <?php if ($card['maps_url'] !== '' || ($card['lat'] !== null && $card['lng'] !== null)): ?>
-                <?php
-                $bt_geo_label = 'Boutique — ' . $card['nom'];
-                $bt_maps_url = $card['maps_url'];
-                if ($bt_maps_url === '' && $card['lat'] !== null && $card['lng'] !== null) {
-                    $bt_maps_url = 'https://www.google.com/maps/dir/?api=1&destination='
-                        . rawurlencode((string) $card['lat'] . ',' . (string) $card['lng'])
-                        . '&travelmode=driving';
-                }
-                ?>
+            <?php if ($has_geo): ?>
                 <button type="button"
                     class="mp-bt-card__btn mp-bt-card__btn--ghost js-geo-open-maps"
                     title="Ouvrir avec une application de navigation"
-                    data-lat="<?php echo $card['lat'] !== null ? htmlspecialchars((string) $card['lat'], ENT_QUOTES, 'UTF-8') : ''; ?>"
-                    data-lng="<?php echo $card['lng'] !== null ? htmlspecialchars((string) $card['lng'], ENT_QUOTES, 'UTF-8') : ''; ?>"
+                    data-lat="<?php echo htmlspecialchars((string) $card['lat'], ENT_QUOTES, 'UTF-8'); ?>"
+                    data-lng="<?php echo htmlspecialchars((string) $card['lng'], ENT_QUOTES, 'UTF-8'); ?>"
                     data-label="<?php echo htmlspecialchars($bt_geo_label, ENT_QUOTES, 'UTF-8'); ?>"
-                    data-maps-url="<?php echo htmlspecialchars($bt_maps_url, ENT_QUOTES, 'UTF-8'); ?>">
+                    data-maps-url="<?php echo htmlspecialchars($card['maps_url'], ENT_QUOTES, 'UTF-8'); ?>">
                     <i class="fas fa-location-dot" aria-hidden="true"></i> Localisation
                 </button>
             <?php endif; ?>

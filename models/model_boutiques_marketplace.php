@@ -194,6 +194,21 @@ if (!function_exists('marketplace_list_boutiques')) {
             return [];
         }
 
+        $nb_produits_select = '0 AS nb_produits';
+        try {
+            $chk = $db->query("SHOW TABLES LIKE 'produits'");
+            if ($chk && $chk->fetchColumn()) {
+                $nb_produits_select = "(
+                    SELECT COUNT(p.id)
+                    FROM produits p
+                    WHERE p.admin_id = a.id
+                    AND p.statut IN ('actif', 'rupture_stock')
+                ) AS nb_produits";
+            }
+        } catch (PDOException $e) {
+            /* garde 0 par défaut */
+        }
+
         try {
             $sql = "
                 SELECT
@@ -208,6 +223,7 @@ if (!function_exists('marketplace_list_boutiques')) {
                     a.boutique_couleur_principale,
                     a.boutique_couleur_accent,
                     a.telephone,
+                    $nb_produits_select,
                     $distance_select
                 FROM admin a
                 WHERE $where
@@ -228,23 +244,20 @@ if (!function_exists('marketplace_list_boutiques')) {
 
 if (!function_exists('marketplace_boutiques_featured')) {
     /**
-     * Boutiques mises en avant sur l'accueil (ordre aléatoire stable sur la journée).
+     * Boutiques mises en avant sur l'accueil (ordre aléatoire à chaque chargement).
      *
      * @return array<int, array<string, mixed>>
      */
     function marketplace_boutiques_featured(int $limit = 6, ?string $country = null): array
     {
         $limit = max(1, min($limit, 12));
-        $all = marketplace_list_boutiques('', max($limit, 12), 0, $country, null, null, 0, false);
+        $pool = max($limit, 24);
+        $all = marketplace_list_boutiques('', $pool, 0, $country, null, null, 0, false);
         if (count($all) <= $limit) {
+            shuffle($all);
             return $all;
         }
-        $seed = (int) date('Ymd');
-        usort($all, function ($a, $b) use ($seed) {
-            $ha = crc32($seed . '|' . (int) ($a['id'] ?? 0));
-            $hb = crc32($seed . '|' . (int) ($b['id'] ?? 0));
-            return $ha <=> $hb;
-        });
+        shuffle($all);
         return array_slice($all, 0, $limit);
     }
 }

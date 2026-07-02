@@ -83,12 +83,22 @@ if (!function_exists('marketplace_boutique_prepare_card')) {
         $share_title = 'Découvrez « ' . $nom . ' » sur COLObanes';
         $share_text = $share_title;
 
-        $geo_share_url = '';
-        if ($pickup['lat'] !== null && $pickup['lng'] !== null) {
-            $geo_share_url = 'https://maps.google.com/?q=' . $pickup['lat'] . ',' . $pickup['lng'];
-        } elseif ($pickup['maps_url'] !== '') {
-            $geo_share_url = $pickup['maps_url'];
+        if (!function_exists('geo_coords_valid')) {
+            require_once __DIR__ . '/geo_location_service.php';
         }
+
+        $has_geo = $pickup['lat'] !== null
+            && $pickup['lng'] !== null
+            && geo_coords_valid((float) $pickup['lat'], (float) $pickup['lng']);
+
+        $maps_dir_url = '';
+        $geo_share_url = '';
+        if ($has_geo) {
+            $maps_dir_url = geo_nav_google_maps_dir((float) $pickup['lat'], (float) $pickup['lng']);
+            $geo_share_url = 'https://maps.google.com/?q=' . $pickup['lat'] . ',' . $pickup['lng'];
+        }
+
+        $nb_produits = (int) ($boutique['nb_produits'] ?? 0);
 
         return [
             'id' => (int) ($boutique['id'] ?? 0),
@@ -99,14 +109,16 @@ if (!function_exists('marketplace_boutique_prepare_card')) {
             'telephone' => trim((string) ($boutique['telephone'] ?? '')),
             'logo_url' => marketplace_boutique_logo_url($boutique),
             'vitrine_href' => boutique_vitrine_entry_href($slug),
-            'maps_url' => $pickup['maps_url'],
+            'maps_url' => $maps_dir_url,
             'share_url' => $share_url,
             'share_title' => $share_title,
             'share_text' => $share_text,
             'geo_share_url' => $geo_share_url,
             'geo_share_title' => 'Point de retrait — ' . $nom,
-            'lat' => $pickup['lat'],
-            'lng' => $pickup['lng'],
+            'lat' => $has_geo ? (float) $pickup['lat'] : null,
+            'lng' => $has_geo ? (float) $pickup['lng'] : null,
+            'has_geo' => $has_geo,
+            'nb_produits' => $nb_produits,
             'distance_km' => isset($boutique['distance_km']) ? (float) $boutique['distance_km'] : null,
             'theme' => $theme,
         ];
