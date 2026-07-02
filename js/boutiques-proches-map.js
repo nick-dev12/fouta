@@ -191,11 +191,11 @@
             shareShop.onclick = function () {
                 if (win.openPlatformShareModal && item.share_url) {
                     win.openPlatformShareModal({
-                        modalTitle: 'Partager cette boutique',
+                        modalTitle: item.share_modal_title || 'Partager cette boutique',
                         title: item.share_title || item.nom,
                         url: item.share_url,
                         message: item.share_text || item.share_title,
-                        hint: 'Partagez le lien de la vitrine avec vos proches.'
+                        hint: item.share_hint || 'Le lien ouvre la boutique publique sur COLObanes.'
                     });
                 }
             };

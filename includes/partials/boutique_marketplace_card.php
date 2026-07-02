@@ -34,11 +34,13 @@ $bt_geo_label = 'Boutique — ' . $card['nom'];
         <button type="button"
             class="mp-bt-card__share js-platform-share"
             title="Partager cette boutique"
-            data-share-modal-title="Partager cette boutique"
+            aria-haspopup="dialog"
+            aria-controls="platformShareModal"
+            data-share-modal-title="<?php echo htmlspecialchars($card['share_modal_title'] ?? 'Partager cette boutique', ENT_QUOTES, 'UTF-8'); ?>"
             data-share-title="<?php echo htmlspecialchars($card['share_title'], ENT_QUOTES, 'UTF-8'); ?>"
             data-share-url="<?php echo htmlspecialchars($card['share_url'], ENT_QUOTES, 'UTF-8'); ?>"
             data-share-text="<?php echo htmlspecialchars($card['share_text'], ENT_QUOTES, 'UTF-8'); ?>"
-            data-share-hint="Partagez le lien de la vitrine avec vos proches.">
+            data-share-hint="<?php echo htmlspecialchars($card['share_hint'] ?? 'Le lien ouvre la boutique publique sur COLObanes.', ENT_QUOTES, 'UTF-8'); ?>">
             <i class="fas fa-share-nodes" aria-hidden="true"></i>
             <span>Partager</span>
         </button>

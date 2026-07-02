@@ -4,7 +4,7 @@
  */
 
 if (!function_exists('marketplace_boutique_public_url')) {
-    function marketplace_boutique_public_url(string $slug, string $nom = ''): string
+    function marketplace_boutique_public_url(string $slug): string
     {
         if (!function_exists('get_site_base_url')) {
             require_once __DIR__ . '/site_url.php';
@@ -16,12 +16,32 @@ if (!function_exists('marketplace_boutique_public_url')) {
         if ($slug === '') {
             return '/boutiques.php';
         }
-        $url = rtrim(get_site_base_url(), '/') . boutique_url('index.php', $slug);
+        return rtrim(get_site_base_url(), '/') . boutique_url('index.php', $slug);
+    }
+}
+
+if (!function_exists('marketplace_boutique_share_payload')) {
+    /**
+     * Données partage vitrine — même logique que vendeur_share_boutique_get_data().
+     *
+     * @return array{url:string,subject:string,message:string,modal_title:string,hint:string}
+     */
+    function marketplace_boutique_share_payload(string $slug, string $nom): array
+    {
         $nom = trim($nom);
-        if ($nom !== '') {
-            $url .= (strpos($url, '?') !== false ? '&' : '?') . 'nom=' . rawurlencode($nom);
+        if ($nom === '') {
+            $nom = 'Boutique';
         }
-        return $url;
+        $url = marketplace_boutique_public_url($slug);
+        $subject = 'Découvrez la boutique « ' . $nom . ' » sur COLObanes';
+
+        return [
+            'url' => $url,
+            'subject' => $subject,
+            'message' => $subject . ' : ' . $url,
+            'modal_title' => 'Partager cette boutique',
+            'hint' => 'Le lien ouvre la boutique publique sur COLObanes.',
+        ];
     }
 }
 
@@ -84,9 +104,7 @@ if (!function_exists('marketplace_boutique_prepare_card')) {
 
         $theme = marketplace_boutique_card_theme($boutique);
         $pickup = boutique_pickup_info_from_admin($boutique, $nom);
-        $share_url = marketplace_boutique_public_url($slug, $nom);
-        $share_title = 'Découvrez « ' . $nom . ' » sur COLObanes';
-        $share_text = $share_title;
+        $share = marketplace_boutique_share_payload($slug, $nom);
 
         if (!function_exists('geo_coords_valid')) {
             require_once __DIR__ . '/geo_location_service.php';
@@ -115,9 +133,11 @@ if (!function_exists('marketplace_boutique_prepare_card')) {
             'logo_url' => marketplace_boutique_logo_url($boutique),
             'vitrine_href' => boutique_vitrine_entry_href($slug),
             'maps_url' => $maps_dir_url,
-            'share_url' => $share_url,
-            'share_title' => $share_title,
-            'share_text' => $share_text,
+            'share_url' => $share['url'],
+            'share_title' => $share['subject'],
+            'share_text' => $share['message'],
+            'share_modal_title' => $share['modal_title'],
+            'share_hint' => $share['hint'],
             'geo_share_url' => $geo_share_url,
             'geo_share_title' => 'Point de retrait — ' . $nom,
             'lat' => $has_geo ? (float) $pickup['lat'] : null,
@@ -166,6 +186,8 @@ if (!function_exists('marketplace_boutiques_map_payload')) {
                 'share_url' => $card['share_url'],
                 'share_title' => $card['share_title'],
                 'share_text' => $card['share_text'],
+                'share_modal_title' => $card['share_modal_title'],
+                'share_hint' => $card['share_hint'],
                 'geo_share_url' => $card['geo_share_url'],
                 'geo_share_title' => $card['geo_share_title'],
                 'vitrine_href' => $card['vitrine_href'],
