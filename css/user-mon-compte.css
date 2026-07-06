@@ -464,9 +464,7 @@ body.user-page-mon-compte .btn-primary:hover {
 }
 
 @media (max-width: 600px) {
-  body.user-page-mon-compte .user-content {
-    padding: clamp(0.75rem, 3vw, 1.25rem);
-  }
+  /* Marge écran : voir user-mobile-edge.css (5px) */
 
   body.user-page-mon-compte .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

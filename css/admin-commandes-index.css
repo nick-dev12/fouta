@@ -646,15 +646,17 @@
   }
 
   .admin-container.admin-shell--vendeur-dock main#adminContent.admin-content:has(.cmd-list-page) {
-    padding-top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    padding-top: max(5px, env(safe-area-inset-top, 0px)) !important;
   }
 
-  /* Dock vendeur bas : garder dégagement comme le reste de l’admin */
+  /* Dock vendeur bas : garder dégagement comme le reste de l'admin */
   .admin-container.admin-shell--vendeur-dock main#adminContent.admin-content:has(.cmd-list-page) {
+    padding-left: max(5px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(5px, env(safe-area-inset-right, 0px)) !important;
     padding-bottom: calc(
         var(--admin-vendeur-bottom-nav-clearance, 5.9rem) +
           env(safe-area-inset-bottom, 0px) +
-          6px
+          5px
       )
       !important;
   }
