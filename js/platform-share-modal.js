@@ -154,6 +154,26 @@
     }
 
     /**
+     * Message canal desktop : inclut toujours l'URL si elle manque dans le texte.
+     */
+    function buildChannelMessage(url, title, message) {
+        url = (url || '').trim();
+        title = (title || '').trim();
+        message = (message || '').trim();
+
+        if (!url) {
+            return message || title;
+        }
+        if (!message) {
+            return title ? title + ' : ' + url : url;
+        }
+        if (message.indexOf(url) !== -1) {
+            return message;
+        }
+        return message + '\n' + url;
+    }
+
+    /**
      * Lien HTTPS de partage par canal.
      * On n'utilise PLUS les schémas natifs (whatsapp://, tg://, fb://, intent://…)
      * car la WebView des apps n'est pas configurée pour les intercepter :
@@ -163,7 +183,7 @@
     function channelHttpsUrl(channel) {
         var url = state.url;
         var title = state.title;
-        var message = state.message || (title + ' : ' + url);
+        var message = buildChannelMessage(url, title, state.message || (title + ' : ' + url));
 
         switch (channel) {
             case 'wa':
@@ -173,7 +193,7 @@
             case 'fb':
                 return 'https://www.facebook.com/sharer/sharer.php?u=' + enc(url);
             case 'tg':
-                return 'https://t.me/share/url?url=' + enc(url) + '&text=' + enc(title);
+                return 'https://t.me/share/url?url=' + enc(url) + '&text=' + enc(buildChannelMessage(url, title, state.message || title));
             default:
                 return url;
         }

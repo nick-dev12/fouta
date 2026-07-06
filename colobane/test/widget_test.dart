@@ -18,7 +18,19 @@ void main() {
     );
   });
 
-  test('constante base pointe vers la marketplace', () {
-    expect(app.kMarketplaceBaseUrl, 'https://colobanes.com/');
+  test('normalizeMarketplaceUrl conserve les liens boutique partagés', () {
+    expect(
+      app.normalizeMarketplaceUrl(
+        'https://colobanes.com/boutique/index.php?boutique=sugar-paper',
+      ),
+      'https://colobanes.com/boutique/index.php?boutique=sugar-paper',
+    );
+  });
+
+  test('normalizeMarketplaceUrl retire www', () {
+    expect(
+      app.normalizeMarketplaceUrl('https://www.colobanes.com/produits/'),
+      'https://colobanes.com/produits/',
+    );
   });
 }

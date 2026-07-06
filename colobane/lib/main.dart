@@ -19,6 +19,7 @@ import 'firebase_options.dart';
 import 'services/fcm_service.dart';
 import 'services/social_auth_service.dart';
 import 'services/native_permission_service.dart';
+import 'widgets/app_version_gate.dart';
 
 /// URL de la marketplace chargée dans la WebView (production)
 const String kMarketplaceBaseUrl = 'https://colobanes.com/';
@@ -63,7 +64,30 @@ const Color kBleuLogoMarine = Color(0xFF1A3A5C);
 
 bool _isMarketplaceHost(String host) {
   final h = host.toLowerCase();
-  return h == 'colobanes.com';
+  return h == 'colobanes.com' || h == 'www.colobanes.com';
+}
+
+/// Normalise les liens partagés (apex sans www, chemins boutique conservés).
+String normalizeMarketplaceUrl(String url) {
+  if (url.isEmpty) {
+    return kMarketplaceBaseUrl;
+  }
+  try {
+    final uri = Uri.parse(url);
+    if (!uri.hasScheme || !uri.hasAuthority) {
+      return resolveRelativeMarketUrl(url);
+    }
+    var host = uri.host.toLowerCase();
+    if (host == 'www.colobanes.com') {
+      host = 'colobanes.com';
+    }
+    if (!_isMarketplaceHost(host)) {
+      return url;
+    }
+    return uri.replace(host: host).toString();
+  } catch (_) {
+    return url;
+  }
 }
 
 String resolveRelativeMarketUrl(String href) {
@@ -117,7 +141,7 @@ class ColobanesApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const WebViewScreen(),
+      home: const AppVersionGate(child: WebViewScreen()),
     );
   }
 }
@@ -134,6 +158,8 @@ class _WebViewScreenState extends State<WebViewScreen>
   InAppWebViewController? webViewController;
   String? _currentUrl;
   String? _deepLinkInitUrl;
+  bool _marketplaceEntryUrlReady = false;
+  String _marketplaceEntryUrl = kMarketplaceBaseUrl;
   Timer? _loaderMaxTimer;
   Timer? _progressSimTimer;
   StreamSubscription<Uri>? _deepLinkSub;
@@ -154,7 +180,33 @@ class _WebViewScreenState extends State<WebViewScreen>
     WidgetsBinding.instance.addObserver(this);
     _startInitialLoadTimers();
     _initializeFCM();
-    _initDeepLinks().then((_) => _loadSavedUrl());
+    _resolveMarketplaceEntryUrl();
+  }
+
+  /// Attend le deep link (App Links / Universal Links) avant de créer la WebView.
+  Future<void> _resolveMarketplaceEntryUrl() async {
+    await _initDeepLinks();
+    await _loadSavedUrl();
+    if (!mounted) return;
+    final resolved = (_currentUrl != null && _currentUrl!.isNotEmpty)
+        ? normalizeMarketplaceUrl(_currentUrl!)
+        : kMarketplaceBaseUrl;
+    setState(() {
+      _marketplaceEntryUrl = resolved;
+      _currentUrl = resolved;
+      _marketplaceEntryUrlReady = true;
+    });
+  }
+
+  void _openMarketplaceUrl(String url) {
+    final normalized = normalizeMarketplaceUrl(url);
+    _currentUrl = normalized;
+    _deepLinkInitUrl = normalized;
+    if (webViewController != null) {
+      webViewController!.loadUrl(
+        urlRequest: URLRequest(url: WebUri(normalized)),
+      );
+    }
   }
 
   void _startInitialLoadTimers() {
@@ -240,7 +292,7 @@ class _WebViewScreenState extends State<WebViewScreen>
     try {
       final initialUri = await appLinks.getInitialLink();
       if (initialUri != null && _isMarketplaceHost(initialUri.host)) {
-        _deepLinkInitUrl = initialUri.toString();
+        _deepLinkInitUrl = normalizeMarketplaceUrl(initialUri.toString());
         _currentUrl = _deepLinkInitUrl;
       }
     } catch (_) {}
@@ -248,17 +300,7 @@ class _WebViewScreenState extends State<WebViewScreen>
     // Liens reçus quand l'app est déjà ouverte (warm/hot start)
     _deepLinkSub = appLinks.uriLinkStream.listen((uri) {
       if (_isMarketplaceHost(uri.host)) {
-        final url = uri.toString();
-        if (webViewController != null) {
-          webViewController!.loadUrl(
-            urlRequest: URLRequest(url: WebUri(url)),
-          );
-        } else {
-          // L'app vient de démarrer : on mémorise l'URL pour qu'elle soit
-          // chargée dès que la WebView sera prête
-          _currentUrl = url;
-          _deepLinkInitUrl = url;
-        }
+        _openMarketplaceUrl(uri.toString());
       }
     }, onError: (_) {});
   }
@@ -956,6 +998,7 @@ class _WebViewScreenState extends State<WebViewScreen>
         body: Stack(
           children: [
             // WebView masquée pendant le chargement initial (évite flash blanc sous le logo).
+            if (_marketplaceEntryUrlReady)
             ValueListenableBuilder<bool>(
               valueListenable: _isInitialLoadNotifier,
               builder: (context, isInitialLoad, child) {
@@ -968,7 +1011,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                 child: SafeArea(
                   child: InAppWebView(
                   initialUrlRequest: URLRequest(
-                    url: WebUri(_currentUrl ?? kMarketplaceBaseUrl),
+                    url: WebUri(_marketplaceEntryUrl),
                   ),
                   initialUserScripts: UnmodifiableListView<UserScript>([
                     UserScript(
@@ -1157,6 +1200,9 @@ class _WebViewScreenState extends State<WebViewScreen>
             ),
 
             // Loader initial — logo + anneau (identique au splash natif)
+            if (!_marketplaceEntryUrlReady)
+              const _MarketplaceLoader()
+            else
             ValueListenableBuilder<bool>(
               valueListenable: _isInitialLoadNotifier,
               builder: (context, isInitialLoad, _) {

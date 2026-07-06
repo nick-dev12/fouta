@@ -112,6 +112,17 @@ require_once __DIR__ . '/../includes/require_login.php';
                 </div>
             </a>
 
+            <a class="sa-param-card" href="app-mobile.php">
+                <div class="sa-param-card__top">
+                    <span class="sa-param-card__icon" aria-hidden="true"><i class="fas fa-mobile-screen"></i></span>
+                    <span class="sa-param-card__tag">Mobile</span>
+                </div>
+                <h3 class="sa-param-card__title">Mise à jour app</h3>
+                <div class="sa-param-card__footer">
+                    <span>Ouvrir l'espace <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                </div>
+            </a>
+
             <a class="sa-param-card sa-param-card--accent-orange" href="hero-affiches.php">
                 <div class="sa-param-card__top">
                     <span class="sa-param-card__icon" aria-hidden="true"><i class="fas fa-panorama"></i></span>
