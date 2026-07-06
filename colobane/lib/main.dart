@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:collection';
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'firebase_options.dart';
 import 'services/fcm_service.dart';
 import 'services/social_auth_service.dart';
@@ -465,10 +466,8 @@ class _WebViewScreenState extends State<WebViewScreen>
     webViewController?.addJavaScriptHandler(
       handlerName: 'shareContent',
       callback: (args) async {
-        if (args.isEmpty) {
-          return {'success': false, 'error': 'No payload'};
-        }
-        return await _handleShareContent(args[0]);
+        final payload = args.isNotEmpty ? args[0] : <String, dynamic>{};
+        return await _handleShareContent(payload);
       },
     );
 
@@ -496,10 +495,46 @@ class _WebViewScreenState extends State<WebViewScreen>
     }
   }
 
+  Map<String, dynamic> _normalizeSharePayload(dynamic payload) {
+    if (payload is Map) {
+      return payload.map((key, value) => MapEntry(key.toString(), value));
+    }
+    if (payload is String && payload.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(payload);
+        if (decoded is Map) {
+          return decoded.map((key, value) => MapEntry(key.toString(), value));
+        }
+      } catch (_) {
+        return {'text': payload.trim()};
+      }
+    }
+    return {};
+  }
+
+  Rect _sharePositionOrigin() {
+    if (!mounted) {
+      return const Rect.fromLTWH(0, 0, 1, 1);
+    }
+    final size = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
+    final centerX = size.width / 2;
+    final centerY = (size.height - padding.bottom) * 0.72;
+    return Rect.fromCenter(
+      center: Offset(centerX, centerY),
+      width: 48,
+      height: 48,
+    );
+  }
+
   // Ouvre la feuille de partage native du système (Android / iOS)
   Future<Map<String, dynamic>> _handleShareContent(dynamic payload) async {
     try {
-      final map = (payload is Map) ? payload : <dynamic, dynamic>{};
+      if (!mounted) {
+        return {'success': false, 'error': 'Application non prête'};
+      }
+
+      final map = _normalizeSharePayload(payload);
       final title = (map['title'] ?? '').toString();
       final text = (map['text'] ?? '').toString();
       final url = (map['url'] ?? '').toString();
@@ -514,10 +549,37 @@ class _WebViewScreenState extends State<WebViewScreen>
           .join(shareText.contains(url) || url.isEmpty ? '' : '\n')
           .trim();
 
-      await Share.share(
-        url.isNotEmpty ? url : (shareBody.isNotEmpty ? shareBody : title),
+      final shareValue = url.isNotEmpty
+          ? url
+          : (shareBody.isNotEmpty ? shareBody : title.trim());
+      if (shareValue.isEmpty) {
+        return {'success': false, 'error': 'Contenu de partage vide'};
+      }
+
+      final origin = _sharePositionOrigin();
+
+      // iOS (surtout iPad) exige une ancre valide pour UIActivityViewController.
+      if (!kIsWeb && Platform.isIOS && url.isNotEmpty) {
+        final uri = Uri.tryParse(url);
+        if (uri != null) {
+          final uriResult = await Share.shareUri(
+            uri,
+            sharePositionOrigin: origin,
+          );
+          if (uriResult.status != ShareResultStatus.unavailable) {
+            return {'success': true};
+          }
+        }
+      }
+
+      final result = await Share.share(
+        shareValue,
         subject: title.isNotEmpty ? title : null,
+        sharePositionOrigin: origin,
       );
+      if (result.status == ShareResultStatus.unavailable) {
+        return {'success': false, 'error': 'Partage indisponible'};
+      }
       return {'success': true};
     } catch (e) {
       return {'success': false, 'error': e.toString()};

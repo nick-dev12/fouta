@@ -79,28 +79,20 @@
     }
 
     /**
-     * Partage via le pont natif Flutter (window.ColobanesNative.shareContent).
-     * Disponible uniquement si l'app expose le handler "shareContent".
+     * Partage via le pont natif Flutter (retourne une Promise bool).
      */
     function nativeShareViaBridge(payload) {
+        if (window.ColobanesNative && typeof window.ColobanesNative.shareContent === 'function') {
+            return window.ColobanesNative.shareContent(payload || {})
+                .then(function () { return true; })
+                .catch(function () { return false; });
+        }
         if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
-            try {
-                window.flutter_inappwebview.callHandler('shareContent', payload || {});
-                return true;
-            } catch (e) {
-                /* pont Flutter indisponible — essai ColobanesNative */
-            }
+            return window.flutter_inappwebview.callHandler('shareContent', payload || {})
+                .then(function (result) { return !!(result && result.success); })
+                .catch(function () { return false; });
         }
-        var n = window.ColobanesNative;
-        if (n && typeof n.shareContent === 'function') {
-            try {
-                n.shareContent(payload);
-                return true;
-            } catch (e) {
-                return false;
-            }
-        }
-        return false;
+        return Promise.resolve(false);
     }
 
     /**
@@ -135,10 +127,15 @@
      */
     function tryNativeShare(opts) {
         if (!opts || !opts.url) {
-            return false;
+            return Promise.resolve(false);
         }
         var payload = buildSharePayload(opts);
-        return nativeShareViaBridge(payload) || nativeShareViaWebApi(payload);
+        return nativeShareViaBridge(payload).then(function (bridgeOk) {
+            if (bridgeOk) {
+                return true;
+            }
+            return nativeShareViaWebApi(payload);
+        });
     }
 
     function showMobileShareFallback(opts) {
@@ -299,10 +296,11 @@
         opts = opts || {};
         // Mobile, tablette et app native : feuille de partage système uniquement (pas de modal custom).
         if (shouldUseNativeShare()) {
-            if (tryNativeShare(opts)) {
-                return;
-            }
-            showMobileShareFallback(opts);
+            tryNativeShare(opts).then(function (ok) {
+                if (!ok) {
+                    showMobileShareFallback(opts);
+                }
+            });
             return;
         }
         if (!modal) {
