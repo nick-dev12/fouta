@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/includes/session_user.php';
 /**
  * Page publique affichée lors du scan du QR code d'un produit
  * Affiche les détails de gestion du stock : nombre vendu, restant, total avant
  * Accessible sans authentification
  */
 
-session_start();
+session_start_persistent();
 
 $produit_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($produit_id <= 0) {

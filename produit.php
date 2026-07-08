@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_user.php';
+session_start_persistent();
 
 if (ob_get_level() === 0) {
     ob_start();

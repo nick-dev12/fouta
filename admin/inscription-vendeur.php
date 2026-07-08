@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../includes/session_admin.php';
 /**
  * Inscription vendeur — création boutique (sans session admin requise).
  */
-session_start();
+session_start_persistent();
 require_once __DIR__ . '/../includes/google_auth_coop.php';
 require_once __DIR__ . '/../includes/auth_redirect.php';
 

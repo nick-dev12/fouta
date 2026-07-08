@@ -1,8 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/session_user.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+session_start_persistent();
 
 require_once __DIR__ . '/includes/produit_boutique_line.php';
 

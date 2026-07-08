@@ -2,8 +2,10 @@
 /**
  * Session super admin + garde d'accès + jeton CSRF
  */
+require_once dirname(__DIR__, 2) . '/includes/session_user.php';
+
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    session_start_persistent();
 }
 
 require_once __DIR__ . '/paths.php';

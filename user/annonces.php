@@ -3,10 +3,14 @@
  * Annonces plateforme — espace client (redesign v2)
  */
 require_once __DIR__ . '/../includes/session_user.php';
-session_start();
+session_start_persistent();
 
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
-    header('Location: connexion.php');
+
+if (!function_exists('auth_redirect_to_site_home')) {
+    require_once __DIR__ . '/../includes/auth_redirect.php';
+}
+if (empty($_SESSION['user_id']) || (int) $_SESSION['user_id'] <= 0) {
+    auth_redirect_to_site_home();
     exit;
 }
 

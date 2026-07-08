@@ -7,6 +7,9 @@
 if (!function_exists('auth_portal_cookie_lifetime')) {
     function auth_portal_cookie_lifetime()
     {
+        if (function_exists('session_persistent_lifetime')) {
+            return session_persistent_lifetime();
+        }
         return 30 * 24 * 3600;
     }
 }
@@ -27,7 +30,7 @@ if (!function_exists('auth_set_portal_cookie')) {
             'expires' => time() + $lifetime,
             'path' => '/',
             'domain' => '',
-            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'secure' => function_exists('session_request_is_https') ? session_request_is_https() : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
@@ -81,6 +84,39 @@ if (!function_exists('auth_user_is_logged_in')) {
     }
 }
 
+if (!function_exists('auth_site_home_url')) {
+    function auth_site_home_url()
+    {
+        return '/index.php';
+    }
+}
+
+if (!function_exists('auth_redirect_to_site_home')) {
+    /**
+     * Redirection vers l'accueil (déconnexion manuelle ou session expirée).
+     */
+    function auth_redirect_to_site_home()
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        if (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+        header('Location: ' . auth_site_home_url(), true, 303);
+        exit;
+    }
+}
+
+if (!function_exists('auth_user_redirect_if_not_logged_in')) {
+    function auth_user_redirect_if_not_logged_in()
+    {
+        if (!auth_user_is_logged_in()) {
+            auth_redirect_to_site_home();
+        }
+    }
+}
+
 if (!function_exists('admin_login_redirect_url')) {
     /**
      * URL de connexion unifiée (choix-connexion.php).
@@ -107,8 +143,7 @@ if (!function_exists('admin_login_redirect_url')) {
 if (!function_exists('admin_redirect_to_login')) {
     function admin_redirect_to_login()
     {
-        header('Location: ' . admin_login_redirect_url());
-        exit;
+        auth_redirect_to_site_home();
     }
 }
 

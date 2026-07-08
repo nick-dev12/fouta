@@ -3,7 +3,8 @@
  * Suggestions de recherche catalogue (barre nav).
  */
 header('Content-Type: application/json; charset=utf-8');
-session_start();
+require_once __DIR__ . '/../includes/session_user.php';
+session_start_persistent();
 
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/../models/model_produits.php';

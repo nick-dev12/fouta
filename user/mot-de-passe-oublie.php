@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * @deprecated Redirection vers le formulaire unifié (clients + boutiques).
  */

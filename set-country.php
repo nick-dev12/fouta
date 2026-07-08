@@ -2,7 +2,8 @@
 /**
  * Enregistre le pays marketplace en session et redirige.
  */
-session_start();
+require_once __DIR__ . '/includes/session_user.php';
+session_start_persistent();
 
 require_once __DIR__ . '/includes/marketplace_country_filter.php';
 

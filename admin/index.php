@@ -7,14 +7,13 @@
 
 require_once __DIR__ . '/../includes/session_admin.php';
 require_once __DIR__ . '/../includes/auth_redirect.php';
-session_start();
+session_start_persistent();
 
 if (isset($_SESSION['admin_id'])) {
     header('Location: dashboard.php');
     exit;
 }
 
-header('Location: ' . admin_login_redirect_url('/admin/dashboard.php'));
-exit;
+auth_redirect_to_site_home();
 
 ?>

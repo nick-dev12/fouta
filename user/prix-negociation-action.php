@@ -3,7 +3,7 @@
  * Action POST — négociation de prix (client)
  */
 require_once __DIR__ . '/../includes/session_user.php';
-session_start();
+session_start_persistent();
 
 require_once __DIR__ . '/../controllers/controller_prix_negociation.php';
 

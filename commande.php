@@ -6,7 +6,8 @@
 
 ob_start();
 
-session_start();
+require_once __DIR__ . '/includes/session_user.php';
+session_start_persistent();
 
 require_once __DIR__ . '/includes/marketplace_helpers.php';
 require_once __DIR__ . '/includes/boutique_slug_redirect.php';
@@ -24,12 +25,8 @@ if ($commande_boutique_slug !== '') {
 
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
-    $redir_cmd = '/commande.php';
-    if ($commande_boutique_slug !== '' && $commande_boutique_admin) {
-        $redir_cmd .= '?boutique=' . rawurlencode($commande_boutique_slug);
-    }
-    header('Location: /user/connexion.php?redirect=' . rawurlencode($redir_cmd));
-    exit;
+    require_once __DIR__ . '/includes/auth_redirect.php';
+    auth_redirect_to_site_home();
 }
 
 // Inclusion des modèles et contrôleurs

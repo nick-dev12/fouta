@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/includes/session_user.php';
 /**
  * Choix du type de compte après authentification Google/Apple (nouveau compte).
  */
-session_start();
+session_start_persistent();
 
 if (ob_get_level() === 0) {
     ob_start();

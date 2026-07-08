@@ -2,9 +2,8 @@
 /**
  * Connexion super administrateur
  */
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once dirname(__DIR__) . '/includes/session_user.php';
+session_start_persistent();
 
 require_once __DIR__ . '/includes/paths.php';
 require_once dirname(__DIR__) . '/controllers/controller_super_admin.php';
@@ -24,9 +23,7 @@ $csrf = super_admin_csrf_token();
 $result = process_super_admin_login();
 
 if (!empty($result['success']) && !empty($result['super_admin'])) {
-    if (function_exists('session_regenerate_id')) {
-        session_regenerate_id(true);
-    }
+    session_regenerate_persistent();
     $u = $result['super_admin'];
     $_SESSION['super_admin_id'] = (int) $u['id'];
     $_SESSION['super_admin_nom'] = $u['nom'] ?? '';

@@ -6,7 +6,7 @@
 
 require_once __DIR__ . '/../includes/session_user.php';
 require_once __DIR__ . '/../includes/auth_redirect.php';
-session_start();
+session_start_persistent();
 
 // Supprimer les tokens FCM du client avant déconnexion
 if (isset($_SESSION['user_id'])) {
@@ -31,8 +31,7 @@ session_destroy();
 
 auth_clear_portal_cookie();
 
-header('Location: /index.php');
-exit;
+auth_redirect_to_site_home();
 
 ?>
 

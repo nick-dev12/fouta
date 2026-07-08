@@ -2,7 +2,8 @@
 /**
  * Complément des informations manquantes après authentification Google/Apple.
  */
-session_start();
+require_once __DIR__ . '/includes/session_user.php';
+session_start_persistent();
 
 if (ob_get_level() === 0) {
     ob_start();
@@ -49,7 +50,7 @@ function google_complete_safe_redirect($redirect)
 
 function google_complete_set_user_session(array $user)
 {
-    session_regenerate_id(true);
+    session_regenerate_persistent();
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_nom'] = $user['nom'];
     $_SESSION['user_prenom'] = $user['prenom'];
@@ -69,7 +70,7 @@ function google_complete_set_user_session(array $user)
 
 function google_complete_set_admin_session(array $admin)
 {
-    session_regenerate_id(true);
+    session_regenerate_persistent();
     $_SESSION['admin_id'] = $admin['id'];
     $_SESSION['admin_nom'] = $admin['nom'];
     $_SESSION['admin_prenom'] = $admin['prenom'];

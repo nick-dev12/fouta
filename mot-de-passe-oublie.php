@@ -3,7 +3,7 @@
  * Mot de passe oublié — point d’entrée unique (clients + boutiques / admin vendeur).
  */
 require_once __DIR__ . '/includes/session_user.php';
-session_start();
+session_start_persistent();
 
 if (isset($_SESSION['user_id'])) {
     header('Location: /index.php');

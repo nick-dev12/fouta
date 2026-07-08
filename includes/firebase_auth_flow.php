@@ -97,7 +97,7 @@ function firebase_auth_set_user_session(array $user)
     if (file_exists(__DIR__ . '/auth_redirect.php')) {
         require_once __DIR__ . '/auth_redirect.php';
         try {
-            @session_regenerate_id(true);
+            session_regenerate_persistent();
         } catch (Throwable $e) {
             error_log('[firebase_auth] session_regenerate_id client : ' . $e->getMessage());
         }
@@ -126,7 +126,7 @@ function firebase_auth_set_admin_session(array $admin)
     if (file_exists(__DIR__ . '/auth_redirect.php')) {
         require_once __DIR__ . '/auth_redirect.php';
         try {
-            @session_regenerate_id(true);
+            session_regenerate_persistent();
         } catch (Throwable $e) {
             error_log('[firebase_auth] session_regenerate_id admin : ' . $e->getMessage());
         }

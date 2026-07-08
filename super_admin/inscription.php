@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../includes/session_admin.php';
 /**
  * Création du premier compte super administrateur (une seule fois)
  */
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    session_start_persistent();
 }
 
 require_once __DIR__ . '/includes/paths.php';

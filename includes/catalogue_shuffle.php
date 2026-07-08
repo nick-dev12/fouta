@@ -3,11 +3,24 @@
  * Mélange aléatoire des listes produits : ordre différent par visiteur et à chaque actualisation.
  */
 
+if (!function_exists('catalogue_ensure_session')) {
+    function catalogue_ensure_session(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return;
+        }
+        if (!function_exists('session_start_persistent')) {
+            require_once __DIR__ . '/session_user.php';
+        }
+        session_start_persistent();
+    }
+}
+
 if (!function_exists('catalogue_shuffle_visiteur_cle')) {
     function catalogue_shuffle_visiteur_cle()
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
+            catalogue_ensure_session();
         }
         if (!empty($_SESSION['user_id'])) {
             return 'u' . (int) $_SESSION['user_id'];
@@ -26,7 +39,7 @@ if (!function_exists('catalogue_nouveau_seed')) {
     function catalogue_nouveau_seed($contexte = 'default')
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
+            catalogue_ensure_session();
         }
         $visiteur = catalogue_shuffle_visiteur_cle();
         $nonce = function_exists('random_int') ? random_int(1, 999999999) : mt_rand(1, 999999999);
@@ -51,7 +64,7 @@ if (!function_exists('catalogue_seed_pagination')) {
     function catalogue_seed_pagination($contexte, $seed_param = null, $forcer_nouveau = false)
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
+            catalogue_ensure_session();
         }
         if ($seed_param !== null && $seed_param !== '') {
             $seed = max(1, (int) $seed_param);

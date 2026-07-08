@@ -14,9 +14,16 @@ function marketplace_country_filter_applies(): bool
 
 function marketplace_ensure_session_started(): void
 {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        if (function_exists('session_touch_persistent_if_authenticated')) {
+            session_touch_persistent_if_authenticated();
+        }
+        return;
     }
+    if (!function_exists('session_start_persistent')) {
+        require_once __DIR__ . '/session_user.php';
+    }
+    session_start_persistent();
 }
 
 function marketplace_country_welcome_done(): bool

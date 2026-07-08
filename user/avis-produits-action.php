@@ -3,7 +3,7 @@
  * API avis produits (notation + report popup 48h).
  */
 require_once __DIR__ . '/../includes/session_user.php';
-session_start();
+session_start_persistent();
 
 header('Content-Type: application/json; charset=utf-8');
 

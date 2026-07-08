@@ -7,7 +7,8 @@
 
 
 require_once __DIR__ . '/../includes/session_user.php';
-session_start();
+require_once __DIR__ . '/../includes/session_user.php';
+session_start_persistent();
 header('Content-Type: application/json; charset=utf-8');
 
 $response = ['success' => false, 'message' => ''];

@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/includes/session_user.php';
 /**
  * Sélection du type de compte à créer (client, vendeur) — Design Premium
  */
-session_start();
+session_start_persistent();
 
 require_once __DIR__ . '/includes/auth_redirect.php';
 auth_redirect_vendeur_to_dashboard();

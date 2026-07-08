@@ -6,7 +6,7 @@
 
 require_once __DIR__ . '/../includes/session_admin.php';
 require_once __DIR__ . '/../includes/auth_redirect.php';
-session_start();
+session_start_persistent();
 
 // Supprimer les tokens FCM de l'admin avant déconnexion
 if (isset($_SESSION['admin_id'])) {
@@ -32,8 +32,7 @@ session_destroy();
 auth_clear_portal_cookie();
 auth_revoke_vendeur_marketplace_visit();
 
-header('Location: /choix-connexion.php');
-exit;
+auth_redirect_to_site_home();
 
 ?>
 

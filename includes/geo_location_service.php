@@ -322,7 +322,10 @@ function geo_save_boutique_location_if_missing(int $admin_id, ?float $lat, ?floa
 function geo_ensure_session(): void
 {
     if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-        session_start();
+        if (!function_exists('session_start_persistent')) {
+            require_once __DIR__ . '/session_user.php';
+        }
+        session_start_persistent();
     }
     if (!isset($_SESSION)) {
         $_SESSION = [];

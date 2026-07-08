@@ -102,7 +102,9 @@ RewriteRule ^([a-z0-9-]+)/?$ boutique/index.php?boutique=$1 [L,QSA]
 # En PHP-FPM / CGI (cas de Webuzo), ces directives provoqueraient une erreur 500 :
 # elles sont donc déplacées dans .user.ini (voir ce fichier à la racine).
 <IfModule mod_php.c>
-    php_value session.gc_maxlifetime 2592000
+    php_value session.gc_maxlifetime 315360000
+    php_value session.cookie_lifetime 315360000
+    php_value auto_prepend_file "includes/session_bootstrap_prepend.php"
     php_value upload_max_filesize 1000M
     php_value post_max_size 1000M
     php_value max_execution_time 300
@@ -110,7 +112,9 @@ RewriteRule ^([a-z0-9-]+)/?$ boutique/index.php?boutique=$1 [L,QSA]
     php_value memory_limit 512M
 </IfModule>
 <IfModule mod_php7.c>
-    php_value session.gc_maxlifetime 2592000
+    php_value session.gc_maxlifetime 315360000
+    php_value session.cookie_lifetime 315360000
+    php_value auto_prepend_file "includes/session_bootstrap_prepend.php"
     php_value upload_max_filesize 1000M
     php_value post_max_size 1000M
     php_value max_execution_time 300
@@ -118,7 +122,9 @@ RewriteRule ^([a-z0-9-]+)/?$ boutique/index.php?boutique=$1 [L,QSA]
     php_value memory_limit 512M
 </IfModule>
 <IfModule mod_php8.c>
-    php_value session.gc_maxlifetime 2592000
+    php_value session.gc_maxlifetime 315360000
+    php_value session.cookie_lifetime 315360000
+    php_value auto_prepend_file "includes/session_bootstrap_prepend.php"
     php_value upload_max_filesize 1000M
     php_value post_max_size 1000M
     php_value max_execution_time 300

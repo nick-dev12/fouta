@@ -22,7 +22,7 @@ $firebase_auth_prev_error_handler = set_error_handler(static function (int $seve
 });
 
 require_once __DIR__ . '/includes/session_user.php';
-session_start();
+session_start_persistent();
 
 /**
  * @param array<string, mixed>|null $payload

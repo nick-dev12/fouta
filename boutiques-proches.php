@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/includes/session_user.php';
 /**
  * Boutiques et produits proches de la position du visiteur.
  * La position est capturée par le navigateur (consentement) et envoyée
  * via un formulaire POST classique à set-location.php (session).
  */
 
-session_start();
+session_start_persistent();
 
 require_once __DIR__ . '/conn/conn.php';
 require_once __DIR__ . '/includes/geo_location_service.php';

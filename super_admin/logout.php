@@ -2,9 +2,8 @@
 /**
  * Déconnexion super administrateur
  */
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once dirname(__DIR__) . '/includes/session_user.php';
+session_start_persistent();
 
 require_once __DIR__ . '/includes/paths.php';
 

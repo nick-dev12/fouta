@@ -5,7 +5,7 @@
  */
 require_once __DIR__ . '/includes/session_user.php';
 require_once __DIR__ . '/includes/auth_redirect.php';
-session_start();
+session_start_persistent();
 require_once __DIR__ . '/includes/google_auth_coop.php';
 
 if (ob_get_level() === 0) {
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (isset($result['success']) && $result['success'] && $result['type'] === 'admin' && $result['admin']) {
-    session_regenerate_id(true);
+    session_regenerate_persistent();
     $_SESSION['admin_id'] = $result['admin']['id'];
     $_SESSION['admin_nom'] = $result['admin']['nom'];
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
@@ -58,7 +58,7 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
 }
 
 if (isset($result['success']) && $result['success'] && $result['type'] === 'user' && $result['user']) {
-    session_regenerate_id(true);
+    session_regenerate_persistent();
     $_SESSION['user_id'] = $result['user']['id'];
     $_SESSION['user_nom'] = $result['user']['nom'];
     $_SESSION['user_prenom'] = $result['user']['prenom'];

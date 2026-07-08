@@ -34,7 +34,7 @@ function marketplace_get_selected_region_code(): ?string
         return null;
     }
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+        marketplace_ensure_session_started();
     }
     $code = $_SESSION['marketplace_region_code'] ?? null;
     if ($code === null || $code === '' || $code === 'all') {
@@ -48,7 +48,7 @@ function marketplace_get_selected_region_code(): ?string
 function marketplace_set_selected_region(string $code): bool
 {
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+        marketplace_ensure_session_started();
     }
     $code = trim($code);
     if ($code === '' || $code === 'all') {
@@ -66,7 +66,7 @@ function marketplace_set_selected_region(string $code): bool
 function marketplace_clear_selected_region(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+        marketplace_ensure_session_started();
     }
     unset($_SESSION['marketplace_region_code']);
 }

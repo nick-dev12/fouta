@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../includes/session_admin.php';
 require_once __DIR__ . '/../../includes/auth_redirect.php';
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    session_start_persistent();
 }
 
 if (!isset($_SESSION['admin_id'])) {

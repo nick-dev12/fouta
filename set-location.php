@@ -5,7 +5,8 @@
  * Redirige ensuite vers la page demandée.
  */
 
-session_start();
+require_once __DIR__ . '/includes/session_user.php';
+session_start_persistent();
 
 require_once __DIR__ . '/conn/conn.php';
 require_once __DIR__ . '/includes/geo_location_service.php';

@@ -16,7 +16,10 @@ if (!function_exists('flash_toast_push')) {
     function flash_toast_push($type, $message)
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
+            if (!function_exists('session_start_persistent')) {
+                require_once __DIR__ . '/session_user.php';
+            }
+            session_start_persistent();
         }
         $type = in_array($type, ['success', 'error', 'info', 'warning'], true) ? $type : 'info';
         $message = flash_toast_plain($message);
@@ -52,7 +55,10 @@ if (!function_exists('flash_toast_query_once')) {
     function flash_toast_query_once($session_key, $type, $message)
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
+            if (!function_exists('session_start_persistent')) {
+                require_once __DIR__ . '/session_user.php';
+            }
+            session_start_persistent();
         }
         if (!isset($_SESSION['flash_query_once']) || !is_array($_SESSION['flash_query_once'])) {
             $_SESSION['flash_query_once'] = [];
@@ -154,7 +160,10 @@ if (!function_exists('flash_toast_collect')) {
     function flash_toast_collect()
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
+            if (!function_exists('session_start_persistent')) {
+                require_once __DIR__ . '/session_user.php';
+            }
+            session_start_persistent();
         }
 
         $items = [];

@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page d'inscription utilisateur
  * Programmation procédurale uniquement
  */
 
-session_start();
+session_start_persistent();
 require_once __DIR__ . '/../includes/google_auth_coop.php';
 require_once __DIR__ . '/../includes/auth_redirect.php';
 
@@ -18,7 +19,7 @@ if ($inscription_redirect_get === '' || !preg_match('/^[a-z0-9_-]+$/i', $inscrip
 }
 
 // Si l'utilisateur est déjà connecté, rediriger vers le tableau de bord
-if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
+if (!empty($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     header('Location: mon-compte.php');
     exit;
 }

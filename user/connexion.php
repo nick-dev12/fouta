@@ -6,7 +6,7 @@
 
 require_once __DIR__ . '/../includes/session_user.php';
 require_once __DIR__ . '/../includes/auth_redirect.php';
-session_start();
+session_start_persistent();
 require_once __DIR__ . '/../includes/google_auth_coop.php';
 
 // Redirection après connexion (page demandée ou index)
@@ -23,7 +23,7 @@ if (auth_session_is_vendeur()) {
 }
 
 // Si l'utilisateur est déjà connecté, rediriger
-if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
+if (!empty($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     header('Location: ' . $redirect_url);
     exit;
 }
@@ -34,6 +34,7 @@ $result = process_unified_login();
 
 // Connexion admin : session + redirection vers l'espace admin
 if (isset($result['success']) && $result['success'] && $result['type'] === 'admin' && $result['admin']) {
+    session_regenerate_persistent();
     $_SESSION['admin_id'] = $result['admin']['id'];
     $_SESSION['admin_nom'] = $result['admin']['nom'];
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
@@ -59,6 +60,7 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
 
 // Connexion utilisateur : session + redirection
 if (isset($result['success']) && $result['success'] && $result['type'] === 'user' && $result['user']) {
+    session_regenerate_persistent();
     $_SESSION['user_id'] = $result['user']['id'];
     $_SESSION['user_nom'] = $result['user']['nom'];
     $_SESSION['user_prenom'] = $result['user']['prenom'];
