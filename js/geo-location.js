@@ -199,8 +199,14 @@
 
         /* ---- Capture GPS ---- */
 
-        capture: function (silent) {
+        capture: function (silent, extra) {
+            extra = extra || {};
             var self = this;
+            var geoOptions = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: extra.fresh ? 0 : 60000
+            };
 
             function onSuccess(pos) {
                 var lat = pos.coords.latitude;
@@ -241,13 +247,9 @@
             self.setStatus('pending', 'Recherche de votre position\u2026');
 
             var promise = runCapture
-                ? runCapture({ enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 })
+                ? runCapture(geoOptions)
                 : new Promise(function (resolve, reject) {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: true,
-                        timeout: 12000,
-                        maximumAge: 60000
-                    });
+                    navigator.geolocation.getCurrentPosition(resolve, reject, geoOptions);
                 });
 
             promise.then(onSuccess).catch(onError);

@@ -34,16 +34,29 @@ $country = marketplace_get_selected_country_code();
 $types_actifs = boutique_types_list_active();
 $types_filter_available = count($types_actifs) > 0;
 
+$boutiques_map_max = 25;
 $rayon_proche_default = 15;
-$rayon_proche = $filter_dist > 0 && !boutique_types_distance_is_unlimited($filter_dist)
-    ? (float) $filter_dist
-    : ($filter_dist > 0 ? 0.0 : (float) $rayon_proche_default);
-$map_rayon_max = 50;
-$lat_proche = $geo_loc !== null ? (float) $geo_loc['lat'] : null;
-$lng_proche = $geo_loc !== null ? (float) $geo_loc['lng'] : null;
+$has_geo = $geo_loc !== null;
+$lat_proche = $has_geo ? (float) $geo_loc['lat'] : null;
+$lng_proche = $has_geo ? (float) $geo_loc['lng'] : null;
 
-$use_geo_catalog = $geo_loc !== null && $filter_dist > 0;
-$catalog_rayon_km = $use_geo_catalog ? boutique_types_distance_to_rayon_km($filter_dist) : 0.0;
+$use_geo_catalog = $has_geo;
+$catalog_rayon_km = $filter_dist > 0 ? boutique_types_distance_to_rayon_km($filter_dist) : 0.0;
+
+$map_rayon_km = 0.0;
+if ($has_geo) {
+    if ($filter_dist > 0) {
+        $map_rayon_km = boutique_types_distance_to_rayon_km($filter_dist);
+    } elseif (!isset($_GET['dist'])) {
+        $map_rayon_km = (float) $rayon_proche_default;
+    }
+}
+
+$rayon_proche = $map_rayon_km > 0
+    ? $map_rayon_km
+    : ($filter_dist > 0 && !boutique_types_distance_is_unlimited($filter_dist)
+        ? (float) $filter_dist
+        : ($filter_dist > 0 ? 0.0 : (float) $rayon_proche_default));
 
 $per_page = 15;
 $page = max(1, (int) ($_GET['page'] ?? 1));
@@ -82,29 +95,19 @@ unset($boutiques_vignettes, $bk, $boutique_row);
 
 $boutiques_proches = [];
 $map_boutiques_all = [];
-if ($geo_loc !== null) {
-    $boutiques_proches = marketplace_list_boutiques(
+if ($has_geo) {
+    $map_boutiques_all = marketplace_list_boutiques(
         '',
-        50,
+        $boutiques_map_max,
         0,
         $country,
         $lat_proche,
         $lng_proche,
-        (float) $rayon_proche,
+        $map_rayon_km,
         true,
         $filter_type_id
     );
-    $map_boutiques_all = marketplace_list_boutiques(
-        '',
-        100,
-        0,
-        $country,
-        $lat_proche,
-        $lng_proche,
-        0.0,
-        true,
-        0
-    );
+    $boutiques_proches = $map_boutiques_all;
 }
 $map_payload = marketplace_boutiques_map_payload($map_boutiques_all);
 $nb_proches = count($boutiques_proches);
@@ -256,7 +259,11 @@ if (!function_exists('boutiques_catalog_page_url')) {
                             <?php else: ?>
                             <p>
                                 <strong><?php echo (int) $nb_proches; ?></strong>
-                                boutique<?php echo $nb_proches > 1 ? 's' : ''; ?> à moins de <?php echo (int) $rayon_proche; ?> km<?php echo $filter_type_id > 0 ? ' (type sélectionné)' : ''; ?>.
+                                boutique<?php echo $nb_proches > 1 ? 's' : ''; ?> la plus proche<?php echo $nb_proches > 1 ? 's' : ''; ?>
+                                <?php if ($map_rayon_km > 0): ?>
+                                (≤ <?php echo (int) $map_rayon_km; ?> km)
+                                <?php endif; ?>
+                                — max. <?php echo (int) $boutiques_map_max; ?> sur la carte.
                             </p>
                             <?php endif; ?>
                         <?php endif; ?>
@@ -310,10 +317,12 @@ if (!function_exists('boutiques_catalog_page_url')) {
                     — type filtré
                 <?php endif; ?>
                 <?php if ($use_geo_catalog): ?>
-                    <?php if (boutique_types_distance_is_unlimited($filter_dist)): ?>
+                    <?php if ($filter_dist > 0 && !boutique_types_distance_is_unlimited($filter_dist)): ?>
+                    — à moins de <?php echo (int) $filter_dist; ?> km
+                    <?php elseif ($filter_dist > 0 && boutique_types_distance_is_unlimited($filter_dist)): ?>
                     — toutes distances
                     <?php else: ?>
-                    — à moins de <?php echo (int) $filter_dist; ?> km
+                    — triées par proximité
                     <?php endif; ?>
                 <?php endif; ?>
             </p>
@@ -480,6 +489,7 @@ if (!function_exists('boutiques_catalog_page_url')) {
         echo json_encode([
             'user' => $geo_loc ? ['lat' => (float) $geo_loc['lat'], 'lng' => (float) $geo_loc['lng']] : null,
             'boutiques' => $map_payload,
+            'map_max' => $boutiques_map_max,
             'filters' => [
                 'type_id' => $filter_type_id,
                 'dist_km' => $filter_dist,
@@ -647,7 +657,7 @@ if (!function_exists('boutiques_catalog_page_url')) {
                     geoLocateBtn.addEventListener('click', function (event) {
                         event.preventDefault();
                         showGeoLoading();
-                        window.GeoLocationCapture.capture();
+                        window.GeoLocationCapture.capture(false, { fresh: true });
                     });
                 }
             }

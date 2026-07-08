@@ -9,7 +9,7 @@
     var userMarker = null;
     var markerById = {};
     var selectedId = null;
-    var state = { user: null, allBoutiques: [], boutiques: [] };
+    var state = { user: null, allBoutiques: [], boutiques: [], mapMax: 25 };
     var sidePanel = null;
     var listPanel = null;
     var listToggle = null;
@@ -25,6 +25,10 @@
             var data = JSON.parse(el.textContent || '{}');
             state.user = data.user || null;
             state.allBoutiques = Array.isArray(data.boutiques) ? data.boutiques : [];
+            state.mapMax = parseInt(data.map_max, 10);
+            if (isNaN(state.mapMax) || state.mapMax <= 0) {
+                state.mapMax = 25;
+            }
             var filters = data.filters || {};
             if (filterTypeEl && filters.type_id != null) {
                 filterTypeEl.value = String(filters.type_id || '');
@@ -51,20 +55,35 @@
         return { typeId: typeId, maxDist: maxDist };
     }
 
+    function boutiquePassesDistanceFilter(item, maxDist) {
+        if (maxDist <= 0 || maxDist === 999) {
+            return true;
+        }
+        if (item.distance_km == null || item.distance_km === '' || isNaN(Number(item.distance_km))) {
+            return false;
+        }
+        return Number(item.distance_km) <= maxDist;
+    }
+
+    function sortByDistance(items) {
+        return items.slice().sort(function (a, b) {
+            var da = a.distance_km != null && !isNaN(Number(a.distance_km)) ? Number(a.distance_km) : 9999;
+            var db = b.distance_km != null && !isNaN(Number(b.distance_km)) ? Number(b.distance_km) : 9999;
+            return da - db;
+        });
+    }
+
     function applyMapFilters(updateUrl) {
         if (updateUrl === undefined) {
             updateUrl = true;
         }
         var f = getFilterValues();
-        state.boutiques = state.allBoutiques.filter(function (item) {
+        state.boutiques = sortByDistance(state.allBoutiques.filter(function (item) {
             if (f.typeId > 0 && Number(item.type_id || 0) !== f.typeId) {
                 return false;
             }
-            if (f.maxDist > 0 && f.maxDist !== 999 && item.distance_km != null && Number(item.distance_km) > f.maxDist) {
-                return false;
-            }
-            return true;
-        });
+            return boutiquePassesDistanceFilter(item, f.maxDist);
+        })).slice(0, state.mapMax);
 
         if (selectedId && !state.boutiques.some(function (b) { return String(b.id) === String(selectedId); })) {
             hideDetailPanel();
@@ -76,8 +95,29 @@
         buildList();
 
         if (updateUrl) {
-            syncUrlParams(f.typeId, f.maxDist);
+            reloadWithMapFilters(f.typeId, f.maxDist);
+            return;
         }
+    }
+
+    function reloadWithMapFilters(typeId, maxDist) {
+        try {
+            var params = new URLSearchParams(win.location.search || '');
+            if (typeId > 0) {
+                params.set('type', String(typeId));
+            } else {
+                params.delete('type');
+            }
+            if (maxDist > 0) {
+                params.set('dist', String(maxDist));
+            } else {
+                params.delete('dist');
+            }
+            params.delete('page');
+            params.set('open_map', '1');
+            var qs = params.toString();
+            win.location.href = win.location.pathname + (qs ? '?' + qs : '');
+        } catch (e) { /* ignore */ }
     }
 
     function syncUrlParams(typeId, maxDist) {
