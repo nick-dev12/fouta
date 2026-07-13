@@ -1,8 +1,13 @@
 <?php
 /**
- * Sessions persistantes (client + admin) — 30 jours.
+ * Sessions persistantes (client + admin).
+ * Stockage principal : MySQL (table php_sessions).
+ * Secours : fichiers hors Webuzo (/home/colobanes/tmp/sessions ou tmp/sessions).
+ *
  * Inclure AVANT session_start(), ou utiliser session_start_persistent().
  */
+
+require_once __DIR__ . '/session_mysql_handler.php';
 
 if (!function_exists('session_persistent_lifetime')) {
     function session_persistent_lifetime(): int
@@ -43,6 +48,18 @@ if (!function_exists('session_configure_persistent')) {
 
         $lifetime = session_persistent_lifetime();
 
+        // MySQL d'abord ; sinon fichiers hors dossier Webuzo.
+        $using_mysql = false;
+        if (function_exists('php_session_mysql_register')) {
+            $using_mysql = php_session_mysql_register();
+        }
+
+        if (!$using_mysql) {
+            $save_path = php_session_files_fallback_path();
+            ini_set('session.save_handler', 'files');
+            ini_set('session.save_path', $save_path);
+        }
+
         session_set_cookie_params([
             'lifetime' => $lifetime,
             'path' => '/',
@@ -54,6 +71,9 @@ if (!function_exists('session_configure_persistent')) {
 
         ini_set('session.gc_maxlifetime', (string) $lifetime);
         ini_set('session.cookie_lifetime', (string) $lifetime);
+        // GC léger pour purger les vieilles lignes php_sessions / fichiers.
+        ini_set('session.gc_probability', '1');
+        ini_set('session.gc_divisor', '100');
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
     }
@@ -128,5 +148,20 @@ if (!function_exists('session_start_persistent')) {
         }
 
         return $started;
+    }
+}
+
+if (!function_exists('session_storage_backend')) {
+    /**
+     * Pour diagnostic : mysql | files
+     */
+    function session_storage_backend(): string
+    {
+        $handler = (string) ini_get('session.save_handler');
+        if ($handler === 'user') {
+            return 'mysql';
+        }
+
+        return $handler !== '' ? $handler : 'files';
     }
 }
