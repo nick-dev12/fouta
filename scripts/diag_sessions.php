@@ -6,6 +6,7 @@
  * Web  : /scripts/diag_sessions.php  (à supprimer après usage)
  */
 
+
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
@@ -69,18 +70,31 @@ $lines[] = 'has_user_id        : ' . (!empty($_SESSION['user_id']) ? 'yes' : 'no
 $lines[] = 'has_admin_id       : ' . (!empty($_SESSION['admin_id']) ? 'yes' : 'no');
 $lines[] = 'has_super_admin_id : ' . (!empty($_SESSION['super_admin_id']) ? 'yes' : 'no');
 
-$db_ok = false;
+/** @var PDO|null $diag_pdo */
+$diag_pdo = null;
 $row = null;
 if ($backend === 'mysql') {
     try {
-        require_once $root . '/conn/conn.php';
-        if (!empty($db) && $db instanceof PDO) {
-            $db_ok = true;
-            $st = $db->prepare('SELECT id, LENGTH(data) AS data_len, last_activity FROM php_sessions WHERE id = :id LIMIT 1');
+        if (isset($GLOBALS['db']) && $GLOBALS['db'] instanceof PDO) {
+            $diag_pdo = $GLOBALS['db'];
+        } else {
+            require_once $root . '/conn/conn.php';
+            if (isset($db) && $db instanceof PDO) {
+                $GLOBALS['db'] = $db;
+                $diag_pdo = $db;
+            }
+        }
+
+        if ($diag_pdo instanceof PDO) {
+            $st = $diag_pdo->prepare('SELECT id, LENGTH(data) AS data_len, last_activity FROM php_sessions WHERE id = :id LIMIT 1');
+            if ($st === false) {
+                throw new RuntimeException('prepare php_sessions failed');
+            }
             $st->execute(['id' => $sid]);
             $row = $st->fetch(PDO::FETCH_ASSOC) ?: null;
 
-            $count = (int) $db->query('SELECT COUNT(*) FROM php_sessions')->fetchColumn();
+            $countSt = $diag_pdo->query('SELECT COUNT(*) FROM php_sessions');
+            $count = $countSt ? (int) $countSt->fetchColumn() : 0;
             $lines[] = '';
             $lines[] = '--- MySQL php_sessions ---';
             $lines[] = 'table_ok           : yes';
@@ -94,6 +108,7 @@ if ($backend === 'mysql') {
             }
         }
     } catch (Throwable $e) {
+        $diag_pdo = null;
         $lines[] = '';
         $lines[] = '--- MySQL php_sessions ---';
         $lines[] = 'error              : ' . $e->getMessage();
@@ -126,9 +141,12 @@ echo implode(PHP_EOL, $lines) . PHP_EOL;
 // Force write immédiat pour le check MySQL en CLI.
 session_write_close();
 
-if ($backend === 'mysql' && $db_ok) {
+if ($backend === 'mysql' && $diag_pdo instanceof PDO) {
     try {
-        $st = $db->prepare('SELECT id, LENGTH(data) AS data_len, last_activity FROM php_sessions WHERE id = :id LIMIT 1');
+        $st = $diag_pdo->prepare('SELECT id, LENGTH(data) AS data_len, last_activity FROM php_sessions WHERE id = :id LIMIT 1');
+        if ($st === false) {
+            throw new RuntimeException('prepare php_sessions failed');
+        }
         $st->execute(['id' => $sid]);
         $row2 = $st->fetch(PDO::FETCH_ASSOC);
         echo PHP_EOL . '--- Après session_write_close ---' . PHP_EOL;

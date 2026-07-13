@@ -22,12 +22,17 @@ if (!function_exists('php_session_mysql_db')) {
         // conn.php définit $db ; en cas d'échec il exit(503) — site déjà inutilisable.
         require_once $conn;
 
+        // Si conn.php a déjà été inclus ailleurs, $db peut ne pas être local ici.
+        if ((!isset($db) || !($db instanceof PDO)) && isset($GLOBALS['db']) && $GLOBALS['db'] instanceof PDO) {
+            return $GLOBALS['db'];
+        }
+
         if (isset($db) && $db instanceof PDO) {
             $GLOBALS['db'] = $db;
             return $db;
         }
 
-        return (isset($GLOBALS['db']) && $GLOBALS['db'] instanceof PDO) ? $GLOBALS['db'] : null;
+        return null;
     }
 }
 
@@ -230,8 +235,9 @@ if (!function_exists('php_session_mysql_register')) {
 
         if ($ok) {
             // Garantit l'écriture session même en cas de sortie anticipée.
+            // Note : ne pas faire ini_set('session.save_handler', 'user') —
+            // session_set_save_handler() l'active déjà ; ini_set est interdit.
             register_shutdown_function('session_write_close');
-            ini_set('session.save_handler', 'user');
         }
 
         return $ok;
